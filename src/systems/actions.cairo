@@ -1,96 +1,151 @@
-use dojo_starter::models::{Direction, Position};
+use starknet::ContractAddress;
+use dojo_starter::models::{Board, Rules};
+
 
 // define the interface
 #[starknet::interface]
 pub trait IActions<T> {
-    fn spawn(ref self: T);
-    fn move(ref self: T, direction: Direction);
+    fn initiate_board(ref self: T, player1: ContractAddress, player2: ContractAddress) -> Board;
+    fn initiate_rules(ref self: T) -> Rules;
 }
 
 // dojo decorator
 #[dojo::contract]
 pub mod actions {
-    use super::{IActions, Direction, Position, next_position};
-    use starknet::{ContractAddress, get_caller_address};
-    use dojo_starter::models::{Vec2, Moves};
+    use super::{IActions};
+    use starknet::{ContractAddress};
+    use dojo_starter::models::{Board, TEdge, GameState, Tile, Rules};
 
     use dojo::model::{ModelStorage};
-    use dojo::event::EventStorage;
+    use origami_random::deck::{DeckTrait};
+    use core::dict::Felt252Dict;
 
-    #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
-    pub struct Moved {
-        #[key]
-        pub player: ContractAddress,
-        pub direction: Direction,
+
+    fn generate_initial_state(cities_on_edges: u8, roads_on_edges: u8) -> Array<TEdge> {
+        let mut initial_state = ArrayTrait::new();
+
+        for side in 0..4_u8 {
+            let mut deck = DeckTrait::new(('SEED' + side.into()).into(), 8);
+            let mut edge: Felt252Dict<u8> = Default::default();
+            for i in 0..8_u8 {
+                edge.insert(i.into(), 0);
+            };
+            for _ in 0..cities_on_edges {
+                edge.insert(deck.draw().into() - 1, 1);
+            };
+            for _ in 0..roads_on_edges {
+                edge.insert(deck.draw().into() - 1, 2);
+            };
+            
+            for i in 0..8_u8 {
+                match edge.get(i.into()) {
+                    0 => {
+                       initial_state.append(TEdge::M); 
+                    },
+                    1 => {
+                        initial_state.append(TEdge::C);
+                    },
+                    _ => {
+                        initial_state.append(TEdge::R);
+                    }
+                }
+            };
+        };
+        return initial_state;
+    }
+
+    fn generate_random_deck(deck_rules: @Array<u8>) -> Array<Tile> {
+        let TILES: Array<Tile> = array![
+            Tile::CCRF,
+            Tile::CCFR,
+            Tile::CFRF,
+            Tile::CRRF,
+            Tile::CRFF,
+            Tile::FFCR,
+            Tile::FFRF,
+            Tile::FRRF,
+            Tile::FFCC,
+            Tile::RRFF,
+        ];
+
+        let mut deck = DeckTrait::new('SEED'.into(), 64);
+        let mut avaliable_tiles = ArrayTrait::new();
+        for i in 0..deck_rules.len() {
+            let tile_type = *TILES.at(i);
+            let tile_amount: u8 = *deck_rules.at(i);
+            for _ in 0..tile_amount {
+                avaliable_tiles.append(tile_type);
+            }
+        };
+
+
+        let mut random_deck: Array<Tile> = ArrayTrait::new();
+        for _ in 0..64_u8 {
+            let random_tile: Tile = *avaliable_tiles.at(deck.draw().into() - 1);
+            random_deck.append(random_tile);
+        };
+
+        return random_deck;
     }
 
     #[abi(embed_v0)]
     impl ActionsImpl of IActions<ContractState> {
-        fn spawn(ref self: ContractState) {
+        fn initiate_rules(ref self: ContractState) -> Rules{
             // Get the default world.
             let mut world = self.world_default();
 
-            // Get the address of the current caller, possibly the player's address.
-            let player = get_caller_address();
-            // Retrieve the player's current position from the world.
-            let position: Position = world.read_model(player);
-
-            // Update the world state with the new data.
-
-            // 1. Move the player's position 10 units in both the x and y direction.
-            let new_position = Position {
-                player, vec: Vec2 { x: position.vec.x + 10, y: position.vec.y + 10 },
+            // Create a new ruleset.
+            let rules = Rules {
+                id: 0,
+                deck: array![4, 4, 11, 9, 9, 4, 4, 9, 4, 6],
+                edges: (1, 1),
+                joker_number: 3,
             };
 
-            // Write the new position to the world.
-            world.write_model(@new_position);
+            // Write the rules to the world.
+            world.write_model(@rules);
 
-            // 2. Set the player's remaining moves to 100.
-            let moves = Moves {
-                player, remaining: 100, last_direction: Option::None, can_move: true,
-            };
+            // // Emit an event to the world to notify about the rules creation.
+            // world.emit_event(@RulesCreated { rules_id });
 
-            // Write the new moves to the world.
-            world.write_model(@moves);
+            return rules;
         }
 
-        // Implementation of the move function for the ContractState struct.
-        fn move(ref self: ContractState, direction: Direction) {
-            // Get the address of the current caller, possibly the player's address.
-
+        fn initiate_board(ref self: ContractState, player1: ContractAddress, player2: ContractAddress) -> Board {
+            // Get the default world.
             let mut world = self.world_default();
 
-            let player = get_caller_address();
+            let rules: Rules = world.read_model(0);
 
-            // Retrieve the player's current position and moves data from the world.
-            let position: Position = world.read_model(player);
-            let mut moves: Moves = world.read_model(player);
-            // if player hasn't spawn, read returns model default values. This leads to sub overflow
-            // afterwards.
-            // Plus it's generally considered as a good pratice to fast-return on matching
-            // conditions.
-            if !moves.can_move {
-                return;
-            }
+            // Create an initial state for the board.
+            let (cities_on_edges, roads_on_edges) = rules.edges;
+            let initial_state = generate_initial_state(cities_on_edges, roads_on_edges);
 
-            // Deduct one from the player's remaining moves.
-            moves.remaining -= 1;
+            // Create a random deck for the board.
+            let mut random_deck = generate_random_deck(@rules.deck);
 
-            // Update the last direction the player moved in.
-            moves.last_direction = Option::Some(direction);
+            // Create an empty board.
+            let mut tiles = ArrayTrait::new();
+            tiles.append_span([Option::None; 64].span());
 
-            // Calculate the player's next position based on the provided direction.
-            let next = next_position(position, moves.last_direction);
+            // Create a new board.
+            let board = Board {
+                id: 0,
+                initial_state,
+                random_deck,
+                tiles,
+                player1,
+                player2,
+                last_move_id: 0,
+                state: GameState::InProgress,
+            };
 
-            // Write the new position to the world.
-            world.write_model(@next);
+            // Write the board to the world.
+            world.write_model(@board);
 
-            // Write the new moves to the world.
-            world.write_model(@moves);
-
-            // Emit an event to the world to notify about the player's move.
-            world.emit_event(@Moved { player, direction });
+            // // Emit an event to the world to notify about the board creation.
+            // world.emit_event(@BoardCreated { board_id });
+            return board;
         }
     }
 
@@ -102,18 +157,4 @@ pub mod actions {
             self.world(@"dojo_starter")
         }
     }
-}
-
-// Define function like this:
-fn next_position(mut position: Position, direction: Option<Direction>) -> Position {
-    match direction {
-        Option::None => { return position; },
-        Option::Some(d) => match d {
-            Direction::Left => { position.vec.x -= 1; },
-            Direction::Right => { position.vec.x += 1; },
-            Direction::Up => { position.vec.y -= 1; },
-            Direction::Down => { position.vec.y += 1; },
-        },
-    };
-    position
 }
