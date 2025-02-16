@@ -34,7 +34,8 @@ pub enum Tile {
 impl TileIntoFelt252 of Into<Tile, felt252> {
     fn into(self: Tile) -> felt252 {
         match self {
-            //TODO let's convert to u8? it's only 24 values. Shouldn't enum be converted automatically to 0,1,2...?
+            //TODO let's convert to u8? it's only 24 values. Shouldn't enum be converted
+            //automatically to 0,1,2...?
             Tile::CCRF => 0,
             Tile::CCFR => 1,
             Tile::CFRF => 2,
@@ -54,7 +55,6 @@ pub enum GameState {
     InProgress,
     Finished,
 }
-
 
 
 #[derive(Drop, Serde, Debug)]
@@ -92,8 +92,6 @@ pub struct Rules {
     pub edges: (u8, u8),
     pub joker_number: u8,
 }
-
-
 // #[derive(Copy, Drop, Serde, Debug)]
 // #[dojo::model]
 // pub struct Moves {
@@ -120,7 +118,6 @@ pub struct Rules {
 //     pub vec: Vec2,
 // }
 
-
 // #[derive(Serde, Copy, Drop, Introspect, PartialEq, Debug)]
 // pub enum Direction {
 //     Left,
@@ -129,13 +126,11 @@ pub struct Rules {
 //     Down,
 // }
 
-
 // #[derive(Copy, Drop, Serde, IntrospectPacked, Debug)]
 // pub struct Vec2 {
 //     pub x: u32,
 //     pub y: u32,
 // }
-
 
 // impl DirectionIntoFelt252 of Into<Direction, felt252> {
 //     fn into(self: Direction) -> felt252 {
@@ -186,3 +181,5 @@ pub struct Rules {
 //         assert(position.is_equal(Vec2 { x: 420, y: 0 }), 'not equal');
 //     }
 // }
+
+
