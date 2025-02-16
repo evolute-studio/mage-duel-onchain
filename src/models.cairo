@@ -34,6 +34,7 @@ pub enum Tile {
 impl TileIntoFelt252 of Into<Tile, felt252> {
     fn into(self: Tile) -> felt252 {
         match self {
+            //TODO let's convert to u8? it's only 24 values. Shouldn't enum be converted automatically to 0,1,2...?
             Tile::CCRF => 0,
             Tile::CCFR => 1,
             Tile::CFRF => 2,

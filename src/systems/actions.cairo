@@ -37,6 +37,7 @@ pub mod actions {
                 edge.insert(deck.draw().into() - 1, 2);
             };
             
+            //TODO: No sense to do transformation 0 -> M, 1 -> C, 2 -> R. Why not doing deck.draw() right in loop and get rid of edge variable?
             for i in 0..8_u8 {
                 match edge.get(i.into()) {
                     0 => {
@@ -56,6 +57,11 @@ pub mod actions {
 
     fn generate_random_deck(deck_rules: @Array<u8>) -> Array<Tile> {
         let TILES: Array<Tile> = array![
+            //TODO: you separated this mapping in 2 different functions. 
+            // ----> deck: array![4, 4, 11, 9, 9, 4, 4, 9, 4, 6],
+            // Let's make rules a struct and have this mapping in one place.
+            // deck_rules: Map<Tile, u8> 
+            // Thus we can flixible change the rules and the mapping will be updated automatically.
             Tile::CCRF,
             Tile::CCFR,
             Tile::CFRF,
