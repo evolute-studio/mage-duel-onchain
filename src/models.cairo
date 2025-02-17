@@ -1,77 +1,214 @@
 use starknet::{ContractAddress};
 
-#[derive(Serde, Copy, Drop, Introspect, PartialEq, Debug)]
+use core::dict::Felt252Dict;
+
+#[derive(Serde, Drop, Introspect, PartialEq, Debug, Destruct, Clone)]
 pub enum TEdge {
     C,
     R,
     M,
+    F,
 }
 
-impl TEdgeIntoFelt252 of Into<TEdge, felt252> {
-    fn into(self: TEdge) -> felt252 {
+impl TEdgeIntoU8 of Into<TEdge, u8> {
+    fn into(self: TEdge) -> u8 {
         match self {
             TEdge::C => 0,
             TEdge::R => 1,
             TEdge::M => 2,
+            TEdge::F => 3,
         }
     }
 }
 
-#[derive(Serde, Copy, Drop, Introspect, PartialEq, Debug)]
-pub enum Tile {
-    CCRF,
-    CCFR,
-    CFRF,
-    CRRF,
-    CRFF,
-    FFCR,
-    FFRF,
-    FRRF,
-    FFCC,
-    RRFF,
-}
-
-impl TileIntoFelt252 of Into<Tile, felt252> {
-    fn into(self: Tile) -> felt252 {
+impl U8IntoTEdge of Into<u8, TEdge> {
+    fn into(self: u8) -> TEdge {
         match self {
-            //TODO let's convert to u8? it's only 24 values. Shouldn't enum be converted
-            //automatically to 0,1,2...?
-            Tile::CCRF => 0,
-            Tile::CCFR => 1,
-            Tile::CFRF => 2,
-            Tile::CRRF => 3,
-            Tile::CRFF => 4,
-            Tile::FFCR => 5,
-            Tile::FFRF => 6,
-            Tile::FRRF => 7,
-            Tile::FFCC => 8,
-            Tile::RRFF => 9,
+            0 => TEdge::C,
+            1 => TEdge::R,
+            2 => TEdge::M,
+            _ => TEdge::F,
         }
     }
 }
 
-#[derive(Copy, Drop, Serde, Debug, Introspect)]
+#[derive(Serde, Drop, Introspect, PartialEq, Debug, Clone)]
+pub enum Tile {
+    CCCC,
+    FFFF,
+    RRRR,
+    CCCF,
+    CCCR,
+    CFFF,
+    FFFR,
+    CRRR,
+    FRRR,
+    CCFF,
+    CFCF,
+    CCRR,
+    CRCR,
+    FFRR,
+    FRFR,
+    CCFR,
+    CCRF,
+    CFCR,
+    CFFR,
+    CFRF,
+    CRFF,
+    CRRF,
+    CRFR,
+    CFRR,
+    // CCRF,
+// CCFR,
+// CFRF,
+// CRRF,
+// CRFF,
+// FFCR,
+// FFRF,
+// FRRF,
+// FFCC,
+// RRFF,
+}
+
+#[derive(Serde, Clone, Drop, Introspect, Debug)]
+pub struct TileStruct {
+    pub tile: Tile,
+    pub edges: Array<TEdge>,
+}
+
+impl TileIntoTileStruct of Into<Tile, TileStruct> {
+    fn into(self: Tile) -> TileStruct {
+        match self {
+            Tile::CCCC => TileStruct {
+                tile: Tile::CCCC,
+                edges: array![TEdge::C, TEdge::C, TEdge::C, TEdge::C],
+            },
+            Tile::FFFF => TileStruct {
+                tile: Tile::FFFF,
+                edges: array![TEdge::F, TEdge::F, TEdge::F, TEdge::F],
+            },
+            Tile::RRRR => TileStruct {
+                tile: Tile::RRRR,
+                edges: array![TEdge::R, TEdge::R, TEdge::R, TEdge::R],
+            },
+            Tile::CCCF => TileStruct {
+                tile: Tile::CCCF,
+                edges: array![TEdge::C, TEdge::C, TEdge::C, TEdge::F],
+            },
+            Tile::CCCR => TileStruct {
+                tile: Tile::CCCR,
+                edges: array![TEdge::C, TEdge::C, TEdge::C, TEdge::R],
+            },
+            Tile::CFFF => TileStruct {
+                tile: Tile::CFFF,
+                edges: array![TEdge::C, TEdge::F, TEdge::F, TEdge::F],
+            },
+            Tile::FFFR => TileStruct {
+                tile: Tile::FFFR,
+                edges: array![TEdge::F, TEdge::F, TEdge::F, TEdge::R],
+            },
+            Tile::CRRR => TileStruct {
+                tile: Tile::CRRR,
+                edges: array![TEdge::C, TEdge::R, TEdge::R, TEdge::R],
+            },
+            Tile::FRRR => TileStruct {
+                tile: Tile::FRRR,
+                edges: array![TEdge::F, TEdge::R, TEdge::R, TEdge::R],
+            },
+            Tile::CCFF => TileStruct {
+                tile: Tile::CCFF,
+                edges: array![TEdge::C, TEdge::C, TEdge::F, TEdge::F],
+            },
+            Tile::CFCF => TileStruct {
+                tile: Tile::CFCF,
+                edges: array![TEdge::C, TEdge::F, TEdge::C, TEdge::F],
+            },
+            Tile::CCRR => TileStruct {
+                tile: Tile::CCRR,
+                edges: array![TEdge::C, TEdge::C, TEdge::R, TEdge::R],
+            },
+            Tile::CRCR => TileStruct {
+                tile: Tile::CRCR,
+                edges: array![TEdge::C, TEdge::R, TEdge::C, TEdge::R],
+            },
+            Tile::FFRR => TileStruct {
+                tile: Tile::FFRR,
+                edges: array![TEdge::F, TEdge::F, TEdge::R, TEdge::R],
+            },
+            Tile::FRFR => TileStruct {
+                tile: Tile::FRFR,
+                edges: array![TEdge::F, TEdge::R, TEdge::F, TEdge::R],
+            },
+            Tile::CCFR => TileStruct {
+                tile: Tile::CCFR,
+                edges: array![TEdge::C, TEdge::C, TEdge::F, TEdge::R],
+            },
+            Tile::CCRF => TileStruct {
+                tile: Tile::CCRF,
+                edges: array![TEdge::C, TEdge::C, TEdge::R, TEdge::F],
+            },
+            Tile::CFCR => TileStruct {
+                tile: Tile::CFCR,
+                edges: array![TEdge::C, TEdge::F, TEdge::C, TEdge::R],
+            },
+            Tile::CFFR => TileStruct {
+                tile: Tile::CFFR,
+                edges: array![TEdge::C, TEdge::F, TEdge::F, TEdge::R],
+            },
+            Tile::CFRF => TileStruct {
+                tile: Tile::CFRF,
+                edges: array![TEdge::C, TEdge::F, TEdge::R, TEdge::F],
+            },
+            Tile::CRFF => TileStruct {
+                tile: Tile::CRFF,
+                edges: array![TEdge::C, TEdge::R, TEdge::F, TEdge::F],
+            },
+            Tile::CRRF => TileStruct {
+                tile: Tile::CRRF,
+                edges: array![TEdge::C, TEdge::R, TEdge::R, TEdge::F],
+            },
+            Tile::CRFR => TileStruct {
+                tile: Tile::CRFR,
+                edges: array![TEdge::C, TEdge::R, TEdge::F, TEdge::R],
+            },
+            Tile::CFRR => TileStruct {
+                tile: Tile::CFRR,
+                edges: array![TEdge::C, TEdge::F, TEdge::R, TEdge::R],
+            },
+        }
+    }
+}
+
+impl TileStructIntoTile of Into<TileStruct, Tile> {
+    fn into(self: TileStruct) -> Tile {
+        self.tile
+    }
+}
+
+#[derive(Copy, Drop, Serde, Debug, Introspect, PartialEq)]
 pub enum GameState {
     InProgress,
     Finished,
 }
 
+//impl Partial
 
-#[derive(Drop, Serde, Debug)]
+
+#[derive(Drop, Serde, Debug, Clone)]
 #[dojo::model]
 pub struct Board {
     #[key]
     pub id: felt252,
     pub initial_state: Array<TEdge>,
     pub random_deck: Array<Tile>,
-    pub tiles: Array<Option<Tile>>,
+    pub tiles: Array<TileStruct>,
     pub player1: ContractAddress,
     pub player2: ContractAddress,
-    pub last_move_id: felt252,
+    pub last_move_id: Option<felt252>,
     pub state: GameState,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Drop, Serde, Debug)]
 #[dojo::model]
 pub struct Move {
     #[key]
