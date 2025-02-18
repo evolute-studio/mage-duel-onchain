@@ -6,15 +6,12 @@ use evolute_duel::models::{Board, Rules, Tile};
 #[starknet::interface]
 pub trait IGame<T> {
     fn create_board(ref self: T, player1: ContractAddress, player2: ContractAddress) -> Board;
-    fn move(
-        ref self: T,
-        board_id: felt252,
-        player: ContractAddress,
-        tile: Option<Tile>,
-        rotation: u8,
-        is_joker: bool,
-        col: u8,
-        row: u8,
+    fn make_move(ref self: T, board_id: felt252 // player: ContractAddress,
+    // tile: Option<Tile>,
+    // rotation: u8,
+    // is_joker: bool,
+    // col: u8,
+    // row: u8,
     );
 }
 
@@ -30,6 +27,7 @@ pub mod game {
 
     use dojo::model::{ModelStorage};
     use origami_random::deck::{DeckTrait};
+    use origami_random::dice::{Dice, DiceTrait};
     use core::dict::Felt252Dict;
 
     use evolute_duel::events::{BoardCreated, RulesCreated, InvalidMove};
@@ -76,7 +74,6 @@ pub mod game {
         fn create_board(
             ref self: ContractState, player1: ContractAddress, player2: ContractAddress,
         ) -> Board {
-            // Get the default world.
             let mut world = self.world_default();
 
             // let board_id = world.uuid();
@@ -85,12 +82,10 @@ pub mod game {
 
             let rules: Rules = world.read_model(0);
 
-            // Create an initial state for the board.
             let (cities_on_edges, roads_on_edges) = rules.edges;
             let initial_edge_state = generate_initial_board_state(cities_on_edges, roads_on_edges);
 
-            // Create a random deck for the board.
-            let mut random_deck = generate_random_deck(@rules.deck);
+            let mut deck_rules_flat = flatten_deck_rules(@rules.deck);
 
             // Create an empty board.
             let mut tiles: Array<Option<Tile>> = ArrayTrait::new();
@@ -99,11 +94,10 @@ pub mod game {
             let last_move_id = Option::None;
             let game_state = GameState::InProgress;
 
-            // Create a new board.
             let board = Board {
                 id: board_id,
                 initial_edge_state: initial_edge_state.clone(),
-                random_deck: random_deck.clone(),
+                available_tiles_in_deck: deck_rules_flat.clone(),
                 state: tiles.clone(),
                 player1,
                 player2,
@@ -132,32 +126,52 @@ pub mod game {
             return board;
         }
 
-        fn move(
-            ref self: ContractState,
-            board_id: felt252,
-            player: ContractAddress,
-            tile: Option<Tile>,
-            rotation: u8,
-            is_joker: bool,
-            col: u8,
-            row: u8,
-        ) { // let mut world = self.world_default();
-        // let mut board: Board = world.read_model(board_id);
+        fn make_move(ref self: ContractState, board_id: felt252 // player: ContractAddress,
+        // tile: Option<Tile>,
+        // rotation: u8,
+        // is_joker: bool,
+        // col: u8,
+        // row: u8,
+        ) {
+            let mut world = self.world_default();
+            let mut board: Board = world.read_model(board_id);
 
-        // // Check if the game is in progress.
+            let mut world = self.world_default();
+            let mut board: Board = world.read_model(board_id);
+
+            let avaliable_tiles: Array<Tile> = board.available_tiles_in_deck.clone();
+            let mut dice = DiceTrait::new(avaliable_tiles.len().try_into().unwrap(), 'SEED');
+            let mut next_tile = dice.roll();
+
+            let tile: Tile = *avaliable_tiles.at(next_tile.into());
+
+            world.write_model(@Move { id: 0, tile: Option::Some(tile) });
+
+            // Remove the tile from the available tiles.
+            let mut updated_available_tiles: Array<Tile> = ArrayTrait::new();
+            for i in 0..avaliable_tiles.len() {
+                if i != next_tile.into() {
+                    updated_available_tiles.append(*avaliable_tiles.at(i.into()));
+                }
+            };
+
+            board.available_tiles_in_deck = updated_available_tiles.clone();
+
+            world.write_model(@board);
+            // // Check if the game is in progress.
         // if board.state == GameState::InProgress {
         //     world.emit_event(@InvalidMove { move_id: 0, player });
         //     return;
         // }
 
-        // // Check if the player is allowed to make a move.
+            // // Check if the player is allowed to make a move.
         // let last_move: Move = world.read_model(board.last_move_id);
         // if !is_player_allowed_to_move(player, board.clone(), last_move) {
         //     world.emit_event(@InvalidMove { move_id: 0, player });
         //     return;
         // }
 
-        // // Check if the move is valid.
+            // // Check if the move is valid.
         // if !is_move_valid(board.clone(), tile, rotation, col, row, is_joker) {
         //     world.emit_event(@InvalidMove { move_id: 0, player });
         //     return;
@@ -252,17 +266,18 @@ pub mod game {
     //     return true;
     // }
 
-    fn is_player_allowed_to_move(player: ContractAddress, board: Board, last_move: Move) -> bool {
-        if player != board.player1 && player != board.player2 {
-            return false;
-        }
+    // fn is_player_allowed_to_move(player: ContractAddress, board: Board, last_move: Move) -> bool
+    // {
+    //     if player != board.player1 && player != board.player2 {
+    //         return false;
+    //     }
 
-        if last_move.player == player {
-            return false;
-        }
+    //     if last_move.player == player {
+    //         return false;
+    //     }
 
-        return true;
-    }
+    //     return true;
+    // }
 
     fn generate_initial_board_state(cities_on_edges: u8, roads_on_edges: u8) -> Array<TEdge> {
         let mut initial_state: Array<TEdge> = ArrayTrait::new();
@@ -289,24 +304,23 @@ pub mod game {
         return initial_state;
     }
 
-    fn generate_random_deck(deck_rules: @Array<u8>) -> Array<Tile> {
-        let mut deck = DeckTrait::new('SEED'.into(), 64);
-        let mut avaliable_tiles = ArrayTrait::new();
+    fn flatten_deck_rules(deck_rules: @Array<u8>) -> Array<Tile> {
+        let mut deck_rules_flat = ArrayTrait::new();
         for tile_index in 0..24_u8 {
             let tile_type: Tile = tile_index.into();
             let tile_amount: u8 = *deck_rules.at(tile_index.into());
             for _ in 0..tile_amount {
-                avaliable_tiles.append(tile_type);
+                deck_rules_flat.append(tile_type);
             }
         };
 
-        let mut random_deck: Array<Tile> = ArrayTrait::new();
-        for _ in 0..64_u8 {
-            let random_tile: Tile = *avaliable_tiles.at(deck.draw().into() - 1);
-            random_deck.append(random_tile);
-        };
+        // let mut random_deck: Array<Tile> = ArrayTrait::new();
+        // for _ in 0..64_u8 {
+        //     let random_tile: Tile = *avaliable_tiles.at(deck.draw().into() - 1);
+        //     random_deck.append(random_tile);
+        // };
 
-        return random_deck;
+        return deck_rules_flat;
     }
 
 

@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x2947f622c32c906026137bfeaf68e76d87f1a2fd644c038d3036c441563ffbe",
-      "class_hash": "0x7a9b78db81e871430e83ff4f08072bdecf44ba0a4eadaa573b8e7fe3fa2bdab",
+      "address": "0x6f70722545f20cec913670773a593fc67f69990ddfa322f53c342ff58dfc87b",
+      "class_hash": "0x1223d89cbee174feae035a92f2c522dcc08414dd8974638f15f13feca79462c",
       "abi": [
         {
           "type": "impl",
@@ -1552,11 +1552,11 @@
               "type": "core::felt252"
             },
             {
-              "name": "initial_state",
+              "name": "initial_edge_state",
               "type": "core::array::Array::<evolute_duel::models::TEdge>"
             },
             {
-              "name": "random_deck",
+              "name": "available_tiles_in_deck",
               "type": "core::array::Array::<evolute_duel::models::Tile>"
             },
             {
@@ -1578,20 +1578,6 @@
             {
               "name": "game_state",
               "type": "evolute_duel::models::GameState"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "core::bool",
-          "variants": [
-            {
-              "name": "False",
-              "type": "()"
-            },
-            {
-              "name": "True",
-              "type": "()"
             }
           ]
         },
@@ -1621,35 +1607,11 @@
             },
             {
               "type": "function",
-              "name": "move",
+              "name": "make_move",
               "inputs": [
                 {
                   "name": "board_id",
                   "type": "core::felt252"
-                },
-                {
-                  "name": "player",
-                  "type": "core::starknet::contract_address::ContractAddress"
-                },
-                {
-                  "name": "tile",
-                  "type": "core::option::Option::<evolute_duel::models::Tile>"
-                },
-                {
-                  "name": "rotation",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "is_joker",
-                  "type": "core::bool"
-                },
-                {
-                  "name": "col",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "row",
-                  "type": "core::integer::u8"
                 }
               ],
               "outputs": [],
@@ -1770,7 +1732,7 @@
       "selector": "0x2b4049d066282ff61972bb48825bbc8e659093daca9c85ab956befe2feaa91b",
       "systems": [
         "create_board",
-        "move",
+        "make_move",
         "upgrade"
       ]
     }
@@ -1779,9 +1741,15 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0x409e302eec5b1cab869639bab8603cc1deba609df4761f147d368bb9bed3432",
+      "class_hash": "0x2b91251cf8821c0c7563d2c582f20fce102a40ad3e75a034cb800b90d0158c4",
       "tag": "evolute_duel-Board",
       "selector": "0x836ef99f75ec03877951d491db5b9730a3f3552e3fc7d1c38a9f1abc320947"
+    },
+    {
+      "members": [],
+      "class_hash": "0x43a859d5a89bae9829bbe17e3cc7a738274c19ce3d98a10566ef1497bdd8737",
+      "tag": "evolute_duel-Move",
+      "selector": "0x6d7481ce108a8fbf6a107f7561809083890ccdb89931116448283bf99a278d5"
     },
     {
       "members": [],
@@ -1805,9 +1773,9 @@
     },
     {
       "members": [],
-      "class_hash": "0x72a8c1591c765db223b3f71907bcc2f4fade7469f34a87487f3e19bd2004ca0",
-      "tag": "evolute_duel-Move",
-      "selector": "0x6d7481ce108a8fbf6a107f7561809083890ccdb89931116448283bf99a278d5"
+      "class_hash": "0x237c1aa04f9bb66fdfef2763313d61f54204e413eea106e0a4282c7ef504334",
+      "tag": "evolute_duel-MoveModel",
+      "selector": "0x522beba2dd97cea51ed02733b152de95af52c254a34a17d6045c4be39fd692f"
     },
     {
       "members": [],

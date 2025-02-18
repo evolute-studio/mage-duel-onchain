@@ -27,7 +27,7 @@ pub struct RulesCreated {
 
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::event]
-pub struct Move {
+pub struct MoveModel {
     #[key]
     pub move_id: felt252,
     pub player: ContractAddress,

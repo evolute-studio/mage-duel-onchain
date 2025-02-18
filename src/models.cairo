@@ -131,13 +131,13 @@ pub enum GameState {
 }
 
 
-#[derive(Drop, Serde, Debug, Clone)]
+#[derive(Drop, Serde, Debug, Introspect, Clone)]
 #[dojo::model]
 pub struct Board {
     #[key]
     pub id: felt252,
     pub initial_edge_state: Array<TEdge>,
-    pub random_deck: Array<Tile>,
+    pub available_tiles_in_deck: Array<Tile>,
     pub state: Array<Option<Tile>>,
     pub player1: ContractAddress,
     pub player2: ContractAddress,
@@ -145,16 +145,16 @@ pub struct Board {
     pub game_state: GameState,
 }
 
-#[derive(Drop, Serde, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::model]
 pub struct Move {
     #[key]
     pub id: felt252,
-    pub player: ContractAddress,
-    pub prev_move_id: felt252,
+    // pub player: ContractAddress,
+    // pub prev_move_id: felt252,
     pub tile: Option<Tile>,
-    pub rotation: Option<u8>,
-    pub is_joker: bool,
+    // pub rotation: Option<u8>,
+// pub is_joker: bool,
 }
 
 #[derive(Drop, Introspect, Serde)]
