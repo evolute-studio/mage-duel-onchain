@@ -5,6 +5,21 @@ use evolute_duel::models::{Board, Rules, Tile};
 // define the interface
 #[starknet::interface]
 pub trait IGame<T> {
+    // fn initiate_board(ref self: T, player1: ContractAddress, player2: ContractAddress) -> Board;
+    // fn move(
+    //     ref self: T,
+    //     board_id: felt252,
+    //     player: ContractAddress,
+    //     tile: Option<Tile>,
+    //     rotation: u8,
+    //     is_joker: bool,
+    //     col: u8,
+    //     row: u8,
+    // );
+
+    fn create_game(ref self: T);
+    fn cancel_game(ref self: T);
+    fn join_game(ref self: T, host_player: ContractAddress);
     fn create_board(ref self: T, player1: ContractAddress, player2: ContractAddress) -> Board;
     fn make_move(ref self: T, board_id: felt252 // player: ContractAddress,
     // tile: Option<Tile>,
@@ -18,19 +33,22 @@ pub trait IGame<T> {
 // dojo decorator
 #[dojo::contract]
 pub mod game {
+    use dojo::world::IWorldDispatcherTrait;
     use starknet::storage_access::Store;
-    use core::traits::IndexView;
     use dojo::event::EventStorage;
     use super::{IGame};
-    use starknet::{ContractAddress};
-    use evolute_duel::models::{Board, TEdge, GameState, Tile, Rules, Move};
+    use starknet::{ContractAddress, get_caller_address};
+    use evolute_duel::models::{Board, TEdge, GameState, Tile, Rules, Move, Game, GameStatus};
 
     use dojo::model::{ModelStorage};
     use origami_random::deck::{DeckTrait};
     use origami_random::dice::{Dice, DiceTrait};
     use core::dict::Felt252Dict;
 
-    use evolute_duel::events::{BoardCreated, RulesCreated, InvalidMove};
+    use evolute_duel::events::{
+        BoardCreated, RulesCreated, InvalidMove, GameCreated, GameCreateFailed, GameFinished, GameJoinFailed,
+        GameStarted, GameCanceled,
+    };
 
 
     fn dojo_init(self: @ContractState) {
@@ -71,6 +89,68 @@ pub mod game {
 
     #[abi(embed_v0)]
     impl GameImpl of IGame<ContractState> {
+        fn create_game(ref self: ContractState) {
+            let mut world = self.world_default();
+
+            let host_player = get_caller_address();
+
+            let mut game: Game = world.read_model(host_player);
+            let status = game.status;
+
+            if status == GameStatus::InProgress || status == GameStatus::Created {
+                world.emit_event(@GameCreateFailed { host_player, status });
+                return;
+            }
+
+            game.status = GameStatus::Created;
+
+            world.write_model(@game);
+
+            world.emit_event(@GameCreated { host_player, status });
+        }
+
+        fn cancel_game(ref self: ContractState) {
+            let mut world = self.world_default();
+
+            let host_player = get_caller_address();
+
+            let mut game: Game = world.read_model(host_player);
+            let status = game.status;
+
+            if status == GameStatus::Created {
+                let new_status = GameStatus::Canceled;
+                game.status = new_status;
+
+                world.write_model(@game);
+    
+                world.emit_event(@GameCanceled { host_player, status: new_status});
+            }
+        }
+
+        fn join_game(ref self: ContractState, host_player: ContractAddress) {
+            let mut world = self.world_default();
+
+            let guest_player = get_caller_address();
+
+
+            let mut game: Game = world.read_model(host_player);
+            let status = game.status;            
+
+            if status != GameStatus::Created || host_player == guest_player {
+                world.emit_event(@GameJoinFailed { host_player, guest_player, status });
+                return;
+            }
+            game.status = GameStatus::InProgress;
+
+            //todo: let board_id = initialize_board(host_player, guest_player);
+            let board_id = 0;
+            game.board_id = Option::Some(board_id);
+
+            world.write_model(@game);            
+
+            world.emit_event(@GameStarted { host_player, guest_player, board_id });
+        }
+        
         fn create_board(
             ref self: ContractState, player1: ContractAddress, player2: ContractAddress,
         ) -> Board {
