@@ -25,7 +25,8 @@ impl U8IntoTEdge of Into<u8, TEdge> {
             0 => TEdge::C,
             1 => TEdge::R,
             2 => TEdge::M,
-            _ => TEdge::F,
+            3 => TEdge::F,
+            _ => panic!("Unsupported TEdge"),
         }
     }
 }
@@ -56,6 +57,7 @@ pub enum Tile {
     CRRF,
     CRFR,
     CFRR,
+    Empty,
 }
 
 impl U8ToTileImpl of Into<u8, Tile> {
@@ -85,6 +87,7 @@ impl U8ToTileImpl of Into<u8, Tile> {
             21 => Tile::CRRF,
             22 => Tile::CRFR,
             23 => Tile::CFRR,
+            24 => Tile::Empty,
             _ => panic!("Unsupported Tile"),
         }
     }
@@ -117,6 +120,7 @@ impl TileToU8 of Into<Tile, u8> {
             Tile::CRRF => 21,
             Tile::CRFR => 22,
             Tile::CFRR => 23,
+            Tile::Empty => 24,
         };
         value.try_into().unwrap()
     }
@@ -134,9 +138,9 @@ pub enum GameState {
 pub struct Board {
     #[key]
     pub id: felt252,
-    pub initial_edge_state: Array<TEdge>,
-    pub available_tiles_in_deck: Array<Tile>,
-    pub state: Array<Option<Tile>>,
+    pub initial_edge_state: Array<u8>,
+    pub available_tiles_in_deck: Array<u8>,
+    pub state: Array<u8>,
     pub player1: ContractAddress,
     pub player2: ContractAddress,
     pub last_move_id: Option<felt252>,
@@ -150,7 +154,7 @@ pub struct Move {
     pub id: felt252,
     // pub player: ContractAddress,
     // pub prev_move_id: felt252,
-    pub tile: Option<Tile>,
+    pub tile: Option<u8>,
     // pub rotation: Option<u8>,
 // pub is_joker: bool,
 }

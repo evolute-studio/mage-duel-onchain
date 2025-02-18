@@ -33,13 +33,13 @@ pub mod game {
     use dojo::event::EventStorage;
     use super::{IGame};
     use starknet::{ContractAddress, get_caller_address};
-    use evolute_duel::models::{Board, Tile, Rules, Move, Game, GameStatus};
+    use evolute_duel::models::{Board, Rules, Move, Game, GameStatus};
 
     use dojo::model::{ModelStorage};
     use origami_random::dice::{DiceTrait};
 
-    use evolute_duel::events::{ GameCreated, GameCreateFailed,
-        GameJoinFailed, GameStarted, GameCanceled,
+    use evolute_duel::events::{
+        GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled,
     };
 
     use evolute_duel::systems::helpers::board::{create_board};
@@ -155,16 +155,16 @@ pub mod game {
             let mut world = self.world_default();
             let mut board: Board = world.read_model(board_id);
 
-            let avaliable_tiles: Array<Tile> = board.available_tiles_in_deck.clone();
+            let avaliable_tiles: Array<u8> = board.available_tiles_in_deck.clone();
             let mut dice = DiceTrait::new(avaliable_tiles.len().try_into().unwrap(), 'SEED');
             let mut next_tile = dice.roll();
 
-            let tile: Tile = *avaliable_tiles.at(next_tile.into());
+            let tile: u8 = *avaliable_tiles.at(next_tile.into());
 
             world.write_model(@Move { id: 0, tile: Option::Some(tile) });
 
             // Remove the tile from the available tiles.
-            let mut updated_available_tiles: Array<Tile> = ArrayTrait::new();
+            let mut updated_available_tiles: Array<u8> = ArrayTrait::new();
             for i in 0..avaliable_tiles.len() {
                 if i != next_tile.into() {
                     updated_available_tiles.append(*avaliable_tiles.at(i.into()));

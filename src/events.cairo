@@ -1,13 +1,17 @@
 use starknet::ContractAddress;
-use evolute_duel::models::{Tile, GameState, GameStatus};
+use evolute_duel::models::{GameState, GameStatus};
 
 #[derive(Drop, Serde, Debug)]
 #[dojo::event]
 pub struct BoardCreated {
     #[key]
     pub board_id: felt252,
+    pub initial_edge_state: Array<u8>,
+    pub available_tiles_in_deck: Array<u8>,
+    pub state: Array<u8>,
     pub player1: ContractAddress,
     pub player2: ContractAddress,
+    pub last_move_id: felt252,
     pub game_state: GameState,
 }
 
@@ -28,7 +32,7 @@ pub struct Moved {
     pub move_id: felt252,
     pub player: ContractAddress,
     pub prev_move_id: felt252,
-    pub tile: Option<Tile>,
+    pub tile: Option<u8>,
     pub rotation: Option<u8>,
     pub is_joker: bool,
 }
