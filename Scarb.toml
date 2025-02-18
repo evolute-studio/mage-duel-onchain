@@ -9,6 +9,7 @@ sierra-replace-ids = true
 
 [scripts]
 migrate = "sozo build && sozo migrate"
+create_board = "sozo execute evolute_duel-game create_board --wait"
 
 
 [dependencies]
