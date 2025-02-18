@@ -1,17 +1,13 @@
 use starknet::ContractAddress;
-use evolute_duel::models::{TEdge, Tile, GameState, GameStatus};
+use evolute_duel::models::{Tile, GameState, GameStatus};
 
 #[derive(Drop, Serde, Debug)]
 #[dojo::event]
 pub struct BoardCreated {
     #[key]
     pub board_id: felt252,
-    pub initial_state: Array<TEdge>,
-    pub random_deck: Array<Tile>,
-    pub state: Array<Option<Tile>>,
     pub player1: ContractAddress,
     pub player2: ContractAddress,
-    pub last_move_id: Option<felt252>,
     pub game_state: GameState,
 }
 

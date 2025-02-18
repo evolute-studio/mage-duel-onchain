@@ -1,6 +1,4 @@
 use starknet::ContractAddress;
-use evolute_duel::models::{Board, Rules, Tile};
-
 
 // define the interface
 #[starknet::interface]
@@ -32,20 +30,15 @@ pub trait IGame<T> {
 // dojo decorator
 #[dojo::contract]
 pub mod game {
-    use dojo::world::IWorldDispatcherTrait;
-    use starknet::storage_access::Store;
     use dojo::event::EventStorage;
     use super::{IGame};
     use starknet::{ContractAddress, get_caller_address};
-    use evolute_duel::models::{Board, TEdge, GameState, Tile, Rules, Move, Game, GameStatus};
+    use evolute_duel::models::{Board, Tile, Rules, Move, Game, GameStatus};
 
     use dojo::model::{ModelStorage};
-    use origami_random::deck::{DeckTrait};
-    use origami_random::dice::{Dice, DiceTrait};
-    use core::dict::Felt252Dict;
+    use origami_random::dice::{DiceTrait};
 
-    use evolute_duel::events::{
-        BoardCreated, RulesCreated, InvalidMove, GameCreated, GameCreateFailed, GameFinished,
+    use evolute_duel::events::{ GameCreated, GameCreateFailed,
         GameJoinFailed, GameStarted, GameCanceled,
     };
 
@@ -159,9 +152,6 @@ pub mod game {
         // col: u8,
         // row: u8,
         ) {
-            let mut world = self.world_default();
-            let mut board: Board = world.read_model(board_id);
-
             let mut world = self.world_default();
             let mut board: Board = world.read_model(board_id);
 

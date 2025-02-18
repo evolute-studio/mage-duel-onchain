@@ -1,7 +1,5 @@
 use starknet::{ContractAddress};
 
-use core::dict::Felt252Dict;
-
 #[derive(Serde, Drop, Introspect, PartialEq, Debug, Destruct, Clone)]
 pub enum TEdge {
     C,

@@ -1,17 +1,14 @@
-use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use starknet::storage_access::Store;
 use dojo::event::EventStorage;
-use starknet::{ContractAddress, get_caller_address};
-use evolute_duel::models::{Board, TEdge, GameState, Tile, Rules, Move, Game, GameStatus};
+use dojo::world::{WorldStorage};
+use starknet::{ContractAddress};
+use evolute_duel::models::{Board, TEdge, GameState, Tile, Rules};
 
 use dojo::model::{ModelStorage};
 use origami_random::deck::{DeckTrait};
-use origami_random::dice::{Dice, DiceTrait};
 use core::dict::Felt252Dict;
 
 use evolute_duel::events::{
-    BoardCreated, RulesCreated, InvalidMove, GameCreated, GameCreateFailed, GameFinished,
-    GameJoinFailed, GameStarted, GameCanceled,
+    BoardCreated
 };
 
 pub fn create_board(
@@ -50,19 +47,14 @@ pub fn create_board(
     world.write_model(@board);
 
     // // Emit an event to the world to notify about the board creation.
-    // world
-    //     .emit_event(
-    //         @BoardCreated {
-    //             board_id,
-    //             initial_state,
-    //             random_deck,
-    //             state: tiles,
-    //             player1,
-    //             player2,
-    //             last_move_id,
-    //             game_state,
-    //         },
-    //     );
+    world.emit_event(
+            @BoardCreated {
+                board_id,
+                player1,
+                player2,
+                game_state,
+            },
+        );
 
     return board;
 }
