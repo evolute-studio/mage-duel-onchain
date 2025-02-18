@@ -9,25 +9,31 @@ use core::dict::Felt252Dict;
 
 use evolute_duel::events::{BoardCreated};
 
+use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+
+use core::starknet::get_block_timestamp;
+
+
 pub fn create_board(
-    mut world: WorldStorage, player1: ContractAddress, player2: ContractAddress,
+    mut world: WorldStorage, player1: ContractAddress, player2: ContractAddress, mut board_id_generator: core::starknet::storage::StorageBase::<core::starknet::storage::Mutable::<core::felt252>>
 ) -> Board {
     // let board_id = world.uuid();
     // TODO: Generate unique id for board. Use simple counter increment for board_count.
-    let board_id = 0;
+    let board_id = board_id_generator.read();
+    board_id_generator.write(board_id + 1);
 
     let rules: Rules = world.read_model(0);
 
     let (cities_on_edges, roads_on_edges) = rules.edges;
-    let initial_edge_state = generate_initial_board_state(cities_on_edges, roads_on_edges);
+    let initial_edge_state = generate_initial_board_state(cities_on_edges, roads_on_edges, board_id);
 
     let mut deck_rules_flat = flatten_deck_rules(@rules.deck);
 
     // Create an empty board.
-    let mut tiles: Array<u8> = ArrayTrait::new();
-    tiles.append_span([(Tile::Empty).into(); 64].span());
+    let mut tiles: Array<(u8, u8)> = ArrayTrait::new();
+    tiles.append_span([((Tile::Empty).into(), 0); 64].span());
 
-    let last_move_id = Option::Some(0);
+    let last_move_id = Option::None;
     let game_state = GameState::InProgress;
 
     let board = Board {
@@ -54,7 +60,7 @@ pub fn create_board(
                 state: tiles,
                 player1,
                 player2,
-                last_move_id: 0,
+                last_move_id,
                 game_state,
             },
         );
@@ -63,11 +69,11 @@ pub fn create_board(
 }
 
 
-fn generate_initial_board_state(cities_on_edges: u8, roads_on_edges: u8) -> Array<u8> {
+fn generate_initial_board_state(cities_on_edges: u8, roads_on_edges: u8, board_id: felt252) -> Array<u8> {
     let mut initial_state: Array<u8> = ArrayTrait::new();
 
     for side in 0..4_u8 {
-        let mut deck = DeckTrait::new(('SEED' + side.into()).into(), 8);
+    let mut deck = DeckTrait::new(('SEED' + side.into() + get_block_timestamp().into() + board_id).into(), 8);
         let mut edge: Felt252Dict<u8> = Default::default();
         for i in 0..8_u8 {
             edge.insert(i.into(), TEdge::M.into());

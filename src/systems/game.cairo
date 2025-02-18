@@ -44,6 +44,16 @@ pub mod game {
 
     use evolute_duel::systems::helpers::board::{create_board};
 
+    
+    use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use core::starknet::get_block_timestamp;
+
+    #[storage]
+    struct Storage {
+        board_id_generator: felt252,
+        move_id_generator: felt252,
+    }
+
 
     fn dojo_init(self: @ContractState) {
         let mut world = self.world(@"evolute_duel");
@@ -136,7 +146,7 @@ pub mod game {
             game.status = GameStatus::InProgress;
 
             //todo: let board_id = initialize_board(host_player, guest_player);
-            let board = create_board(world, host_player, guest_player);
+            let board = create_board(world, host_player, guest_player, self.board_id_generator);
             let board_id = board.id;
             game.board_id = Option::Some(board_id);
 
@@ -155,8 +165,11 @@ pub mod game {
             let mut world = self.world_default();
             let mut board: Board = world.read_model(board_id);
 
+            let move_id = self.move_id_generator.read();
+            self.move_id_generator.write(move_id + 1);
+
             let avaliable_tiles: Array<u8> = board.available_tiles_in_deck.clone();
-            let mut dice = DiceTrait::new(avaliable_tiles.len().try_into().unwrap(), 'SEED');
+            let mut dice = DiceTrait::new(avaliable_tiles.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into());
             let mut next_tile = dice.roll();
 
             let tile: u8 = *avaliable_tiles.at(next_tile.into());
