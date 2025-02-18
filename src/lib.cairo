@@ -1,5 +1,8 @@
 pub mod systems {
     pub mod game;
+    pub mod helpers {
+        pub mod board;
+    }
 }
 
 pub mod models;

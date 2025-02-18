@@ -7,14 +7,16 @@ mod tests {
         spawn_test_world, NamespaceDef, TestResource, ContractDefTrait, ContractDef,
     };
 
-    use evolute_duel::models::{Board, m_Board, Move, m_Move, Rules, m_Rules, Game, m_Game, GameStatus};
+    use evolute_duel::models::{
+        Board, m_Board, Move, m_Move, Rules, m_Rules, Game, m_Game, GameStatus,
+    };
     use evolute_duel::events::{
         BoardCreated, e_BoardCreated, RulesCreated, e_RulesCreated, Moved, e_Moved, InvalidMove,
         e_InvalidMove, GameFinished, e_GameFinished, GameStarted, e_GameStarted, GameCreated,
         e_GameCreated, GameCreateFailed, e_GameCreateFailed, GameCanceled, e_GameCanceled,
     };
     use evolute_duel::systems::game::{game, IGameDispatcher, IGameDispatcherTrait};
-   
+
     use starknet::testing;
 
     fn namespace_def() -> NamespaceDef {
@@ -92,7 +94,7 @@ mod tests {
 
         // Create a new game
         game_system.create_game();
-        
+
         let mut new_game: Game = world.read_model(caller);
         assert(new_game.status == GameStatus::Created, 'game status is wrong');
 
@@ -100,7 +102,6 @@ mod tests {
         new_game.status = GameStatus::InProgress;
         world.write_model_test(@new_game);
         game_system.create_game();
-        
 
         let new_game: Game = world.read_model(caller);
         assert(new_game.status == GameStatus::InProgress, 'game status is wrong');
@@ -122,13 +123,13 @@ mod tests {
 
         // Create a new game
         game_system.create_game();
-        
+
         let mut new_game: Game = world.read_model(caller);
         assert(new_game.status == GameStatus::Created, 'game status is wrong');
 
         // Cancel the game
         game_system.cancel_game();
-        
+
         let new_game: Game = world.read_model(caller);
         assert(new_game.status == GameStatus::Canceled, 'game status is wrong');
     }
@@ -152,7 +153,7 @@ mod tests {
 
         // Create a new game
         game_system.create_game();
-        
+
         let mut new_game: Game = world.read_model(host_player);
         assert(new_game.status == GameStatus::Created, 'game status is wrong');
 
@@ -166,7 +167,7 @@ mod tests {
 
         // Join the game
         game_system.join_game(host_player);
-        
+
         let new_game: Game = world.read_model(host_player);
         assert(new_game.status == GameStatus::InProgress, 'game status is wrong');
     }

@@ -193,8 +193,6 @@ pub struct Rules {
 //     }
 // }
 
-
-
 #[derive(Drop, Serde)]
 #[dojo::model]
 pub struct Game {
