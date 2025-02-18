@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x2891754cf8c697ad27e241d9bd02ddbf90159d88d71385a79abc9a29d40e2b5",
-      "class_hash": "0x4f3e73633df51df7153db46b87585dd3b0045baf5de83eee5ee9eed820c59b6",
+      "address": "0x2947f622c32c906026137bfeaf68e76d87f1a2fd644c038d3036c441563ffbe",
+      "class_hash": "0x7a9b78db81e871430e83ff4f08072bdecf44ba0a4eadaa573b8e7fe3fa2bdab",
       "abi": [
         {
           "type": "impl",
@@ -1376,6 +1376,28 @@
           "type": "impl",
           "name": "GameImpl",
           "interface_name": "evolute_duel::systems::game::IGame"
+        },
+        {
+          "type": "enum",
+          "name": "evolute_duel::models::TEdge",
+          "variants": [
+            {
+              "name": "C",
+              "type": "()"
+            },
+            {
+              "name": "R",
+              "type": "()"
+            },
+            {
+              "name": "M",
+              "type": "()"
+            },
+            {
+              "name": "F",
+              "type": "()"
+            }
+          ]
         },
         {
           "type": "enum",
@@ -1495,6 +1517,72 @@
         },
         {
           "type": "enum",
+          "name": "core::option::Option::<core::felt252>",
+          "variants": [
+            {
+              "name": "Some",
+              "type": "core::felt252"
+            },
+            {
+              "name": "None",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "evolute_duel::models::GameState",
+          "variants": [
+            {
+              "name": "InProgress",
+              "type": "()"
+            },
+            {
+              "name": "Finished",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "evolute_duel::models::Board",
+          "members": [
+            {
+              "name": "id",
+              "type": "core::felt252"
+            },
+            {
+              "name": "initial_state",
+              "type": "core::array::Array::<evolute_duel::models::TEdge>"
+            },
+            {
+              "name": "random_deck",
+              "type": "core::array::Array::<evolute_duel::models::Tile>"
+            },
+            {
+              "name": "state",
+              "type": "core::array::Array::<core::option::Option::<evolute_duel::models::Tile>>"
+            },
+            {
+              "name": "player1",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "player2",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "last_move_id",
+              "type": "core::option::Option::<core::felt252>"
+            },
+            {
+              "name": "game_state",
+              "type": "evolute_duel::models::GameState"
+            }
+          ]
+        },
+        {
+          "type": "enum",
           "name": "core::bool",
           "variants": [
             {
@@ -1511,6 +1599,26 @@
           "type": "interface",
           "name": "evolute_duel::systems::game::IGame",
           "items": [
+            {
+              "type": "function",
+              "name": "create_board",
+              "inputs": [
+                {
+                  "name": "player1",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "player2",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "evolute_duel::models::Board"
+                }
+              ],
+              "state_mutability": "external"
+            },
             {
               "type": "function",
               "name": "move",
@@ -1661,6 +1769,7 @@
       "tag": "evolute_duel-game",
       "selector": "0x2b4049d066282ff61972bb48825bbc8e659093daca9c85ab956befe2feaa91b",
       "systems": [
+        "create_board",
         "move",
         "upgrade"
       ]

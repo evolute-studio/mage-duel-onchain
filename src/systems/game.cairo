@@ -5,7 +5,7 @@ use evolute_duel::models::{Board, Rules, Tile};
 // define the interface
 #[starknet::interface]
 pub trait IGame<T> {
-    // fn initiate_board(ref self: T, player1: ContractAddress, player2: ContractAddress) -> Board;
+    fn create_board(ref self: T, player1: ContractAddress, player2: ContractAddress) -> Board;
     fn move(
         ref self: T,
         board_id: felt252,
@@ -21,6 +21,7 @@ pub trait IGame<T> {
 // dojo decorator
 #[dojo::contract]
 pub mod game {
+    use starknet::storage_access::Store;
     use core::traits::IndexView;
     use dojo::event::EventStorage;
     use super::{IGame};
@@ -37,7 +38,7 @@ pub mod game {
     fn dojo_init(self: @ContractState) {
         let mut world = self.world(@"evolute_duel");
         let id = 0;
-        let deck = array![
+        let deck: Array<u8> = array![
             1, // CCCC
             1, // FFFF
             0, // RRRR - not in the deck
@@ -72,65 +73,64 @@ pub mod game {
 
     #[abi(embed_v0)]
     impl GameImpl of IGame<ContractState> {
-        // fn initiate_board(
-        //     ref self: ContractState, player1: ContractAddress, player2: ContractAddress,
-        // ) -> Board {
-        //     // Get the default world.
-        //     let mut world = self.world_default();
+        fn create_board(
+            ref self: ContractState, player1: ContractAddress, player2: ContractAddress,
+        ) -> Board {
+            // Get the default world.
+            let mut world = self.world_default();
 
-        //     // let board_id = world.uuid();
-        //     // TODO: Generate unique id for board
-        //     let board_id = 0;
+            // let board_id = world.uuid();
+            // TODO: Generate unique id for board. Use simple counter increment for board_count.
+            let board_id = 0;
 
-        //     let rules: Rules = world.read_model(0);
+            let rules: Rules = world.read_model(0);
 
-        //     // Create an initial state for the board.
-        //     let (cities_on_edges, roads_on_edges) = rules.edges;
-        //     let initial_state = generate_initial_state(cities_on_edges, roads_on_edges);
+            // Create an initial state for the board.
+            let (cities_on_edges, roads_on_edges) = rules.edges;
+            let initial_edge_state = generate_initial_board_state(cities_on_edges, roads_on_edges);
 
-        //     // Create a random deck for the board.
-        //     let mut random_deck = generate_random_deck(@rules.deck);
+            // Create a random deck for the board.
+            let mut random_deck = generate_random_deck(@rules.deck);
 
-        //     // Create an empty board.
-        //     let mut tiles: Array<Option<Tile>> = ArrayTrait::new();
-        //     tiles.append_span([Option::None; 64].span());
+            // Create an empty board.
+            let mut tiles: Array<Option<Tile>> = ArrayTrait::new();
+            tiles.append_span([Option::None; 64].span());
 
-        //     let last_move_id = Option::None;
+            let last_move_id = Option::None;
+            let game_state = GameState::InProgress;
 
-        //     let game_state = GameState::InProgress;
+            // Create a new board.
+            let board = Board {
+                id: board_id,
+                initial_edge_state: initial_edge_state.clone(),
+                random_deck: random_deck.clone(),
+                state: tiles.clone(),
+                player1,
+                player2,
+                last_move_id,
+                game_state,
+            };
 
-        //     // Create a new board.
-        //     let board = Board {
-        //         id: board_id,
-        //         initial_state: initial_state.clone(),
-        //         random_deck: random_deck.clone(),
-        //         state: tiles.clone(),
-        //         player1,
-        //         player2,
-        //         last_move_id,
-        //         game_state,
-        //     };
+            // Write the board to the world.
+            world.write_model(@board);
 
-        //     // Write the board to the world.
-        //     world.write_model(@board);
+            // // Emit an event to the world to notify about the board creation.
+            // world
+            //     .emit_event(
+            //         @BoardCreated {
+            //             board_id,
+            //             initial_state,
+            //             random_deck,
+            //             state: tiles,
+            //             player1,
+            //             player2,
+            //             last_move_id,
+            //             game_state,
+            //         },
+            //     );
 
-        //     // // Emit an event to the world to notify about the board creation.
-        //     world
-        //         .emit_event(
-        //             @BoardCreated {
-        //                 board_id,
-        //                 initial_state,
-        //                 random_deck,
-        //                 state: tiles,
-        //                 player1,
-        //                 player2,
-        //                 last_move_id,
-        //                 game_state,
-        //             },
-        //         );
-
-        //     return board;
-        // }
+            return board;
+        }
 
         fn move(
             ref self: ContractState,
@@ -264,7 +264,7 @@ pub mod game {
         return true;
     }
 
-    fn generate_initial_state(cities_on_edges: u8, roads_on_edges: u8) -> Array<TEdge> {
+    fn generate_initial_board_state(cities_on_edges: u8, roads_on_edges: u8) -> Array<TEdge> {
         let mut initial_state: Array<TEdge> = ArrayTrait::new();
 
         for side in 0..4_u8 {
@@ -290,43 +290,11 @@ pub mod game {
     }
 
     fn generate_random_deck(deck_rules: @Array<u8>) -> Array<Tile> {
-        let TILES: Array<Tile> = array![
-            //TODO: you separated this mapping in 2 different functions.
-            // ----> deck: array![4, 4, 11, 9, 9, 4, 4, 9, 4, 6],
-            // Let's make rules a struct and have this mapping in one place.
-            // deck_rules: Map<Tile, u8>
-            // Thus we can flixible change the rules and the mapping will be updated automatically.
-            Tile::CCCC,
-            Tile::FFFF,
-            Tile::RRRR,
-            Tile::CCCF,
-            Tile::CCCR,
-            Tile::CFFF,
-            Tile::FFFR,
-            Tile::CRRR,
-            Tile::FRRR,
-            Tile::CCFF,
-            Tile::CFCF,
-            Tile::CCRR,
-            Tile::CRCR,
-            Tile::FFRR,
-            Tile::FRFR,
-            Tile::CCFR, //2
-            Tile::CCRF, // 1
-            Tile::CFCR,
-            Tile::CFFR,
-            Tile::CFRF, //3
-            Tile::CRFF, //5
-            Tile::CRRF, //4
-            Tile::CRFR,
-            Tile::CFRR,
-        ];
-
         let mut deck = DeckTrait::new('SEED'.into(), 64);
         let mut avaliable_tiles = ArrayTrait::new();
-        for i in 0..deck_rules.len() {
-            let tile_type = *TILES.at(i);
-            let tile_amount: u8 = *deck_rules.at(i);
+        for tile_index in 0..24_u8 {
+            let tile_type: Tile = tile_index.into();
+            let tile_amount: u8 = *deck_rules.at(tile_index.into());
             for _ in 0..tile_amount {
                 avaliable_tiles.append(tile_type);
             }
@@ -344,8 +312,6 @@ pub mod game {
 
     #[generate_trait]
     impl InternalImpl of InternalTrait {
-        /// Use the default namespace "evolute_duel". This function is handy since the ByteArray
-        /// can't be const.
         fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
             self.world(@"evolute_duel")
         }
