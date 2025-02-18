@@ -23,7 +23,7 @@ version = "2.9.2"
 source = "git+https://github.com/dojoengine/dojo?tag=v1.2.0#596f96d2af81ef3327bcdb7a78c323b88fe12b82"
 
 [[package]]
-name = "dojo_starter"
+name = "evolute_duel"
 version = "1.2.0"
 dependencies = [
  "dojo",

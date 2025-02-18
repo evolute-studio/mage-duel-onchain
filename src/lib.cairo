@@ -1,5 +1,5 @@
 pub mod systems {
-    pub mod actions;
+    pub mod game;
 }
 
 pub mod models;

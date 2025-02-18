@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use dojo_starter::models::{TEdge, Tile, GameState, TileStruct};
+use evolute_duel::models::{TEdge, Tile, GameState};
 
 #[derive(Drop, Serde, Debug)]
 #[dojo::event]
@@ -8,19 +8,19 @@ pub struct BoardCreated {
     pub board_id: felt252,
     pub initial_state: Array<TEdge>,
     pub random_deck: Array<Tile>,
-    pub tiles: Array<Option<TileStruct>>,
+    pub state: Array<Option<Tile>>,
     pub player1: ContractAddress,
     pub player2: ContractAddress,
     pub last_move_id: Option<felt252>,
-    pub state: GameState,
+    pub game_state: GameState,
 }
 
-#[derive(Drop, Serde, Debug)]
+#[derive(Drop, Serde)]
 #[dojo::event]
 pub struct RulesCreated {
     #[key]
     pub rules_id: felt252,
-    pub deck: Array<u8>,
+    // pub deck: Array<(Tile, u8)>,
     pub edges: (u8, u8),
     pub joker_number: u8,
 }

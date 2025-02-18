@@ -1,8 +1,8 @@
 {
   "world": {
     "class_hash": "0x7c9469d45a9cdbab775035afb48e1fa73fb35ab059fcb9dfb0a301aa973e783",
-    "address": "0x65ee8188c171a836294feaa931f1c78b5f18957791c039e84ee40b4b3e85d3e",
-    "seed": "dojo_starter",
+    "address": "0x6a4d87ac4a224fbc633b46ec896545f8783cfc6d87ce8a4ef8c5630a3c17711",
+    "seed": "evolute_duel",
     "name": "Dojo starter",
     "entrypoints": [
       "uuid",
@@ -1312,12 +1312,12 @@
   },
   "contracts": [
     {
-      "address": "0x76eef750810e304c9779995766b19d1165e0a84db881ef72bac7983cbd18d2e",
-      "class_hash": "0x1bf75a9831563335e0d112435401c4d23dc199bb7f175b721d1a458e92859df",
+      "address": "0x2891754cf8c697ad27e241d9bd02ddbf90159d88d71385a79abc9a29d40e2b5",
+      "class_hash": "0x4f3e73633df51df7153db46b87585dd3b0045baf5de83eee5ee9eed820c59b6",
       "abi": [
         {
           "type": "impl",
-          "name": "actions__ContractImpl",
+          "name": "game__ContractImpl",
           "interface_name": "dojo::contract::interface::IContract"
         },
         {
@@ -1327,7 +1327,7 @@
         },
         {
           "type": "impl",
-          "name": "actions__DeployedContractImpl",
+          "name": "game__DeployedContractImpl",
           "interface_name": "dojo::meta::interface::IDeployedResource"
         },
         {
@@ -1366,34 +1366,79 @@
           ]
         },
         {
+          "type": "function",
+          "name": "dojo_init",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "view"
+        },
+        {
           "type": "impl",
-          "name": "ActionsImpl",
-          "interface_name": "dojo_starter::systems::actions::IActions"
+          "name": "GameImpl",
+          "interface_name": "evolute_duel::systems::game::IGame"
         },
         {
           "type": "enum",
-          "name": "dojo_starter::models::TEdge",
+          "name": "evolute_duel::models::Tile",
           "variants": [
             {
-              "name": "C",
+              "name": "CCCC",
               "type": "()"
             },
             {
-              "name": "R",
+              "name": "FFFF",
               "type": "()"
             },
             {
-              "name": "M",
+              "name": "RRRR",
               "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo_starter::models::Tile",
-          "variants": [
+            },
             {
-              "name": "CCRF",
+              "name": "CCCF",
+              "type": "()"
+            },
+            {
+              "name": "CCCR",
+              "type": "()"
+            },
+            {
+              "name": "CFFF",
+              "type": "()"
+            },
+            {
+              "name": "FFFR",
+              "type": "()"
+            },
+            {
+              "name": "CRRR",
+              "type": "()"
+            },
+            {
+              "name": "FRRR",
+              "type": "()"
+            },
+            {
+              "name": "CCFF",
+              "type": "()"
+            },
+            {
+              "name": "CFCF",
+              "type": "()"
+            },
+            {
+              "name": "CCRR",
+              "type": "()"
+            },
+            {
+              "name": "CRCR",
+              "type": "()"
+            },
+            {
+              "name": "FFRR",
+              "type": "()"
+            },
+            {
+              "name": "FRFR",
               "type": "()"
             },
             {
@@ -1401,11 +1446,19 @@
               "type": "()"
             },
             {
-              "name": "CFRF",
+              "name": "CCRF",
               "type": "()"
             },
             {
-              "name": "CRRF",
+              "name": "CFCR",
+              "type": "()"
+            },
+            {
+              "name": "CFFR",
+              "type": "()"
+            },
+            {
+              "name": "CFRF",
               "type": "()"
             },
             {
@@ -1413,34 +1466,26 @@
               "type": "()"
             },
             {
-              "name": "FFCR",
+              "name": "CRRF",
               "type": "()"
             },
             {
-              "name": "FFRF",
+              "name": "CRFR",
               "type": "()"
             },
             {
-              "name": "FRRF",
-              "type": "()"
-            },
-            {
-              "name": "FFCC",
-              "type": "()"
-            },
-            {
-              "name": "RRFF",
+              "name": "CFRR",
               "type": "()"
             }
           ]
         },
         {
           "type": "enum",
-          "name": "core::option::Option::<dojo_starter::models::Tile>",
+          "name": "core::option::Option::<evolute_duel::models::Tile>",
           "variants": [
             {
               "name": "Some",
-              "type": "dojo_starter::models::Tile"
+              "type": "evolute_duel::models::Tile"
             },
             {
               "name": "None",
@@ -1450,121 +1495,59 @@
         },
         {
           "type": "enum",
-          "name": "dojo_starter::models::GameState",
+          "name": "core::bool",
           "variants": [
             {
-              "name": "InProgress",
+              "name": "False",
               "type": "()"
             },
             {
-              "name": "Finished",
+              "name": "True",
               "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo_starter::models::Board",
-          "members": [
-            {
-              "name": "id",
-              "type": "core::felt252"
-            },
-            {
-              "name": "initial_state",
-              "type": "core::array::Array::<dojo_starter::models::TEdge>"
-            },
-            {
-              "name": "random_deck",
-              "type": "core::array::Array::<dojo_starter::models::Tile>"
-            },
-            {
-              "name": "tiles",
-              "type": "core::array::Array::<core::option::Option::<dojo_starter::models::Tile>>"
-            },
-            {
-              "name": "player1",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "player2",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "last_move_id",
-              "type": "core::felt252"
-            },
-            {
-              "name": "state",
-              "type": "dojo_starter::models::GameState"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo_starter::models::Rules",
-          "members": [
-            {
-              "name": "id",
-              "type": "core::felt252"
-            },
-            {
-              "name": "deck",
-              "type": "core::array::Array::<core::integer::u8>"
-            },
-            {
-              "name": "edges",
-              "type": "(core::integer::u8, core::integer::u8)"
-            },
-            {
-              "name": "joker_number",
-              "type": "core::integer::u8"
             }
           ]
         },
         {
           "type": "interface",
-          "name": "dojo_starter::systems::actions::IActions",
+          "name": "evolute_duel::systems::game::IGame",
           "items": [
             {
               "type": "function",
-              "name": "initiate_board",
+              "name": "move",
               "inputs": [
                 {
-                  "name": "player1",
+                  "name": "board_id",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "player",
                   "type": "core::starknet::contract_address::ContractAddress"
                 },
                 {
-                  "name": "player2",
-                  "type": "core::starknet::contract_address::ContractAddress"
-                }
-              ],
-              "outputs": [
+                  "name": "tile",
+                  "type": "core::option::Option::<evolute_duel::models::Tile>"
+                },
                 {
-                  "type": "dojo_starter::models::Board"
-                }
-              ],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "initiate_rules",
-              "inputs": [],
-              "outputs": [
+                  "name": "rotation",
+                  "type": "core::integer::u8"
+                },
                 {
-                  "type": "dojo_starter::models::Rules"
+                  "name": "is_joker",
+                  "type": "core::bool"
+                },
+                {
+                  "name": "col",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "row",
+                  "type": "core::integer::u8"
                 }
               ],
+              "outputs": [],
               "state_mutability": "external"
             }
           ]
-        },
-        {
-          "type": "function",
-          "name": "dojo_init",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "view"
         },
         {
           "type": "impl",
@@ -1658,7 +1641,7 @@
         },
         {
           "type": "event",
-          "name": "dojo_starter::systems::actions::actions::Event",
+          "name": "evolute_duel::systems::game::game::Event",
           "kind": "enum",
           "variants": [
             {
@@ -1675,11 +1658,10 @@
         }
       ],
       "init_calldata": [],
-      "tag": "dojo_starter-actions",
-      "selector": "0x7a1c71029f2d0b38e3ac89b09931d08b6e48417e079c289ff19a8698d0cba33",
+      "tag": "evolute_duel-game",
+      "selector": "0x2b4049d066282ff61972bb48825bbc8e659093daca9c85ab956befe2feaa91b",
       "systems": [
-        "initiate_board",
-        "initiate_rules",
+        "move",
         "upgrade"
       ]
     }
@@ -1688,23 +1670,42 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0x2b8e4829ac2fb9f4a0014c57c7fb716a6ffee2f2a1a78ae43af7d8684978c60",
-      "tag": "dojo_starter-Board",
-      "selector": "0x6549fed107156e7f5516f2e35a1ebed510c150400ee2005d988bed35624f52d"
+      "class_hash": "0x409e302eec5b1cab869639bab8603cc1deba609df4761f147d368bb9bed3432",
+      "tag": "evolute_duel-Board",
+      "selector": "0x836ef99f75ec03877951d491db5b9730a3f3552e3fc7d1c38a9f1abc320947"
     },
     {
       "members": [],
-      "class_hash": "0x5673fab03cdd58729b04567c0161db9be725b2f58cd0889c0562b885dc565b1",
-      "tag": "dojo_starter-Move",
-      "selector": "0x35ecab0c8ba7d65c5afdd693f5bae8bfe5088f915d00b56a846f7a66c94bba0"
-    },
-    {
-      "members": [],
-      "class_hash": "0x5972ff0ed48ae987f804b260f26b239e79ed59dd9b8f6d7bb74c4ced5382b0a",
-      "tag": "dojo_starter-Rules",
-      "selector": "0x7910570b65c8f776c6dbaf1004846559a032682c9bb856bdd243784959644c9"
+      "class_hash": "0x44acead810d2857d6b9b12916596cf9d621d661104291f93c0f687db4a73479",
+      "tag": "evolute_duel-Rules",
+      "selector": "0x30d5405d0bc6c63a7d0adbc0ac48016a5d787662670e4d25bf12985431d032c"
     }
   ],
-  "events": [],
+  "events": [
+    {
+      "members": [],
+      "class_hash": "0x1e24d0408959fac89e5d415a0043833d14c594ce7891707dfa66bbb948547bb",
+      "tag": "evolute_duel-BoardCreated",
+      "selector": "0x1a41b9cde62dde29c4f35c38893fff421cffc41f9ff0b4c8b817f85d788d75c"
+    },
+    {
+      "members": [],
+      "class_hash": "0x52a7646ce2146b0499557376cab4ba87702a426895471b589816ab74f41b1de",
+      "tag": "evolute_duel-InvalidMove",
+      "selector": "0x2961857ea4682513ae1586fb617e4bf12bdc163f7b35df10b043a4455ec18e1"
+    },
+    {
+      "members": [],
+      "class_hash": "0x72a8c1591c765db223b3f71907bcc2f4fade7469f34a87487f3e19bd2004ca0",
+      "tag": "evolute_duel-Move",
+      "selector": "0x6d7481ce108a8fbf6a107f7561809083890ccdb89931116448283bf99a278d5"
+    },
+    {
+      "members": [],
+      "class_hash": "0x7c47ff32fc6852128d1311ac667be855cfae92490cb8c89a764048398602c82",
+      "tag": "evolute_duel-RulesCreated",
+      "selector": "0x516f39aea473b1242995ab31d5044d11220954542761bfd98d99d8ea44b9647"
+    }
+  ],
   "external_contracts": []
 }
