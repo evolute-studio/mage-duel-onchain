@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x2891754cf8c697ad27e241d9bd02ddbf90159d88d71385a79abc9a29d40e2b5",
-      "class_hash": "0x4f3e73633df51df7153db46b87585dd3b0045baf5de83eee5ee9eed820c59b6",
+      "address": "0x22e6e6abdb4d70698fd10b872e46fcf75d573e3d07edc6aef1360f3252aedb1",
+      "class_hash": "0x400741b925074319a09cb50f9c57836f6d14d9009010fe756d9449aa8764d8d",
       "abi": [
         {
           "type": "impl",
@@ -1378,172 +1378,13 @@
           "interface_name": "evolute_duel::systems::game::IGame"
         },
         {
-          "type": "enum",
-          "name": "evolute_duel::models::Tile",
-          "variants": [
-            {
-              "name": "CCCC",
-              "type": "()"
-            },
-            {
-              "name": "FFFF",
-              "type": "()"
-            },
-            {
-              "name": "RRRR",
-              "type": "()"
-            },
-            {
-              "name": "CCCF",
-              "type": "()"
-            },
-            {
-              "name": "CCCR",
-              "type": "()"
-            },
-            {
-              "name": "CFFF",
-              "type": "()"
-            },
-            {
-              "name": "FFFR",
-              "type": "()"
-            },
-            {
-              "name": "CRRR",
-              "type": "()"
-            },
-            {
-              "name": "FRRR",
-              "type": "()"
-            },
-            {
-              "name": "CCFF",
-              "type": "()"
-            },
-            {
-              "name": "CFCF",
-              "type": "()"
-            },
-            {
-              "name": "CCRR",
-              "type": "()"
-            },
-            {
-              "name": "CRCR",
-              "type": "()"
-            },
-            {
-              "name": "FFRR",
-              "type": "()"
-            },
-            {
-              "name": "FRFR",
-              "type": "()"
-            },
-            {
-              "name": "CCFR",
-              "type": "()"
-            },
-            {
-              "name": "CCRF",
-              "type": "()"
-            },
-            {
-              "name": "CFCR",
-              "type": "()"
-            },
-            {
-              "name": "CFFR",
-              "type": "()"
-            },
-            {
-              "name": "CFRF",
-              "type": "()"
-            },
-            {
-              "name": "CRFF",
-              "type": "()"
-            },
-            {
-              "name": "CRRF",
-              "type": "()"
-            },
-            {
-              "name": "CRFR",
-              "type": "()"
-            },
-            {
-              "name": "CFRR",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "core::option::Option::<evolute_duel::models::Tile>",
-          "variants": [
-            {
-              "name": "Some",
-              "type": "evolute_duel::models::Tile"
-            },
-            {
-              "name": "None",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "core::bool",
-          "variants": [
-            {
-              "name": "False",
-              "type": "()"
-            },
-            {
-              "name": "True",
-              "type": "()"
-            }
-          ]
-        },
-        {
           "type": "interface",
           "name": "evolute_duel::systems::game::IGame",
           "items": [
             {
               "type": "function",
-              "name": "move",
-              "inputs": [
-                {
-                  "name": "board_id",
-                  "type": "core::felt252"
-                },
-                {
-                  "name": "player",
-                  "type": "core::starknet::contract_address::ContractAddress"
-                },
-                {
-                  "name": "tile",
-                  "type": "core::option::Option::<evolute_duel::models::Tile>"
-                },
-                {
-                  "name": "rotation",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "is_joker",
-                  "type": "core::bool"
-                },
-                {
-                  "name": "col",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "row",
-                  "type": "core::integer::u8"
-                }
-              ],
+              "name": "create_game",
+              "inputs": [],
               "outputs": [],
               "state_mutability": "external"
             }
@@ -1661,7 +1502,7 @@
       "tag": "evolute_duel-game",
       "selector": "0x2b4049d066282ff61972bb48825bbc8e659093daca9c85ab956befe2feaa91b",
       "systems": [
-        "move",
+        "create_game",
         "upgrade"
       ]
     }
@@ -1673,6 +1514,18 @@
       "class_hash": "0x409e302eec5b1cab869639bab8603cc1deba609df4761f147d368bb9bed3432",
       "tag": "evolute_duel-Board",
       "selector": "0x836ef99f75ec03877951d491db5b9730a3f3552e3fc7d1c38a9f1abc320947"
+    },
+    {
+      "members": [],
+      "class_hash": "0xf154dc136a3e709f1cae35c874a1a0d4111e3cd088b7290dcda3859f7edadb",
+      "tag": "evolute_duel-Game",
+      "selector": "0x50eb71734a5acf3d804e250ff9e59bb3566e8bf9d30d0587d38cc2cc032e232"
+    },
+    {
+      "members": [],
+      "class_hash": "0x572b6a4efe0d4cf1096d6f6c153952e09550881b504d81bd66b4ea1aa9cd093",
+      "tag": "evolute_duel-Move",
+      "selector": "0x6d7481ce108a8fbf6a107f7561809083890ccdb89931116448283bf99a278d5"
     },
     {
       "members": [],
@@ -1690,15 +1543,39 @@
     },
     {
       "members": [],
-      "class_hash": "0x52a7646ce2146b0499557376cab4ba87702a426895471b589816ab74f41b1de",
-      "tag": "evolute_duel-InvalidMove",
-      "selector": "0x2961857ea4682513ae1586fb617e4bf12bdc163f7b35df10b043a4455ec18e1"
+      "class_hash": "0x220eccba573dcd2be4fd64e54a313d0d7036ccc8af62c18dbbe7dc17a2c8c3c",
+      "tag": "evolute_duel-GameCanceled",
+      "selector": "0x32cbf0a2e3702b3a487fe9eb046045c2dfbedd864465a2c8e0f61d567ff839c"
     },
     {
       "members": [],
-      "class_hash": "0x72a8c1591c765db223b3f71907bcc2f4fade7469f34a87487f3e19bd2004ca0",
-      "tag": "evolute_duel-Move",
-      "selector": "0x6d7481ce108a8fbf6a107f7561809083890ccdb89931116448283bf99a278d5"
+      "class_hash": "0x6b31e06263174d65438c27ce7cae80edea61b68d5dad89d61b1ec8cfa70e09f",
+      "tag": "evolute_duel-GameCreateFailed",
+      "selector": "0x1bd4a12eb88a971444ea1e25c0d0e3d6737f6afc4cd5cc9102747ac36a1b980"
+    },
+    {
+      "members": [],
+      "class_hash": "0x745eaaa52450de2cb4aa6af45532d3edd6bc5aa132d8c8de628114ce18eef2d",
+      "tag": "evolute_duel-GameCreated",
+      "selector": "0x668233b95923832d04af3e8e7df9e8688cac7c430b1a18e4dbc66c88d1bf0a6"
+    },
+    {
+      "members": [],
+      "class_hash": "0x2964f7efd0e460d440cb2b313821de03a57b70b8a909604b802eb7d27d7ff98",
+      "tag": "evolute_duel-GameFinished",
+      "selector": "0x33462448061afcb9e5cff6a2bcee05ed5d8aa1e366c8dbd0240b59dd4fbad0"
+    },
+    {
+      "members": [],
+      "class_hash": "0x40be77ae52f5739e7f23016487ea822b931d79ef5776e9dc2d6b9f84816d5bd",
+      "tag": "evolute_duel-GameStarted",
+      "selector": "0x4509051842dc1402882215bcdedc7f498e2eb1a160c1348570aa2d38fd360c0"
+    },
+    {
+      "members": [],
+      "class_hash": "0x52a7646ce2146b0499557376cab4ba87702a426895471b589816ab74f41b1de",
+      "tag": "evolute_duel-InvalidMove",
+      "selector": "0x2961857ea4682513ae1586fb617e4bf12bdc163f7b35df10b043a4455ec18e1"
     },
     {
       "members": [],

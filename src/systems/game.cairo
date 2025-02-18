@@ -6,16 +6,20 @@ use evolute_duel::models::{Board, Rules, Tile};
 #[starknet::interface]
 pub trait IGame<T> {
     // fn initiate_board(ref self: T, player1: ContractAddress, player2: ContractAddress) -> Board;
-    fn move(
-        ref self: T,
-        board_id: felt252,
-        player: ContractAddress,
-        tile: Option<Tile>,
-        rotation: u8,
-        is_joker: bool,
-        col: u8,
-        row: u8,
-    );
+    // fn move(
+    //     ref self: T,
+    //     board_id: felt252,
+    //     player: ContractAddress,
+    //     tile: Option<Tile>,
+    //     rotation: u8,
+    //     is_joker: bool,
+    //     col: u8,
+    //     row: u8,
+    // );
+
+    fn create_game(ref self: T);
+    fn cancel_game(ref self: T);
+    fn join_game(ref self: T, host_player: ContractAddress);
 }
 
 // dojo decorator
@@ -24,14 +28,17 @@ pub mod game {
     use core::traits::IndexView;
     use dojo::event::EventStorage;
     use super::{IGame};
-    use starknet::{ContractAddress};
-    use evolute_duel::models::{Board, TEdge, GameState, Tile, Rules, Move};
+    use starknet::{ContractAddress, get_caller_address};
+    use evolute_duel::models::{Board, TEdge, GameState, Tile, Rules, Move, Game, GameStatus};
 
     use dojo::model::{ModelStorage};
     use origami_random::deck::{DeckTrait};
     use core::dict::Felt252Dict;
 
-    use evolute_duel::events::{BoardCreated, RulesCreated, InvalidMove};
+    use evolute_duel::events::{
+        BoardCreated, RulesCreated, InvalidMove, GameCreated, GameCreateFailed, GameFinished, GameJoinFailed,
+        GameStarted, GameCanceled,
+    };
 
 
     fn dojo_init(self: @ContractState) {
@@ -72,97 +79,168 @@ pub mod game {
 
     #[abi(embed_v0)]
     impl GameImpl of IGame<ContractState> {
+        fn create_game(ref self: ContractState) {
+            let mut world = self.world_default();
+
+            let host_player = get_caller_address();
+
+            let mut game: Game = world.read_model(host_player);
+            let status = game.status;
+
+            if status == GameStatus::InProgress || status == GameStatus::Created {
+                world.emit_event(@GameCreateFailed { host_player, status });
+                return;
+            }
+
+            game.status = GameStatus::Created;
+
+            world.write_model(@game);
+
+            world.emit_event(@GameCreated { host_player, status });
+        }
+
+        fn cancel_game(ref self: ContractState) {
+            let mut world = self.world_default();
+
+            let host_player = get_caller_address();
+
+            let mut game: Game = world.read_model(host_player);
+            let status = game.status;
+
+            if status == GameStatus::Created {
+                game.status = GameStatus::Canceled;
+
+                world.write_model(@game);
+    
+                world.emit_event(@GameCanceled { host_player, status });
+            }
+        }
+
+        fn join_game(ref self: ContractState, host_player: ContractAddress) {
+            let mut world = self.world_default();
+
+            let guest_player = get_caller_address();
+
+
+            let mut game: Game = world.read_model(host_player);
+            let status = game.status;
+
+            println!("status: {:?}", status);
+            
+            println!("{}", host_player == guest_player); 
+
+            if status != GameStatus::Created || host_player == guest_player {
+                println!("executed");
+                world.emit_event(@GameJoinFailed { host_player, guest_player, status });
+                return;
+            }
+
+            game.status = GameStatus::InProgress;
+            println!("status: {:?}", status);
+
+            //todo: let board_id = initialize_board(host_player, guest_player);
+            let board_id = 0;
+            game.board_id = Option::Some(board_id);
+
+            println!("board_id: {:?}", game.board_id);
+            world.write_model(@game);
+            
+            println!("writed");
+            
+
+            world.emit_event(@GameStarted { host_player, guest_player, board_id });
+        }
         // fn initiate_board(
-        //     ref self: ContractState, player1: ContractAddress, player2: ContractAddress,
-        // ) -> Board {
-        //     // Get the default world.
-        //     let mut world = self.world_default();
+    //     ref self: ContractState, player1: ContractAddress, player2: ContractAddress,
+    // ) -> Board {
+    //     // Get the default world.
+    //     let mut world = self.world_default();
 
         //     // let board_id = world.uuid();
-        //     // TODO: Generate unique id for board
-        //     let board_id = 0;
+    //     // TODO: Generate unique id for board
+    //     let board_id = 0;
 
         //     let rules: Rules = world.read_model(0);
 
         //     // Create an initial state for the board.
-        //     let (cities_on_edges, roads_on_edges) = rules.edges;
-        //     let initial_state = generate_initial_state(cities_on_edges, roads_on_edges);
+    //     let (cities_on_edges, roads_on_edges) = rules.edges;
+    //     let initial_state = generate_initial_state(cities_on_edges, roads_on_edges);
 
         //     // Create a random deck for the board.
-        //     let mut random_deck = generate_random_deck(@rules.deck);
+    //     let mut random_deck = generate_random_deck(@rules.deck);
 
         //     // Create an empty board.
-        //     let mut tiles: Array<Option<Tile>> = ArrayTrait::new();
-        //     tiles.append_span([Option::None; 64].span());
+    //     let mut tiles: Array<Option<Tile>> = ArrayTrait::new();
+    //     tiles.append_span([Option::None; 64].span());
 
         //     let last_move_id = Option::None;
 
         //     let game_state = GameState::InProgress;
 
         //     // Create a new board.
-        //     let board = Board {
-        //         id: board_id,
-        //         initial_state: initial_state.clone(),
-        //         random_deck: random_deck.clone(),
-        //         state: tiles.clone(),
-        //         player1,
-        //         player2,
-        //         last_move_id,
-        //         game_state,
-        //     };
+    //     let board = Board {
+    //         id: board_id,
+    //         initial_state: initial_state.clone(),
+    //         random_deck: random_deck.clone(),
+    //         state: tiles.clone(),
+    //         player1,
+    //         player2,
+    //         last_move_id,
+    //         game_state,
+    //     };
 
         //     // Write the board to the world.
-        //     world.write_model(@board);
+    //     world.write_model(@board);
 
         //     // // Emit an event to the world to notify about the board creation.
-        //     world
-        //         .emit_event(
-        //             @BoardCreated {
-        //                 board_id,
-        //                 initial_state,
-        //                 random_deck,
-        //                 state: tiles,
-        //                 player1,
-        //                 player2,
-        //                 last_move_id,
-        //                 game_state,
-        //             },
-        //         );
+    //     world
+    //         .emit_event(
+    //             @BoardCreated {
+    //                 board_id,
+    //                 initial_state,
+    //                 random_deck,
+    //                 state: tiles,
+    //                 player1,
+    //                 player2,
+    //                 last_move_id,
+    //                 game_state,
+    //             },
+    //         );
 
         //     return board;
-        // }
+    // }
 
-        fn move(
-            ref self: ContractState,
-            board_id: felt252,
-            player: ContractAddress,
-            tile: Option<Tile>,
-            rotation: u8,
-            is_joker: bool,
-            col: u8,
-            row: u8,
-        ) { // let mut world = self.world_default();
-        // let mut board: Board = world.read_model(board_id);
+        // fn move(
+    //     ref self: ContractState,
+    //     board_id: felt252,
+    //     player: ContractAddress,
+    //     tile: Option<Tile>,
+    //     rotation: u8,
+    //     is_joker: bool,
+    //     col: u8,
+    //     row: u8,
+    // ) { // let mut world = self.world_default();
+    // // let mut board: Board = world.read_model(board_id);
 
-        // // Check if the game is in progress.
-        // if board.state == GameState::InProgress {
-        //     world.emit_event(@InvalidMove { move_id: 0, player });
-        //     return;
-        // }
+        // // // Check if the game is in progress.
+    // // if board.state == GameState::InProgress {
+    // //     world.emit_event(@InvalidMove { move_id: 0, player });
+    // //     return;
+    // // }
 
-        // // Check if the player is allowed to make a move.
-        // let last_move: Move = world.read_model(board.last_move_id);
-        // if !is_player_allowed_to_move(player, board.clone(), last_move) {
-        //     world.emit_event(@InvalidMove { move_id: 0, player });
-        //     return;
-        // }
+        // // // Check if the player is allowed to make a move.
+    // // let last_move: Move = world.read_model(board.last_move_id);
+    // // if !is_player_allowed_to_move(player, board.clone(), last_move) {
+    // //     world.emit_event(@InvalidMove { move_id: 0, player });
+    // //     return;
+    // // }
 
-        // // Check if the move is valid.
-        // if !is_move_valid(board.clone(), tile, rotation, col, row, is_joker) {
-        //     world.emit_event(@InvalidMove { move_id: 0, player });
-        //     return;
-        // }
-        }
+        // // // Check if the move is valid.
+    // // if !is_move_valid(board.clone(), tile, rotation, col, row, is_joker) {
+    // //     world.emit_event(@InvalidMove { move_id: 0, player });
+    // //     return;
+    // // }
+    // }
     }
 
     // fn is_move_valid(

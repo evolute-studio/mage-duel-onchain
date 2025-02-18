@@ -142,3 +142,20 @@ pub struct Rules {
     pub joker_number: u8,
 }
 
+
+#[derive(Drop, Serde)]
+#[dojo::model]
+pub struct Game {
+    #[key]
+    pub host_player: ContractAddress,
+    pub status: GameStatus,
+    pub board_id: Option<felt252>,
+}
+
+#[derive(Drop, Serde, Copy, IntrospectPacked, PartialEq, Debug)]
+pub enum GameStatus {
+    Finished,
+    Created,
+    Canceled,
+    InProgress,
+}
