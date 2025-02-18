@@ -25,7 +25,8 @@ pub trait IGame<T> {
 // dojo decorator
 #[dojo::contract]
 pub mod game {
-    use core::traits::IndexView;
+    use dojo::world::IWorldDispatcherTrait;
+use core::traits::IndexView;
     use dojo::event::EventStorage;
     use super::{IGame};
     use starknet::{ContractAddress, get_caller_address};
@@ -108,11 +109,12 @@ pub mod game {
             let status = game.status;
 
             if status == GameStatus::Created {
-                game.status = GameStatus::Canceled;
+                let new_status = GameStatus::Canceled;
+                game.status = new_status;
 
                 world.write_model(@game);
     
-                world.emit_event(@GameCanceled { host_player, status });
+                world.emit_event(@GameCanceled { host_player, status: new_status});
             }
         }
 
@@ -123,30 +125,19 @@ pub mod game {
 
 
             let mut game: Game = world.read_model(host_player);
-            let status = game.status;
-
-            println!("status: {:?}", status);
-            
-            println!("{}", host_player == guest_player); 
+            let status = game.status;            
 
             if status != GameStatus::Created || host_player == guest_player {
-                println!("executed");
                 world.emit_event(@GameJoinFailed { host_player, guest_player, status });
                 return;
             }
-
             game.status = GameStatus::InProgress;
-            println!("status: {:?}", status);
 
             //todo: let board_id = initialize_board(host_player, guest_player);
             let board_id = 0;
             game.board_id = Option::Some(board_id);
 
-            println!("board_id: {:?}", game.board_id);
-            world.write_model(@game);
-            
-            println!("writed");
-            
+            world.write_model(@game);            
 
             world.emit_event(@GameStarted { host_player, guest_player, board_id });
         }

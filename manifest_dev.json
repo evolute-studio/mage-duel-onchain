@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x22e6e6abdb4d70698fd10b872e46fcf75d573e3d07edc6aef1360f3252aedb1",
-      "class_hash": "0x400741b925074319a09cb50f9c57836f6d14d9009010fe756d9449aa8764d8d",
+      "address": "0x2d2aedd199d1d321fdd73746fa233c3d9e9d34efccc869601544776a1fc4eca",
+      "class_hash": "0x3d02bec9106794bdc9121a142505897e95a49b9ea1d7f564a8c165f48e6e7f0",
       "abi": [
         {
           "type": "impl",
@@ -1385,6 +1385,25 @@
               "type": "function",
               "name": "create_game",
               "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "cancel_game",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "join_game",
+              "inputs": [
+                {
+                  "name": "host_player",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
               "outputs": [],
               "state_mutability": "external"
             }
@@ -1503,6 +1522,8 @@
       "selector": "0x2b4049d066282ff61972bb48825bbc8e659093daca9c85ab956befe2feaa91b",
       "systems": [
         "create_game",
+        "cancel_game",
+        "join_game",
         "upgrade"
       ]
     }
@@ -1517,7 +1538,7 @@
     },
     {
       "members": [],
-      "class_hash": "0xf154dc136a3e709f1cae35c874a1a0d4111e3cd088b7290dcda3859f7edadb",
+      "class_hash": "0x6b12e5a0ed1a0d502aa72380fe3ce1b58f15a422dd12a1fea589b28bbf88389",
       "tag": "evolute_duel-Game",
       "selector": "0x50eb71734a5acf3d804e250ff9e59bb3566e8bf9d30d0587d38cc2cc032e232"
     },
@@ -1543,19 +1564,19 @@
     },
     {
       "members": [],
-      "class_hash": "0x220eccba573dcd2be4fd64e54a313d0d7036ccc8af62c18dbbe7dc17a2c8c3c",
+      "class_hash": "0x25c74019b42d6705320f12d920ea743a3d3855477435713ffbcf3b807ca5821",
       "tag": "evolute_duel-GameCanceled",
       "selector": "0x32cbf0a2e3702b3a487fe9eb046045c2dfbedd864465a2c8e0f61d567ff839c"
     },
     {
       "members": [],
-      "class_hash": "0x6b31e06263174d65438c27ce7cae80edea61b68d5dad89d61b1ec8cfa70e09f",
+      "class_hash": "0x16eebacbd465b968ecf3abfc297ac98c8ee0067d670b66b3f3eb4d9b49adf9e",
       "tag": "evolute_duel-GameCreateFailed",
       "selector": "0x1bd4a12eb88a971444ea1e25c0d0e3d6737f6afc4cd5cc9102747ac36a1b980"
     },
     {
       "members": [],
-      "class_hash": "0x745eaaa52450de2cb4aa6af45532d3edd6bc5aa132d8c8de628114ce18eef2d",
+      "class_hash": "0x78881ff3421f3ad3a61a79b6d35240913b21242d65f6bf3761e24982e9531c2",
       "tag": "evolute_duel-GameCreated",
       "selector": "0x668233b95923832d04af3e8e7df9e8688cac7c430b1a18e4dbc66c88d1bf0a6"
     },
@@ -1567,7 +1588,13 @@
     },
     {
       "members": [],
-      "class_hash": "0x40be77ae52f5739e7f23016487ea822b931d79ef5776e9dc2d6b9f84816d5bd",
+      "class_hash": "0x78b29f7883b41762b578ec0de2b8d14ac0e718261cbd71248ed4cebb0dfc08",
+      "tag": "evolute_duel-GameJoinFailed",
+      "selector": "0x208170d1ab20b178e8af5c51e5192c9e8f14e420761c5802722ca0b4adcbd2e"
+    },
+    {
+      "members": [],
+      "class_hash": "0x7b99c0c1727adecad0720fd431aaef9b4d045751907efc19df533b21c8e7e7",
       "tag": "evolute_duel-GameStarted",
       "selector": "0x4509051842dc1402882215bcdedc7f498e2eb1a160c1348570aa2d38fd360c0"
     },
@@ -1576,6 +1603,12 @@
       "class_hash": "0x52a7646ce2146b0499557376cab4ba87702a426895471b589816ab74f41b1de",
       "tag": "evolute_duel-InvalidMove",
       "selector": "0x2961857ea4682513ae1586fb617e4bf12bdc163f7b35df10b043a4455ec18e1"
+    },
+    {
+      "members": [],
+      "class_hash": "0x7336267370d9aa884582101df4909584e6ebf0b4a2cb8db19b7f474aa80759f",
+      "tag": "evolute_duel-Moved",
+      "selector": "0x3ca22e802348ce9fa7b011f883499ac79ca68442272661cc75ea51808da74d2"
     },
     {
       "members": [],
