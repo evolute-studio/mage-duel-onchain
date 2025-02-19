@@ -21,7 +21,7 @@ pub mod game {
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
             PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
-            Skiped,
+            Skiped, Moved,
         },
         systems::helpers::board::{create_board, draw_tile_from_board_deck, update_board_state},
         packing::{GameStatus, Tile, GameState},
@@ -248,6 +248,20 @@ pub mod game {
             world.write_model(@move);
             world.write_model(@board);
 
+
+            world.emit_event(
+                @Moved {
+                    move_id,
+                    player,
+                    prev_move_id: move.prev_move_id,
+                    tile: move.tile,
+                    rotation: move.rotation,
+                    col: move.col,
+                    row: move.row,
+                    is_joker: move.is_joker,
+                    board_id,
+                },
+            );
             world
                 .emit_event(
                     @BoardUpdated {
@@ -319,6 +333,12 @@ pub mod game {
                     let mut guest_game: Game = world.read_model(player2_address);
                     host_game.status = GameStatus::Finished;
                     guest_game.status = GameStatus::Finished;
+
+                    world.write_model(@host_game);
+                    world.write_model(@guest_game);
+
+                    world.emit_event(@GameFinished { host_player: player1_address, board_id });
+                    world.emit_event(@GameFinished { host_player: player2_address, board_id })
                 }
             };
 
@@ -344,7 +364,7 @@ pub mod game {
 
             world
                 .emit_event(
-                    @Skiped { move_id, player, prev_move_id: move.prev_move_id.unwrap(), board_id },
+                    @Skiped { move_id, player, prev_move_id: move.prev_move_id, board_id },
                 );
             world
                 .emit_event(

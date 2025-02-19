@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x651e00ad283274f5e8565b82fb5ceb8d6024399283f907ab78c365286062bc1",
-      "class_hash": "0x41afb51a79d2f85d43cbd9b6b930a68865fdbaf3fb1d79f8c039a7738bc8337",
+      "address": "0x4d9f0e45858c8c25af85e11cf2986ebb6875369f74cd41094317b7d2b84a4f",
+      "class_hash": "0x6c0d725e7b205ed00bc0994931e46c03da89389633ea14bd7d4b87d09dabe92",
       "abi": [
         {
           "type": "impl",
@@ -1892,7 +1892,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x78eb27848ef65f200176290de7a64d1e153f90fe364067d1c4612d11ab181c5",
+      "class_hash": "0x27457a3350031f67c6394a045fe085793a115b895906732ce13f1580867e603",
       "tag": "evolute_duel-Moved",
       "selector": "0x3ca22e802348ce9fa7b011f883499ac79ca68442272661cc75ea51808da74d2"
     },
@@ -1922,7 +1922,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x222eb3b564c8b74080af6f298eb97fd0e7b5b59c1f032eaeae2a4af9f058c43",
+      "class_hash": "0x7891688d60523039f803c7051020d4512dae42fff6a7c75d55dd1e2c936ca7c",
       "tag": "evolute_duel-Skiped",
       "selector": "0x39293e825ec4e370540eb80b631e5656df258d3c1bc482df503857eb3b45861"
     }
