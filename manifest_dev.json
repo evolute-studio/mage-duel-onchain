@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x1019d466d738b283449b3f0c4faf6e1cc0ba4def5153b6c46d71f4901b5dd55",
-      "class_hash": "0x36a543cb50ae9eaf50133de1cbaa884e61b1ac4e31ca43a6154f190958528db",
+      "address": "0x620d72565e72844a6cd1311dd0e1049ab4f6734bb41db369d465e1beb1b8a57",
+      "class_hash": "0x12bd2fd0be7737913aa5d42260b5fbdb646ddd4f0a8b5e92282c19ff4352aeb",
       "abi": [
         {
           "type": "impl",
@@ -1378,6 +1378,20 @@
           "interface_name": "evolute_duel::systems::game::IGame"
         },
         {
+          "type": "enum",
+          "name": "core::option::Option::<core::integer::u8>",
+          "variants": [
+            {
+              "name": "Some",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "None",
+              "type": "()"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "evolute_duel::systems::game::IGame",
           "items": [
@@ -1414,6 +1428,22 @@
                 {
                   "name": "board_id",
                   "type": "core::felt252"
+                },
+                {
+                  "name": "joker_tile",
+                  "type": "core::option::Option::<core::integer::u8>"
+                },
+                {
+                  "name": "rotation",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "col",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "row",
+                  "type": "core::integer::u8"
                 }
               ],
               "outputs": [],
@@ -1557,7 +1587,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x7d5b8cf61ee6c0df2c8cf7dae3983372b189a1e071f1c9697530adf0372e09b",
+      "class_hash": "0x307925ea0510e3374c66dbf82fb983fe38d7a48b2d0611303b58c05ff262902",
       "tag": "evolute_duel-Move",
       "selector": "0x6d7481ce108a8fbf6a107f7561809083890ccdb89931116448283bf99a278d5"
     },

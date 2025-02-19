@@ -78,6 +78,7 @@ pub fn create_board(
     return board;
 }
 
+/// Draws random tile from the board deck and updates the deck without the drawn tile.
 pub fn draw_tile_from_board_deck(ref board: Board) -> Tile {
     let avaliable_tiles: Array<u8> = board.available_tiles_in_deck.clone();
     let mut dice = DiceTrait::new(

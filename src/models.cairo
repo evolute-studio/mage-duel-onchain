@@ -154,11 +154,12 @@ pub struct Board {
 pub struct Move {
     #[key]
     pub id: felt252,
-    // pub player: ContractAddress,
-    // pub prev_move_id: felt252,
+    pub player: ContractAddress,
+    pub prev_move_id: Option<felt252>,
     pub tile: Option<u8>,
-    // pub rotation: Option<u8>,
-// pub is_joker: bool,
+    // 0 - if no rotation
+    pub rotation: u8, 
+    pub is_joker: bool,
 }
 
 #[derive(Drop, Introspect, Serde)]

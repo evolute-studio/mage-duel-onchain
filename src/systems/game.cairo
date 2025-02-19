@@ -6,12 +6,13 @@ pub trait IGame<T> {
     fn create_game(ref self: T);
     fn cancel_game(ref self: T);
     fn join_game(ref self: T, host_player: ContractAddress);
-    fn make_move(ref self: T, board_id: felt252 // player: ContractAddress,
-    // tile: Option<Tile>,
-    // rotation: u8,
-    // is_joker: bool,
-    // col: u8,
-    // row: u8,
+    fn make_move(
+        ref self: T,
+        board_id: felt252,
+        joker_tile: Option<u8>,
+        rotation: u8,
+        col: u8,
+        row: u8,
     );
 }
 
@@ -21,7 +22,7 @@ pub mod game {
     use dojo::event::EventStorage;
     use super::{IGame};
     use starknet::{ContractAddress, get_caller_address};
-    use evolute_duel::models::{Board, Rules, Move, Game, GameStatus};
+    use evolute_duel::models::{Board, Rules, Move, Game, GameStatus, Tile};
 
     use dojo::model::{ModelStorage};
 
@@ -140,22 +141,47 @@ pub mod game {
             world.emit_event(@GameStarted { host_player, guest_player, board_id: 0 });
         }
 
-        fn make_move(ref self: ContractState, board_id: felt252 // player: ContractAddress,
-        // tile: Option<Tile>,
-        // rotation: u8,
-        // is_joker: bool,
-        // col: u8,
-        // row: u8,
+        fn make_move(
+            ref self: ContractState,
+            board_id: felt252,
+            joker_tile: Option<u8>,
+            rotation: u8,
+            col: u8,
+            row: u8,
         ) {
             let mut world = self.world_default();
             let mut board: Board = world.read_model(board_id);
-
+            let player = get_caller_address();
             let move_id = self.move_id_generator.read();
-            self.move_id_generator.write(move_id + 1);
 
-            world.write_model(@Move { id: 0, tile: board.top_tile });
+            let tile: Tile = match joker_tile {
+                Option::Some(tile_index) => { tile_index.into() },
+                Option::None => {
+                    match @board.top_tile {
+                        Option::Some(top_tile) => { (*top_tile).into() },
+                        Option::None => {
+                            //TODO: Error: no joker and no top tile. Move is impossible
+                            return;
+                        },
+                    }
+                },
+            };
+            let move = Move {
+                id: move_id,
+                prev_move_id: board.last_move_id,
+                player,
+                tile: Option::Some(tile.into()),
+                rotation: rotation,
+                is_joker: joker_tile.is_some(),
+            };
+
+            //TODO: check if the move is valid
 
             draw_tile_from_board_deck(ref board);
+
+            board.last_move_id = Option::Some(move_id);
+            self.move_id_generator.write(move_id + 1);
+            world.write_model(@move);
             world.write_model(@board);
             // // Check if the game is in progress.
         // if board.state == GameState::InProgress {
