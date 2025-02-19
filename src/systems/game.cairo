@@ -3,18 +3,6 @@ use starknet::ContractAddress;
 // define the interface
 #[starknet::interface]
 pub trait IGame<T> {
-    // fn initiate_board(ref self: T, player1: ContractAddress, player2: ContractAddress) -> Board;
-    // fn move(
-    //     ref self: T,
-    //     board_id: felt252,
-    //     player: ContractAddress,
-    //     tile: Option<Tile>,
-    //     rotation: u8,
-    //     is_joker: bool,
-    //     col: u8,
-    //     row: u8,
-    // );
-
     fn create_game(ref self: T);
     fn cancel_game(ref self: T);
     fn join_game(ref self: T, host_player: ContractAddress);
@@ -36,17 +24,16 @@ pub mod game {
     use evolute_duel::models::{Board, Rules, Move, Game, GameStatus};
 
     use dojo::model::{ModelStorage};
-    use origami_random::dice::{DiceTrait};
+
 
     use evolute_duel::events::{
         GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled,
     };
 
-    use evolute_duel::systems::helpers::board::{create_board};
+    use evolute_duel::systems::helpers::board::{create_board, draw_tile_from_board_deck};
 
-    
+
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use core::starknet::get_block_timestamp;
 
     #[storage]
     struct Storage {
@@ -133,7 +120,6 @@ pub mod game {
 
         fn join_game(ref self: ContractState, host_player: ContractAddress) {
             let mut world = self.world_default();
-
             let guest_player = get_caller_address();
 
             let mut game: Game = world.read_model(host_player);
@@ -145,14 +131,13 @@ pub mod game {
             }
             game.status = GameStatus::InProgress;
 
-            //todo: let board_id = initialize_board(host_player, guest_player);
-            let board = create_board(world, host_player, guest_player, self.board_id_generator);
+            let board = create_board(ref world, host_player, guest_player, self.board_id_generator);
             let board_id = board.id;
             game.board_id = Option::Some(board_id);
 
             world.write_model(@game);
 
-            world.emit_event(@GameStarted { host_player, guest_player, board_id });
+            world.emit_event(@GameStarted { host_player, guest_player, board_id: 0 });
         }
 
         fn make_move(ref self: ContractState, board_id: felt252 // player: ContractAddress,
@@ -168,24 +153,9 @@ pub mod game {
             let move_id = self.move_id_generator.read();
             self.move_id_generator.write(move_id + 1);
 
-            let avaliable_tiles: Array<u8> = board.available_tiles_in_deck.clone();
-            let mut dice = DiceTrait::new(avaliable_tiles.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into());
-            let mut next_tile = dice.roll();
+            world.write_model(@Move { id: 0, tile: board.top_tile });
 
-            let tile: u8 = *avaliable_tiles.at(next_tile.into());
-
-            world.write_model(@Move { id: 0, tile: Option::Some(tile) });
-
-            // Remove the tile from the available tiles.
-            let mut updated_available_tiles: Array<u8> = ArrayTrait::new();
-            for i in 0..avaliable_tiles.len() {
-                if i != next_tile.into() {
-                    updated_available_tiles.append(*avaliable_tiles.at(i.into()));
-                }
-            };
-
-            board.available_tiles_in_deck = updated_available_tiles.clone();
-
+            draw_tile_from_board_deck(ref board);
             world.write_model(@board);
             // // Check if the game is in progress.
         // if board.state == GameState::InProgress {
