@@ -79,7 +79,7 @@ pub fn create_board(
 }
 
 pub fn update_board_state(
-    ref board: Board, tile: Tile, rotation: u8, col: u8, row: u8, is_jocker: bool, side: PlayerSide,
+    ref board: Board, tile: Tile, rotation: u8, col: u8, row: u8, is_joker: bool, side: PlayerSide,
 ) {
     let mut updated_state: Array<(u8, u8)> = ArrayTrait::new();
     let index = (col * 8 + row).into();
@@ -94,14 +94,18 @@ pub fn update_board_state(
     board.state = updated_state;
 
     //update joker_number
-    let (player1_address, player1_side, joker_number1, _) = board.player1;
-    let (player2_address, player2_side, joker_number2, _) = board.player2;
-
-    if side == player1_side {
-        board.player1 = (player1_address, player1_side, joker_number1 - 1, false);
-    } else {
-        board.player2 = (player2_address, player2_side, joker_number2 - 1, false);
+    let (player1_address, player1_side, mut joker_number1, _) = board.player1;
+    let (player2_address, player2_side, mut joker_number2, _) = board.player2;
+    if is_joker {
+        if side == player1_side {
+            joker_number1 -= 1;
+        } else {
+            joker_number2 -= 1;
+        }
     }
+
+    board.player1 = (player1_address, player1_side, joker_number1, false);
+    board.player2 = (player2_address, player2_side, joker_number2, false);
 }
 
 /// Draws random tile from the board deck and updates the deck without the drawn tile.

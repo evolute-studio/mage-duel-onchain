@@ -55,8 +55,22 @@ pub struct Moved {
     pub prev_move_id: felt252,
     pub tile: Option<u8>,
     pub rotation: Option<u8>,
+    pub col: u8,
+    pub row: u8,
     pub is_joker: bool,
+    pub board_id: felt252,
 }
+
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::event]
+pub struct Skiped {
+    #[key]
+    pub move_id: felt252,
+    pub player: ContractAddress,
+    pub prev_move_id: felt252,
+    pub board_id: felt252,
+}
+
 
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::event]
@@ -156,6 +170,15 @@ pub struct NotYourTurn {
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::event]
 pub struct NotEnoughJokers {
+    #[key]
+    pub player_id: ContractAddress,
+    pub board_id: felt252,
+}
+
+
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::event]
+pub struct GameIsAlreadyFinished {
     #[key]
     pub player_id: ContractAddress,
     pub board_id: felt252,

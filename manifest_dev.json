@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x317895a7ee66600f7504a6abaf78b3c79f6068cb1ef3857be2406f8f8a666cf",
-      "class_hash": "0x232e7b52073dec60077154288cc0aacd416031ada55eeb3dde6158ffde2939",
+      "address": "0x651e00ad283274f5e8565b82fb5ceb8d6024399283f907ab78c365286062bc1",
+      "class_hash": "0x41afb51a79d2f85d43cbd9b6b930a68865fdbaf3fb1d79f8c039a7738bc8337",
       "abi": [
         {
           "type": "impl",
@@ -1426,10 +1426,6 @@
               "name": "make_move",
               "inputs": [
                 {
-                  "name": "board_id",
-                  "type": "core::felt252"
-                },
-                {
                   "name": "joker_tile",
                   "type": "core::option::Option::<core::integer::u8>"
                 },
@@ -1446,6 +1442,20 @@
                   "type": "core::integer::u8"
                 }
               ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "skip_move",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "check",
+              "inputs": [],
               "outputs": [],
               "state_mutability": "external"
             }
@@ -1567,6 +1577,8 @@
         "cancel_game",
         "join_game",
         "make_move",
+        "skip_move",
+        "check",
         "upgrade"
       ]
     },
@@ -1770,7 +1782,7 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0x15619ea9eea7324c8b8e648162090bbaec54bcc6b6ee535c396c00c0eab1cb4",
+      "class_hash": "0x5bdcd9a14d9d935abbd9c81f8b161b20586afee16c4e2bf3bda74193bea7d0c",
       "tag": "evolute_duel-Board",
       "selector": "0x836ef99f75ec03877951d491db5b9730a3f3552e3fc7d1c38a9f1abc320947"
     },
@@ -1808,13 +1820,13 @@
   "events": [
     {
       "members": [],
-      "class_hash": "0x61cb2fea390c1106db7d3d78209cb84c051c688ade645421caf48c1c0e5f6cf",
+      "class_hash": "0xd4e190b18ea9d8069458ad7420a54f5e337127aae60f4fc99012f29a34ee5a",
       "tag": "evolute_duel-BoardCreated",
       "selector": "0x1a41b9cde62dde29c4f35c38893fff421cffc41f9ff0b4c8b817f85d788d75c"
     },
     {
       "members": [],
-      "class_hash": "0x32b6e1711df1ed8df1e313150c2d1437a163cf3cce682e64072f7dbf5c2ad29",
+      "class_hash": "0x6c306cde232f80b75b56610898fc899af89256e829e5ce9aa1a12a555bf033e",
       "tag": "evolute_duel-BoardUpdated",
       "selector": "0x1352659f5307c3478b85ed999c391ac8768670156647c54e3d0edfd3acd61de"
     },
@@ -1856,6 +1868,12 @@
     },
     {
       "members": [],
+      "class_hash": "0x4b9967ff1bb5ebb71c2aa2185d9a4aeeff29840cfa071a094a9de9c2869aee3",
+      "tag": "evolute_duel-GameIsAlreadyFinished",
+      "selector": "0x3b86b8bb5b6aae2485e4f3a8a346449d99bdf276439579042a4cb8912366013"
+    },
+    {
+      "members": [],
       "class_hash": "0x2e9fc9b492fee1f222927248e46139b8389d8f8b66c4f690041ae67c4c0990c",
       "tag": "evolute_duel-GameJoinFailed",
       "selector": "0x208170d1ab20b178e8af5c51e5192c9e8f14e420761c5802722ca0b4adcbd2e"
@@ -1874,9 +1892,15 @@
     },
     {
       "members": [],
-      "class_hash": "0x1f2dbb2e14186ab49243fe0a2b16adf7ccedc1ca05f1c9b8a8c250905d9fe52",
+      "class_hash": "0x78eb27848ef65f200176290de7a64d1e153f90fe364067d1c4612d11ab181c5",
       "tag": "evolute_duel-Moved",
       "selector": "0x3ca22e802348ce9fa7b011f883499ac79ca68442272661cc75ea51808da74d2"
+    },
+    {
+      "members": [],
+      "class_hash": "0x3c47baf42eb65745ade5343cc2d0e7f645ee480e6808252c4a4040b1587f3e9",
+      "tag": "evolute_duel-NotEnoughJokers",
+      "selector": "0x32eeb70d90473d3f1f2835c85305f6be04f406f5e82d04be096e74d9dedd9d1"
     },
     {
       "members": [],
@@ -1895,6 +1919,12 @@
       "class_hash": "0x7c47ff32fc6852128d1311ac667be855cfae92490cb8c89a764048398602c82",
       "tag": "evolute_duel-RulesCreated",
       "selector": "0x516f39aea473b1242995ab31d5044d11220954542761bfd98d99d8ea44b9647"
+    },
+    {
+      "members": [],
+      "class_hash": "0x222eb3b564c8b74080af6f298eb97fd0e7b5b59c1f032eaeae2a4af9f058c43",
+      "tag": "evolute_duel-Skiped",
+      "selector": "0x39293e825ec4e370540eb80b631e5656df258d3c1bc482df503857eb3b45861"
     }
   ],
   "external_contracts": []

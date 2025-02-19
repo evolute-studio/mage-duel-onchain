@@ -7,7 +7,7 @@ pub trait IGame<T> {
     fn cancel_game(ref self: T);
     fn join_game(ref self: T, host_player: ContractAddress);
     fn make_move(ref self: T, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8);
-    // fn skip_move(ref self: T);
+    fn skip_move(ref self: T);
     fn check(ref self: T);
 }
 
@@ -20,7 +20,8 @@ pub mod game {
         models::{Board, Rules, Move, Game},
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
-            PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, 
+            PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
+            Skiped,
         },
         systems::helpers::board::{create_board, draw_tile_from_board_deck, update_board_state},
         packing::{GameStatus, Tile, GameState},
@@ -168,6 +169,12 @@ pub mod game {
 
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
+
+            if game.status == GameStatus::Finished {
+                world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
+                return;
+            }
+
             let move_id = self.move_id_generator.read();
 
             let tile: Tile = match joker_tile {
@@ -259,19 +266,101 @@ pub mod game {
 
         }
 
-        // fn skip_move(ref self: ContractState) {
-        //     let mut world = self.world_default();
-        //     let player = get_caller_address();
-        //     let game: Game = world.read_model(player);
+        fn skip_move(ref self: ContractState) {
+            let mut world = self.world_default();
+            let player = get_caller_address();
+            let game: Game = world.read_model(player);
 
-        //     if game.board_id.is_none() {
-        //         world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
-        //         return;
-        //     }
+            if game.board_id.is_none() {
+                world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
+                return;
+            }
 
-        //     let board_id = game.board_id.unwrap();
-        //     let mut board: Board = world.read_model(board_id);
-        // }
+            let board_id = game.board_id.unwrap();
+            let mut board: Board = world.read_model(board_id);
+
+            if game.status == GameStatus::Finished {
+                world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
+                return;
+            }
+
+            let move_id = self.move_id_generator.read();
+
+            let (player1_address, player1_side, joker_number1, _) = board.player1;
+            let (player2_address, player2_side, joker_number2, _) = board.player2;
+
+            let player_side = if player == player1_address {
+                player1_side
+            } else if player == player2_address {
+                player2_side
+            } else {
+                //TODO: Error: player is not in the game
+                world.emit_event(@PlayerNotInGame { player_id: player, board_id });
+                return;
+            };
+
+            //check if it is the player's turn
+            let prev_move_id = board.last_move_id;
+            if prev_move_id.is_some() {
+                let prev_move_id = prev_move_id.unwrap();
+                let prev_move: Move = world.read_model(prev_move_id);
+                let prev_player_side = prev_move.player_side;
+
+                if player_side == prev_player_side {
+                    //TODO: Error: turn of the other player
+                    world.emit_event(@NotYourTurn { player_id: player, board_id });
+                    return;
+                }
+
+                if prev_move.tile.is_none() && !prev_move.is_joker {
+                    //FINISH THE GAME
+                    board.game_state = GameState::Finished;
+                    let mut host_game: Game = world.read_model(player1_address);
+                    let mut guest_game: Game = world.read_model(player2_address);
+                    host_game.status = GameStatus::Finished;
+                    guest_game.status = GameStatus::Finished;
+                }
+            };
+
+            let move = Move {
+                id: move_id,
+                prev_move_id: board.last_move_id,
+                player_side,
+                tile: Option::None,
+                rotation: 0,
+                col: 0,
+                row: 0,
+                is_joker: false,
+            };
+
+            board.last_move_id = Option::Some(move_id);
+            self.move_id_generator.write(move_id + 1);
+
+            board.player1 = (player1_address, player1_side, joker_number1, false);
+            board.player2 = (player2_address, player2_side, joker_number2, false);
+
+            world.write_model(@move);
+            world.write_model(@board);
+
+            world
+                .emit_event(
+                    @Skiped { move_id, player, prev_move_id: move.prev_move_id.unwrap(), board_id },
+                );
+            world
+                .emit_event(
+                    @BoardUpdated {
+                        board_id: board.id,
+                        initial_edge_state: board.initial_edge_state,
+                        available_tiles_in_deck: board.available_tiles_in_deck,
+                        top_tile: board.top_tile,
+                        state: board.state,
+                        player1: board.player1,
+                        player2: board.player2,
+                        last_move_id: board.last_move_id,
+                        game_state: board.game_state,
+                    },
+                );
+        }
 
         fn check(ref self: ContractState) {
             let mut world = self.world_default();
@@ -285,6 +374,11 @@ pub mod game {
 
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
+
+            if game.status == GameStatus::Finished {
+                world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
+                return;
+            }
 
             let (player1_address, player1_side, joker_number1, mut player1_checked) = board.player1;
             let (player2_address, player2_side, joker_number2, mut player2_checked) = board.player2;
