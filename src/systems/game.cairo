@@ -110,6 +110,8 @@ pub mod game {
                 world.write_model(@game);
 
                 world.emit_event(@GameCanceled { host_player, status: new_status });
+            } else {
+                world.emit_event(@GameCreateFailed { host_player, status });
             }
         }
 
@@ -117,20 +119,26 @@ pub mod game {
             let mut world = self.world_default();
             let guest_player = get_caller_address();
 
-            let mut game: Game = world.read_model(host_player);
-            let status = game.status;
+            let mut host_game: Game = world.read_model(host_player);
+            let host_game_status = host_game.status;
 
-            if status != GameStatus::Created || host_player == guest_player {
-                world.emit_event(@GameJoinFailed { host_player, guest_player, status });
+            let mut guest_game: Game = world.read_model(host_player);
+            let guest_game_status = host_game.status;
+
+            if host_game_status != GameStatus::Created || guest_game_status == GameStatus::Created || guest_game_status == GameStatus::InProgress || host_player == guest_player {
+                world.emit_event(@GameJoinFailed { host_player, guest_player, host_game_status, guest_game_status });
                 return;
             }
-            game.status = GameStatus::InProgress;
+            host_game.status = GameStatus::InProgress;
+            guest_game.status = GameStatus::InProgress;
 
             let board = create_board(ref world, host_player, guest_player, self.board_id_generator);
             let board_id = board.id;
-            game.board_id = Option::Some(board_id);
+            host_game.board_id = Option::Some(board_id);
+            guest_game.board_id = Option::Some(board_id);
 
-            world.write_model(@game);
+            world.write_model(@host_game);
+            world.write_model(@guest_game);
 
             world.emit_event(@GameStarted { host_player, guest_player, board_id });
         }

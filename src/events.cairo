@@ -87,6 +87,7 @@ pub struct GameCreated {
     pub status: GameStatus,
 }
 
+
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::event]
 pub struct GameCreateFailed {
@@ -102,7 +103,8 @@ pub struct GameJoinFailed {
     #[key]
     pub host_player: ContractAddress,
     pub guest_player: ContractAddress,
-    pub status: GameStatus,
+    pub host_game_status: GameStatus,
+    pub guest_game_status: GameStatus,
 }
 
 #[derive(Copy, Drop, Serde, Debug)]
@@ -113,6 +115,13 @@ pub struct GameCanceled {
     pub status: GameStatus,
 }
 
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::event]
+pub struct GameCanceleFailed {
+    #[key]
+    pub host_player: ContractAddress,
+    pub status: GameStatus,
+}
 
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::event]
