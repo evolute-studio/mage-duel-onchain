@@ -1,7 +1,7 @@
 use dojo::event::EventStorage;
 use dojo::world::{WorldStorage};
 use starknet::{ContractAddress};
-use evolute_duel::models::{Board, TEdge, GameState, Rules, Tile};
+use evolute_duel::models::{Board, TEdge, GameState, Rules, Tile, PlayerSide};
 
 use dojo::model::{ModelStorage};
 use origami_random::deck::{DeckTrait};
@@ -48,8 +48,8 @@ pub fn create_board(
         available_tiles_in_deck: deck_rules_flat.clone(),
         top_tile: Option::None,
         state: tiles.clone(),
-        player1,
-        player2,
+        player1: (player1, PlayerSide::Blue),
+        player2: (player2, PlayerSide::Red),
         last_move_id,
         game_state,
     };
@@ -68,8 +68,8 @@ pub fn create_board(
                 available_tiles_in_deck: deck_rules_flat,
                 top_tile: Option::Some(top_tile.into()),
                 state: tiles,
-                player1,
-                player2,
+                player1: board.player1,
+                player2: board.player2,
                 last_move_id,
                 game_state,
             },

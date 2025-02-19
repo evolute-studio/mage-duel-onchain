@@ -143,8 +143,8 @@ pub struct Board {
     pub top_tile: Option<u8>,
     // (u8, u8) => (tile_number, rotation)
     pub state: Array<(u8, u8)>,
-    pub player1: ContractAddress,
-    pub player2: ContractAddress,
+    pub player1: (ContractAddress, PlayerSide),
+    pub player2: (ContractAddress, PlayerSide),
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
 }
@@ -154,11 +154,11 @@ pub struct Board {
 pub struct Move {
     #[key]
     pub id: felt252,
-    pub player: ContractAddress,
+    pub player_side: PlayerSide,
     pub prev_move_id: Option<felt252>,
     pub tile: Option<u8>,
     // 0 - if no rotation
-    pub rotation: u8, 
+    pub rotation: u8,
     pub is_joker: bool,
 }
 
@@ -213,4 +213,10 @@ pub enum GameStatus {
     Created,
     Canceled,
     InProgress,
+}
+
+#[derive(Drop, Serde, Copy, IntrospectPacked, PartialEq, Debug)]
+pub enum PlayerSide {
+    Blue,
+    Red,
 }

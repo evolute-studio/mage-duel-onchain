@@ -7,12 +7,7 @@ pub trait IGame<T> {
     fn cancel_game(ref self: T);
     fn join_game(ref self: T, host_player: ContractAddress);
     fn make_move(
-        ref self: T,
-        board_id: felt252,
-        joker_tile: Option<u8>,
-        rotation: u8,
-        col: u8,
-        row: u8,
+        ref self: T, board_id: felt252, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8,
     );
 }
 
@@ -166,10 +161,23 @@ pub mod game {
                     }
                 },
             };
+            
+            let (player1_address, player1_side) = board.player1;
+            let (player2_address, player2_side) = board.player2;
+
+            let player_side = if player == player1_address {
+                player1_side
+            } else if player == player2_address {
+                player2_side
+            } else {
+                //TODO: Error: player is not in the game
+                return;
+            };
+
             let move = Move {
                 id: move_id,
                 prev_move_id: board.last_move_id,
-                player,
+                player_side,
                 tile: Option::Some(tile.into()),
                 rotation: rotation,
                 is_joker: joker_tile.is_some(),
