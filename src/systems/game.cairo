@@ -18,20 +18,19 @@ pub trait IGame<T> {
 // dojo decorator
 #[dojo::contract]
 pub mod game {
-    use dojo::event::EventStorage;
     use super::{IGame};
     use starknet::{ContractAddress, get_caller_address};
-    use evolute_duel::models::{Board, Rules, Move, Game, GameStatus};
-
-    use dojo::model::{ModelStorage};
-
-
-    use evolute_duel::events::{
-        GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled,
+    use evolute_duel::{
+        models::{Board, Rules, Move, Game},
+        events::{
+            GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled,
+        },
+        systems::helpers::board::{create_board, draw_tile_from_board_deck},
+        packing::{GameStatus, Tile},
     };
 
-    use evolute_duel::systems::helpers::board::{create_board, draw_tile_from_board_deck};
-
+    use dojo::event::EventStorage;
+    use dojo::model::{ModelStorage};
 
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
@@ -137,7 +136,7 @@ pub mod game {
 
             world.write_model(@game);
 
-            world.emit_event(@GameStarted { host_player, guest_player, board_id: 0 });
+            world.emit_event(@GameStarted { host_player, guest_player, board_id });
         }
 
         fn make_move(ref self: ContractState, board_id: felt252 // player: ContractAddress,
@@ -155,7 +154,7 @@ pub mod game {
 
             world.write_model(@Move { id: 0, tile: board.top_tile });
 
-            draw_tile_from_board_deck(ref board);
+            let _tile: Tile = draw_tile_from_board_deck(ref board);
             world.write_model(@board);
             // // Check if the game is in progress.
         // if board.state == GameState::InProgress {

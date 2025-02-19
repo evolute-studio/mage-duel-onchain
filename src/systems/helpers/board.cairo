@@ -1,14 +1,16 @@
 use dojo::event::EventStorage;
 use dojo::world::{WorldStorage};
 use starknet::{ContractAddress};
-use evolute_duel::models::{Board, TEdge, GameState, Rules, Tile};
-
 use dojo::model::{ModelStorage};
 use origami_random::deck::{DeckTrait};
 use origami_random::dice::{DiceTrait};
 use core::dict::Felt252Dict;
 
-use evolute_duel::events::{BoardCreated};
+use evolute_duel::{
+    events::{BoardCreated},
+    models::{Board, Rules},
+    packing::{GameState, TEdge, Tile},
+};
 
 use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 

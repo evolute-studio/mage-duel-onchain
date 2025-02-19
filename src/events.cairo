@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use evolute_duel::models::{GameState, GameStatus};
+use evolute_duel::packing::{GameState, GameStatus};
 
 #[derive(Drop, Serde, Debug)]
 #[dojo::event]
@@ -96,4 +96,13 @@ pub struct GameCanceled {
     #[key]
     pub host_player: ContractAddress,
     pub status: GameStatus,
+}
+
+
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::event]
+pub struct CurrentPlayerBalance {
+    #[key]
+    pub player_id: ContractAddress,
+    pub balance: felt252,
 }

@@ -1,5 +1,6 @@
 pub mod systems {
     pub mod game;
+    pub mod player_profile_actions;
     pub mod helpers {
         pub mod board;
     }
@@ -7,6 +8,7 @@ pub mod systems {
 
 pub mod models;
 pub mod events;
+pub mod packing;
 
 pub mod tests {
     mod test_world;

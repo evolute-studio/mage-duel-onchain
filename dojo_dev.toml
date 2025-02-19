@@ -23,4 +23,5 @@ private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 # world_address = "0x06a4d87ac4a224fbc633b46ec896545f8783cfc6d87ce8a4ef8c5630a3c17711"
 
 [writers]
-"evolute_duel" = ["evolute_duel-game"]
+"evolute_duel" = ["evolute_duel-game", "evolute_duel-player_profile_actions"]
+
