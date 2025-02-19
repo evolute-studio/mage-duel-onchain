@@ -9,7 +9,7 @@ use core::dict::Felt252Dict;
 use evolute_duel::{
     events::{BoardCreated},
     models::{Board, Rules},
-    packing::{GameState, TEdge, Tile},
+    packing::{GameState, TEdge, Tile, PlayerSide},
 };
 
 use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -50,8 +50,8 @@ pub fn create_board(
         available_tiles_in_deck: deck_rules_flat.clone(),
         top_tile: Option::None,
         state: tiles.clone(),
-        player1,
-        player2,
+        player1: (player1, PlayerSide::Blue),
+        player2: (player2, PlayerSide::Red),
         last_move_id,
         game_state,
     };
@@ -70,8 +70,8 @@ pub fn create_board(
                 available_tiles_in_deck: deck_rules_flat,
                 top_tile: Option::Some(top_tile.into()),
                 state: tiles,
-                player1,
-                player2,
+                player1: board.player1,
+                player2: board.player2,
                 last_move_id,
                 game_state,
             },
@@ -80,6 +80,7 @@ pub fn create_board(
     return board;
 }
 
+/// Draws random tile from the board deck and updates the deck without the drawn tile.
 pub fn draw_tile_from_board_deck(ref board: Board) -> Tile {
     let avaliable_tiles: Array<u8> = board.available_tiles_in_deck.clone();
     let mut dice = DiceTrait::new(

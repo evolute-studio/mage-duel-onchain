@@ -1,5 +1,5 @@
 use starknet::{ContractAddress};
-use evolute_duel::packing::{GameState, GameStatus};
+use evolute_duel::packing::{GameState, GameStatus, PlayerSide};
 
 
 #[derive(Drop, Serde, Debug, Introspect, Clone)]
@@ -12,8 +12,8 @@ pub struct Board {
     pub top_tile: Option<u8>,
     // (u8, u8) => (tile_number, rotation)
     pub state: Array<(u8, u8)>,
-    pub player1: ContractAddress,
-    pub player2: ContractAddress,
+    pub player1: (ContractAddress, PlayerSide),
+    pub player2: (ContractAddress, PlayerSide),
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
 }
@@ -23,11 +23,12 @@ pub struct Board {
 pub struct Move {
     #[key]
     pub id: felt252,
-    // pub player: ContractAddress,
-    // pub prev_move_id: felt252,
+    pub player_side: PlayerSide,
+    pub prev_move_id: Option<felt252>,
     pub tile: Option<u8>,
-    // pub rotation: Option<u8>,
-// pub is_joker: bool,
+    // 0 - if no rotation
+    pub rotation: u8,
+    pub is_joker: bool,
 }
 
 #[derive(Drop, Introspect, Serde)]

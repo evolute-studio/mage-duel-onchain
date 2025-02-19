@@ -165,3 +165,9 @@ pub enum GameStatus {
     Canceled,
     InProgress,
 }
+
+#[derive(Drop, Serde, Copy, IntrospectPacked, PartialEq, Debug)]
+pub enum PlayerSide {
+    Blue,
+    Red,
+}
