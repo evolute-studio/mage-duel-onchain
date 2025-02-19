@@ -23,7 +23,7 @@ pub mod game {
 
 
     use evolute_duel::events::{
-        GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled,
+        GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
     };
 
     use evolute_duel::systems::helpers::board::{create_board, draw_tile_from_board_deck};
@@ -161,7 +161,7 @@ pub mod game {
                     }
                 },
             };
-            
+
             let (player1_address, player1_side) = board.player1;
             let (player2_address, player2_side) = board.player2;
 
@@ -191,6 +191,21 @@ pub mod game {
             self.move_id_generator.write(move_id + 1);
             world.write_model(@move);
             world.write_model(@board);
+
+            world
+                .emit_event(
+                    @BoardUpdated {
+                        board_id: board.id,
+                        initial_edge_state: board.initial_edge_state,
+                        available_tiles_in_deck: board.available_tiles_in_deck,
+                        top_tile: board.top_tile,
+                        state: board.state,
+                        player1: board.player1,
+                        player2: board.player2,
+                        last_move_id: board.last_move_id,
+                        game_state: board.game_state,
+                    },
+                );
             // // Check if the game is in progress.
         // if board.state == GameState::InProgress {
         //     world.emit_event(@InvalidMove { move_id: 0, player });
