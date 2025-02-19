@@ -12,8 +12,10 @@ pub struct Board {
     pub top_tile: Option<u8>,
     // (u8, u8) => (tile_number, rotation)
     pub state: Array<(u8, u8)>,
-    pub player1: (ContractAddress, PlayerSide),
-    pub player2: (ContractAddress, PlayerSide),
+    //(address, side, joker_number)
+    pub player1: (ContractAddress, PlayerSide, u8),
+    //(address, side, joker_number)
+    pub player2: (ContractAddress, PlayerSide, u8),
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
 }
@@ -28,6 +30,8 @@ pub struct Move {
     pub tile: Option<u8>,
     // 0 - if no rotation
     pub rotation: u8,
+    pub col: u8,
+    pub row: u8,
     pub is_joker: bool,
 }
 
@@ -71,7 +75,7 @@ pub struct Rules {
 #[dojo::model]
 pub struct Game {
     #[key]
-    pub host_player: ContractAddress,
+    pub player: ContractAddress,
     pub status: GameStatus,
     pub board_id: Option<felt252>,
 }

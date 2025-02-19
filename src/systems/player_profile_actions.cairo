@@ -14,24 +14,15 @@ pub mod player_profile_actions {
     use dojo::model::{ModelStorage};
 
 
-    use evolute_duel::{
-        events::{CurrentPlayerBalance},
-        models::{Player, Shop},
-        packing::{},
-    };
+    use evolute_duel::{events::{CurrentPlayerBalance}, models::{Player, Shop}, packing::{}};
 
     fn dojo_init(self: @ContractState) {
         let mut world = self.world(@"evolute_duel");
         let id = 0;
 
-        let skin_prices = array![
-            100, 200, 300
-        ];
+        let skin_prices = array![100, 200, 300];
 
-        let shop = Shop {
-            shop_id: id,
-            skin_prices,
-        };
+        let shop = Shop { shop_id: id, skin_prices };
         world.write_model(@shop);
     }
 

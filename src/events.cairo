@@ -10,8 +10,10 @@ pub struct BoardCreated {
     pub available_tiles_in_deck: Array<u8>,
     pub top_tile: Option<u8>,
     pub state: Array<(u8, u8)>,
-    pub player1: (ContractAddress, PlayerSide),
-    pub player2: (ContractAddress, PlayerSide),
+    //(address, side, joker_number)
+    pub player1: (ContractAddress, PlayerSide, u8),
+    //(address, side, joker_number)
+    pub player2: (ContractAddress, PlayerSide, u8),
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
 }
@@ -25,8 +27,10 @@ pub struct BoardUpdated {
     pub available_tiles_in_deck: Array<u8>,
     pub top_tile: Option<u8>,
     pub state: Array<(u8, u8)>,
-    pub player1: (ContractAddress, PlayerSide),
-    pub player2: (ContractAddress, PlayerSide),
+    //(address, side, joker_number)
+    pub player1: (ContractAddress, PlayerSide, u8),
+    //(address, side, joker_number)
+    pub player2: (ContractAddress, PlayerSide, u8),
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
 }
@@ -129,4 +133,21 @@ pub struct CurrentPlayerBalance {
     #[key]
     pub player_id: ContractAddress,
     pub balance: felt252,
+}
+
+
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::event]
+pub struct PlayerNotInGame {
+    #[key]
+    pub player_id: ContractAddress,
+    pub board_id: felt252,
+}
+
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::event]
+pub struct NotYourTurn {
+    #[key]
+    pub player_id: ContractAddress,
+    pub board_id: felt252,
 }

@@ -7,9 +7,7 @@ use origami_random::dice::{DiceTrait};
 use core::dict::Felt252Dict;
 
 use evolute_duel::{
-    events::{BoardCreated},
-    models::{Board, Rules},
-    packing::{GameState, TEdge, Tile, PlayerSide},
+    events::{BoardCreated}, models::{Board, Rules}, packing::{GameState, TEdge, Tile, PlayerSide},
 };
 
 use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -50,8 +48,8 @@ pub fn create_board(
         available_tiles_in_deck: deck_rules_flat.clone(),
         top_tile: Option::None,
         state: tiles.clone(),
-        player1: (player1, PlayerSide::Blue),
-        player2: (player2, PlayerSide::Red),
+        player1: (player1, PlayerSide::Blue, rules.joker_number),
+        player2: (player2, PlayerSide::Red, rules.joker_number),
         last_move_id,
         game_state,
     };
@@ -78,6 +76,32 @@ pub fn create_board(
         );
 
     return board;
+}
+
+pub fn update_board_state(
+    ref board: Board, tile: Tile, rotation: u8, col: u8, row: u8, is_jocker: bool, side: PlayerSide,
+) {
+    let mut updated_state: Array<(u8, u8)> = ArrayTrait::new();
+    let index = (col * 8 + row).into();
+    for i in 0..board.state.len() {
+        if i == index {
+            updated_state.append((tile.into(), rotation));
+        } else {
+            updated_state.append(*board.state.at(i.into()));
+        }
+    };
+
+    board.state = updated_state;
+
+    //update joker_number
+    let (player1_address, player1_side, joker_number1) = board.player1;
+    let (player2_address, player2_side, joker_number2) = board.player2;
+
+    if side == player1_side {
+        board.player1 = (player1_address, player1_side, joker_number1 - 1);
+    } else {
+        board.player2 = (player2_address, player2_side, joker_number2 - 1);
+    }
 }
 
 /// Draws random tile from the board deck and updates the deck without the drawn tile.

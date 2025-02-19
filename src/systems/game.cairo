@@ -19,9 +19,10 @@ pub mod game {
     use evolute_duel::{
         models::{Board, Rules, Move, Game},
         events::{
-            GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated
+            GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
+            PlayerNotInGame, NotYourTurn,
         },
-        systems::helpers::board::{create_board, draw_tile_from_board_deck},
+        systems::helpers::board::{create_board, draw_tile_from_board_deck, update_board_state},
         packing::{GameStatus, Tile},
     };
 
@@ -81,14 +82,16 @@ pub mod game {
             let host_player = get_caller_address();
 
             let mut game: Game = world.read_model(host_player);
-            let status = game.status;
+            let mut status = game.status;
 
             if status == GameStatus::InProgress || status == GameStatus::Created {
                 world.emit_event(@GameCreateFailed { host_player, status });
                 return;
             }
 
-            game.status = GameStatus::Created;
+            status = GameStatus::Created;
+            game.status = status;
+            game.board_id = Option::None;
 
             world.write_model(@game);
 
@@ -122,11 +125,19 @@ pub mod game {
             let mut host_game: Game = world.read_model(host_player);
             let host_game_status = host_game.status;
 
-            let mut guest_game: Game = world.read_model(host_player);
-            let guest_game_status = host_game.status;
+            let mut guest_game: Game = world.read_model(guest_player);
+            let guest_game_status = guest_game.status;
 
-            if host_game_status != GameStatus::Created || guest_game_status == GameStatus::Created || guest_game_status == GameStatus::InProgress || host_player == guest_player {
-                world.emit_event(@GameJoinFailed { host_player, guest_player, host_game_status, guest_game_status });
+            if host_game_status != GameStatus::Created
+                || guest_game_status == GameStatus::Created
+                || guest_game_status == GameStatus::InProgress
+                || host_player == guest_player {
+                world
+                    .emit_event(
+                        @GameJoinFailed {
+                            host_player, guest_player, host_game_status, guest_game_status,
+                        },
+                    );
                 return;
             }
             host_game.status = GameStatus::InProgress;
@@ -169,8 +180,8 @@ pub mod game {
                 },
             };
 
-            let (player1_address, player1_side) = board.player1;
-            let (player2_address, player2_side) = board.player2;
+            let (player1_address, player1_side, _) = board.player1;
+            let (player2_address, player2_side, _) = board.player2;
 
             let player_side = if player == player1_address {
                 player1_side
@@ -178,7 +189,21 @@ pub mod game {
                 player2_side
             } else {
                 //TODO: Error: player is not in the game
+                world.emit_event(@PlayerNotInGame { player_id: player, board_id });
                 return;
+            };
+
+            let prev_move_id = board.last_move_id;
+            if prev_move_id.is_some() {
+                let prev_move_id = prev_move_id.unwrap();
+                let prev_move: Move = world.read_model(prev_move_id);
+                let prev_player_side = prev_move.player_side;
+
+                if player_side == prev_player_side {
+                    //TODO: Error: turn of the other player
+                    world.emit_event(@NotYourTurn { player_id: player, board_id });
+                    return;
+                }
             };
 
             let move = Move {
@@ -187,13 +212,19 @@ pub mod game {
                 player_side,
                 tile: Option::Some(tile.into()),
                 rotation: rotation,
+                col,
+                row,
                 is_joker: joker_tile.is_some(),
             };
 
             //TODO: check if the move is valid
 
-
             draw_tile_from_board_deck(ref board);
+
+            //TODO: update board state
+            update_board_state(
+                ref board, tile, rotation, col, row, joker_tile.is_some(), player_side,
+            );
 
             board.last_move_id = Option::Some(move_id);
             self.move_id_generator.write(move_id + 1);

@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x454f2ecf204d397d9441616efe7985b8a685d318b4dda3f8ed53814c1f12de6",
-      "class_hash": "0x1e7c387a8ab2b3b0838dc6e864b2cfeda0ceb6b2785a7f9c855dda39b962340",
+      "address": "0x317895a7ee66600f7504a6abaf78b3c79f6068cb1ef3857be2406f8f8a666cf",
+      "class_hash": "0x232e7b52073dec60077154288cc0aacd416031ada55eeb3dde6158ffde2939",
       "abi": [
         {
           "type": "impl",
@@ -1770,19 +1770,19 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0x5ded2dcc0d263346a78f247e3db9b841ad45d4f1ca9871ff6688327dcf582c6",
+      "class_hash": "0x15619ea9eea7324c8b8e648162090bbaec54bcc6b6ee535c396c00c0eab1cb4",
       "tag": "evolute_duel-Board",
       "selector": "0x836ef99f75ec03877951d491db5b9730a3f3552e3fc7d1c38a9f1abc320947"
     },
     {
       "members": [],
-      "class_hash": "0x55c9fcee947fae0d300202268cb47d6051a6d151d36d736ef54fe5f371524cb",
+      "class_hash": "0x72e20e73f7031a9cf8a98641575834d2b90f213697d895f0cdf51e8e3eff491",
       "tag": "evolute_duel-Game",
       "selector": "0x50eb71734a5acf3d804e250ff9e59bb3566e8bf9d30d0587d38cc2cc032e232"
     },
     {
       "members": [],
-      "class_hash": "0x7f8d595a520fffe203c305f3d7fd356e1e15c1c29c27b9e44d04188670d816f",
+      "class_hash": "0x59573d72d8bd1278344d5b9f8a911aeae55b0c2b262f1312c954b67ee1e1dec",
       "tag": "evolute_duel-Move",
       "selector": "0x6d7481ce108a8fbf6a107f7561809083890ccdb89931116448283bf99a278d5"
     },
@@ -1808,9 +1808,15 @@
   "events": [
     {
       "members": [],
-      "class_hash": "0x756b3e2e5a9b0e6b5bd6872c186ea0bf6411ad6c9567645c5d89517b77d71fa",
+      "class_hash": "0x61cb2fea390c1106db7d3d78209cb84c051c688ade645421caf48c1c0e5f6cf",
       "tag": "evolute_duel-BoardCreated",
       "selector": "0x1a41b9cde62dde29c4f35c38893fff421cffc41f9ff0b4c8b817f85d788d75c"
+    },
+    {
+      "members": [],
+      "class_hash": "0x32b6e1711df1ed8df1e313150c2d1437a163cf3cce682e64072f7dbf5c2ad29",
+      "tag": "evolute_duel-BoardUpdated",
+      "selector": "0x1352659f5307c3478b85ed999c391ac8768670156647c54e3d0edfd3acd61de"
     },
     {
       "members": [],
@@ -1820,19 +1826,25 @@
     },
     {
       "members": [],
-      "class_hash": "0x2566d3756ef62435b98f75c090ef641e49692dfd2824ef8cd30a810bd5dc0c2",
+      "class_hash": "0x455484e1717d0a6384d751c155d2ac3ae7ec2a979ed220040f89f5baeb7212c",
+      "tag": "evolute_duel-GameCanceleFailed",
+      "selector": "0x113dcf91ca9d4d9f3ba4d11563cf5fc414a1e7e7008f593e4e8142c3644907a"
+    },
+    {
+      "members": [],
+      "class_hash": "0x3676462e1c3a74b1cfb18f8392f1ccbe63e7cc99d8b4029b4749d446c2fe31f",
       "tag": "evolute_duel-GameCanceled",
       "selector": "0x32cbf0a2e3702b3a487fe9eb046045c2dfbedd864465a2c8e0f61d567ff839c"
     },
     {
       "members": [],
-      "class_hash": "0x596b83f5cfc8214894b3152be8143d750fa9ad6f2a6871667bf34cfc94d142",
+      "class_hash": "0x2a4b1cdcfa2235705e7b6029f537ee84e15eb484471e415ea0ff83ea7643e9d",
       "tag": "evolute_duel-GameCreateFailed",
       "selector": "0x1bd4a12eb88a971444ea1e25c0d0e3d6737f6afc4cd5cc9102747ac36a1b980"
     },
     {
       "members": [],
-      "class_hash": "0x774c9ca8e116649b2043773e590326d7855d20d92178a8472e63aa50bb17e51",
+      "class_hash": "0x481f54ded78641d205781d23acd271739b04412fac8ae120c8f717e26f0d671",
       "tag": "evolute_duel-GameCreated",
       "selector": "0x668233b95923832d04af3e8e7df9e8688cac7c430b1a18e4dbc66c88d1bf0a6"
     },
@@ -1844,7 +1856,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x509de33ec673785ca8afa701bf10b74e381347450bcf06d7a71cbbb384b773f",
+      "class_hash": "0x2e9fc9b492fee1f222927248e46139b8389d8f8b66c4f690041ae67c4c0990c",
       "tag": "evolute_duel-GameJoinFailed",
       "selector": "0x208170d1ab20b178e8af5c51e5192c9e8f14e420761c5802722ca0b4adcbd2e"
     },
@@ -1865,6 +1877,18 @@
       "class_hash": "0x1f2dbb2e14186ab49243fe0a2b16adf7ccedc1ca05f1c9b8a8c250905d9fe52",
       "tag": "evolute_duel-Moved",
       "selector": "0x3ca22e802348ce9fa7b011f883499ac79ca68442272661cc75ea51808da74d2"
+    },
+    {
+      "members": [],
+      "class_hash": "0x6267f2d886bd2fbfda9e4fcd5d5ea1d6b1e46dc12cb54f80a335fdbe382b4d9",
+      "tag": "evolute_duel-NotYourTurn",
+      "selector": "0x3fa0a73cd88ffc42bc7aa5a689f0e1cb1b17634b28156b12a6653f74dea2906"
+    },
+    {
+      "members": [],
+      "class_hash": "0x6fedb1dbca2bddb9866a7b91a4ebd70ae88538b76dfc8fa26ffe95de23f3e10",
+      "tag": "evolute_duel-PlayerNotInGame",
+      "selector": "0x739d0a1050e8444702e4adb2fca7c6b3c0844d6ab20959088abfb5c2a42bf2a"
     },
     {
       "members": [],
