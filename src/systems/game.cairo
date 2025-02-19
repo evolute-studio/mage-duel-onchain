@@ -20,7 +20,7 @@ pub mod game {
         models::{Board, Rules, Move, Game},
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
-            PlayerNotInGame, NotYourTurn,
+            PlayerNotInGame, NotYourTurn, NotEnoughJokers,
         },
         systems::helpers::board::{create_board, draw_tile_from_board_deck, update_board_state},
         packing::{GameStatus, Tile},
@@ -180,19 +180,27 @@ pub mod game {
                 },
             };
 
-            let (player1_address, player1_side, _) = board.player1;
-            let (player2_address, player2_side, _) = board.player2;
+            let (player1_address, player1_side, joker_number1) = board.player1;
+            let (player2_address, player2_side, joker_number2) = board.player2;
 
-            let player_side = if player == player1_address {
-                player1_side
+            let (player_side, joker_number) = if player == player1_address {
+                (player1_side, joker_number1)
             } else if player == player2_address {
-                player2_side
+                (player2_side, joker_number2)
             } else {
                 //TODO: Error: player is not in the game
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id });
                 return;
             };
 
+
+            //check if enough jokers
+            if joker_tile.is_some() && joker_number == 0 {
+                world.emit_event(@NotEnoughJokers { player_id: player, board_id });
+                return;
+            }
+
+            //check if it is the player's turn
             let prev_move_id = board.last_move_id;
             if prev_move_id.is_some() {
                 let prev_move_id = prev_move_id.unwrap();

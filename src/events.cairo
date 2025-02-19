@@ -151,3 +151,11 @@ pub struct NotYourTurn {
     pub player_id: ContractAddress,
     pub board_id: felt252,
 }
+
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::event]
+pub struct NotEnoughJokers {
+    #[key]
+    pub player_id: ContractAddress,
+    pub board_id: felt252,
+}
