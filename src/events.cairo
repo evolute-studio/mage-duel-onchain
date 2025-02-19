@@ -10,10 +10,10 @@ pub struct BoardCreated {
     pub available_tiles_in_deck: Array<u8>,
     pub top_tile: Option<u8>,
     pub state: Array<(u8, u8)>,
-    //(address, side, joker_number)
-    pub player1: (ContractAddress, PlayerSide, u8),
-    //(address, side, joker_number)
-    pub player2: (ContractAddress, PlayerSide, u8),
+    //(address, side, joker_number, checked)
+    pub player1: (ContractAddress, PlayerSide, u8, bool),
+    //(address, side, joker_number, checked)
+    pub player2: (ContractAddress, PlayerSide, u8, bool),
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
 }
@@ -28,9 +28,10 @@ pub struct BoardUpdated {
     pub top_tile: Option<u8>,
     pub state: Array<(u8, u8)>,
     //(address, side, joker_number)
-    pub player1: (ContractAddress, PlayerSide, u8),
-    //(address, side, joker_number)
-    pub player2: (ContractAddress, PlayerSide, u8),
+    //(address, side, joker_number, checked)
+    pub player1: (ContractAddress, PlayerSide, u8, bool),
+    //(address, side, joker_number, checked)
+    pub player2: (ContractAddress, PlayerSide, u8, bool),
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
 }

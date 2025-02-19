@@ -12,10 +12,10 @@ pub struct Board {
     pub top_tile: Option<u8>,
     // (u8, u8) => (tile_number, rotation)
     pub state: Array<(u8, u8)>,
-    //(address, side, joker_number)
-    pub player1: (ContractAddress, PlayerSide, u8),
-    //(address, side, joker_number)
-    pub player2: (ContractAddress, PlayerSide, u8),
+    //(address, side, joker_number, checked)
+    pub player1: (ContractAddress, PlayerSide, u8, bool),
+    //(address, side, joker_number, checked)
+    pub player2: (ContractAddress, PlayerSide, u8, bool),
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
 }
@@ -33,6 +33,12 @@ pub struct Move {
     pub col: u8,
     pub row: u8,
     pub is_joker: bool,
+}
+
+#[derive(Drop, Serde, Debug)]
+pub enum MoveTypes {
+    Move,
+    Skip,
 }
 
 #[derive(Drop, Introspect, Serde)]

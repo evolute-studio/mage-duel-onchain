@@ -6,9 +6,9 @@ pub trait IGame<T> {
     fn create_game(ref self: T);
     fn cancel_game(ref self: T);
     fn join_game(ref self: T, host_player: ContractAddress);
-    fn make_move(
-        ref self: T, board_id: felt252, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8,
-    );
+    fn make_move(ref self: T, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8);
+    // fn skip_move(ref self: T);
+    fn check(ref self: T);
 }
 
 // dojo decorator
@@ -20,10 +20,10 @@ pub mod game {
         models::{Board, Rules, Move, Game},
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
-            PlayerNotInGame, NotYourTurn, NotEnoughJokers,
+            PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, 
         },
         systems::helpers::board::{create_board, draw_tile_from_board_deck, update_board_state},
-        packing::{GameStatus, Tile},
+        packing::{GameStatus, Tile, GameState},
     };
 
     use dojo::event::EventStorage;
@@ -155,16 +155,19 @@ pub mod game {
         }
 
         fn make_move(
-            ref self: ContractState,
-            board_id: felt252,
-            joker_tile: Option<u8>,
-            rotation: u8,
-            col: u8,
-            row: u8,
+            ref self: ContractState, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8,
         ) {
             let mut world = self.world_default();
-            let mut board: Board = world.read_model(board_id);
             let player = get_caller_address();
+            let game: Game = world.read_model(player);
+
+            if game.board_id.is_none() {
+                world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
+                return;
+            }
+
+            let board_id = game.board_id.unwrap();
+            let mut board: Board = world.read_model(board_id);
             let move_id = self.move_id_generator.read();
 
             let tile: Tile = match joker_tile {
@@ -180,8 +183,8 @@ pub mod game {
                 },
             };
 
-            let (player1_address, player1_side, joker_number1) = board.player1;
-            let (player2_address, player2_side, joker_number2) = board.player2;
+            let (player1_address, player1_side, joker_number1, _) = board.player1;
+            let (player2_address, player2_side, joker_number2, _) = board.player2;
 
             let (player_side, joker_number) = if player == player1_address {
                 (player1_side, joker_number1)
@@ -192,7 +195,6 @@ pub mod game {
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id });
                 return;
             };
-
 
             //check if enough jokers
             if joker_tile.is_some() && joker_number == 0 {
@@ -254,25 +256,81 @@ pub mod game {
                     },
                 );
             // // Check if the game is in progress.
-        // if board.state == GameState::InProgress {
-        //     world.emit_event(@InvalidMove { move_id: 0, player });
-        //     return;
+
+        }
+
+        // fn skip_move(ref self: ContractState) {
+        //     let mut world = self.world_default();
+        //     let player = get_caller_address();
+        //     let game: Game = world.read_model(player);
+
+        //     if game.board_id.is_none() {
+        //         world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
+        //         return;
+        //     }
+
+        //     let board_id = game.board_id.unwrap();
+        //     let mut board: Board = world.read_model(board_id);
         // }
 
-            // // Check if the player is allowed to make a move.
-        // let last_move: Move = world.read_model(board.last_move_id);
-        // if !is_player_allowed_to_move(player, board.clone(), last_move) {
-        //     world.emit_event(@InvalidMove { move_id: 0, player });
-        //     return;
-        // }
+        fn check(ref self: ContractState) {
+            let mut world = self.world_default();
+            let player = get_caller_address();
+            let game: Game = world.read_model(player);
 
-            // // Check if the move is valid.
-        // if !is_move_valid(board.clone(), tile, rotation, col, row, is_joker) {
-        //     world.emit_event(@InvalidMove { move_id: 0, player });
-        //     return;
-        // }
+            if game.board_id.is_none() {
+                world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
+                return;
+            }
+
+            let board_id = game.board_id.unwrap();
+            let mut board: Board = world.read_model(board_id);
+
+            let (player1_address, player1_side, joker_number1, mut player1_checked) = board.player1;
+            let (player2_address, player2_side, joker_number2, mut player2_checked) = board.player2;
+
+            if player == player1_address {
+                player1_checked = true;
+            } else {
+                player2_checked = true;
+            };
+
+            board.player1 = (player1_address, player1_side, joker_number1, player1_checked);
+            board.player2 = (player2_address, player2_side, joker_number2, player2_checked);
+
+            if player1_checked && player2_checked {
+                //TODO: FINISH THE GAME
+                board.game_state = GameState::Finished;
+                let mut host_game: Game = world.read_model(player1_address);
+                let mut guest_game: Game = world.read_model(player2_address);
+                host_game.status = GameStatus::Finished;
+                guest_game.status = GameStatus::Finished;
+
+                world.write_model(@host_game);
+                world.write_model(@guest_game);
+
+                world.emit_event(@GameFinished { host_player: player1_address, board_id });
+                world.emit_event(@GameFinished { host_player: player2_address, board_id });
+            }
+
+            world.write_model(@board);
+            world
+                .emit_event(
+                    @BoardUpdated {
+                        board_id: board.id,
+                        initial_edge_state: board.initial_edge_state,
+                        available_tiles_in_deck: board.available_tiles_in_deck,
+                        top_tile: board.top_tile,
+                        state: board.state,
+                        player1: board.player1,
+                        player2: board.player2,
+                        last_move_id: board.last_move_id,
+                        game_state: board.game_state,
+                    },
+                );
         }
     }
+
 
     // fn is_move_valid(
     //     mut board: Board, mut tile: Option<Tile>, rotation: u8, col: u8, row: u8, is_joker: bool,
@@ -357,19 +415,6 @@ pub mod game {
     //             }
     //         }
     //     };
-
-    //     return true;
-    // }
-
-    // fn is_player_allowed_to_move(player: ContractAddress, board: Board, last_move: Move) -> bool
-    // {
-    //     if player != board.player1 && player != board.player2 {
-    //         return false;
-    //     }
-
-    //     if last_move.player == player {
-    //         return false;
-    //     }
 
     //     return true;
     // }

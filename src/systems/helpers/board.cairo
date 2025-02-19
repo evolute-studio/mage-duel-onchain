@@ -48,8 +48,8 @@ pub fn create_board(
         available_tiles_in_deck: deck_rules_flat.clone(),
         top_tile: Option::None,
         state: tiles.clone(),
-        player1: (player1, PlayerSide::Blue, rules.joker_number),
-        player2: (player2, PlayerSide::Red, rules.joker_number),
+        player1: (player1, PlayerSide::Blue, rules.joker_number, false),
+        player2: (player2, PlayerSide::Red, rules.joker_number, false),
         last_move_id,
         game_state,
     };
@@ -94,13 +94,13 @@ pub fn update_board_state(
     board.state = updated_state;
 
     //update joker_number
-    let (player1_address, player1_side, joker_number1) = board.player1;
-    let (player2_address, player2_side, joker_number2) = board.player2;
+    let (player1_address, player1_side, joker_number1, _) = board.player1;
+    let (player2_address, player2_side, joker_number2, _) = board.player2;
 
     if side == player1_side {
-        board.player1 = (player1_address, player1_side, joker_number1 - 1);
+        board.player1 = (player1_address, player1_side, joker_number1 - 1, false);
     } else {
-        board.player2 = (player2_address, player2_side, joker_number2 - 1);
+        board.player2 = (player2_address, player2_side, joker_number2 - 1, false);
     }
 }
 
