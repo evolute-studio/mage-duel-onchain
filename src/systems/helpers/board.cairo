@@ -66,7 +66,7 @@ pub fn create_board(
                 board_id,
                 initial_edge_state,
                 available_tiles_in_deck: deck_rules_flat,
-                top_tile: Option::Some(top_tile.into()),
+                top_tile,
                 state: tiles,
                 player1: board.player1,
                 player2: board.player2,
@@ -92,25 +92,53 @@ pub fn update_board_state(
     };
 
     board.state = updated_state;
+    // //update joker_number
+// let (player1_address, player1_side, mut joker_number1, _) = board.player1;
+// let (player2_address, player2_side, mut joker_number2, _) = board.player2;
+// if is_joker {
+//     if side == player1_side {
+//         joker_number1 -= 1;
+//     } else {
+//         joker_number2 -= 1;
+//     }
+// }
 
-    //update joker_number
+    // board.player1 = (player1_address, player1_side, joker_number1, false);
+// board.player2 = (player2_address, player2_side, joker_number2, false);
+}
+
+pub fn update_board_joker_number(ref board: Board, side: PlayerSide, is_joker: bool) -> (u8, u8) {
     let (player1_address, player1_side, mut joker_number1, _) = board.player1;
     let (player2_address, player2_side, mut joker_number2, _) = board.player2;
     if is_joker {
         if side == player1_side {
-            joker_number1 -= 1;
+            joker_number1 += 1;
         } else {
-            joker_number2 -= 1;
+            joker_number2 += 1;
         }
     }
+
+    board.player1 = (player1_address, player1_side, joker_number1, false);
+    board.player2 = (player2_address, player2_side, joker_number2, false);
+
+    (joker_number1, joker_number2)
+}
+
+pub fn reset_board_checks(ref board: Board) {
+    let (player1_address, player1_side, joker_number1, _) = board.player1;
+    let (player2_address, player2_side, joker_number2, _) = board.player2;
 
     board.player1 = (player1_address, player1_side, joker_number1, false);
     board.player2 = (player2_address, player2_side, joker_number2, false);
 }
 
 /// Draws random tile from the board deck and updates the deck without the drawn tile.
-pub fn draw_tile_from_board_deck(ref board: Board) -> Tile {
+pub fn draw_tile_from_board_deck(ref board: Board) -> Option<u8> {
     let avaliable_tiles: Array<u8> = board.available_tiles_in_deck.clone();
+    if avaliable_tiles.len() == 0 {
+        board.top_tile = Option::None;
+        return Option::None;
+    }
     let mut dice = DiceTrait::new(
         avaliable_tiles.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into(),
     );
@@ -129,7 +157,7 @@ pub fn draw_tile_from_board_deck(ref board: Board) -> Tile {
     board.available_tiles_in_deck = updated_available_tiles.clone();
     board.top_tile = Option::Some(tile.into());
 
-    tile.into()
+    return Option::Some(tile);
 }
 
 

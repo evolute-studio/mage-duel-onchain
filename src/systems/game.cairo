@@ -23,7 +23,10 @@ pub mod game {
             PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
             Skiped, Moved,
         },
-        systems::helpers::board::{create_board, draw_tile_from_board_deck, update_board_state},
+        systems::helpers::board::{
+            create_board, draw_tile_from_board_deck, update_board_state, update_board_joker_number,
+            reset_board_checks,
+        },
         packing::{GameStatus, Tile, GameState},
     };
 
@@ -203,8 +206,10 @@ pub mod game {
                 return;
             };
 
+            let is_joker = joker_tile.is_some();
+
             //check if enough jokers
-            if joker_tile.is_some() && joker_number == 0 {
+            if is_joker && joker_number == 0 {
                 world.emit_event(@NotEnoughJokers { player_id: player, board_id });
                 return;
             }
@@ -231,37 +236,65 @@ pub mod game {
                 rotation: rotation,
                 col,
                 row,
-                is_joker: joker_tile.is_some(),
+                is_joker,
             };
 
             //TODO: check if the move is valid
 
-            draw_tile_from_board_deck(ref board);
+            //Draw a tile from the board deck if it is not a joker
+            let top_tile = if !is_joker {
+                draw_tile_from_board_deck(ref board)
+            } else {
+                board.top_tile
+            };
 
-            //TODO: update board state
-            update_board_state(
-                ref board, tile, rotation, col, row, joker_tile.is_some(), player_side,
+            //Update board state
+            update_board_state(ref board, tile, rotation, col, row, is_joker, player_side);
+
+            //Update joker number
+            let (joker_number1, joker_number2) = update_board_joker_number(
+                ref board, player_side, is_joker,
             );
+
+            //Reset player's checked status
+            reset_board_checks(ref board);
 
             board.last_move_id = Option::Some(move_id);
             self.move_id_generator.write(move_id + 1);
+
+            if top_tile.is_none() && joker_number1 == 0 && joker_number2 == 0 {
+                //FINISH THE GAME
+
+                board.game_state = GameState::Finished;
+                let mut host_game: Game = world.read_model(player1_address);
+                let mut guest_game: Game = world.read_model(player2_address);
+                host_game.status = GameStatus::Finished;
+                guest_game.status = GameStatus::Finished;
+
+                world.write_model(@host_game);
+                world.write_model(@guest_game);
+
+                world.emit_event(@GameFinished { host_player: player1_address, board_id });
+                world.emit_event(@GameFinished { host_player: player2_address, board_id });
+            }
+
             world.write_model(@move);
             world.write_model(@board);
 
-
-            world.emit_event(
-                @Moved {
-                    move_id,
-                    player,
-                    prev_move_id: move.prev_move_id,
-                    tile: move.tile,
-                    rotation: move.rotation,
-                    col: move.col,
-                    row: move.row,
-                    is_joker: move.is_joker,
-                    board_id,
-                },
-            );
+            world
+                .emit_event(
+                    @Moved {
+                        move_id,
+                        player,
+                        prev_move_id: move.prev_move_id,
+                        tile: move.tile,
+                        rotation: move.rotation,
+                        col: move.col,
+                        row: move.row,
+                        is_joker: move.is_joker,
+                        board_id,
+                    },
+                );
             world
                 .emit_event(
                     @BoardUpdated {
@@ -300,8 +333,8 @@ pub mod game {
 
             let move_id = self.move_id_generator.read();
 
-            let (player1_address, player1_side, joker_number1, _) = board.player1;
-            let (player2_address, player2_side, joker_number2, _) = board.player2;
+            let (player1_address, player1_side, _, _) = board.player1;
+            let (player2_address, player2_side, _, _) = board.player2;
 
             let player_side = if player == player1_address {
                 player1_side
@@ -326,6 +359,7 @@ pub mod game {
                     return;
                 }
 
+                //check if last move was a skip
                 if prev_move.tile.is_none() && !prev_move.is_joker {
                     //FINISH THE GAME
                     board.game_state = GameState::Finished;
@@ -356,16 +390,13 @@ pub mod game {
             board.last_move_id = Option::Some(move_id);
             self.move_id_generator.write(move_id + 1);
 
-            board.player1 = (player1_address, player1_side, joker_number1, false);
-            board.player2 = (player2_address, player2_side, joker_number2, false);
+            reset_board_checks(ref board);
 
             world.write_model(@move);
             world.write_model(@board);
 
             world
-                .emit_event(
-                    @Skiped { move_id, player, prev_move_id: move.prev_move_id, board_id },
-                );
+                .emit_event(@Skiped { move_id, player, prev_move_id: move.prev_move_id, board_id });
             world
                 .emit_event(
                     @BoardUpdated {
