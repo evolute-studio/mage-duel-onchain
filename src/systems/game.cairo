@@ -8,7 +8,6 @@ pub trait IGame<T> {
     fn join_game(ref self: T, host_player: ContractAddress);
     fn make_move(ref self: T, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8);
     fn skip_move(ref self: T);
-    fn check(ref self: T);
 }
 
 // dojo decorator
@@ -25,7 +24,6 @@ pub mod game {
         },
         systems::helpers::board::{
             create_board, draw_tile_from_board_deck, update_board_state, update_board_joker_number,
-            reset_board_checks,
         },
         packing::{GameStatus, Tile, GameState},
     };
@@ -193,8 +191,8 @@ pub mod game {
                 },
             };
 
-            let (player1_address, player1_side, joker_number1, _) = board.player1;
-            let (player2_address, player2_side, joker_number2, _) = board.player2;
+            let (player1_address, player1_side, joker_number1) = board.player1;
+            let (player2_address, player2_side, joker_number2) = board.player2;
 
             let (player_side, joker_number) = if player == player1_address {
                 (player1_side, joker_number1)
@@ -255,9 +253,6 @@ pub mod game {
             let (joker_number1, joker_number2) = update_board_joker_number(
                 ref board, player_side, is_joker,
             );
-
-            //Reset player's checked status
-            reset_board_checks(ref board);
 
             board.last_move_id = Option::Some(move_id);
             self.move_id_generator.write(move_id + 1);
@@ -333,8 +328,8 @@ pub mod game {
 
             let move_id = self.move_id_generator.read();
 
-            let (player1_address, player1_side, _, _) = board.player1;
-            let (player2_address, player2_side, _, _) = board.player2;
+            let (player1_address, player1_side, _) = board.player1;
+            let (player2_address, player2_side, _) = board.player2;
 
             let player_side = if player == player1_address {
                 player1_side
@@ -390,75 +385,11 @@ pub mod game {
             board.last_move_id = Option::Some(move_id);
             self.move_id_generator.write(move_id + 1);
 
-            reset_board_checks(ref board);
-
             world.write_model(@move);
             world.write_model(@board);
 
             world
                 .emit_event(@Skiped { move_id, player, prev_move_id: move.prev_move_id, board_id });
-            world
-                .emit_event(
-                    @BoardUpdated {
-                        board_id: board.id,
-                        initial_edge_state: board.initial_edge_state,
-                        available_tiles_in_deck: board.available_tiles_in_deck,
-                        top_tile: board.top_tile,
-                        state: board.state,
-                        player1: board.player1,
-                        player2: board.player2,
-                        last_move_id: board.last_move_id,
-                        game_state: board.game_state,
-                    },
-                );
-        }
-
-        fn check(ref self: ContractState) {
-            let mut world = self.world_default();
-            let player = get_caller_address();
-            let game: Game = world.read_model(player);
-
-            if game.board_id.is_none() {
-                world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
-                return;
-            }
-
-            let board_id = game.board_id.unwrap();
-            let mut board: Board = world.read_model(board_id);
-
-            if game.status == GameStatus::Finished {
-                world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
-                return;
-            }
-
-            let (player1_address, player1_side, joker_number1, mut player1_checked) = board.player1;
-            let (player2_address, player2_side, joker_number2, mut player2_checked) = board.player2;
-
-            if player == player1_address {
-                player1_checked = true;
-            } else {
-                player2_checked = true;
-            };
-
-            board.player1 = (player1_address, player1_side, joker_number1, player1_checked);
-            board.player2 = (player2_address, player2_side, joker_number2, player2_checked);
-
-            if player1_checked && player2_checked {
-                //TODO: FINISH THE GAME
-                board.game_state = GameState::Finished;
-                let mut host_game: Game = world.read_model(player1_address);
-                let mut guest_game: Game = world.read_model(player2_address);
-                host_game.status = GameStatus::Finished;
-                guest_game.status = GameStatus::Finished;
-
-                world.write_model(@host_game);
-                world.write_model(@guest_game);
-
-                world.emit_event(@GameFinished { host_player: player1_address, board_id });
-                world.emit_event(@GameFinished { host_player: player2_address, board_id });
-            }
-
-            world.write_model(@board);
             world
                 .emit_event(
                     @BoardUpdated {

@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x4d9f0e45858c8c25af85e11cf2986ebb6875369f74cd41094317b7d2b84a4f",
-      "class_hash": "0x6c0d725e7b205ed00bc0994931e46c03da89389633ea14bd7d4b87d09dabe92",
+      "address": "0x191c420e18da1249eeaef159c5636a32097e16db45b8d05e79055f64a01592",
+      "class_hash": "0x794a18b0075293055fd13c494a8c84b6a164c7cc2e70cdb4a24a2a04046710d",
       "abi": [
         {
           "type": "impl",
@@ -1451,13 +1451,6 @@
               "inputs": [],
               "outputs": [],
               "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "check",
-              "inputs": [],
-              "outputs": [],
-              "state_mutability": "external"
             }
           ]
         },
@@ -1578,7 +1571,6 @@
         "join_game",
         "make_move",
         "skip_move",
-        "check",
         "upgrade"
       ]
     },
@@ -1782,7 +1774,7 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0x5bdcd9a14d9d935abbd9c81f8b161b20586afee16c4e2bf3bda74193bea7d0c",
+      "class_hash": "0x15619ea9eea7324c8b8e648162090bbaec54bcc6b6ee535c396c00c0eab1cb4",
       "tag": "evolute_duel-Board",
       "selector": "0x836ef99f75ec03877951d491db5b9730a3f3552e3fc7d1c38a9f1abc320947"
     },
@@ -1820,13 +1812,13 @@
   "events": [
     {
       "members": [],
-      "class_hash": "0xd4e190b18ea9d8069458ad7420a54f5e337127aae60f4fc99012f29a34ee5a",
+      "class_hash": "0x61cb2fea390c1106db7d3d78209cb84c051c688ade645421caf48c1c0e5f6cf",
       "tag": "evolute_duel-BoardCreated",
       "selector": "0x1a41b9cde62dde29c4f35c38893fff421cffc41f9ff0b4c8b817f85d788d75c"
     },
     {
       "members": [],
-      "class_hash": "0x6c306cde232f80b75b56610898fc899af89256e829e5ce9aa1a12a555bf033e",
+      "class_hash": "0x32b6e1711df1ed8df1e313150c2d1437a163cf3cce682e64072f7dbf5c2ad29",
       "tag": "evolute_duel-BoardUpdated",
       "selector": "0x1352659f5307c3478b85ed999c391ac8768670156647c54e3d0edfd3acd61de"
     },

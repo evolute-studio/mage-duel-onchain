@@ -48,8 +48,8 @@ pub fn create_board(
         available_tiles_in_deck: deck_rules_flat.clone(),
         top_tile: Option::None,
         state: tiles.clone(),
-        player1: (player1, PlayerSide::Blue, rules.joker_number, false),
-        player2: (player2, PlayerSide::Red, rules.joker_number, false),
+        player1: (player1, PlayerSide::Blue, rules.joker_number),
+        player2: (player2, PlayerSide::Red, rules.joker_number),
         last_move_id,
         game_state,
     };
@@ -108,28 +108,20 @@ pub fn update_board_state(
 }
 
 pub fn update_board_joker_number(ref board: Board, side: PlayerSide, is_joker: bool) -> (u8, u8) {
-    let (player1_address, player1_side, mut joker_number1, _) = board.player1;
-    let (player2_address, player2_side, mut joker_number2, _) = board.player2;
+    let (player1_address, player1_side, mut joker_number1) = board.player1;
+    let (player2_address, player2_side, mut joker_number2) = board.player2;
     if is_joker {
         if side == player1_side {
-            joker_number1 += 1;
+            joker_number1 -= 1;
         } else {
-            joker_number2 += 1;
+            joker_number2 -= 1;
         }
     }
 
-    board.player1 = (player1_address, player1_side, joker_number1, false);
-    board.player2 = (player2_address, player2_side, joker_number2, false);
+    board.player1 = (player1_address, player1_side, joker_number1);
+    board.player2 = (player2_address, player2_side, joker_number2);
 
     (joker_number1, joker_number2)
-}
-
-pub fn reset_board_checks(ref board: Board) {
-    let (player1_address, player1_side, joker_number1, _) = board.player1;
-    let (player2_address, player2_side, joker_number2, _) = board.player2;
-
-    board.player1 = (player1_address, player1_side, joker_number1, false);
-    board.player2 = (player2_address, player2_side, joker_number2, false);
 }
 
 /// Draws random tile from the board deck and updates the deck without the drawn tile.
