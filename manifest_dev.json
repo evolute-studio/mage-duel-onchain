@@ -1575,8 +1575,8 @@
       ]
     },
     {
-      "address": "0x231578ae06610bbffba207e59e26a47e6fbd658d08e5106f867dfaaa299c27d",
-      "class_hash": "0x556e101bb21acdd83793d0c5596656666ecabb3dcba5462826f4ed7b5bbc666",
+      "address": "0x5aa4fe2a5d5b617d662d67e3baabb3355bcb6f3af781593bc6b5e519ff4fc1c",
+      "class_hash": "0x24a5eb79b114d92b3226bc4e6dc643cdced47cf8fdf351e9cecacfcf7ce4610",
       "abi": [
         {
           "type": "impl",
@@ -1648,6 +1648,44 @@
               "type": "function",
               "name": "balance",
               "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "username",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "active_skin",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "change_username",
+              "inputs": [
+                {
+                  "name": "new_username",
+                  "type": "core::felt252"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "change_skin",
+              "inputs": [
+                {
+                  "name": "skin_id",
+                  "type": "core::integer::u8"
+                }
+              ],
               "outputs": [],
               "state_mutability": "external"
             }
@@ -1766,6 +1804,10 @@
       "selector": "0x2fe51480cb4bcea87b911f6a9be5f5a1a39ee57c9aabb0617792aa4e03370e0",
       "systems": [
         "balance",
+        "username",
+        "active_skin",
+        "change_username",
+        "change_skin",
         "upgrade"
       ]
     }
@@ -1792,7 +1834,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x740d4f2dba132b181b3340af25ccee21127d40249432d96d69394addacdfbdb",
+      "class_hash": "0x55644a42aa567dd06355628ff3541495f41bd91b5c35b742e462053c4bb3d32",
       "tag": "evolute_duel-Player",
       "selector": "0xd206bfcaacb44471c314c767d8bdf5b2c84b204fd362b85989b096baef7683"
     },
@@ -1804,7 +1846,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x41d260fb634dad2acbec5365afe54efa3418fcb49efedb4c6a8adeccbe3e69b",
+      "class_hash": "0x21894f2a76d911f06513daf6620fa797768978e3d7cd4f35ba0fe128a1c63d3",
       "tag": "evolute_duel-Shop",
       "selector": "0x222f976f10d5f7bc6ff181000844ce4341a875fc25c8c6302525df530bbc802"
     }
@@ -1824,9 +1866,21 @@
     },
     {
       "members": [],
-      "class_hash": "0x4855a0ac501a8649fb3db7e4f17dce971944e9db07d8eeb1f0e8fdc12aa8544",
+      "class_hash": "0x300dda610baefee4ff1a6296fc9f5243a85dbcd957a75e33754fb407ff1f7c5",
+      "tag": "evolute_duel-CurrentPlayerActiveSkin",
+      "selector": "0x566ceb11eaba68aa751316a202fa6b11183bc0333bbae9b2f6d1401f4e68b39"
+    },
+    {
+      "members": [],
+      "class_hash": "0x3b5a4f94a60b2fa03417157220bd9447aad1ea6c30a3581faf7a876d0516c21",
       "tag": "evolute_duel-CurrentPlayerBalance",
       "selector": "0x56779dd6799df6d7eb414e6e5e7233a5fa374908dc132d33fd22212b5e4756"
+    },
+    {
+      "members": [],
+      "class_hash": "0x2c9d844286e15ee51512172068cd04383c4e8076eb65162c251db060b94068c",
+      "tag": "evolute_duel-CurrentPlayerUsername",
+      "selector": "0x60fa9de6d3a03409505d9adacd4ea14bc097370d1e7ab4551092f7853e8ad7"
     },
     {
       "members": [],
@@ -1905,6 +1959,24 @@
       "class_hash": "0x6fedb1dbca2bddb9866a7b91a4ebd70ae88538b76dfc8fa26ffe95de23f3e10",
       "tag": "evolute_duel-PlayerNotInGame",
       "selector": "0x739d0a1050e8444702e4adb2fca7c6b3c0844d6ab20959088abfb5c2a42bf2a"
+    },
+    {
+      "members": [],
+      "class_hash": "0x289d83b2c1a2bce8a8568090a6392c26f201175be459a2157ab2f217aed8a8f",
+      "tag": "evolute_duel-PlayerSkinChangeFailed",
+      "selector": "0x67055a4f0297923a761e2f026532239bae7ce092d2ddd80f8598ced10a79a6b"
+    },
+    {
+      "members": [],
+      "class_hash": "0x532e567454322dfd2dc79386a95e274188716c663c256965aa9c1290c70c94b",
+      "tag": "evolute_duel-PlayerSkinChanged",
+      "selector": "0x6dbdbb85ae5cda0387e7139543287ad5f74d5e2960249912c704db4068fa4c6"
+    },
+    {
+      "members": [],
+      "class_hash": "0x627923abdef29e9fd89f370744d61b8fc45e2f60c8204c3cfc6d482b11acee6",
+      "tag": "evolute_duel-PlayerUsernameChanged",
+      "selector": "0x288345f6380a8662043d3a074a7ca2a9bd9ab5e6b5ffdd65455f98668bc7cf1"
     },
     {
       "members": [],

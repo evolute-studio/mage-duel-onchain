@@ -143,15 +143,6 @@ pub struct GameCanceleFailed {
 
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::event]
-pub struct CurrentPlayerBalance {
-    #[key]
-    pub player_id: ContractAddress,
-    pub balance: felt252,
-}
-
-
-#[derive(Copy, Drop, Serde, Debug)]
-#[dojo::event]
 pub struct PlayerNotInGame {
     #[key]
     pub player_id: ContractAddress,
@@ -181,4 +172,60 @@ pub struct GameIsAlreadyFinished {
     #[key]
     pub player_id: ContractAddress,
     pub board_id: felt252,
+}
+
+
+// --------------------------------------
+// Player Profile Events
+// --------------------------------------
+
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::event]
+pub struct CurrentPlayerBalance {
+    #[key]
+    pub player_id: ContractAddress,
+    pub balance: u32,
+}
+
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::event]
+pub struct CurrentPlayerUsername {
+    #[key]
+    pub player_id: ContractAddress,
+    pub username: felt252,
+}
+
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::event]
+pub struct CurrentPlayerActiveSkin {
+    #[key]
+    pub player_id: ContractAddress,
+    pub active_skin: u8,
+}
+
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::event]
+pub struct PlayerUsernameChanged {
+    #[key]
+    pub player_id: ContractAddress,
+    pub new_username: felt252,
+}
+
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::event]
+pub struct PlayerSkinChanged {
+    #[key]
+    pub player_id: ContractAddress,
+    pub new_skin: u8,
+}
+
+
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::event]
+pub struct PlayerSkinChangeFailed {
+    #[key]
+    pub player_id: ContractAddress,
+    pub new_skin: u8,
+    pub skin_price: u32,
+    pub balance: u32,
 }

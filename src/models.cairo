@@ -93,10 +93,9 @@ pub struct Player {
     #[key]
     pub player_id: ContractAddress,
     pub username: felt252,
-    pub balance: felt252,
-    pub xp: felt252,
+    pub balance: u32,
     pub games_played: felt252,
-    pub skins: Array<u8>,
+    pub active_skin: u8,
 }
 
 #[derive(Drop, Serde, Debug)]
@@ -104,5 +103,5 @@ pub struct Player {
 pub struct Shop {
     #[key]
     pub shop_id: felt252,
-    pub skin_prices: Array<felt252>,
+    pub skin_prices: Array<u32>,
 }
