@@ -8,7 +8,8 @@ pub trait IGame<T> {
     fn join_game(ref self: T, host_player: ContractAddress);
     fn make_move(ref self: T, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8);
     fn skip_move(ref self: T);
-    fn create_game_from_snapshot(ref self: T, board_id: felt252, move_delta: u8);
+    fn create_snapshot(ref self: T, board_id: felt252, move_delta: u8);
+    fn create_game_from_snapshot(ref self: T, snapshot_id: felt252);
 }
 
 // dojo decorator
@@ -17,11 +18,11 @@ pub mod game {
     use super::{IGame};
     use starknet::{ContractAddress, get_caller_address};
     use evolute_duel::{
-        models::{Board, Rules, Move, Game},
+        models::{Board, Rules, Move, Game, Snapshot},
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
             PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
-            Skiped, Moved,
+            Skiped, Moved, SnapshotCreated, SnapshotCreateFailed, BoardCreateFromSnapshotFalied
         },
         systems::helpers::board::{
             create_board, draw_tile_from_board_deck, update_board_state, update_board_joker_number,
@@ -39,6 +40,7 @@ pub mod game {
     struct Storage {
         board_id_generator: felt252,
         move_id_generator: felt252,
+        snapshot_id_generator: felt252,
     }
 
 
@@ -102,10 +104,48 @@ pub mod game {
             world.emit_event(@GameCreated { host_player, status });
         }
 
-        fn create_game_from_snapshot(ref self: ContractState, board_id: felt252, move_delta: u8) {
+        fn create_snapshot(ref self: ContractState, board_id: felt252, move_delta: u8) {
+            let mut world = self.world_default();
+            let player = get_caller_address();
+
+            
+            let board: Board = world.read_model(board_id);
+            if board.game_state != GameState::Finished || move_delta == 0 {
+                world.emit_event(@SnapshotCreateFailed { player, board_id, board_game_state: board.game_state,  move_delta });
+                return;
+            }
+
+            let snapshot_id = self.snapshot_id_generator.read();
+
+            let snapshot = Snapshot {
+                snapshot_id,
+                player,
+                board_id,
+                move_delta,
+            };
+
+            self.snapshot_id_generator.write(snapshot_id + 1);
+
+            world.write_model(@snapshot);
+
+            world.emit_event(@SnapshotCreated { snapshot_id, player, board_id, move_delta });
+        }
+
+        fn create_game_from_snapshot(ref self: ContractState, snapshot_id: felt252) {
             let mut world = self.world_default();
 
             let host_player = get_caller_address();
+
+            let snapshot: Snapshot = world.read_model(snapshot_id);
+            let board_id = snapshot.board_id;
+            let move_delta = snapshot.move_delta;
+
+            let board: Board = world.read_model(board_id);
+
+            if board.game_state != GameState::Finished || move_delta == 0 {
+                world.emit_event(@BoardCreateFromSnapshotFalied { player: host_player, old_board_id: board_id,  move_delta });
+                return;
+            }
 
             let mut game: Game = world.read_model(host_player);
             let mut status = game.status;

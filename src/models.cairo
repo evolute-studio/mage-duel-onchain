@@ -57,25 +57,6 @@ pub struct Rules {
     // How many jokers for each player
     pub joker_number: u8,
 }
-// impl PointSerde of Serde<[u8; 24]> {
-//     fn serialize(self: @[u8; 24], ref output: Array<felt252>) {
-//         for el in self.span() {
-//             let felt_el: felt252 = (*el).into();
-//             output.append(felt_el);
-//         };
-//     }
-
-//     fn deserialize(ref serialized: Span<felt252>) -> Option<[u8; 24]> {
-//         let mut output: [u8; 24] = [0; 24];
-
-//         for mut el in output.span() {
-//             let converted: u8 = (*serialized.pop_front().unwrap()).try_into().unwrap();
-//             el = @converted;
-//         };
-
-//         Option::Some(output)
-//     }
-// }
 
 #[derive(Drop, Serde, Debug)]
 #[dojo::model]
@@ -85,6 +66,22 @@ pub struct Game {
     pub status: GameStatus,
     pub board_id: Option<felt252>,
 }
+
+
+#[derive(Drop, Serde, Debug)]
+#[dojo::model]
+pub struct Snapshot {
+    #[key]
+    pub snapshot_id: felt252,
+    pub player: ContractAddress,
+    pub board_id: felt252,
+    pub move_delta: u8,
+}
+
+
+// --------------------------------------
+// Player Profile Models
+// --------------------------------------
 
 
 #[derive(Drop, Serde, Debug)]
@@ -105,3 +102,4 @@ pub struct Shop {
     pub shop_id: felt252,
     pub skin_prices: Array<u32>,
 }
+

@@ -46,6 +46,25 @@ pub struct BoardCreateFromSnapshotFalied {
     pub move_delta: u8,
 }
 
+#[derive(Drop, Serde, Debug)]
+#[dojo::event]
+pub struct SnapshotCreated {
+    #[key]
+    pub snapshot_id: felt252,
+    pub player: ContractAddress,
+    pub board_id: felt252,
+    pub move_delta: u8,
+}
+
+#[derive(Drop, Serde, Debug)]
+#[dojo::event]
+pub struct SnapshotCreateFailed {
+    #[key]
+    pub player: ContractAddress,
+    pub board_id: felt252,
+    pub board_game_state: GameState,
+    pub move_delta: u8,
+}
 
 #[derive(Drop, Serde, Debug)]
 #[dojo::event]

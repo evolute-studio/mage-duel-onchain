@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x2503ccc9b2432a83e2537bbe9ce912cfe63b1ee0c76a9c8bb6ca7042df49d2b",
-      "class_hash": "0x514a27a6a5e594b79278ce768abab6cebcbc7131b43004d90649d5aa2d29980",
+      "address": "0x5c8958f7083a850bba39825d72420e62eecf6a2121b3cd2f60e780a23ca2b95",
+      "class_hash": "0x7161798739e97e5241717c63cd7f52bde5a9a512f38eb34ab0599b67feae70a",
       "abi": [
         {
           "type": "impl",
@@ -1454,7 +1454,7 @@
             },
             {
               "type": "function",
-              "name": "create_game_from_snapshot",
+              "name": "create_snapshot",
               "inputs": [
                 {
                   "name": "board_id",
@@ -1463,6 +1463,18 @@
                 {
                   "name": "move_delta",
                   "type": "core::integer::u8"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "create_game_from_snapshot",
+              "inputs": [
+                {
+                  "name": "snapshot_id",
+                  "type": "core::felt252"
                 }
               ],
               "outputs": [],
@@ -1587,6 +1599,7 @@
         "join_game",
         "make_move",
         "skip_move",
+        "create_snapshot",
         "create_game_from_snapshot",
         "upgrade"
       ]
@@ -1866,6 +1879,12 @@
       "class_hash": "0x21894f2a76d911f06513daf6620fa797768978e3d7cd4f35ba0fe128a1c63d3",
       "tag": "evolute_duel-Shop",
       "selector": "0x222f976f10d5f7bc6ff181000844ce4341a875fc25c8c6302525df530bbc802"
+    },
+    {
+      "members": [],
+      "class_hash": "0x6dc2e09611b8669413073a12147afc9c7ff026a3fb24185b87d23f801470e1d",
+      "tag": "evolute_duel-Snapshot",
+      "selector": "0x2c92cb39c9ed138ad9b28192aa094237e8dfdcab174d76a821749f5097bb776"
     }
   ],
   "events": [
@@ -2018,6 +2037,18 @@
       "class_hash": "0x7891688d60523039f803c7051020d4512dae42fff6a7c75d55dd1e2c936ca7c",
       "tag": "evolute_duel-Skiped",
       "selector": "0x39293e825ec4e370540eb80b631e5656df258d3c1bc482df503857eb3b45861"
+    },
+    {
+      "members": [],
+      "class_hash": "0x5d4188556dbdc8c8295a8d0947535fe0656c774905daa3f628a15dffb3b6f90",
+      "tag": "evolute_duel-SnapshotCreateFailed",
+      "selector": "0x6a71fde306f7bc38a1e367f2aea529bdc0132f128f6a1dbc5cb9efc76a0e1d6"
+    },
+    {
+      "members": [],
+      "class_hash": "0x2cf4f6771f5a4cc1086676f5c480df4f0e0cd35d6228cdecf41c3afcc02d032",
+      "tag": "evolute_duel-SnapshotCreated",
+      "selector": "0x6fed26327ca07777dd3893593d37519821930f0f8b06c54db12989ba6b20703"
     }
   ],
   "external_contracts": []
