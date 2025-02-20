@@ -21,7 +21,7 @@ pub mod player_profile_actions {
     use evolute_duel::{
         events::{
             CurrentPlayerBalance, CurrentPlayerActiveSkin, CurrentPlayerUsername,
-            PlayerUsernameChanged, PlayerSkinChanged, PlayerSkinChangeFailed
+            PlayerUsernameChanged, PlayerSkinChanged, PlayerSkinChangeFailed,
         },
         models::{Player, Shop}, packing::{},
     };
@@ -80,7 +80,12 @@ pub mod player_profile_actions {
             let skin_price = *shop.skin_prices.at(skin_id.into());
 
             if player.balance < skin_price {
-                world.emit_event(@PlayerSkinChangeFailed { player_id, new_skin: skin_id, skin_price, balance: player.balance });
+                world
+                    .emit_event(
+                        @PlayerSkinChangeFailed {
+                            player_id, new_skin: skin_id, skin_price, balance: player.balance,
+                        },
+                    );
                 return;
             }
 

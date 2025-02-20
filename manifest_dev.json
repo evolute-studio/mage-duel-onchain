@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x191c420e18da1249eeaef159c5636a32097e16db45b8d05e79055f64a01592",
-      "class_hash": "0x794a18b0075293055fd13c494a8c84b6a164c7cc2e70cdb4a24a2a04046710d",
+      "address": "0x2503ccc9b2432a83e2537bbe9ce912cfe63b1ee0c76a9c8bb6ca7042df49d2b",
+      "class_hash": "0x514a27a6a5e594b79278ce768abab6cebcbc7131b43004d90649d5aa2d29980",
       "abi": [
         {
           "type": "impl",
@@ -1451,6 +1451,22 @@
               "inputs": [],
               "outputs": [],
               "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "create_game_from_snapshot",
+              "inputs": [
+                {
+                  "name": "board_id",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "move_delta",
+                  "type": "core::integer::u8"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
             }
           ]
         },
@@ -1571,6 +1587,7 @@
         "join_game",
         "make_move",
         "skip_move",
+        "create_game_from_snapshot",
         "upgrade"
       ]
     },
@@ -1854,9 +1871,21 @@
   "events": [
     {
       "members": [],
+      "class_hash": "0x57a363ee769a9d1d6e0ec0d03f946ddf10f24fef2407bc3eea3219002b735d6",
+      "tag": "evolute_duel-BoardCreateFromSnapshotFalied",
+      "selector": "0x2f19a725397a1e3a5c08e8b9656691b78edccbc0c7bd5a4f4631721bb7201cf"
+    },
+    {
+      "members": [],
       "class_hash": "0x61cb2fea390c1106db7d3d78209cb84c051c688ade645421caf48c1c0e5f6cf",
       "tag": "evolute_duel-BoardCreated",
       "selector": "0x1a41b9cde62dde29c4f35c38893fff421cffc41f9ff0b4c8b817f85d788d75c"
+    },
+    {
+      "members": [],
+      "class_hash": "0x653d266503f4a893ec6a343eae4dad4f746d1ed950228aecb6375f6072850be",
+      "tag": "evolute_duel-BoardCreatedFromSnapshot",
+      "selector": "0x198d6b562621b64d09a3506334acbbdaa24f1ab18f4691e1f46d98a332e1672"
     },
     {
       "members": [],

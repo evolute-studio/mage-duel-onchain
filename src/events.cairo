@@ -20,6 +20,35 @@ pub struct BoardCreated {
 
 #[derive(Drop, Serde, Debug)]
 #[dojo::event]
+pub struct BoardCreatedFromSnapshot {
+    #[key]
+    pub board_id: felt252,
+    pub old_board_id: felt252,
+    pub move_delta: u8,
+    pub initial_edge_state: Array<u8>,
+    pub available_tiles_in_deck: Array<u8>,
+    pub top_tile: Option<u8>,
+    pub state: Array<(u8, u8)>,
+    //(address, side, joker_number)
+    pub player1: (ContractAddress, PlayerSide, u8),
+    //(address, side, joker_number)
+    pub player2: (ContractAddress, PlayerSide, u8),
+    pub last_move_id: Option<felt252>,
+    pub game_state: GameState,
+}
+
+#[derive(Drop, Serde, Debug)]
+#[dojo::event]
+pub struct BoardCreateFromSnapshotFalied {
+    #[key]
+    pub player: ContractAddress,
+    pub old_board_id: felt252,
+    pub move_delta: u8,
+}
+
+
+#[derive(Drop, Serde, Debug)]
+#[dojo::event]
 pub struct BoardUpdated {
     #[key]
     pub board_id: felt252,

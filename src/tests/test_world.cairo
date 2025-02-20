@@ -7,13 +7,16 @@ mod tests {
         spawn_test_world, NamespaceDef, TestResource, ContractDefTrait, ContractDef,
     };
 
-    use evolute_duel::models::{
-        Board, m_Board, Move, m_Move, Rules, m_Rules, Game, m_Game, GameStatus,
-    };
-    use evolute_duel::events::{
-        BoardCreated, e_BoardCreated, RulesCreated, e_RulesCreated, Moved, e_Moved, InvalidMove,
-        e_InvalidMove, GameFinished, e_GameFinished, GameStarted, e_GameStarted, GameCreated,
-        e_GameCreated, GameCreateFailed, e_GameCreateFailed, GameCanceled, e_GameCanceled,
+    use evolute_duel::{
+        models::{
+            Board, m_Board, Move, m_Move, Rules, m_Rules, Game, m_Game, 
+        },
+        events::{
+            BoardCreated, e_BoardCreated, RulesCreated, e_RulesCreated, Moved, e_Moved, InvalidMove,
+            e_InvalidMove, GameFinished, e_GameFinished, GameStarted, e_GameStarted, GameCreated,
+            e_GameCreated, GameCreateFailed, e_GameCreateFailed, GameCanceled, e_GameCanceled,
+        },
+        packing::{GameStatus}
     };
     use evolute_duel::systems::game::{game, IGameDispatcher, IGameDispatcherTrait};
 
@@ -46,6 +49,15 @@ mod tests {
                 .with_writer_of([dojo::utils::bytearray_hash(@"evolute_duel")].span())
         ]
             .span()
+    }
+
+
+    #[test]
+    fn test_dict() {
+        use core::dict::Felt252Dict;
+        let mut dict: Felt252Dict<bool> = Default::default();
+        let check = dict.get(0);
+        println!("{:?}", check);
     }
 
     #[test]

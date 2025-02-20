@@ -8,6 +8,7 @@ pub trait IGame<T> {
     fn join_game(ref self: T, host_player: ContractAddress);
     fn make_move(ref self: T, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8);
     fn skip_move(ref self: T);
+    fn create_game_from_snapshot(ref self: T, board_id: felt252, move_delta: u8);
 }
 
 // dojo decorator
@@ -24,6 +25,7 @@ pub mod game {
         },
         systems::helpers::board::{
             create_board, draw_tile_from_board_deck, update_board_state, update_board_joker_number,
+            create_board_from_snapshot,
         },
         packing::{GameStatus, Tile, GameState},
     };
@@ -100,6 +102,32 @@ pub mod game {
             world.emit_event(@GameCreated { host_player, status });
         }
 
+        fn create_game_from_snapshot(ref self: ContractState, board_id: felt252, move_delta: u8) {
+            let mut world = self.world_default();
+
+            let host_player = get_caller_address();
+
+            let mut game: Game = world.read_model(host_player);
+            let mut status = game.status;
+
+            if status == GameStatus::InProgress || status == GameStatus::Created {
+                world.emit_event(@GameCreateFailed { host_player, status });
+                return;
+            }
+
+            status = GameStatus::Created;
+            game.status = status;
+            game
+                .board_id =
+                    Option::Some (create_board_from_snapshot(
+                        ref world, board_id, move_delta, host_player, self.board_id_generator,
+                    ));
+
+            world.write_model(@game);
+
+            world.emit_event(@GameCreated { host_player, status });
+        }
+
         fn cancel_game(ref self: ContractState) {
             let mut world = self.world_default();
 
@@ -111,6 +139,7 @@ pub mod game {
             if status == GameStatus::Created {
                 let new_status = GameStatus::Canceled;
                 game.status = new_status;
+                game.board_id = Option::None;
 
                 world.write_model(@game);
 
@@ -145,8 +174,15 @@ pub mod game {
             host_game.status = GameStatus::InProgress;
             guest_game.status = GameStatus::InProgress;
 
-            let board = create_board(ref world, host_player, guest_player, self.board_id_generator);
-            let board_id = board.id;
+            let board_id: felt252 = if host_game.board_id.is_none() {
+                let board = create_board(ref world, host_player, guest_player, self.board_id_generator);
+                board.id
+            } 
+            // When game is created from snapshot
+            else {
+                host_game.board_id.unwrap()
+            };
+            
             host_game.board_id = Option::Some(board_id);
             guest_game.board_id = Option::Some(board_id);
 

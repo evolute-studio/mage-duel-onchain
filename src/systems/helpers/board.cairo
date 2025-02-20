@@ -7,7 +7,8 @@ use origami_random::dice::{DiceTrait};
 use core::dict::Felt252Dict;
 
 use evolute_duel::{
-    events::{BoardCreated}, models::{Board, Rules}, packing::{GameState, TEdge, Tile, PlayerSide},
+    events::{BoardCreated, BoardCreateFromSnapshotFalied, BoardCreatedFromSnapshot}, models::{Board, Rules, Move},
+    packing::{GameState, TEdge, Tile, PlayerSide},
 };
 
 use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -78,6 +79,113 @@ pub fn create_board(
     return board;
 }
 
+pub fn create_board_from_snapshot(
+    ref world: WorldStorage,
+    old_board_id: felt252,
+    move_delta: u8,
+    host_player: ContractAddress,
+    mut board_id_generator: core::starknet::storage::StorageBase::<
+        core::starknet::storage::Mutable<core::felt252>,
+    >,
+) -> felt252 {
+    let new_board_id = board_id_generator.read();
+
+    let old_board: Board = world.read_model(old_board_id);
+
+    let mut deleted_tiles_positions: Felt252Dict<bool> = Default::default();
+    let (_, player1_side, mut joker_number1) = old_board.player1;
+    let (_, player2_side, mut joker_number2) = old_board.player2;
+    let mut last_move_id = old_board.last_move_id;
+    let mut top_tile = old_board.top_tile;
+    let mut available_tiles_in_deck = old_board.available_tiles_in_deck.clone();
+    for _ in 0..move_delta {
+        if last_move_id.is_none() {
+            world.emit_event(@BoardCreateFromSnapshotFalied {
+                player: host_player,
+                old_board_id,
+                move_delta,
+            });
+            break;
+        }
+        let move_id = last_move_id.unwrap();
+        let move: Move = world.read_model(move_id);
+        
+        last_move_id = move.prev_move_id;
+
+        // If move is a skip, do not update the board state.
+        if !move.is_joker && move.tile.is_none() {
+            continue;
+        }
+
+        // Rememeber the deleted tile position
+        let index: felt252 = (move.col * 8 + move.row).into();
+        deleted_tiles_positions.insert(index, true);
+
+        // Update jokers
+        if move.is_joker {
+            if move.player_side == player1_side {
+                joker_number1 += 1;
+            } else {
+                joker_number2 += 1;
+            }
+        }
+        // Update top tile and available tiles in deck 
+        else {
+            if top_tile.is_some() {
+                available_tiles_in_deck.append(top_tile.unwrap());
+            }
+            top_tile = move.tile;
+        }
+    };
+
+    // Update board state
+    let mut updated_state: Array<(u8, u8)> = ArrayTrait::new();
+    for i in 0..old_board.state.len() {
+        //left tile if not deleted
+        if !deleted_tiles_positions.get(i.into()) {
+            updated_state.append(*old_board.state.at(i.into()));
+        } 
+        //empty tile if deleted
+        else {
+            updated_state.append((Tile::Empty.into(), 0));
+        }
+    };
+
+    let new_board = Board {
+        id: new_board_id,
+        initial_edge_state: old_board.initial_edge_state,
+        available_tiles_in_deck,
+        top_tile,
+        state: updated_state,
+        player1: (host_player, player1_side, joker_number1),
+        //TODO: we have no player2 now. Maybe we should wrap in Option there
+        player2: (host_player, player2_side, joker_number2),
+        last_move_id,
+        game_state: GameState::InProgress,
+    };
+
+    world.write_model(@new_board);  
+    board_id_generator.write(new_board_id + 1);
+
+    world.emit_event(
+        @BoardCreatedFromSnapshot {
+            board_id: new_board_id,
+            old_board_id,
+            move_delta,
+            initial_edge_state: new_board.initial_edge_state,
+            available_tiles_in_deck: new_board.available_tiles_in_deck,
+            top_tile: new_board.top_tile,
+            state: new_board.state,
+            player1: new_board.player1,
+            player2: new_board.player2,
+            last_move_id: new_board.last_move_id,
+            game_state: new_board.game_state,
+        },
+    );
+
+    new_board_id
+}
+
 pub fn update_board_state(
     ref board: Board, tile: Tile, rotation: u8, col: u8, row: u8, is_joker: bool, side: PlayerSide,
 ) {
@@ -92,19 +200,6 @@ pub fn update_board_state(
     };
 
     board.state = updated_state;
-    // //update joker_number
-// let (player1_address, player1_side, mut joker_number1, _) = board.player1;
-// let (player2_address, player2_side, mut joker_number2, _) = board.player2;
-// if is_joker {
-//     if side == player1_side {
-//         joker_number1 -= 1;
-//     } else {
-//         joker_number2 -= 1;
-//     }
-// }
-
-    // board.player1 = (player1_address, player1_side, joker_number1, false);
-// board.player2 = (player2_address, player2_side, joker_number2, false);
 }
 
 pub fn update_board_joker_number(ref board: Board, side: PlayerSide, is_joker: bool) -> (u8, u8) {
