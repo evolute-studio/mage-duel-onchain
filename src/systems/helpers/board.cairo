@@ -7,8 +7,8 @@ use origami_random::dice::{DiceTrait};
 use core::dict::Felt252Dict;
 
 use evolute_duel::{
-    events::{BoardCreated, BoardCreateFromSnapshotFalied, BoardCreatedFromSnapshot}, models::{Board, Rules, Move},
-    packing::{GameState, TEdge, Tile, PlayerSide},
+    events::{BoardCreated, BoardCreateFromSnapshotFalied, BoardCreatedFromSnapshot},
+    models::{Board, Rules, Move}, packing::{GameState, TEdge, Tile, PlayerSide},
 };
 
 use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -37,8 +37,8 @@ pub fn create_board(
     let mut deck_rules_flat = flatten_deck_rules(@rules.deck);
 
     // Create an empty board.
-    let mut tiles: Array<(u8, u8)> = ArrayTrait::new();
-    tiles.append_span([((Tile::Empty).into(), 0); 64].span());
+    let mut tiles: Array<(u8, u8, u8)> = ArrayTrait::new();
+    tiles.append_span([((Tile::Empty).into(), 0, 0); 64].span());
 
     let last_move_id = Option::None;
     let game_state = GameState::InProgress;
@@ -51,6 +51,8 @@ pub fn create_board(
         state: tiles.clone(),
         player1: (player1, PlayerSide::Blue, rules.joker_number),
         player2: (player2, PlayerSide::Red, rules.joker_number),
+        blue_score: 0,
+        red_score: 0,
         last_move_id,
         game_state,
     };
@@ -100,16 +102,17 @@ pub fn create_board_from_snapshot(
     let mut available_tiles_in_deck = old_board.available_tiles_in_deck.clone();
     for _ in 0..move_delta {
         if last_move_id.is_none() {
-            world.emit_event(@BoardCreateFromSnapshotFalied {
-                player: host_player,
-                old_board_id,
-                move_delta,
-            });
+            world
+                .emit_event(
+                    @BoardCreateFromSnapshotFalied {
+                        player: host_player, old_board_id, move_delta,
+                    },
+                );
             break;
         }
         let move_id = last_move_id.unwrap();
         let move: Move = world.read_model(move_id);
-        
+
         last_move_id = move.prev_move_id;
 
         // If move is a skip, do not update the board state.
@@ -128,8 +131,7 @@ pub fn create_board_from_snapshot(
             } else {
                 joker_number2 += 1;
             }
-        }
-        // Update top tile and available tiles in deck 
+        } // Update top tile and available tiles in deck
         else {
             if top_tile.is_some() {
                 available_tiles_in_deck.append(top_tile.unwrap());
@@ -139,15 +141,14 @@ pub fn create_board_from_snapshot(
     };
 
     // Update board state
-    let mut updated_state: Array<(u8, u8)> = ArrayTrait::new();
+    let mut updated_state: Array<(u8, u8, u8)> = ArrayTrait::new();
     for i in 0..old_board.state.len() {
         //left tile if not deleted
         if !deleted_tiles_positions.get(i.into()) {
             updated_state.append(*old_board.state.at(i.into()));
-        } 
-        //empty tile if deleted
+        } //empty tile if deleted
         else {
-            updated_state.append((Tile::Empty.into(), 0));
+            updated_state.append((Tile::Empty.into(), 0, 0));
         }
     };
 
@@ -160,28 +161,32 @@ pub fn create_board_from_snapshot(
         player1: (host_player, player1_side, joker_number1),
         //TODO: we have no player2 now. Maybe we should wrap in Option there
         player2: (host_player, player2_side, joker_number2),
+        //TODO: Update scores
+        blue_score: 0,
+        red_score: 0,
         last_move_id,
         game_state: GameState::InProgress,
     };
 
-    world.write_model(@new_board);  
+    world.write_model(@new_board);
     board_id_generator.write(new_board_id + 1);
 
-    world.emit_event(
-        @BoardCreatedFromSnapshot {
-            board_id: new_board_id,
-            old_board_id,
-            move_delta,
-            initial_edge_state: new_board.initial_edge_state,
-            available_tiles_in_deck: new_board.available_tiles_in_deck,
-            top_tile: new_board.top_tile,
-            state: new_board.state,
-            player1: new_board.player1,
-            player2: new_board.player2,
-            last_move_id: new_board.last_move_id,
-            game_state: new_board.game_state,
-        },
-    );
+    world
+        .emit_event(
+            @BoardCreatedFromSnapshot {
+                board_id: new_board_id,
+                old_board_id,
+                move_delta,
+                initial_edge_state: new_board.initial_edge_state,
+                available_tiles_in_deck: new_board.available_tiles_in_deck,
+                top_tile: new_board.top_tile,
+                state: new_board.state,
+                player1: new_board.player1,
+                player2: new_board.player2,
+                last_move_id: new_board.last_move_id,
+                game_state: new_board.game_state,
+            },
+        );
 
     new_board_id
 }
@@ -189,11 +194,11 @@ pub fn create_board_from_snapshot(
 pub fn update_board_state(
     ref board: Board, tile: Tile, rotation: u8, col: u8, row: u8, is_joker: bool, side: PlayerSide,
 ) {
-    let mut updated_state: Array<(u8, u8)> = ArrayTrait::new();
+    let mut updated_state: Array<(u8, u8, u8)> = ArrayTrait::new();
     let index = (col * 8 + row).into();
     for i in 0..board.state.len() {
         if i == index {
-            updated_state.append((tile.into(), rotation));
+            updated_state.append((tile.into(), rotation, side.into()));
         } else {
             updated_state.append(*board.state.at(i.into()));
         }
@@ -248,7 +253,7 @@ pub fn draw_tile_from_board_deck(ref board: Board) -> Option<u8> {
 }
 
 
-fn generate_initial_board_state(
+pub fn generate_initial_board_state(
     cities_on_edges: u8, roads_on_edges: u8, board_id: felt252,
 ) -> Array<u8> {
     let mut initial_state: Array<u8> = ArrayTrait::new();

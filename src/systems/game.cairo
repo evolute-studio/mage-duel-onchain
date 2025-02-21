@@ -22,13 +22,16 @@ pub mod game {
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
             PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
-            Skiped, Moved, SnapshotCreated, SnapshotCreateFailed, BoardCreateFromSnapshotFalied
+            Skiped, Moved, SnapshotCreated, SnapshotCreateFailed, BoardCreateFromSnapshotFalied,
         },
-        systems::helpers::board::{
+        systems::helpers::{
+            board::{
             create_board, draw_tile_from_board_deck, update_board_state, update_board_joker_number,
             create_board_from_snapshot,
+            },
+            city_scoring::{connect_edges_in_tile, connect_adjacent_edges},
         },
-        packing::{GameStatus, Tile, GameState},
+        packing::{GameStatus, Tile, GameState, PlayerSide},
     };
 
     use dojo::event::EventStorage;
@@ -71,7 +74,7 @@ pub mod game {
             0, // CRFF - not in the deck
             3, // CRRF
             4, // CRFR
-            4 // CFRR
+            4, // CFRR
         ];
         let edges = (1, 1);
         let joker_number = 3;
@@ -108,21 +111,20 @@ pub mod game {
             let mut world = self.world_default();
             let player = get_caller_address();
 
-            
             let board: Board = world.read_model(board_id);
             if board.game_state != GameState::Finished || move_delta == 0 {
-                world.emit_event(@SnapshotCreateFailed { player, board_id, board_game_state: board.game_state,  move_delta });
+                world
+                    .emit_event(
+                        @SnapshotCreateFailed {
+                            player, board_id, board_game_state: board.game_state, move_delta,
+                        },
+                    );
                 return;
             }
 
             let snapshot_id = self.snapshot_id_generator.read();
 
-            let snapshot = Snapshot {
-                snapshot_id,
-                player,
-                board_id,
-                move_delta,
-            };
+            let snapshot = Snapshot { snapshot_id, player, board_id, move_delta };
 
             self.snapshot_id_generator.write(snapshot_id + 1);
 
@@ -143,7 +145,12 @@ pub mod game {
             let board: Board = world.read_model(board_id);
 
             if board.game_state != GameState::Finished || move_delta == 0 {
-                world.emit_event(@BoardCreateFromSnapshotFalied { player: host_player, old_board_id: board_id,  move_delta });
+                world
+                    .emit_event(
+                        @BoardCreateFromSnapshotFalied {
+                            player: host_player, old_board_id: board_id, move_delta,
+                        },
+                    );
                 return;
             }
 
@@ -159,9 +166,11 @@ pub mod game {
             game.status = status;
             game
                 .board_id =
-                    Option::Some (create_board_from_snapshot(
-                        ref world, board_id, move_delta, host_player, self.board_id_generator,
-                    ));
+                    Option::Some(
+                        create_board_from_snapshot(
+                            ref world, board_id, move_delta, host_player, self.board_id_generator,
+                        ),
+                    );
 
             world.write_model(@game);
 
@@ -215,14 +224,15 @@ pub mod game {
             guest_game.status = GameStatus::InProgress;
 
             let board_id: felt252 = if host_game.board_id.is_none() {
-                let board = create_board(ref world, host_player, guest_player, self.board_id_generator);
+                let board = create_board(
+                    ref world, host_player, guest_player, self.board_id_generator,
+                );
                 board.id
-            } 
-            // When game is created from snapshot
+            } // When game is created from snapshot
             else {
                 host_game.board_id.unwrap()
             };
-            
+
             host_game.board_id = Option::Some(board_id);
             guest_game.board_id = Option::Some(board_id);
 
@@ -321,6 +331,23 @@ pub mod game {
             } else {
                 board.top_tile
             };
+
+            //City scoring
+            let tile_position = (col * 8 + row).into();
+            //TODO: use span instead of clone
+            connect_edges_in_tile(ref world, board_id, board.initial_edge_state.clone(), tile_position, tile.into(), rotation, player_side.into());
+            //TODO: use span instead of clone
+            let scoring_result = connect_adjacent_edges(ref world, board_id, board.state.clone(), tile_position, tile.into(), rotation, player_side.into());
+            if scoring_result.is_some() {
+                let (winner, points_delta) = scoring_result.unwrap();
+                if winner == PlayerSide::Blue {
+                    board.blue_score += points_delta;
+                    board.red_score -= points_delta;
+                } else {
+                    board.red_score += points_delta;
+                    board.blue_score -= points_delta;
+                }
+            }
 
             //Update board state
             update_board_state(ref board, tile, rotation, col, row, is_joker, player_side);

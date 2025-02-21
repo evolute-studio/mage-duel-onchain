@@ -10,12 +10,14 @@ pub struct Board {
     pub initial_edge_state: Array<u8>,
     pub available_tiles_in_deck: Array<u8>,
     pub top_tile: Option<u8>,
-    // (u8, u8) => (tile_number, rotation)
-    pub state: Array<(u8, u8)>,
+    // (u8, u8, u8) => (tile_number, rotation, side)
+    pub state: Array<(u8, u8, u8)>,
     //(address, side, joker_number)
     pub player1: (ContractAddress, PlayerSide, u8),
     //(address, side, joker_number)
     pub player2: (ContractAddress, PlayerSide, u8),
+    pub blue_score: u32,
+    pub red_score: u32,
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
 }
@@ -35,7 +37,7 @@ pub struct Move {
     pub is_joker: bool,
 }
 
-#[derive(Drop, Serde, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 pub enum MoveTypes {
     Move,
     Skip,
@@ -58,7 +60,7 @@ pub struct Rules {
     pub joker_number: u8,
 }
 
-#[derive(Drop, Serde, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::model]
 pub struct Game {
     #[key]
@@ -68,7 +70,7 @@ pub struct Game {
 }
 
 
-#[derive(Drop, Serde, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::model]
 pub struct Snapshot {
     #[key]
@@ -80,11 +82,51 @@ pub struct Snapshot {
 
 
 // --------------------------------------
+// Scoring Models
+// --------------------------------------
+
+#[derive(Drop, Serde, IntrospectPacked, Debug)]
+#[dojo::model]
+pub struct CityNode {
+    #[key]
+    pub board_id: felt252,
+    //It is a number of TEdge position in the board
+    // tile pos = tedge_position / 4 {
+    // col = tile_pos % 8
+    // row = tile_pos / 8
+    //}
+    // edge diraction = tedge_position % 4
+    #[key]
+    pub position: u8,
+    pub parent: u8,
+    pub rank: u8,
+    pub blue_points: u32,
+    pub red_points: u32,
+    pub open_edges: u8,
+}
+
+// #[derive(Drop, Serde, Introspect, Debug)]
+// #[dojo::model]
+// pub struct RodeNode {
+//     #[key]
+//     pub board_id: felt252,
+//     #[key]
+//     pub col: u8,
+//     #[key]
+//     pub row: u8,
+//     #[key]
+//     pub direction: u8,
+//     pub parent: Option<(u8, u8, u8)>,
+//     pub blue_points: u8,
+//     pub red_points: u8,
+//     pub open_edges: u8,
+// }
+
+// --------------------------------------
 // Player Profile Models
 // --------------------------------------
 
-
-#[derive(Drop, Serde, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::model]
 pub struct Player {
     #[key]
@@ -95,7 +137,7 @@ pub struct Player {
     pub active_skin: u8,
 }
 
-#[derive(Drop, Serde, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::model]
 pub struct Shop {
     #[key]

@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
 use evolute_duel::packing::{GameState, GameStatus, PlayerSide};
 
-#[derive(Drop, Serde, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct BoardCreated {
     #[key]
@@ -9,7 +9,7 @@ pub struct BoardCreated {
     pub initial_edge_state: Array<u8>,
     pub available_tiles_in_deck: Array<u8>,
     pub top_tile: Option<u8>,
-    pub state: Array<(u8, u8)>,
+    pub state: Array<(u8, u8, u8)>,
     //(address, side, joker_number)
     pub player1: (ContractAddress, PlayerSide, u8),
     //(address, side, joker_number)
@@ -18,7 +18,7 @@ pub struct BoardCreated {
     pub game_state: GameState,
 }
 
-#[derive(Drop, Serde, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct BoardCreatedFromSnapshot {
     #[key]
@@ -28,7 +28,7 @@ pub struct BoardCreatedFromSnapshot {
     pub initial_edge_state: Array<u8>,
     pub available_tiles_in_deck: Array<u8>,
     pub top_tile: Option<u8>,
-    pub state: Array<(u8, u8)>,
+    pub state: Array<(u8, u8, u8)>,
     //(address, side, joker_number)
     pub player1: (ContractAddress, PlayerSide, u8),
     //(address, side, joker_number)
@@ -37,7 +37,7 @@ pub struct BoardCreatedFromSnapshot {
     pub game_state: GameState,
 }
 
-#[derive(Drop, Serde, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct BoardCreateFromSnapshotFalied {
     #[key]
@@ -46,7 +46,7 @@ pub struct BoardCreateFromSnapshotFalied {
     pub move_delta: u8,
 }
 
-#[derive(Drop, Serde, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct SnapshotCreated {
     #[key]
@@ -56,7 +56,7 @@ pub struct SnapshotCreated {
     pub move_delta: u8,
 }
 
-#[derive(Drop, Serde, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct SnapshotCreateFailed {
     #[key]
@@ -66,7 +66,7 @@ pub struct SnapshotCreateFailed {
     pub move_delta: u8,
 }
 
-#[derive(Drop, Serde, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct BoardUpdated {
     #[key]
@@ -74,7 +74,7 @@ pub struct BoardUpdated {
     pub initial_edge_state: Array<u8>,
     pub available_tiles_in_deck: Array<u8>,
     pub top_tile: Option<u8>,
-    pub state: Array<(u8, u8)>,
+    pub state: Array<(u8, u8, u8)>,
     //(address, side, joker_number)
     pub player1: (ContractAddress, PlayerSide, u8),
     //(address, side, joker_number)
@@ -83,7 +83,7 @@ pub struct BoardUpdated {
     pub game_state: GameState,
 }
 
-#[derive(Drop, Serde)]
+#[derive(Drop, Serde, Introspect)]
 #[dojo::event]
 pub struct RulesCreated {
     #[key]
@@ -93,7 +93,7 @@ pub struct RulesCreated {
     pub joker_number: u8,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct Moved {
     #[key]
@@ -108,7 +108,7 @@ pub struct Moved {
     pub board_id: felt252,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct Skiped {
     #[key]
@@ -119,7 +119,7 @@ pub struct Skiped {
 }
 
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct InvalidMove {
     #[key]
@@ -128,7 +128,7 @@ pub struct InvalidMove {
 }
 
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct GameFinished {
     #[key]
@@ -136,7 +136,7 @@ pub struct GameFinished {
     pub board_id: felt252,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct GameStarted {
     #[key]
@@ -145,7 +145,7 @@ pub struct GameStarted {
     pub board_id: felt252,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct GameCreated {
     #[key]
@@ -154,7 +154,7 @@ pub struct GameCreated {
 }
 
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct GameCreateFailed {
     #[key]
@@ -163,7 +163,7 @@ pub struct GameCreateFailed {
 }
 
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct GameJoinFailed {
     #[key]
@@ -173,7 +173,7 @@ pub struct GameJoinFailed {
     pub guest_game_status: GameStatus,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct GameCanceled {
     #[key]
@@ -181,7 +181,7 @@ pub struct GameCanceled {
     pub status: GameStatus,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct GameCanceleFailed {
     #[key]
@@ -189,7 +189,7 @@ pub struct GameCanceleFailed {
     pub status: GameStatus,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct PlayerNotInGame {
     #[key]
@@ -197,7 +197,7 @@ pub struct PlayerNotInGame {
     pub board_id: felt252,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct NotYourTurn {
     #[key]
@@ -205,7 +205,7 @@ pub struct NotYourTurn {
     pub board_id: felt252,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct NotEnoughJokers {
     #[key]
@@ -214,7 +214,7 @@ pub struct NotEnoughJokers {
 }
 
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct GameIsAlreadyFinished {
     #[key]
@@ -222,12 +222,37 @@ pub struct GameIsAlreadyFinished {
     pub board_id: felt252,
 }
 
+// --------------------------------------
+// Contest Events
+// --------------------------------------
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct CityContestWon {
+    #[key]
+    pub board_id: felt252,
+    #[key]
+    pub root: u8,
+    pub winner: PlayerSide,
+    pub red_points: u32,
+    pub blue_points: u32,
+}
+
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct CityContestDraw {
+    #[key]
+    pub board_id: felt252,
+    #[key]
+    pub root: u8,
+    pub red_points: u32,
+    pub blue_points: u32,
+}
 
 // --------------------------------------
 // Player Profile Events
 // --------------------------------------
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct CurrentPlayerBalance {
     #[key]
@@ -235,7 +260,7 @@ pub struct CurrentPlayerBalance {
     pub balance: u32,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct CurrentPlayerUsername {
     #[key]
@@ -243,7 +268,7 @@ pub struct CurrentPlayerUsername {
     pub username: felt252,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct CurrentPlayerActiveSkin {
     #[key]
@@ -251,7 +276,7 @@ pub struct CurrentPlayerActiveSkin {
     pub active_skin: u8,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct PlayerUsernameChanged {
     #[key]
@@ -259,7 +284,7 @@ pub struct PlayerUsernameChanged {
     pub new_username: felt252,
 }
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct PlayerSkinChanged {
     #[key]
@@ -268,7 +293,7 @@ pub struct PlayerSkinChanged {
 }
 
 
-#[derive(Copy, Drop, Serde, Debug)]
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct PlayerSkinChangeFailed {
     #[key]

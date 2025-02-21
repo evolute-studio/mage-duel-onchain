@@ -8,15 +8,11 @@ mod tests {
     };
 
     use evolute_duel::{
-        models::{
-            Board, m_Board, Move, m_Move, Rules, m_Rules, Game, m_Game, 
-        },
+        models::{Game, m_Game},
         events::{
-            BoardCreated, e_BoardCreated, RulesCreated, e_RulesCreated, Moved, e_Moved, InvalidMove,
-            e_InvalidMove, GameFinished, e_GameFinished, GameStarted, e_GameStarted, GameCreated,
-            e_GameCreated, GameCreateFailed, e_GameCreateFailed, GameCanceled, e_GameCanceled,
+           
         },
-        packing::{GameStatus}
+        packing::{GameStatus},
     };
     use evolute_duel::systems::game::{game, IGameDispatcher, IGameDispatcherTrait};
 
@@ -26,17 +22,7 @@ mod tests {
         NamespaceDef {
             namespace: "evolute_duel",
             resources: [
-                TestResource::Model(m_Board::TEST_CLASS_HASH),
-                TestResource::Model(m_Move::TEST_CLASS_HASH),
-                TestResource::Model(m_Rules::TEST_CLASS_HASH),
                 TestResource::Model(m_Game::TEST_CLASS_HASH),
-                TestResource::Event(e_Moved::TEST_CLASS_HASH),
-                TestResource::Event(e_InvalidMove::TEST_CLASS_HASH),
-                TestResource::Event(e_GameFinished::TEST_CLASS_HASH),
-                TestResource::Event(e_GameStarted::TEST_CLASS_HASH),
-                TestResource::Event(e_GameCreated::TEST_CLASS_HASH),
-                TestResource::Event(e_GameCreateFailed::TEST_CLASS_HASH),
-                TestResource::Event(e_GameCanceled::TEST_CLASS_HASH),
                 TestResource::Contract(game::TEST_CLASS_HASH),
             ]
                 .span(),
@@ -57,7 +43,7 @@ mod tests {
         use core::dict::Felt252Dict;
         let mut dict: Felt252Dict<bool> = Default::default();
         let check = dict.get(0);
-        println!("{:?}", check);
+       //println!("{:?}", check);
     }
 
     #[test]

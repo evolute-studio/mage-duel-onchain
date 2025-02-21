@@ -1,4 +1,4 @@
-#[derive(Serde, Drop, IntrospectPacked, PartialEq, Debug, Destruct, Clone)]
+#[derive(Serde, Drop, IntrospectPacked, PartialEq, Debug, Destruct, Copy)]
 pub enum TEdge {
     C,
     R,
@@ -170,4 +170,13 @@ pub enum GameStatus {
 pub enum PlayerSide {
     Blue,
     Red,
+}
+
+impl PlayerSideToU8 of Into<PlayerSide, u8> {
+    fn into(self: PlayerSide) -> u8 {
+        match self {
+            PlayerSide::Blue => 0,
+            PlayerSide::Red => 1,
+        }
+    }
 }
