@@ -29,7 +29,9 @@ pub mod game {
             create_board, draw_tile_from_board_deck, update_board_state, update_board_joker_number,
             create_board_from_snapshot,
             },
-            city_scoring::{connect_edges_in_tile, connect_adjacent_edges},
+            city_scoring::{connect_city_edges_in_tile, connect_adjacent_city_edges},
+            road_scoring::{connect_road_edges_in_tile, connect_adjacent_road_edges},
+            tile_helpers::{calcucate_tile_points}
         },
         packing::{GameStatus, Tile, GameState, PlayerSide},
     };
@@ -332,14 +334,36 @@ pub mod game {
                 board.top_tile
             };
 
+            //Tile scoring
+            let tile_points = calcucate_tile_points(tile);
+            if player_side == PlayerSide::Blue {
+                board.blue_score += tile_points;
+            } else {
+                board.red_score += tile_points;
+            }
+
             //City scoring
             let tile_position = (col * 8 + row).into();
             //TODO: use span instead of clone
-            connect_edges_in_tile(ref world, board_id, board.initial_edge_state.clone(), tile_position, tile.into(), rotation, player_side.into());
+            connect_city_edges_in_tile(ref world, board_id, board.initial_edge_state.clone(), tile_position, tile.into(), rotation, player_side.into());
             //TODO: use span instead of clone
-            let scoring_result = connect_adjacent_edges(ref world, board_id, board.state.clone(), tile_position, tile.into(), rotation, player_side.into());
-            if scoring_result.is_some() {
-                let (winner, points_delta) = scoring_result.unwrap();
+            let city_scoring_result = connect_adjacent_city_edges(ref world, board_id, board.state.clone(), tile_position, tile.into(), rotation, player_side.into());
+            if city_scoring_result.is_some() {
+                let (winner, points_delta) = city_scoring_result.unwrap();
+                if winner == PlayerSide::Blue {
+                    board.blue_score += points_delta;
+                    board.red_score -= points_delta;
+                } else {
+                    board.red_score += points_delta;
+                    board.blue_score -= points_delta;
+                }
+            }
+
+            //Road scoring
+            connect_road_edges_in_tile(ref world, board_id, board.initial_edge_state.clone(), tile_position, tile.into(), rotation, player_side.into());
+            let road_scoring_result = connect_adjacent_road_edges(ref world, board_id, board.state.clone(), tile_position, tile.into(), rotation, player_side.into());
+            if road_scoring_result.is_some() {
+                let (winner, points_delta) = road_scoring_result.unwrap();
                 if winner == PlayerSide::Blue {
                     board.blue_score += points_delta;
                     board.red_score -= points_delta;

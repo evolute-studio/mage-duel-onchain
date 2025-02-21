@@ -248,6 +248,29 @@ pub struct CityContestDraw {
     pub blue_points: u32,
 }
 
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct RoadContestWon {
+    #[key]
+    pub board_id: felt252,
+    #[key]
+    pub root: u8,
+    pub winner: PlayerSide,
+    pub red_points: u32,
+    pub blue_points: u32,
+}
+
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct RoadContestDraw {
+    #[key]
+    pub board_id: felt252,
+    #[key]
+    pub root: u8,
+    pub red_points: u32,
+    pub blue_points: u32,
+}
+
 // --------------------------------------
 // Player Profile Events
 // --------------------------------------

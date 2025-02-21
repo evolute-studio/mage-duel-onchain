@@ -1,9 +1,9 @@
 use dojo::model::ModelStorage;
-use evolute_duel::models::{CityNode};
+use evolute_duel::models::{RoadNode};
 use dojo::world::{WorldStorage};
-//Union find on CityNode
-pub fn find(ref world: WorldStorage, board_id: felt252, position: u8) -> CityNode {
-    let node: CityNode = world.read_model((board_id, position));
+//Union find on RoadNode
+pub fn find(ref world: WorldStorage, board_id: felt252, position: u8) -> RoadNode {
+    let node: RoadNode = world.read_model((board_id, position));
     let mut current = node;
     if current.parent != current.position {
         current.parent = find(ref world, board_id, current.parent).position;
@@ -15,7 +15,7 @@ pub fn find(ref world: WorldStorage, board_id: felt252, position: u8) -> CityNod
 
 pub fn union(
     ref world: WorldStorage, board_id: felt252, position1: u8, position2: u8, in_tile: bool,
-) -> CityNode {
+) -> RoadNode {
     let mut root1 = find(ref world, board_id, position1);
     let mut root2 = find(ref world, board_id, position2);
    //println!("root1: {:?}", root1);
@@ -81,7 +81,7 @@ mod tests {
     };
 
     use evolute_duel::{
-        models::{Board, m_Board, Move, m_Move, Rules, m_Rules, Game, m_Game, CityNode, m_CityNode},
+        models::{Board, m_Board, Move, m_Move, Rules, m_Rules, Game, m_Game, RoadNode, m_RoadNode},
         events::{
             BoardCreated, e_BoardCreated, RulesCreated, e_RulesCreated, Moved, e_Moved, InvalidMove,
             e_InvalidMove, GameFinished, e_GameFinished, GameStarted, e_GameStarted, GameCreated,
@@ -98,7 +98,7 @@ mod tests {
             namespace: "evolute_duel",
             resources: [
                 TestResource::Model(m_Board::TEST_CLASS_HASH),
-                TestResource::Model(m_CityNode::TEST_CLASS_HASH),
+                TestResource::Model(m_RoadNode::TEST_CLASS_HASH),
             ]
                 .span(),
         }
@@ -124,7 +124,7 @@ mod tests {
         let position = 0;
         world
             .write_model(
-                @CityNode {
+                @RoadNode {
                     board_id,
                     position,
                     parent: position,
@@ -152,7 +152,7 @@ mod tests {
         let board_id = 1;
         world
             .write_model(
-                @CityNode {
+                @RoadNode {
                     board_id,
                     position: 0,
                     parent: 0,
@@ -164,7 +164,7 @@ mod tests {
             );
         world
             .write_model(
-                @CityNode {
+                @RoadNode {
                     board_id,
                     position: 1,
                     parent: 1,
@@ -198,7 +198,7 @@ mod tests {
         let board_id = 1;
         world
             .write_model(
-                @CityNode {
+                @RoadNode {
                     board_id,
                     position: 0,
                     parent: 0,
@@ -210,7 +210,7 @@ mod tests {
             );
         world
             .write_model(
-                @CityNode {
+                @RoadNode {
                     board_id,
                     position: 1,
                     parent: 1,

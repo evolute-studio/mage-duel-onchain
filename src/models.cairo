@@ -105,22 +105,25 @@ pub struct CityNode {
     pub open_edges: u8,
 }
 
-// #[derive(Drop, Serde, Introspect, Debug)]
-// #[dojo::model]
-// pub struct RodeNode {
-//     #[key]
-//     pub board_id: felt252,
-//     #[key]
-//     pub col: u8,
-//     #[key]
-//     pub row: u8,
-//     #[key]
-//     pub direction: u8,
-//     pub parent: Option<(u8, u8, u8)>,
-//     pub blue_points: u8,
-//     pub red_points: u8,
-//     pub open_edges: u8,
-// }
+#[derive(Drop, Serde, IntrospectPacked, Debug)]
+#[dojo::model]
+pub struct RoadNode {
+    #[key]
+    pub board_id: felt252,
+    //It is a number of TEdge position in the board
+    // tile pos = tedge_position / 4 {
+    // col = tile_pos % 8
+    // row = tile_pos / 8
+    //}
+    // edge diraction = tedge_position % 4
+    #[key]
+    pub position: u8,
+    pub parent: u8,
+    pub rank: u8,
+    pub blue_points: u32,
+    pub red_points: u32,
+    pub open_edges: u8,
+}
 
 // --------------------------------------
 // Player Profile Models
