@@ -1,12 +1,13 @@
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use evolute_duel::{
-    models::{CityNode},
+    models::{CityNode, PotentialCityContests},
     events::{CityContestWon, CityContestDraw},
     systems::helpers::{
         city_union_find::{find, union},
         board::{},
-        tile_helpers::{create_extended_tile, convert_board_position_to_node_position},
+        tile_helpers::{create_extended_tile, convert_board_position_to_node_position,
+        tile_city_number},
     },
     packing::{TEdge, PlayerSide},
 };
@@ -63,10 +64,13 @@ pub fn connect_city_edges_in_tile(
                 blue_points,
                 red_points,
                 open_edges,
+                contested: false
             };
             world.write_model(@city_node);
         }
     };
+
+    //TODO: if we close th city with edge we need to check if we need to connect the city
 
     // Connect the cities
     if cities.len() > 1 {
@@ -193,6 +197,31 @@ pub fn connect_adjacent_city_edges(
             }
         }
     }
+
+// Update potential city contests
+let city_number = tile_city_number(tile.into());
+if city_number.into() > cities_connected.len() {
+    let mut potential_cities: PotentialCityContests = world.read_model(board_id);
+    let mut roots = potential_cities.roots;
+    for i in 0..4_u8 {
+        if *extended_tile.edges.at(i.into()) == (TEdge::C).into() {
+            let node_pos = find(ref world, board_id, convert_board_position_to_node_position(tile_position, i)).position;
+            let mut found = false;
+            for j in 0..roots.len() {
+                if *roots.at(j) == node_pos {
+                    found = true;
+                    break;
+                }
+            };
+            if !found {
+                roots.append(node_pos);
+            }
+        }
+    };
+    potential_cities.roots = roots;
+    world.write_model(@potential_cities);
+}
+
     Option::None
 }  
 
@@ -208,7 +237,7 @@ mod tests {
     };
 
     use evolute_duel::{
-        models::{CityNode, m_CityNode},
+        models::{CityNode, m_CityNode, PotentialCityContests, m_PotentialCityContests},
         events::{
             CityContestWon, e_CityContestWon, CityContestDraw, e_CityContestDraw,
         },
@@ -225,6 +254,7 @@ mod tests {
             namespace: "evolute_duel",
             resources: [
                 TestResource::Model(m_CityNode::TEST_CLASS_HASH),
+                TestResource::Model(m_PotentialCityContests::TEST_CLASS_HASH),
                 TestResource::Event(e_CityContestWon::TEST_CLASS_HASH),
                 TestResource::Event(e_CityContestDraw::TEST_CLASS_HASH),
             ]

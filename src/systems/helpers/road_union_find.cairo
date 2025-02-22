@@ -132,6 +132,7 @@ mod tests {
                     blue_points: 0,
                     red_points: 0,
                     open_edges: 4,
+                    contested: false,
                 },
             );
         let node = find(ref world, board_id, position);
@@ -160,6 +161,7 @@ mod tests {
                     blue_points: 1,
                     red_points: 2,
                     open_edges: 4,
+                    contested: false,
                 },
             );
         world
@@ -172,6 +174,7 @@ mod tests {
                     blue_points: 2,
                     red_points: 3,
                     open_edges: 4,
+                    contested: false,
                 },
             );
 
@@ -206,6 +209,7 @@ mod tests {
                     blue_points: 1,
                     red_points: 2,
                     open_edges: 4,
+                    contested: false,
                 },
             );
         world
@@ -218,6 +222,7 @@ mod tests {
                     blue_points: 2,
                     red_points: 3,
                     open_edges: 4,
+                    contested: false,
                 },
             );
 

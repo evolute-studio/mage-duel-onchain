@@ -85,6 +85,14 @@ pub struct Snapshot {
 // Scoring Models
 // --------------------------------------
 
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct PotentialCityContests {
+    #[key]
+    pub board_id: felt252,
+    pub roots: Array<u8>,
+}
+
 #[derive(Drop, Serde, IntrospectPacked, Debug)]
 #[dojo::model]
 pub struct CityNode {
@@ -103,6 +111,15 @@ pub struct CityNode {
     pub blue_points: u32,
     pub red_points: u32,
     pub open_edges: u8,
+    pub contested: bool,
+}
+
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct PotentialRoadContests {
+    #[key]
+    pub board_id: felt252,
+    pub roots: Array<u8>,
 }
 
 #[derive(Drop, Serde, IntrospectPacked, Debug)]
@@ -123,6 +140,7 @@ pub struct RoadNode {
     pub blue_points: u32,
     pub red_points: u32,
     pub open_edges: u8,
+    pub contested: bool,
 }
 
 // --------------------------------------

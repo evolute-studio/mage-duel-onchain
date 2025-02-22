@@ -387,6 +387,9 @@ pub mod game {
             if top_tile.is_none() && joker_number1 == 0 && joker_number2 == 0 {
                 //FINISH THE GAME
 
+                //Score all potantial cities and roads
+                
+
                 board.game_state = GameState::Finished;
                 let mut host_game: Game = world.read_model(player1_address);
                 let mut guest_game: Game = world.read_model(player2_address);

@@ -1,12 +1,13 @@
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use evolute_duel::{
-    models::{RoadNode},
+    models::{RoadNode, PotentialRoadContests},
     events::{RoadContestWon, RoadContestDraw},
     systems::helpers::{
         road_union_find::{find, union},
         board::{},
-        tile_helpers::{create_extended_tile, convert_board_position_to_node_position},
+        tile_helpers::{create_extended_tile, convert_board_position_to_node_position,
+        tile_roads_number},
     },
     packing::{TEdge, PlayerSide},
 };
@@ -64,12 +65,15 @@ pub fn connect_road_edges_in_tile(
                 blue_points,
                 red_points,
                 open_edges,
+                contested: false,
             };
             world.write_model(@road_node);
         } else if *extended_tile.edges.at(i.into()) == (TEdge::C).into() {
             cities_count += 1;
         }
     };
+
+    //TODO: if we close th road with edge we need to check if we need to connect the road
 
     // Connect the roads if needed
     if roads.len() == 2 {
@@ -84,6 +88,7 @@ pub fn connect_adjacent_road_edges(
     ref world: WorldStorage, board_id: felt252, state: Array<(u8, u8, u8)>, tile_position: u8, tile: u8, rotation: u8, side: u8,
 )
 //None - if no contest or draw, Some(u8, u32) -> (who_wins, points_delta) - if contest 
+//TODO - return list of multiple contests
 -> Option<(PlayerSide, u32)>{
     let extended_tile = create_extended_tile(tile.into(), rotation);
     let row = tile_position % 8;
@@ -148,10 +153,12 @@ pub fn connect_adjacent_road_edges(
 
     //check for contest(open_edges == 0) in union
     if roads_connected.len() > 0 {
+        //TODO: if we have more than 2 roads or CRCR we can have multiple contests
         let mut road_root = find(ref world, board_id, *roads_connected.at(0));
         if road_root.open_edges == 0 {
             //TODO contest
            //println!("Contest");
+           road_root.contested = true;
             if road_root.blue_points > road_root.red_points {
                 //TODO blue player wins contest
                //println!("Blue player wins contest");
@@ -193,12 +200,42 @@ pub fn connect_adjacent_road_edges(
                     red_points: road_root.red_points,
                     blue_points: road_root.blue_points,
                 });
+                world.write_model(@road_root);
                 return Option::None;
             }
         }
     }
+
+
+    // Update potential road contests
+    let road_number = tile_roads_number(tile.into());
+    if road_number.into() > roads_connected.len() {
+        let mut potential_roads: PotentialRoadContests = world.read_model(board_id);
+        let mut roots = potential_roads.roots;
+        for i in 0..4_u8 {
+            if *extended_tile.edges.at(i.into()) == (TEdge::R).into() {
+                let node_pos = find(ref world, board_id, convert_board_position_to_node_position(tile_position, i)).position;
+                let mut found = false;
+                for j in 0..roots.len() {
+                    if *roots.at(j) == node_pos {
+                        found = true;
+                        break;
+                    }
+                };
+                if !found {
+                    roots.append(node_pos);
+                }
+            }
+        };
+        potential_roads.roots = roots;
+        world.write_model(@potential_roads);
+    }
+
+
     Option::None
 }  
+
+
 
 
 #[cfg(test)]
@@ -212,7 +249,7 @@ mod tests {
     };
 
     use evolute_duel::{
-        models::{RoadNode, m_RoadNode},
+        models::{RoadNode, m_RoadNode, PotentialRoadContests, m_PotentialRoadContests},
         events::{
             RoadContestWon, e_RoadContestWon, RoadContestDraw, e_RoadContestDraw,
         },
@@ -229,6 +266,7 @@ mod tests {
             namespace: "evolute_duel",
             resources: [
                 TestResource::Model(m_RoadNode::TEST_CLASS_HASH),
+                TestResource::Model(m_PotentialRoadContests::TEST_CLASS_HASH),
                 TestResource::Event(e_RoadContestWon::TEST_CLASS_HASH),
                 TestResource::Event(e_RoadContestDraw::TEST_CLASS_HASH),
             ]

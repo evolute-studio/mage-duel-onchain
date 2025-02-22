@@ -90,3 +90,63 @@ pub fn calcucate_tile_points(tile: Tile) -> u32 {
         Tile::Empty => 0,
     }
 }
+
+pub fn tile_roads_number(tile: Tile) -> u8 {
+    match tile {
+        Tile::CCCC => 0,
+        Tile::FFFF => 0,
+        Tile::RRRR => 4,
+        Tile::CCCF => 0,
+        Tile::CCCR => 1,
+        Tile::CCRR => 2,
+        Tile::CFFF => 0,
+        Tile::FFFR => 1,
+        Tile::CRRR => 3,
+        Tile::FRRR => 3,
+        Tile::CCFF => 0,
+        Tile::CFCF => 0,
+        Tile::CRCR => 2,
+        Tile::FFRR => 2,
+        Tile::FRFR => 2,
+        Tile::CCFR => 1,
+        Tile::CCRF => 1,
+        Tile::CFCR => 1,
+        Tile::CFFR => 1,
+        Tile::CFRF => 1,
+        Tile::CRFF => 1,
+        Tile::CRRF => 2,
+        Tile::CRFR => 2,
+        Tile::CFRR => 2,
+        Tile::Empty => 0,
+    }
+}
+
+pub fn tile_city_number(tile: Tile) -> u8 {
+    match tile {
+        Tile::CCCC => 4,
+        Tile::FFFF => 0,
+        Tile::RRRR => 0,
+        Tile::CCCF => 3,
+        Tile::CCCR => 3,
+        Tile::CCRR => 2,
+        Tile::CFFF => 1,
+        Tile::FFFR => 0,
+        Tile::CRRR => 1,
+        Tile::FRRR => 0,
+        Tile::CCFF => 2,
+        Tile::CFCF => 2,
+        Tile::CRCR => 2,
+        Tile::FFRR => 0,
+        Tile::FRFR => 0,
+        Tile::CCFR => 2,
+        Tile::CCRF => 2,
+        Tile::CFCR => 2,
+        Tile::CFFR => 1,
+        Tile::CFRF => 1,
+        Tile::CRFF => 1,
+        Tile::CRRF => 1,
+        Tile::CRFR => 1,
+        Tile::CFRR => 1,
+        Tile::Empty => 0,
+    }
+}
