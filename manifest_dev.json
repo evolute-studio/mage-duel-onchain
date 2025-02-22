@@ -1,7 +1,7 @@
 {
   "world": {
-    "class_hash": "0x7c9469d45a9cdbab775035afb48e1fa73fb35ab059fcb9dfb0a301aa973e783",
-    "address": "0x6a4d87ac4a224fbc633b46ec896545f8783cfc6d87ce8a4ef8c5630a3c17711",
+    "class_hash": "0x4b767fda48530353c2e44e4b9433f4d75c6c9974aaff43ecc00de9455eb71b8",
+    "address": "0x7f086a6f69eb87ceadfc7a1275f670524416af400ede15a3d2703dd6393bde0",
     "seed": "evolute_duel",
     "name": "Dojo starter",
     "entrypoints": [
@@ -11,7 +11,6 @@
       "register_event",
       "register_model",
       "register_contract",
-      "register_library",
       "init_contract",
       "upgrade_event",
       "upgrade_model",
@@ -79,10 +78,6 @@
           {
             "name": "Unregistered",
             "type": "()"
-          },
-          {
-            "name": "Library",
-            "type": "(core::starknet::class_hash::ClassHash, core::felt252)"
           }
         ]
       },
@@ -363,34 +358,6 @@
             "outputs": [
               {
                 "type": "core::starknet::contract_address::ContractAddress"
-              }
-            ],
-            "state_mutability": "external"
-          },
-          {
-            "type": "function",
-            "name": "register_library",
-            "inputs": [
-              {
-                "name": "namespace",
-                "type": "core::byte_array::ByteArray"
-              },
-              {
-                "name": "class_hash",
-                "type": "core::starknet::class_hash::ClassHash"
-              },
-              {
-                "name": "name",
-                "type": "core::byte_array::ByteArray"
-              },
-              {
-                "name": "version",
-                "type": "core::byte_array::ByteArray"
-              }
-            ],
-            "outputs": [
-              {
-                "type": "core::starknet::class_hash::ClassHash"
               }
             ],
             "state_mutability": "external"
@@ -1000,28 +967,6 @@
       },
       {
         "type": "event",
-        "name": "dojo::world::world_contract::world::LibraryRegistered",
-        "kind": "struct",
-        "members": [
-          {
-            "name": "name",
-            "type": "core::byte_array::ByteArray",
-            "kind": "key"
-          },
-          {
-            "name": "namespace",
-            "type": "core::byte_array::ByteArray",
-            "kind": "key"
-          },
-          {
-            "name": "class_hash",
-            "type": "core::starknet::class_hash::ClassHash",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "type": "event",
         "name": "dojo::world::world_contract::world::EventEmitted",
         "kind": "struct",
         "members": [
@@ -1262,11 +1207,6 @@
             "kind": "nested"
           },
           {
-            "name": "LibraryRegistered",
-            "type": "dojo::world::world_contract::world::LibraryRegistered",
-            "kind": "nested"
-          },
-          {
             "name": "EventEmitted",
             "type": "dojo::world::world_contract::world::EventEmitted",
             "kind": "nested"
@@ -1312,7 +1252,7 @@
   },
   "contracts": [
     {
-      "address": "0x4d9f0e45858c8c25af85e11cf2986ebb6875369f74cd41094317b7d2b84a4f",
+      "address": "0x538bad9c7a41ad107a880537ff7fa99d18f771e6f6bd99453a757362c18f57b",
       "class_hash": "0x6c0d725e7b205ed00bc0994931e46c03da89389633ea14bd7d4b87d09dabe92",
       "abi": [
         {
@@ -1583,7 +1523,7 @@
       ]
     },
     {
-      "address": "0x231578ae06610bbffba207e59e26a47e6fbd658d08e5106f867dfaaa299c27d",
+      "address": "0x755046fd37f202fc1f6f385eb8d0bc83cd21037437a37fbcfcd7d75803e4578",
       "class_hash": "0x556e101bb21acdd83793d0c5596656666ecabb3dcba5462826f4ed7b5bbc666",
       "abi": [
         {
@@ -1778,7 +1718,6 @@
       ]
     }
   ],
-  "libraries": [],
   "models": [
     {
       "members": [],
@@ -1926,6 +1865,5 @@
       "tag": "evolute_duel-Skiped",
       "selector": "0x39293e825ec4e370540eb80b631e5656df258d3c1bc482df503857eb3b45861"
     }
-  ],
-  "external_contracts": []
+  ]
 }
