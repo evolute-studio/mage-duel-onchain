@@ -26,12 +26,12 @@ pub mod game {
         },
         systems::helpers::{
             board::{
-            create_board, draw_tile_from_board_deck, update_board_state, update_board_joker_number,
-            create_board_from_snapshot,
+                create_board, draw_tile_from_board_deck, update_board_state,
+                update_board_joker_number, create_board_from_snapshot,
             },
-            city_scoring::{connect_city_edges_in_tile, connect_adjacent_city_edges},
-            road_scoring::{connect_road_edges_in_tile, connect_adjacent_road_edges},
-            tile_helpers::{calcucate_tile_points}
+            city_scoring::{connect_city_edges_in_tile, connect_adjacent_city_edges, close_all_cities},
+            road_scoring::{connect_road_edges_in_tile, connect_adjacent_road_edges, close_all_roads},
+            tile_helpers::{calcucate_tile_points},
         },
         packing::{GameStatus, Tile, GameState, PlayerSide},
     };
@@ -76,7 +76,7 @@ pub mod game {
             0, // CRFF - not in the deck
             3, // CRRF
             4, // CRFR
-            4, // CFRR
+            4 // CFRR
         ];
         let edges = (1, 1);
         let joker_number = 3;
@@ -287,7 +287,7 @@ pub mod game {
             } else if player == player2_address {
                 (player2_side, joker_number2)
             } else {
-                //TODO: Error: player is not in the game
+                //Error: player is not in the game
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id });
                 return;
             };
@@ -308,7 +308,7 @@ pub mod game {
                 let prev_player_side = prev_move.player_side;
 
                 if player_side == prev_player_side {
-                    //TODO: Error: turn of the other player
+                    //Error: turn of the other player
                     world.emit_event(@NotYourTurn { player_id: player, board_id });
                     return;
                 }
@@ -345,9 +345,25 @@ pub mod game {
             //City scoring
             let tile_position = (col * 8 + row).into();
             //TODO: use span instead of clone
-            connect_city_edges_in_tile(ref world, board_id, board.initial_edge_state.clone(), tile_position, tile.into(), rotation, player_side.into());
+            connect_city_edges_in_tile(
+                ref world,
+                board_id,
+                board.initial_edge_state.clone(),
+                tile_position,
+                tile.into(),
+                rotation,
+                player_side.into(),
+            );
             //TODO: use span instead of clone
-            let city_scoring_result = connect_adjacent_city_edges(ref world, board_id, board.state.clone(), tile_position, tile.into(), rotation, player_side.into());
+            let city_scoring_result = connect_adjacent_city_edges(
+                ref world,
+                board_id,
+                board.state.clone(),
+                tile_position,
+                tile.into(),
+                rotation,
+                player_side.into(),
+            );
             if city_scoring_result.is_some() {
                 let (winner, points_delta) = city_scoring_result.unwrap();
                 if winner == PlayerSide::Blue {
@@ -360,18 +376,38 @@ pub mod game {
             }
 
             //Road scoring
-            connect_road_edges_in_tile(ref world, board_id, board.initial_edge_state.clone(), tile_position, tile.into(), rotation, player_side.into());
-            let road_scoring_result = connect_adjacent_road_edges(ref world, board_id, board.state.clone(), tile_position, tile.into(), rotation, player_side.into());
-            if road_scoring_result.is_some() {
-                let (winner, points_delta) = road_scoring_result.unwrap();
-                if winner == PlayerSide::Blue {
-                    board.blue_score += points_delta;
-                    board.red_score -= points_delta;
-                } else {
-                    board.red_score += points_delta;
-                    board.blue_score -= points_delta;
+            connect_road_edges_in_tile(
+                ref world,
+                board_id,
+                board.initial_edge_state.clone(),
+                tile_position,
+                tile.into(),
+                rotation,
+                player_side.into(),
+            );
+            let road_scoring_results = connect_adjacent_road_edges(
+                ref world,
+                board_id,
+                board.state.clone(),
+                tile_position,
+                tile.into(),
+                rotation,
+                player_side.into(),
+            );
+
+            for i in 0..road_scoring_results.len() {
+                let road_scoring_result = *road_scoring_results.at(i.into());
+                if road_scoring_result.is_some() {
+                    let (winner, points_delta) = road_scoring_result.unwrap();
+                    if winner == PlayerSide::Blue {
+                        board.blue_score += points_delta;
+                        board.red_score -= points_delta;
+                    } else {
+                        board.red_score += points_delta;
+                        board.blue_score -= points_delta;
+                    }
                 }
-            }
+            };
 
             //Update board state
             update_board_state(ref board, tile, rotation, col, row, is_joker, player_side);
@@ -388,7 +424,36 @@ pub mod game {
                 //FINISH THE GAME
 
                 //Score all potantial cities and roads
-                
+                let city_scoring_results = close_all_cities(ref world, board_id);
+                for i in 0..city_scoring_results.len() {
+                    let city_scoring_result = *city_scoring_results.at(i.into());
+                    if city_scoring_result.is_some() {
+                        let (winner, points_delta) = city_scoring_result.unwrap();
+                        if winner == PlayerSide::Blue {
+                            board.blue_score += points_delta;
+                            board.red_score -= points_delta;
+                        } else {
+                            board.red_score += points_delta;
+                            board.blue_score -= points_delta;
+                        }
+                    }
+                };
+
+                let road_scoring_results = close_all_roads(ref world, board_id);
+                for i in 0..road_scoring_results.len() {
+                    let road_scoring_result = *road_scoring_results.at(i.into());
+                    if road_scoring_result.is_some() {
+                        let (winner, points_delta) = road_scoring_result.unwrap();
+                        if winner == PlayerSide::Blue {
+                            board.blue_score += points_delta;
+                            board.red_score -= points_delta;
+                        } else {
+                            board.red_score += points_delta;
+                            board.blue_score -= points_delta;
+                        }
+                    }
+                };
+
 
                 board.game_state = GameState::Finished;
                 let mut host_game: Game = world.read_model(player1_address);
@@ -487,6 +552,36 @@ pub mod game {
                 //check if last move was a skip
                 if prev_move.tile.is_none() && !prev_move.is_joker {
                     //FINISH THE GAME
+                    let city_scoring_results = close_all_cities(ref world, board_id);
+                    for i in 0..city_scoring_results.len() {
+                        let city_scoring_result = *city_scoring_results.at(i.into());
+                        if city_scoring_result.is_some() {
+                            let (winner, points_delta) = city_scoring_result.unwrap();
+                            if winner == PlayerSide::Blue {
+                                board.blue_score += points_delta;
+                                board.red_score -= points_delta;
+                            } else {
+                                board.red_score += points_delta;
+                                board.blue_score -= points_delta;
+                            }
+                        }
+                    };
+
+                    let road_scoring_results = close_all_roads(ref world, board_id);
+                    for i in 0..road_scoring_results.len() {
+                        let road_scoring_result = *road_scoring_results.at(i.into());
+                        if road_scoring_result.is_some() {
+                            let (winner, points_delta) = road_scoring_result.unwrap();
+                            if winner == PlayerSide::Blue {
+                                board.blue_score += points_delta;
+                                board.red_score -= points_delta;
+                            } else {
+                                board.red_score += points_delta;
+                                board.blue_score -= points_delta;
+                            }
+                        }
+                    };
+
                     board.game_state = GameState::Finished;
                     let mut host_game: Game = world.read_model(player1_address);
                     let mut guest_game: Game = world.read_model(player2_address);

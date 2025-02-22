@@ -7,13 +7,7 @@ mod tests {
         spawn_test_world, NamespaceDef, TestResource, ContractDefTrait, ContractDef,
     };
 
-    use evolute_duel::{
-        models::{Game, m_Game},
-        events::{
-           
-        },
-        packing::{GameStatus},
-    };
+    use evolute_duel::{models::{Game, m_Game}, events::{}, packing::{GameStatus}};
     use evolute_duel::systems::game::{game, IGameDispatcher, IGameDispatcherTrait};
 
     use starknet::testing;
@@ -43,7 +37,7 @@ mod tests {
         use core::dict::Felt252Dict;
         let mut dict: Felt252Dict<bool> = Default::default();
         let check = dict.get(0);
-       //println!("{:?}", check);
+        //println!("{:?}", check);
     }
 
     #[test]
@@ -131,42 +125,41 @@ mod tests {
         let new_game: Game = world.read_model(caller);
         assert(new_game.status == GameStatus::Canceled, 'game status is wrong');
     }
-
     // #[test]
-    // fn test_game_join() {
-    //     let host_player = starknet::contract_address_const::<0x0>();
-    //     let guest_player = starknet::contract_address_const::<0x1>();
+// fn test_game_join() {
+//     let host_player = starknet::contract_address_const::<0x0>();
+//     let guest_player = starknet::contract_address_const::<0x1>();
 
     //     testing::set_caller_address(host_player);
 
     //     let ndef = namespace_def();
-    //     let mut world = spawn_test_world([ndef].span());
-    //     world.sync_perms_and_inits(contract_defs());
+//     let mut world = spawn_test_world([ndef].span());
+//     world.sync_perms_and_inits(contract_defs());
 
     //     let (contract_address, _) = world.dns(@"game").unwrap();
-    //     let game_system = IGameDispatcher { contract_address };
+//     let game_system = IGameDispatcher { contract_address };
 
     //     let initial_game: Game = world.read_model(host_player);
-    //     assert(initial_game.status == GameStatus::Finished, 'initial game status is wrong');
+//     assert(initial_game.status == GameStatus::Finished, 'initial game status is wrong');
 
     //     // Create a new game
-    //     game_system.create_game();
+//     game_system.create_game();
 
     //     let mut new_game: Game = world.read_model(host_player);
-    //     assert(new_game.status == GameStatus::Created, 'game status is wrong');
+//     assert(new_game.status == GameStatus::Created, 'game status is wrong');
 
     //     // Make geust_player the caller
-    //     testing::set_caller_address(guest_player);
-    //     assert(starknet::get_caller_address() == guest_player, 'set_caller_address failed');
-    //     assert(guest_player != host_player, 'same player');
+//     testing::set_caller_address(guest_player);
+//     assert(starknet::get_caller_address() == guest_player, 'set_caller_address failed');
+//     assert(guest_player != host_player, 'same player');
 
     //     let (contract_address, _) = world.dns(@"game").unwrap();
-    //     let game_system = IGameDispatcher { contract_address };
+//     let game_system = IGameDispatcher { contract_address };
 
     //     // Join the game
-    //     game_system.join_game(host_player);
+//     game_system.join_game(host_player);
 
     //     let new_game: Game = world.read_model(host_player);
-    //     assert(new_game.status == GameStatus::InProgress, 'game status is wrong');
-    // }
+//     assert(new_game.status == GameStatus::InProgress, 'game status is wrong');
+// }
 }
