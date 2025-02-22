@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x5c8958f7083a850bba39825d72420e62eecf6a2121b3cd2f60e780a23ca2b95",
-      "class_hash": "0x7161798739e97e5241717c63cd7f52bde5a9a512f38eb34ab0599b67feae70a",
+      "address": "0x711edd1059552a476434c6885f7ecfff4029626f8c5959e7b1e4862a8115d5e",
+      "class_hash": "0x1dfa7ed1f5ceec39eac96b8c0166b3f2894830630fc86b939015afda0d7379f",
       "abi": [
         {
           "type": "impl",
@@ -1605,8 +1605,8 @@
       ]
     },
     {
-      "address": "0x5aa4fe2a5d5b617d662d67e3baabb3355bcb6f3af781593bc6b5e519ff4fc1c",
-      "class_hash": "0x24a5eb79b114d92b3226bc4e6dc643cdced47cf8fdf351e9cecacfcf7ce4610",
+      "address": "0x3ec6fbfd9233e33de90f726501d12bea66f4d7fa4b07d41f799bfff4b54b804",
+      "class_hash": "0x1ce15dc1198dcad44ee3afb0d7cf91a2b17ec9828738821862e46b3a23f3f6e",
       "abi": [
         {
           "type": "impl",
@@ -1846,9 +1846,15 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0x15619ea9eea7324c8b8e648162090bbaec54bcc6b6ee535c396c00c0eab1cb4",
+      "class_hash": "0x764fb0cba93740ec141c45efa0b11aaa76741b991c19f486e9903cf13154d12",
       "tag": "evolute_duel-Board",
       "selector": "0x836ef99f75ec03877951d491db5b9730a3f3552e3fc7d1c38a9f1abc320947"
+    },
+    {
+      "members": [],
+      "class_hash": "0x79e4604f050d3f6948ce48116c33e8e7d37b48f3ac1d32c77315dd1f0b41e27",
+      "tag": "evolute_duel-CityNode",
+      "selector": "0x6ab68288a0f477f152c65fcdec09f42b462e956559aa1948d3a2c6e162440da"
     },
     {
       "members": [],
@@ -1864,9 +1870,27 @@
     },
     {
       "members": [],
-      "class_hash": "0x55644a42aa567dd06355628ff3541495f41bd91b5c35b742e462053c4bb3d32",
+      "class_hash": "0x3224c93e20ed7b2d0b0e9784f244a4c617b82fa459696943e32e970cc210d9f",
       "tag": "evolute_duel-Player",
       "selector": "0xd206bfcaacb44471c314c767d8bdf5b2c84b204fd362b85989b096baef7683"
+    },
+    {
+      "members": [],
+      "class_hash": "0x12c605b2e8a932ec6ae58a1dc0d9a1cda69592817d37c63e9191e20fabb82e4",
+      "tag": "evolute_duel-PotentialCityContests",
+      "selector": "0x37fdccc08144f587a9edda5fd1703cad4c6608cb56b723357d8d24da4eebc14"
+    },
+    {
+      "members": [],
+      "class_hash": "0x15edfa5fd4e8436cec03eab6196516eb5ff859ab2f0d56ba0632f91f49d7f79",
+      "tag": "evolute_duel-PotentialRoadContests",
+      "selector": "0x287da2ec89b5404676520f5a7a7ac9876dbd7b9b367b4b5a5285f57b390a181"
+    },
+    {
+      "members": [],
+      "class_hash": "0x2243ecbe8b8e0dcf2d62e6b227c90e5c8b5a55e80ef89813900e200d6fc663",
+      "tag": "evolute_duel-RoadNode",
+      "selector": "0x706dbe9534131fd41eff4cb9c9a9ebc6d20a4d5d5c93f1990a9405b72bbd90d"
     },
     {
       "members": [],
@@ -1876,7 +1900,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x21894f2a76d911f06513daf6620fa797768978e3d7cd4f35ba0fe128a1c63d3",
+      "class_hash": "0x1ea3902ce15d795b1bb2b1b4c1c025c04b8116fe1df2a1da8667a5484c92b7f",
       "tag": "evolute_duel-Shop",
       "selector": "0x222f976f10d5f7bc6ff181000844ce4341a875fc25c8c6302525df530bbc802"
     },
@@ -1896,21 +1920,33 @@
     },
     {
       "members": [],
-      "class_hash": "0x61cb2fea390c1106db7d3d78209cb84c051c688ade645421caf48c1c0e5f6cf",
+      "class_hash": "0x3fdaee1fdb1e98d543e11a18a44c505a732bf23fcde4ff906554149a5a4748e",
       "tag": "evolute_duel-BoardCreated",
       "selector": "0x1a41b9cde62dde29c4f35c38893fff421cffc41f9ff0b4c8b817f85d788d75c"
     },
     {
       "members": [],
-      "class_hash": "0x653d266503f4a893ec6a343eae4dad4f746d1ed950228aecb6375f6072850be",
+      "class_hash": "0x6e6f438919b82e174fa1bd82ccfe8faf2f6725f00d90dc9424777a0611a6772",
       "tag": "evolute_duel-BoardCreatedFromSnapshot",
       "selector": "0x198d6b562621b64d09a3506334acbbdaa24f1ab18f4691e1f46d98a332e1672"
     },
     {
       "members": [],
-      "class_hash": "0x32b6e1711df1ed8df1e313150c2d1437a163cf3cce682e64072f7dbf5c2ad29",
+      "class_hash": "0x5dc9d9a8fd2beafd45ee344f77b563dbb6288f6594c7f7525cbf3f533d1f7bf",
       "tag": "evolute_duel-BoardUpdated",
       "selector": "0x1352659f5307c3478b85ed999c391ac8768670156647c54e3d0edfd3acd61de"
+    },
+    {
+      "members": [],
+      "class_hash": "0x420d5f806f4813e9f592a481baa8ae375195e9aca0df059931427d9cf80844e",
+      "tag": "evolute_duel-CityContestDraw",
+      "selector": "0x2df1018feebb9da98032ee5225e63e66e9444943b9089d1d9b133a66e6901b1"
+    },
+    {
+      "members": [],
+      "class_hash": "0xc7e4a72fc3a122f3dcf7b8d1157de04bc3e78fdfca827bcbb683730f78f6e2",
+      "tag": "evolute_duel-CityContestWon",
+      "selector": "0x37ae9aab78ea3451c19542df000a855eec3d8f7436e6d0133c10523b025d662"
     },
     {
       "members": [],
@@ -1920,7 +1956,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x3b5a4f94a60b2fa03417157220bd9447aad1ea6c30a3581faf7a876d0516c21",
+      "class_hash": "0x41d208057b74d226e5e7803015bb4b0d54923a80a304726387e1ad3810c8cfb",
       "tag": "evolute_duel-CurrentPlayerBalance",
       "selector": "0x56779dd6799df6d7eb414e6e5e7233a5fa374908dc132d33fd22212b5e4756"
     },
@@ -2010,7 +2046,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x289d83b2c1a2bce8a8568090a6392c26f201175be459a2157ab2f217aed8a8f",
+      "class_hash": "0x336ae705547c7119f869e4681f45616ef91a90c678ddc31e657164fd4005a48",
       "tag": "evolute_duel-PlayerSkinChangeFailed",
       "selector": "0x67055a4f0297923a761e2f026532239bae7ce092d2ddd80f8598ced10a79a6b"
     },
@@ -2025,6 +2061,18 @@
       "class_hash": "0x627923abdef29e9fd89f370744d61b8fc45e2f60c8204c3cfc6d482b11acee6",
       "tag": "evolute_duel-PlayerUsernameChanged",
       "selector": "0x288345f6380a8662043d3a074a7ca2a9bd9ab5e6b5ffdd65455f98668bc7cf1"
+    },
+    {
+      "members": [],
+      "class_hash": "0x6388004b4c20caafbf4a24fbcc3f7339a0f43e624cf272880c2d2b9cf3789a3",
+      "tag": "evolute_duel-RoadContestDraw",
+      "selector": "0x24a2fe8b1c6ad2e623ffc8aa565d4a95e12e2b47bd019c5707cb883e4e4ff8e"
+    },
+    {
+      "members": [],
+      "class_hash": "0x47cfc481e81e80af40b5a02eaad67e86946b1b1e5d0ea307327771f8e852e7f",
+      "tag": "evolute_duel-RoadContestWon",
+      "selector": "0x3aa5a15e19f8678319cb6252902021f2618c1affe2390bf8c27fdfa6f6e2a74"
     },
     {
       "members": [],

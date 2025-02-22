@@ -16,8 +16,8 @@ pub struct Board {
     pub player1: (ContractAddress, PlayerSide, u8),
     //(address, side, joker_number)
     pub player2: (ContractAddress, PlayerSide, u8),
-    pub blue_score: u32,
-    pub red_score: u32,
+    pub blue_score: u16,
+    pub red_score: u16,
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
 }
@@ -108,8 +108,8 @@ pub struct CityNode {
     pub position: u8,
     pub parent: u8,
     pub rank: u8,
-    pub blue_points: u32,
-    pub red_points: u32,
+    pub blue_points: u16,
+    pub red_points: u16,
     pub open_edges: u8,
     pub contested: bool,
 }
@@ -137,8 +137,8 @@ pub struct RoadNode {
     pub position: u8,
     pub parent: u8,
     pub rank: u8,
-    pub blue_points: u32,
-    pub red_points: u32,
+    pub blue_points: u16,
+    pub red_points: u16,
     pub open_edges: u8,
     pub contested: bool,
 }
@@ -153,7 +153,7 @@ pub struct Player {
     #[key]
     pub player_id: ContractAddress,
     pub username: felt252,
-    pub balance: u32,
+    pub balance: u16,
     pub games_played: felt252,
     pub active_skin: u8,
 }
@@ -163,6 +163,6 @@ pub struct Player {
 pub struct Shop {
     #[key]
     pub shop_id: felt252,
-    pub skin_prices: Array<u32>,
+    pub skin_prices: Array<u16>,
 }
 

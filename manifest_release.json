@@ -48,7 +48,7 @@
           },
           {
             "name": "pending_word_len",
-            "type": "core::integer::u32"
+            "type": "core::integer::u16"
           }
         ]
       },
@@ -266,7 +266,7 @@
             "inputs": [],
             "outputs": [
               {
-                "type": "core::integer::u32"
+                "type": "core::integer::u16"
               }
             ],
             "state_mutability": "external"
@@ -1344,7 +1344,7 @@
             },
             {
               "name": "pending_word_len",
-              "type": "core::integer::u32"
+              "type": "core::integer::u16"
             }
           ]
         },

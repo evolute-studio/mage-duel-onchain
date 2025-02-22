@@ -94,8 +94,8 @@ pub fn connect_adjacent_city_edges(
     tile: u8,
     rotation: u8,
     side: u8,
-)//None - if no contest or draw, Some(u8, u32) -> (who_wins, points_delta) - if contest
--> Option<(PlayerSide, u32)> {
+)//None - if no contest or draw, Some(u8, u16) -> (who_wins, points_delta) - if contest
+-> Option<(PlayerSide, u16)> {
     let extended_tile = create_extended_tile(tile.into(), rotation);
     let row = tile_position % 8;
     let col = tile_position / 8;
@@ -197,7 +197,7 @@ pub fn connect_adjacent_city_edges(
     return contest_result;
 }
 
-fn handle_city_contest(ref world: WorldStorage, mut city_root: CityNode) -> Option<(PlayerSide, u32)> {
+fn handle_city_contest(ref world: WorldStorage, mut city_root: CityNode) -> Option<(PlayerSide, u16)> {
     if city_root.blue_points > city_root.red_points {
         world
             .emit_event(
@@ -246,10 +246,10 @@ fn handle_city_contest(ref world: WorldStorage, mut city_root: CityNode) -> Opti
     }
 }
 
-pub fn close_all_cities(ref world: WorldStorage, board_id: felt252) -> Span<Option<(PlayerSide, u32)>> {
+pub fn close_all_cities(ref world: WorldStorage, board_id: felt252) -> Span<Option<(PlayerSide, u16)>> {
     let potential_cities: PotentialCityContests = world.read_model(board_id);
     let roots = potential_cities.roots;
-    let mut contest_results: Array<Option<(PlayerSide, u32)>> = ArrayTrait::new();
+    let mut contest_results: Array<Option<(PlayerSide, u16)>> = ArrayTrait::new();
     for i in 0..roots.len() {
         let root = find(ref world, board_id, *roots.at(i));
         if !root.contested {

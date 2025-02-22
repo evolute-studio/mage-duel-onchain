@@ -1,4 +1,5 @@
 use dojo::event::EventStorage;
+use dojo::model::{Model};
 use dojo::world::{WorldStorage};
 use starknet::{ContractAddress};
 use dojo::model::{ModelStorage};
@@ -28,12 +29,6 @@ pub fn create_board(
     board_id_generator.write(board_id + 1);
 
     let rules: Rules = world.read_model(0);
-
-    let (cities_on_edges, roads_on_edges) = rules.edges;
-    let initial_edge_state = generate_initial_board_state(
-        cities_on_edges, roads_on_edges, board_id,
-    );
-
     let mut deck_rules_flat = flatten_deck_rules(@rules.deck);
 
     // Create an empty board.
@@ -45,7 +40,7 @@ pub fn create_board(
 
     let mut board = Board {
         id: board_id,
-        initial_edge_state: initial_edge_state.clone(),
+        initial_edge_state: array![],
         available_tiles_in_deck: deck_rules_flat.clone(),
         top_tile: Option::None,
         state: tiles.clone(),
@@ -59,16 +54,25 @@ pub fn create_board(
 
     let top_tile = draw_tile_from_board_deck(ref board);
 
-    // Write the board to the world.
     world.write_model(@board);
 
-    // Emit an event to the world to notify about the board creation.
+    // Initialize edges
+    let (cities_on_edges, roads_on_edges) = rules.edges;
+    let initial_edge_state = generate_initial_board_state(
+        cities_on_edges, roads_on_edges, board_id,
+    );
+    world
+        .write_member(
+            Model::<Board>::ptr_from_keys(board_id),
+            selector!("initial_edge_state"),
+            initial_edge_state.clone(),
+        );
+
     world
         .emit_event(
             @BoardCreated {
                 board_id,
                 initial_edge_state,
-                available_tiles_in_deck: deck_rules_flat,
                 top_tile,
                 state: tiles,
                 player1: board.player1,

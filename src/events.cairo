@@ -7,7 +7,6 @@ pub struct BoardCreated {
     #[key]
     pub board_id: felt252,
     pub initial_edge_state: Array<u8>,
-    pub available_tiles_in_deck: Array<u8>,
     pub top_tile: Option<u8>,
     pub state: Array<(u8, u8, u8)>,
     //(address, side, joker_number)
@@ -233,8 +232,8 @@ pub struct CityContestWon {
     #[key]
     pub root: u8,
     pub winner: PlayerSide,
-    pub red_points: u32,
-    pub blue_points: u32,
+    pub red_points: u16,
+    pub blue_points: u16,
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Debug)]
@@ -244,8 +243,8 @@ pub struct CityContestDraw {
     pub board_id: felt252,
     #[key]
     pub root: u8,
-    pub red_points: u32,
-    pub blue_points: u32,
+    pub red_points: u16,
+    pub blue_points: u16,
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Debug)]
@@ -256,8 +255,8 @@ pub struct RoadContestWon {
     #[key]
     pub root: u8,
     pub winner: PlayerSide,
-    pub red_points: u32,
-    pub blue_points: u32,
+    pub red_points: u16,
+    pub blue_points: u16,
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Debug)]
@@ -267,8 +266,8 @@ pub struct RoadContestDraw {
     pub board_id: felt252,
     #[key]
     pub root: u8,
-    pub red_points: u32,
-    pub blue_points: u32,
+    pub red_points: u16,
+    pub blue_points: u16,
 }
 
 // --------------------------------------
@@ -280,7 +279,7 @@ pub struct RoadContestDraw {
 pub struct CurrentPlayerBalance {
     #[key]
     pub player_id: ContractAddress,
-    pub balance: u32,
+    pub balance: u16,
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Debug)]
@@ -322,6 +321,6 @@ pub struct PlayerSkinChangeFailed {
     #[key]
     pub player_id: ContractAddress,
     pub new_skin: u8,
-    pub skin_price: u32,
-    pub balance: u32,
+    pub skin_price: u16,
+    pub balance: u16,
 }

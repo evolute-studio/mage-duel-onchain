@@ -58,7 +58,7 @@ pub fn convert_node_position_to_board_position(city_node_position: u8) -> (u8, u
     (tile_position, rotation)
 }
 
-pub fn calcucate_tile_points(tile: Tile) -> u32 {
+pub fn calcucate_tile_points(tile: Tile) -> u16 {
     match tile {
         // C = 2, R = 1, F = 0, M = 0
         Tile::CCCC => 8,

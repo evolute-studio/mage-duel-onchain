@@ -29,8 +29,12 @@ pub mod game {
                 create_board, draw_tile_from_board_deck, update_board_state,
                 update_board_joker_number, create_board_from_snapshot,
             },
-            city_scoring::{connect_city_edges_in_tile, connect_adjacent_city_edges, close_all_cities},
-            road_scoring::{connect_road_edges_in_tile, connect_adjacent_road_edges, close_all_roads},
+            city_scoring::{
+                connect_city_edges_in_tile, connect_adjacent_city_edges, close_all_cities,
+            },
+            road_scoring::{
+                connect_road_edges_in_tile, connect_adjacent_road_edges, close_all_roads,
+            },
             tile_helpers::{calcucate_tile_points},
         },
         packing::{GameStatus, Tile, GameState, PlayerSide},
@@ -240,7 +244,6 @@ pub mod game {
 
             world.write_model(@host_game);
             world.write_model(@guest_game);
-
             world.emit_event(@GameStarted { host_player, guest_player, board_id });
         }
 
@@ -453,7 +456,6 @@ pub mod game {
                         }
                     }
                 };
-
 
                 board.game_state = GameState::Finished;
                 let mut host_game: Game = world.read_model(player1_address);

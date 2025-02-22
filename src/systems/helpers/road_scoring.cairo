@@ -96,9 +96,9 @@ pub fn connect_adjacent_road_edges(
     tile: u8,
     rotation: u8,
     side: u8,
-)//None - if no contest or draw, Some(u8, u32) -> (who_wins, points_delta) - if contest
+)//None - if no contest or draw, Some(u8, u16) -> (who_wins, points_delta) - if contest
 //TODO - return list of multiple contests
--> Span<Option<(PlayerSide, u32)>> {
+-> Span<Option<(PlayerSide, u16)>> {
     let extended_tile = create_extended_tile(tile.into(), rotation);
     let row = tile_position % 8;
     let col = tile_position / 8;
@@ -216,7 +216,7 @@ pub fn connect_adjacent_road_edges(
 
 fn handle_contest(
     ref world: WorldStorage, mut road_root: RoadNode,
-) -> Option<(PlayerSide, u32)> {
+) -> Option<(PlayerSide, u16)> {
     road_root.contested = true;
     if road_root.blue_points > road_root.red_points {
         // Blue player wins contest
@@ -272,7 +272,7 @@ fn handle_contest(
 
 pub fn close_all_roads(
     ref world: WorldStorage, board_id: felt252,
-) -> Span<Option<(PlayerSide, u32)>> {
+) -> Span<Option<(PlayerSide, u16)>> {
     let potential_roads: PotentialRoadContests = world.read_model(board_id);
     let roots = potential_roads.roots;
     let mut contest_results = ArrayTrait::new();
