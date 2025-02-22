@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x4d9f0e45858c8c25af85e11cf2986ebb6875369f74cd41094317b7d2b84a4f",
-      "class_hash": "0x6c0d725e7b205ed00bc0994931e46c03da89389633ea14bd7d4b87d09dabe92",
+      "address": "0x758f4647254f608e4002f5532d49b5a909ba1d42cdc1013c7b96c630989b2c5",
+      "class_hash": "0xf2d4262938417654e2eaa247068997bcfce0edde30b26a141b1ecbce8986d7",
       "abi": [
         {
           "type": "impl",
@@ -1378,20 +1378,6 @@
           "interface_name": "evolute_duel::systems::game::IGame"
         },
         {
-          "type": "enum",
-          "name": "core::option::Option::<core::integer::u8>",
-          "variants": [
-            {
-              "name": "Some",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "None",
-              "type": "()"
-            }
-          ]
-        },
-        {
           "type": "interface",
           "name": "evolute_duel::systems::game::IGame",
           "items": [
@@ -1426,36 +1412,10 @@
               "name": "make_move",
               "inputs": [
                 {
-                  "name": "joker_tile",
-                  "type": "core::option::Option::<core::integer::u8>"
-                },
-                {
-                  "name": "rotation",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "col",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "row",
-                  "type": "core::integer::u8"
+                  "name": "board_id",
+                  "type": "core::felt252"
                 }
               ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "skip_move",
-              "inputs": [],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "check",
-              "inputs": [],
               "outputs": [],
               "state_mutability": "external"
             }
@@ -1577,285 +1537,59 @@
         "cancel_game",
         "join_game",
         "make_move",
-        "skip_move",
-        "check",
-        "upgrade"
-      ]
-    },
-    {
-      "address": "0x231578ae06610bbffba207e59e26a47e6fbd658d08e5106f867dfaaa299c27d",
-      "class_hash": "0x556e101bb21acdd83793d0c5596656666ecabb3dcba5462826f4ed7b5bbc666",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "player_profile_actions__ContractImpl",
-          "interface_name": "dojo::contract::interface::IContract"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::interface::IContract",
-          "items": []
-        },
-        {
-          "type": "impl",
-          "name": "player_profile_actions__DeployedContractImpl",
-          "interface_name": "dojo::meta::interface::IDeployedResource"
-        },
-        {
-          "type": "struct",
-          "name": "core::byte_array::ByteArray",
-          "members": [
-            {
-              "name": "data",
-              "type": "core::array::Array::<core::bytes_31::bytes31>"
-            },
-            {
-              "name": "pending_word",
-              "type": "core::felt252"
-            },
-            {
-              "name": "pending_word_len",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::meta::interface::IDeployedResource",
-          "items": [
-            {
-              "type": "function",
-              "name": "dojo_name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::byte_array::ByteArray"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "function",
-          "name": "dojo_init",
-          "inputs": [],
-          "outputs": [],
-          "state_mutability": "view"
-        },
-        {
-          "type": "impl",
-          "name": "PlayerProfileActionsImpl",
-          "interface_name": "evolute_duel::systems::player_profile_actions::IPlayerProfileActions"
-        },
-        {
-          "type": "interface",
-          "name": "evolute_duel::systems::player_profile_actions::IPlayerProfileActions",
-          "items": [
-            {
-              "type": "function",
-              "name": "balance",
-              "inputs": [],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "WorldProviderImpl",
-          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
-        },
-        {
-          "type": "struct",
-          "name": "dojo::world::iworld::IWorldDispatcher",
-          "members": [
-            {
-              "name": "contract_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::world_provider::IWorldProvider",
-          "items": [
-            {
-              "type": "function",
-              "name": "world_dispatcher",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::world::iworld::IWorldDispatcher"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "UpgradeableImpl",
-          "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::contract::components::upgradeable::IUpgradeable",
-          "items": [
-            {
-              "type": "function",
-              "name": "upgrade",
-              "inputs": [
-                {
-                  "name": "new_class_hash",
-                  "type": "core::starknet::class_hash::ClassHash"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "constructor",
-          "name": "constructor",
-          "inputs": []
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "Upgraded",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-              "kind": "nested"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-          "kind": "enum",
-          "variants": []
-        },
-        {
-          "type": "event",
-          "name": "evolute_duel::systems::player_profile_actions::player_profile_actions::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "UpgradeableEvent",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "WorldProviderEvent",
-              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-              "kind": "nested"
-            }
-          ]
-        }
-      ],
-      "init_calldata": [],
-      "tag": "evolute_duel-player_profile_actions",
-      "selector": "0x2fe51480cb4bcea87b911f6a9be5f5a1a39ee57c9aabb0617792aa4e03370e0",
-      "systems": [
-        "balance",
         "upgrade"
       ]
     }
   ],
+  "libraries": [],
   "models": [
     {
       "members": [],
-      "class_hash": "0x5bdcd9a14d9d935abbd9c81f8b161b20586afee16c4e2bf3bda74193bea7d0c",
+      "class_hash": "0xcb1d9debbd02b5cc0fb1afec628a2ff4a4cb0bb489013879f128082299c6b2",
       "tag": "evolute_duel-Board",
       "selector": "0x836ef99f75ec03877951d491db5b9730a3f3552e3fc7d1c38a9f1abc320947"
     },
     {
       "members": [],
-      "class_hash": "0x72e20e73f7031a9cf8a98641575834d2b90f213697d895f0cdf51e8e3eff491",
+      "class_hash": "0x6b12e5a0ed1a0d502aa72380fe3ce1b58f15a422dd12a1fea589b28bbf88389",
       "tag": "evolute_duel-Game",
       "selector": "0x50eb71734a5acf3d804e250ff9e59bb3566e8bf9d30d0587d38cc2cc032e232"
     },
     {
       "members": [],
-      "class_hash": "0x59573d72d8bd1278344d5b9f8a911aeae55b0c2b262f1312c954b67ee1e1dec",
+      "class_hash": "0x7d5b8cf61ee6c0df2c8cf7dae3983372b189a1e071f1c9697530adf0372e09b",
       "tag": "evolute_duel-Move",
       "selector": "0x6d7481ce108a8fbf6a107f7561809083890ccdb89931116448283bf99a278d5"
-    },
-    {
-      "members": [],
-      "class_hash": "0x740d4f2dba132b181b3340af25ccee21127d40249432d96d69394addacdfbdb",
-      "tag": "evolute_duel-Player",
-      "selector": "0xd206bfcaacb44471c314c767d8bdf5b2c84b204fd362b85989b096baef7683"
     },
     {
       "members": [],
       "class_hash": "0x44acead810d2857d6b9b12916596cf9d621d661104291f93c0f687db4a73479",
       "tag": "evolute_duel-Rules",
       "selector": "0x30d5405d0bc6c63a7d0adbc0ac48016a5d787662670e4d25bf12985431d032c"
-    },
-    {
-      "members": [],
-      "class_hash": "0x41d260fb634dad2acbec5365afe54efa3418fcb49efedb4c6a8adeccbe3e69b",
-      "tag": "evolute_duel-Shop",
-      "selector": "0x222f976f10d5f7bc6ff181000844ce4341a875fc25c8c6302525df530bbc802"
     }
   ],
   "events": [
     {
       "members": [],
-      "class_hash": "0xd4e190b18ea9d8069458ad7420a54f5e337127aae60f4fc99012f29a34ee5a",
+      "class_hash": "0x1c46a768647aeaf9de4915852ca0288d6d2e11d5c96e7d12d54fcd77e128607",
       "tag": "evolute_duel-BoardCreated",
       "selector": "0x1a41b9cde62dde29c4f35c38893fff421cffc41f9ff0b4c8b817f85d788d75c"
     },
     {
       "members": [],
-      "class_hash": "0x6c306cde232f80b75b56610898fc899af89256e829e5ce9aa1a12a555bf033e",
-      "tag": "evolute_duel-BoardUpdated",
-      "selector": "0x1352659f5307c3478b85ed999c391ac8768670156647c54e3d0edfd3acd61de"
-    },
-    {
-      "members": [],
-      "class_hash": "0x4855a0ac501a8649fb3db7e4f17dce971944e9db07d8eeb1f0e8fdc12aa8544",
-      "tag": "evolute_duel-CurrentPlayerBalance",
-      "selector": "0x56779dd6799df6d7eb414e6e5e7233a5fa374908dc132d33fd22212b5e4756"
-    },
-    {
-      "members": [],
-      "class_hash": "0x455484e1717d0a6384d751c155d2ac3ae7ec2a979ed220040f89f5baeb7212c",
-      "tag": "evolute_duel-GameCanceleFailed",
-      "selector": "0x113dcf91ca9d4d9f3ba4d11563cf5fc414a1e7e7008f593e4e8142c3644907a"
-    },
-    {
-      "members": [],
-      "class_hash": "0x3676462e1c3a74b1cfb18f8392f1ccbe63e7cc99d8b4029b4749d446c2fe31f",
+      "class_hash": "0x25c74019b42d6705320f12d920ea743a3d3855477435713ffbcf3b807ca5821",
       "tag": "evolute_duel-GameCanceled",
       "selector": "0x32cbf0a2e3702b3a487fe9eb046045c2dfbedd864465a2c8e0f61d567ff839c"
     },
     {
       "members": [],
-      "class_hash": "0x2a4b1cdcfa2235705e7b6029f537ee84e15eb484471e415ea0ff83ea7643e9d",
+      "class_hash": "0x16eebacbd465b968ecf3abfc297ac98c8ee0067d670b66b3f3eb4d9b49adf9e",
       "tag": "evolute_duel-GameCreateFailed",
       "selector": "0x1bd4a12eb88a971444ea1e25c0d0e3d6737f6afc4cd5cc9102747ac36a1b980"
     },
     {
       "members": [],
-      "class_hash": "0x481f54ded78641d205781d23acd271739b04412fac8ae120c8f717e26f0d671",
+      "class_hash": "0x78881ff3421f3ad3a61a79b6d35240913b21242d65f6bf3761e24982e9531c2",
       "tag": "evolute_duel-GameCreated",
       "selector": "0x668233b95923832d04af3e8e7df9e8688cac7c430b1a18e4dbc66c88d1bf0a6"
     },
@@ -1867,13 +1601,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x4b9967ff1bb5ebb71c2aa2185d9a4aeeff29840cfa071a094a9de9c2869aee3",
-      "tag": "evolute_duel-GameIsAlreadyFinished",
-      "selector": "0x3b86b8bb5b6aae2485e4f3a8a346449d99bdf276439579042a4cb8912366013"
-    },
-    {
-      "members": [],
-      "class_hash": "0x2e9fc9b492fee1f222927248e46139b8389d8f8b66c4f690041ae67c4c0990c",
+      "class_hash": "0x78b29f7883b41762b578ec0de2b8d14ac0e718261cbd71248ed4cebb0dfc08",
       "tag": "evolute_duel-GameJoinFailed",
       "selector": "0x208170d1ab20b178e8af5c51e5192c9e8f14e420761c5802722ca0b4adcbd2e"
     },
@@ -1891,39 +1619,16 @@
     },
     {
       "members": [],
-      "class_hash": "0x27457a3350031f67c6394a045fe085793a115b895906732ce13f1580867e603",
+      "class_hash": "0x1f2dbb2e14186ab49243fe0a2b16adf7ccedc1ca05f1c9b8a8c250905d9fe52",
       "tag": "evolute_duel-Moved",
       "selector": "0x3ca22e802348ce9fa7b011f883499ac79ca68442272661cc75ea51808da74d2"
-    },
-    {
-      "members": [],
-      "class_hash": "0x3c47baf42eb65745ade5343cc2d0e7f645ee480e6808252c4a4040b1587f3e9",
-      "tag": "evolute_duel-NotEnoughJokers",
-      "selector": "0x32eeb70d90473d3f1f2835c85305f6be04f406f5e82d04be096e74d9dedd9d1"
-    },
-    {
-      "members": [],
-      "class_hash": "0x6267f2d886bd2fbfda9e4fcd5d5ea1d6b1e46dc12cb54f80a335fdbe382b4d9",
-      "tag": "evolute_duel-NotYourTurn",
-      "selector": "0x3fa0a73cd88ffc42bc7aa5a689f0e1cb1b17634b28156b12a6653f74dea2906"
-    },
-    {
-      "members": [],
-      "class_hash": "0x6fedb1dbca2bddb9866a7b91a4ebd70ae88538b76dfc8fa26ffe95de23f3e10",
-      "tag": "evolute_duel-PlayerNotInGame",
-      "selector": "0x739d0a1050e8444702e4adb2fca7c6b3c0844d6ab20959088abfb5c2a42bf2a"
     },
     {
       "members": [],
       "class_hash": "0x7c47ff32fc6852128d1311ac667be855cfae92490cb8c89a764048398602c82",
       "tag": "evolute_duel-RulesCreated",
       "selector": "0x516f39aea473b1242995ab31d5044d11220954542761bfd98d99d8ea44b9647"
-    },
-    {
-      "members": [],
-      "class_hash": "0x7891688d60523039f803c7051020d4512dae42fff6a7c75d55dd1e2c936ca7c",
-      "tag": "evolute_duel-Skiped",
-      "selector": "0x39293e825ec4e370540eb80b631e5656df258d3c1bc482df503857eb3b45861"
     }
-  ]
+  ],
+  "external_contracts": []
 }

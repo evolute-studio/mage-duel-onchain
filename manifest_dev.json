@@ -1778,6 +1778,7 @@
       ]
     }
   ],
+  "libraries": [],
   "models": [
     {
       "members": [],
@@ -1925,5 +1926,6 @@
       "tag": "evolute_duel-Skiped",
       "selector": "0x39293e825ec4e370540eb80b631e5656df258d3c1bc482df503857eb3b45861"
     }
-  ]
+  ],
+  "external_contracts": []
 }
