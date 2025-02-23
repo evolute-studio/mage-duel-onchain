@@ -70,7 +70,6 @@ pub struct SnapshotCreateFailed {
 pub struct BoardUpdated {
     #[key]
     pub board_id: felt252,
-    pub initial_edge_state: Array<u8>,
     pub available_tiles_in_deck: Array<u8>,
     pub top_tile: Option<u8>,
     pub state: Array<(u8, u8, u8)>,

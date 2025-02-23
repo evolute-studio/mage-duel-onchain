@@ -41,7 +41,7 @@ pub mod game {
     };
 
     use dojo::event::EventStorage;
-    use dojo::model::{ModelStorage};
+    use dojo::model::{ModelStorage, Model};
 
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
@@ -461,7 +461,70 @@ pub mod game {
             }
 
             world.write_model(@move);
-            world.write_model(@board);
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("available_tiles_in_deck"),
+                    board.available_tiles_in_deck.clone(),
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("top_tile"),
+                    top_tile,
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("state"),
+                    board.state.clone(),
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("player1"),
+                    board.player1,
+                );
+
+            world   
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("player2"),
+                    board.player2,
+                );
+            
+            world   
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("blue_score"),
+                    board.blue_score,
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("red_score"),
+                    board.red_score,
+                );
+            
+                
+            world   
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("last_move_id"),
+                    board.last_move_id,
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("game_state"),
+                    board.game_state,
+                );
 
             world
                 .emit_event(
@@ -481,7 +544,6 @@ pub mod game {
                 .emit_event(
                     @BoardUpdated {
                         board_id: board.id,
-                        initial_edge_state: board.initial_edge_state,
                         available_tiles_in_deck: board.available_tiles_in_deck,
                         top_tile: board.top_tile,
                         state: board.state,
@@ -611,7 +673,6 @@ pub mod game {
                 .emit_event(
                     @BoardUpdated {
                         board_id: board.id,
-                        initial_edge_state: board.initial_edge_state,
                         available_tiles_in_deck: board.available_tiles_in_deck,
                         top_tile: board.top_tile,
                         state: board.state,
