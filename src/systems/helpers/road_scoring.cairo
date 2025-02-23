@@ -13,49 +13,22 @@ use evolute_duel::{
 use dojo::world::{WorldStorage};
 
 pub fn connect_road_edges_in_tile(
-    ref world: WorldStorage,
-    board_id: felt252,
-    initial_edge_state: Array<u8>,
-    tile_position: u8,
-    tile: u8,
-    rotation: u8,
-    side: u8,
+    ref world: WorldStorage, board_id: felt252, tile_position: u8, tile: u8, rotation: u8, side: u8,
 ) {
     let extended_tile = create_extended_tile(tile.into(), rotation);
-    let row = tile_position % 8;
-    let col = tile_position / 8;
 
     let mut roads: Array<u8> = ArrayTrait::new();
-    let mut cities_count = 0;
 
     for i in 0..4_u8 {
         if *extended_tile.edges.at(i.into()) == (TEdge::R).into() {
             let mut open_edges = 1;
             let blue_points = if side == (PlayerSide::Blue).into() {
-                let mut score = 1;
-                //check if it is on the edge of the board
-                if (row == 0 && *initial_edge_state.at(col.into()) == TEdge::R.into())
-                    || (row == 7 && *initial_edge_state.at((23 - col).into()) == TEdge::R.into())
-                    || (col == 0 && *initial_edge_state.at((31 - row).into()) == TEdge::R.into())
-                    || (col == 7 && *initial_edge_state.at((8 + row).into()) == TEdge::R.into()) {
-                    score += 1;
-                    open_edges = 0;
-                }
-                score
+                1
             } else {
                 0
             };
             let red_points = if side == (PlayerSide::Red).into() {
-                let mut score = 1;
-                //check if it is on the edge of the board
-                if (row == 0 && *initial_edge_state.at(col.into()) == TEdge::R.into())
-                    || (row == 7 && *initial_edge_state.at((23 - col).into()) == TEdge::R.into())
-                    || (col == 0 && *initial_edge_state.at((31 - row).into()) == TEdge::R.into())
-                    || (col == 7 && *initial_edge_state.at((8 + row).into()) == TEdge::R.into()) {
-                    score += 1;
-                    open_edges = 0;
-                }
-                score
+                1
             } else {
                 0
             };
@@ -73,18 +46,12 @@ pub fn connect_road_edges_in_tile(
                 contested: false,
             };
             world.write_model(@road_node);
-        } else if *extended_tile.edges.at(i.into()) == (TEdge::C).into() {
-            cities_count += 1;
         }
     };
 
-    //TODO: if we close th road with edge we need to check if we need to connect the road
-
     // Connect the roads if needed
-    if roads.len() == 2 {
-        if tile != Tile::CRCR.into() {
-            union(ref world, board_id, *roads.at(0), *roads.at(1), true);
-        }
+    if roads.len() == 2 && tile != Tile::CRCR.into() {
+        union(ref world, board_id, *roads.at(0), *roads.at(1), true);
     }
 }
 
@@ -92,13 +59,16 @@ pub fn connect_adjacent_road_edges(
     ref world: WorldStorage,
     board_id: felt252,
     state: Array<(u8, u8, u8)>,
+    initial_edge_state: Array<u8>,
     tile_position: u8,
     tile: u8,
     rotation: u8,
     side: u8,
-)//None - if no contest or draw, Some(u8, u16) -> (who_wins, points_delta) - if contest
+) //None - if no contest or draw, Some(u8, u16) -> (who_wins, points_delta) - if contest
 //TODO - return list of multiple contests
--> Span<Option<(PlayerSide, u16)>> {
+-> Span<
+    Option<(PlayerSide, u16)>,
+> {
     let extended_tile = create_extended_tile(tile.into(), rotation);
     let row = tile_position % 8;
     let col = tile_position / 8;
@@ -106,56 +76,108 @@ pub fn connect_adjacent_road_edges(
     let edges = extended_tile.edges;
     //find all adjacent edges
     //connect bottom edge
-    if row != 0 && *edges.at(2) == TEdge::R {
+    if *edges.at(2) == TEdge::R {
         let edge_pos = convert_board_position_to_node_position(tile_position, 2);
-        let down_edge_pos = convert_board_position_to_node_position(tile_position - 1, 0);
-        ////println!("edge_pos: {:?}, down_edge_pos: {:?}", edge_pos, down_edge_pos);
-        // check if the down edge is road
-        let (tile, rotation, _) = *state.at((tile_position - 1).into());
-        let extended_down_tile = create_extended_tile(tile.into(), rotation);
-        if *extended_down_tile.edges.at(0) == (TEdge::R).into() {
-            union(ref world, board_id, down_edge_pos, edge_pos, false);
-            roads_connected.append(edge_pos);
+        if row != 0 {
+            let down_edge_pos = convert_board_position_to_node_position(tile_position - 1, 0);
+            ////println!("edge_pos: {:?}, down_edge_pos: {:?}", edge_pos, down_edge_pos);
+            // check if the down edge is road
+            let (tile, rotation, _) = *state.at((tile_position - 1).into());
+            let extended_down_tile = create_extended_tile(tile.into(), rotation);
+            if *extended_down_tile.edges.at(0) == (TEdge::R).into() {
+                union(ref world, board_id, down_edge_pos, edge_pos, false);
+                roads_connected.append(edge_pos);
+            }
+        } // tile is connected to bottom edge
+        else if *initial_edge_state.at(col.into()) == TEdge::R.into() {
+            let mut edge = find(ref world, board_id, edge_pos);
+            edge.open_edges -= 1;
+            if side == (PlayerSide::Blue).into() {
+                edge.blue_points += 1;
+            } else {
+                edge.red_points += 1;
+            }
+            world.write_model(@edge);
         }
     }
+
     //connect top edge
-    if row != 7 && *edges.at(0) == TEdge::R {
+    if *edges.at(0) == TEdge::R {
         let edge_pos = convert_board_position_to_node_position(tile_position, 0);
-        let up_edge_pos = convert_board_position_to_node_position(tile_position + 1, 2);
-        //println!("edge_pos: {:?}, up_edge_pos: {:?}", edge_pos, up_edge_pos);
-        // check if the up edge is road
-        let (tile, rotation, _) = *state.at((tile_position + 1).into());
-        let extended_up_tile = create_extended_tile(tile.into(), rotation);
-        if *extended_up_tile.edges.at(2) == (TEdge::R).into() {
-            union(ref world, board_id, up_edge_pos, edge_pos, false);
+        if row != 7 {
+            let up_edge_pos = convert_board_position_to_node_position(tile_position + 1, 2);
+            //println!("edge_pos: {:?}, up_edge_pos: {:?}", edge_pos, up_edge_pos);
+            // check if the up edge is road
+            let (tile, rotation, _) = *state.at((tile_position + 1).into());
+            let extended_up_tile = create_extended_tile(tile.into(), rotation);
+            if *extended_up_tile.edges.at(2) == (TEdge::R).into() {
+                union(ref world, board_id, up_edge_pos, edge_pos, false);
+                roads_connected.append(edge_pos);
+            }
+        } // tile is connected to top edge
+        else if *initial_edge_state.at((23 - col).into()) == TEdge::R.into() {
+            let mut edge = find(ref world, board_id, edge_pos);
+            edge.open_edges -= 1;
+            if side == (PlayerSide::Blue).into() {
+                edge.blue_points += 1;
+            } else {
+                edge.red_points += 1;
+            }
+            world.write_model(@edge);
             roads_connected.append(edge_pos);
         }
     }
 
     //connect left edge
-    if col != 0 && *edges.at(3) == TEdge::R {
+    if *edges.at(3) == TEdge::R {
         let edge_pos = convert_board_position_to_node_position(tile_position, 3);
-        let left_edge_pos = convert_board_position_to_node_position(tile_position - 8, 1);
-        //println!("edge_pos: {:?}, left_edge_pos: {:?}", edge_pos, left_edge_pos);
-        // check if the left edge is road
-        let (tile, rotation, _) = *state.at((tile_position - 8).into());
-        let extended_left_tile = create_extended_tile(tile.into(), rotation);
-        if *extended_left_tile.edges.at(1) == (TEdge::R).into() {
-            union(ref world, board_id, left_edge_pos, edge_pos, false);
+        if col != 0 {
+            let left_edge_pos = convert_board_position_to_node_position(tile_position - 8, 1);
+            //println!("edge_pos: {:?}, left_edge_pos: {:?}", edge_pos, left_edge_pos);
+            // check if the left edge is road
+            let (tile, rotation, _) = *state.at((tile_position - 8).into());
+            let extended_left_tile = create_extended_tile(tile.into(), rotation);
+            if *extended_left_tile.edges.at(1) == (TEdge::R).into() {
+                union(ref world, board_id, left_edge_pos, edge_pos, false);
+                roads_connected.append(edge_pos);
+            }
+        } // tile is connected to left edge
+        else if *initial_edge_state.at((31 - row).into()) == TEdge::R.into() {
+            let mut edge = find(ref world, board_id, edge_pos);
+            edge.open_edges -= 1;
+            if side == (PlayerSide::Blue).into() {
+                edge.blue_points += 1;
+            } else {
+                edge.red_points += 1;
+            }
+            world.write_model(@edge);
             roads_connected.append(edge_pos);
         }
     }
 
     //connect right edge
-    if col != 7 && *edges.at(1) == TEdge::R {
+    if *edges.at(1) == TEdge::R {
         let edge_pos = convert_board_position_to_node_position(tile_position, 1);
-        let right_edge_pos = convert_board_position_to_node_position(tile_position + 8, 3);
-        //println!("edge_pos: {:?}, right_edge_pos: {:?}", edge_pos, right_edge_pos);
-        // check if the right edge is road
-        let (tile, rotation, _) = *state.at((tile_position + 8).into());
-        let extended_right_tile = create_extended_tile(tile.into(), rotation);
-        if *extended_right_tile.edges.at(3) == (TEdge::R).into() {
-            union(ref world, board_id, right_edge_pos, edge_pos, false);
+        if col != 7 {
+            let right_edge_pos = convert_board_position_to_node_position(tile_position + 8, 3);
+            //println!("edge_pos: {:?}, right_edge_pos: {:?}", edge_pos, right_edge_pos);
+            // check if the right edge is road
+            let (tile, rotation, _) = *state.at((tile_position + 8).into());
+            let extended_right_tile = create_extended_tile(tile.into(), rotation);
+            if *extended_right_tile.edges.at(3) == (TEdge::R).into() {
+                union(ref world, board_id, right_edge_pos, edge_pos, false);
+                roads_connected.append(edge_pos);
+            }
+        } // tile is connected to right edge
+        else if *initial_edge_state.at((8 + row).into()) == TEdge::R.into() {
+            let mut edge = find(ref world, board_id, edge_pos);
+            edge.open_edges -= 1;
+            if side == (PlayerSide::Blue).into() {
+                edge.blue_points += 1;
+            } else {
+                edge.red_points += 1;
+            }
+            world.write_model(@edge);
             roads_connected.append(edge_pos);
         }
     }
@@ -214,9 +236,7 @@ pub fn connect_adjacent_road_edges(
     return contest_results.span();
 }
 
-fn handle_contest(
-    ref world: WorldStorage, mut road_root: RoadNode,
-) -> Option<(PlayerSide, u16)> {
+fn handle_contest(ref world: WorldStorage, mut road_root: RoadNode) -> Option<(PlayerSide, u16)> {
     road_root.contested = true;
     if road_root.blue_points > road_root.red_points {
         // Blue player wins contest
@@ -372,13 +392,7 @@ mod tests {
 
         // Call function to connect road edges
         connect_road_edges_in_tile(
-            ref world,
-            board_id,
-            initial_edge_state,
-            tile_position,
-            tile.into(),
-            rotation,
-            side.into(),
+            ref world, board_id, tile_position, tile.into(), rotation, side.into(),
         );
 
         // Verify all road edges are connected
@@ -429,22 +443,10 @@ mod tests {
         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
         // Подключаем границы внутри каждого тайла
         connect_road_edges_in_tile(
-            ref world,
-            board_id,
-            initial_edge_state.clone(),
-            tile_position_1,
-            tile_1.into(),
-            rotation,
-            side.into(),
+            ref world, board_id, tile_position_1, tile_1.into(), rotation, side.into(),
         );
         connect_road_edges_in_tile(
-            ref world,
-            board_id,
-            initial_edge_state,
-            tile_position_2,
-            tile_2.into(),
-            rotation,
-            side.into(),
+            ref world, board_id, tile_position_2, tile_2.into(), rotation, side.into(),
         );
 
         let mut state = ArrayTrait::new();
@@ -463,6 +465,7 @@ mod tests {
             ref world,
             board_id,
             state.clone(),
+            initial_edge_state.clone(),
             tile_position_1,
             tile_1.into(),
             rotation,
@@ -470,7 +473,14 @@ mod tests {
         );
 
         connect_adjacent_road_edges(
-            ref world, board_id, state, tile_position_2, tile_2.into(), rotation, side.into(),
+            ref world,
+            board_id,
+            state,
+            initial_edge_state.clone(),
+            tile_position_2,
+            tile_2.into(),
+            rotation,
+            side.into(),
         );
 
         // Проверяем, что соединены соответствующие края
@@ -520,13 +530,7 @@ mod tests {
         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
         // Подключаем границы внутри каждого тайла
         connect_road_edges_in_tile(
-            ref world,
-            board_id,
-            initial_edge_state.clone(),
-            tile_position_1,
-            tile_1.into(),
-            rotation1,
-            side1.into(),
+            ref world, board_id, tile_position_1, tile_1.into(), rotation1, side1.into(),
         );
 
         let root1 = find(
@@ -536,13 +540,7 @@ mod tests {
         //println!("Root1: {:?}", root1);
 
         connect_road_edges_in_tile(
-            ref world,
-            board_id,
-            initial_edge_state.clone(),
-            tile_position_2,
-            tile_2.into(),
-            rotation2,
-            side2.into(),
+            ref world, board_id, tile_position_2, tile_2.into(), rotation2, side2.into(),
         );
 
         let root2 = find(
@@ -552,13 +550,7 @@ mod tests {
         //println!("Root2: {:?}", root2);
 
         connect_road_edges_in_tile(
-            ref world,
-            board_id,
-            initial_edge_state.clone(),
-            tile_position_3,
-            tile_3.into(),
-            rotation3,
-            side3.into(),
+            ref world, board_id, tile_position_3, tile_3.into(), rotation3, side3.into(),
         );
 
         let root3 = find(
@@ -568,13 +560,7 @@ mod tests {
         //println!("Root3: {:?}", root3);
 
         connect_road_edges_in_tile(
-            ref world,
-            board_id,
-            initial_edge_state.clone(),
-            tile_position_4,
-            tile_4.into(),
-            rotation4,
-            side4.into(),
+            ref world, board_id, tile_position_4, tile_4.into(), rotation4, side4.into(),
         );
 
         let root4 = find(
@@ -594,7 +580,14 @@ mod tests {
 
         // Соединяем смежные границы между тайлами
         connect_adjacent_road_edges(
-            ref world, board_id, state, tile_position_1, tile_1.into(), rotation1, side1.into(),
+            ref world,
+            board_id,
+            state,
+            initial_edge_state.clone(),
+            tile_position_1,
+            tile_1.into(),
+            rotation1,
+            side1.into(),
         );
 
         let rot1 = find(
@@ -618,6 +611,7 @@ mod tests {
             ref world,
             board_id,
             state.clone(),
+            initial_edge_state.clone(),
             tile_position_2,
             tile_2.into(),
             rotation2,
@@ -647,6 +641,7 @@ mod tests {
             ref world,
             board_id,
             state.clone(),
+            initial_edge_state.clone(),
             tile_position_3,
             tile_3.into(),
             rotation3,
@@ -675,7 +670,14 @@ mod tests {
         };
 
         connect_adjacent_road_edges(
-            ref world, board_id, state, tile_position_4, tile_4.into(), rotation4, side4.into(),
+            ref world,
+            board_id,
+            state,
+            initial_edge_state.clone(),
+            tile_position_4,
+            tile_4.into(),
+            rotation4,
+            side4.into(),
         );
 
         let rot4 = find(

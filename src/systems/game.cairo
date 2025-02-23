@@ -349,26 +349,21 @@ pub mod game {
             let tile_position = (col * 8 + row).into();
             //TODO: use span instead of clone
             connect_city_edges_in_tile(
+                ref world, board_id, tile_position, tile.into(), rotation, player_side.into(),
+            );
+            //TODO: use span instead of clone
+            let city_contest_scoring_result = connect_adjacent_city_edges(
                 ref world,
                 board_id,
+                board.state.clone(),
                 board.initial_edge_state.clone(),
                 tile_position,
                 tile.into(),
                 rotation,
                 player_side.into(),
             );
-            //TODO: use span instead of clone
-            let city_scoring_result = connect_adjacent_city_edges(
-                ref world,
-                board_id,
-                board.state.clone(),
-                tile_position,
-                tile.into(),
-                rotation,
-                player_side.into(),
-            );
-            if city_scoring_result.is_some() {
-                let (winner, points_delta) = city_scoring_result.unwrap();
+            if city_contest_scoring_result.is_some() {
+                let (winner, points_delta) = city_contest_scoring_result.unwrap();
                 if winner == PlayerSide::Blue {
                     board.blue_score += points_delta;
                     board.red_score -= points_delta;
@@ -380,26 +375,21 @@ pub mod game {
 
             //Road scoring
             connect_road_edges_in_tile(
+                ref world, board_id, tile_position, tile.into(), rotation, player_side.into(),
+            );
+            let road_contest_scoring_results = connect_adjacent_road_edges(
                 ref world,
                 board_id,
+                board.state.clone(),
                 board.initial_edge_state.clone(),
                 tile_position,
                 tile.into(),
                 rotation,
                 player_side.into(),
             );
-            let road_scoring_results = connect_adjacent_road_edges(
-                ref world,
-                board_id,
-                board.state.clone(),
-                tile_position,
-                tile.into(),
-                rotation,
-                player_side.into(),
-            );
 
-            for i in 0..road_scoring_results.len() {
-                let road_scoring_result = *road_scoring_results.at(i.into());
+            for i in 0..road_contest_scoring_results.len() {
+                let road_scoring_result = *road_contest_scoring_results.at(i.into());
                 if road_scoring_result.is_some() {
                     let (winner, points_delta) = road_scoring_result.unwrap();
                     if winner == PlayerSide::Blue {

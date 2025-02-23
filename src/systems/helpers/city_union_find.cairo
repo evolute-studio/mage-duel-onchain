@@ -74,24 +74,11 @@ pub fn connected(ref world: WorldStorage, board_id: felt252, position1: u8, posi
 mod tests {
     use super::*;
     use dojo_cairo_test::WorldStorageTestTrait;
-    use dojo::model::{ModelStorage, ModelStorageTest};
-    use dojo::world::WorldStorageTrait;
-    use dojo_cairo_test::{
-        spawn_test_world, NamespaceDef, TestResource, ContractDefTrait, ContractDef,
-    };
+    use dojo::model::{ModelStorage};
+    use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource, ContractDef};
 
-    use evolute_duel::{
-        models::{Board, m_Board, Move, m_Move, Rules, m_Rules, Game, m_Game, CityNode, m_CityNode},
-        events::{
-            BoardCreated, e_BoardCreated, RulesCreated, e_RulesCreated, Moved, e_Moved, InvalidMove,
-            e_InvalidMove, GameFinished, e_GameFinished, GameStarted, e_GameStarted, GameCreated,
-            e_GameCreated, GameCreateFailed, e_GameCreateFailed, GameCanceled, e_GameCanceled,
-        },
-        packing::{GameStatus},
-    };
-    use evolute_duel::systems::game::{game, IGameDispatcher, IGameDispatcherTrait};
-
-    use starknet::testing;
+    use evolute_duel::{models::{m_Board, CityNode, m_CityNode}, events::{}, packing::{}};
+    use evolute_duel::systems::game::{};
 
     fn namespace_def() -> NamespaceDef {
         NamespaceDef {

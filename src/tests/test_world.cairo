@@ -10,8 +10,6 @@ mod tests {
     use evolute_duel::{models::{Game, m_Game}, events::{}, packing::{GameStatus}};
     use evolute_duel::systems::game::{game, IGameDispatcher, IGameDispatcherTrait};
 
-    use starknet::testing;
-
     fn namespace_def() -> NamespaceDef {
         NamespaceDef {
             namespace: "evolute_duel",
