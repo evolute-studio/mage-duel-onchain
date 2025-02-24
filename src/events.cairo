@@ -23,7 +23,7 @@ pub struct BoardCreatedFromSnapshot {
     #[key]
     pub board_id: felt252,
     pub old_board_id: felt252,
-    pub move_delta: u8,
+    pub move_number: u8,
     pub initial_edge_state: Array<u8>,
     pub available_tiles_in_deck: Array<u8>,
     pub top_tile: Option<u8>,
@@ -42,7 +42,7 @@ pub struct BoardCreateFromSnapshotFalied {
     #[key]
     pub player: ContractAddress,
     pub old_board_id: felt252,
-    pub move_delta: u8,
+    pub move_number: u8,
 }
 
 #[derive(Drop, Serde, Introspect, Debug)]
@@ -52,7 +52,7 @@ pub struct SnapshotCreated {
     pub snapshot_id: felt252,
     pub player: ContractAddress,
     pub board_id: felt252,
-    pub move_delta: u8,
+    pub move_number: u8,
 }
 
 #[derive(Drop, Serde, Introspect, Debug)]
@@ -62,7 +62,7 @@ pub struct SnapshotCreateFailed {
     pub player: ContractAddress,
     pub board_id: felt252,
     pub board_game_state: GameState,
-    pub move_delta: u8,
+    pub move_number: u8,
 }
 
 #[derive(Drop, Serde, Introspect, Debug)]
@@ -78,6 +78,7 @@ pub struct BoardUpdated {
     //(address, side, joker_number)
     pub player2: (ContractAddress, PlayerSide, u8),
     pub last_move_id: Option<felt252>,
+    pub first_move_id: Option<felt252>,
     pub game_state: GameState,
 }
 

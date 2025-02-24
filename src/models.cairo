@@ -19,6 +19,7 @@ pub struct Board {
     pub blue_score: u16,
     pub red_score: u16,
     pub last_move_id: Option<felt252>,
+    pub first_move_id: Option<felt252>,
     pub game_state: GameState,
 }
 
@@ -29,6 +30,7 @@ pub struct Move {
     pub id: felt252,
     pub player_side: PlayerSide,
     pub prev_move_id: Option<felt252>,
+    pub next_move_id: Option<felt252>,
     pub tile: Option<u8>,
     // 0 - if no rotation
     pub rotation: u8,
@@ -77,7 +79,7 @@ pub struct Snapshot {
     pub snapshot_id: felt252,
     pub player: ContractAddress,
     pub board_id: felt252,
-    pub move_delta: u8,
+    pub move_number: u8,
 }
 
 

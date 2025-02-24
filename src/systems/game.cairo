@@ -8,7 +8,7 @@ pub trait IGame<T> {
     fn join_game(ref self: T, host_player: ContractAddress);
     fn make_move(ref self: T, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8);
     fn skip_move(ref self: T);
-    fn create_snapshot(ref self: T, board_id: felt252, move_delta: u8);
+    fn create_snapshot(ref self: T, board_id: felt252, move_number: u8);
     fn create_game_from_snapshot(ref self: T, snapshot_id: felt252);
 }
 
@@ -113,16 +113,16 @@ pub mod game {
             world.emit_event(@GameCreated { host_player, status });
         }
 
-        fn create_snapshot(ref self: ContractState, board_id: felt252, move_delta: u8) {
+        fn create_snapshot(ref self: ContractState, board_id: felt252, move_number: u8) {
             let mut world = self.world_default();
             let player = get_caller_address();
 
             let board: Board = world.read_model(board_id);
-            if board.game_state != GameState::Finished || move_delta == 0 {
+            if board.game_state != GameState::Finished || move_number == 0 {
                 world
                     .emit_event(
                         @SnapshotCreateFailed {
-                            player, board_id, board_game_state: board.game_state, move_delta,
+                            player, board_id, board_game_state: board.game_state, move_number,
                         },
                     );
                 return;
@@ -130,13 +130,13 @@ pub mod game {
 
             let snapshot_id = self.snapshot_id_generator.read();
 
-            let snapshot = Snapshot { snapshot_id, player, board_id, move_delta };
+            let snapshot = Snapshot { snapshot_id, player, board_id, move_number };
 
             self.snapshot_id_generator.write(snapshot_id + 1);
 
             world.write_model(@snapshot);
 
-            world.emit_event(@SnapshotCreated { snapshot_id, player, board_id, move_delta });
+            world.emit_event(@SnapshotCreated { snapshot_id, player, board_id, move_number });
         }
 
         fn create_game_from_snapshot(ref self: ContractState, snapshot_id: felt252) {
@@ -146,15 +146,15 @@ pub mod game {
 
             let snapshot: Snapshot = world.read_model(snapshot_id);
             let board_id = snapshot.board_id;
-            let move_delta = snapshot.move_delta;
+            let move_number = snapshot.move_number;
 
             let board: Board = world.read_model(board_id);
 
-            if board.game_state != GameState::Finished || move_delta == 0 {
+            if board.game_state != GameState::Finished || move_number == 0 {
                 world
                     .emit_event(
                         @BoardCreateFromSnapshotFalied {
-                            player: host_player, old_board_id: board_id, move_delta,
+                            player: host_player, old_board_id: board_id, move_number,
                         },
                     );
                 return;
@@ -174,7 +174,7 @@ pub mod game {
                 .board_id =
                     Option::Some(
                         create_board_from_snapshot(
-                            ref world, board_id, move_delta, host_player, self.board_id_generator,
+                            ref world, board_id, host_player, move_number, self.board_id_generator,
                         ),
                     );
 
@@ -236,7 +236,16 @@ pub mod game {
                 board.id
             } // When game is created from snapshot
             else {
-                host_game.board_id.unwrap()
+                let board_id = host_game.board_id.unwrap();
+                let mut board: Board = world.read_model(board_id);
+                let (_, player1_side, joker_number1) = board.player2;
+                board.player2 = (guest_player, player1_side, joker_number1);
+                world.write_member(
+                    Model::<Board>::ptr_from_keys(board.id),
+                    selector!("player2"),
+                    board.player2,
+                );
+                board_id           
             };
 
             host_game.board_id = Option::Some(board_id);
@@ -320,6 +329,7 @@ pub mod game {
             let move = Move {
                 id: move_id,
                 prev_move_id: board.last_move_id,
+                next_move_id: Option::None,
                 player_side,
                 tile: Option::Some(tile.into()),
                 rotation: rotation,
@@ -462,6 +472,23 @@ pub mod game {
 
             world.write_model(@move);
 
+
+            //Update the previous move
+            if prev_move_id.is_some() {
+                let prev_move_id = prev_move_id.unwrap();
+                let mut prev_move: Move = world.read_model(prev_move_id);
+                prev_move.next_move_id = Option::Some(move_id);
+                world.write_member(
+                    Model::<Move>::ptr_from_keys(prev_move_id),
+                    selector!("next_move_id"),
+                    prev_move.next_move_id,
+                );
+            } 
+            //if it's the first move
+            else {
+                board.first_move_id = Option::Some(move_id);
+            }
+
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
@@ -522,6 +549,13 @@ pub mod game {
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
+                    selector!("first_move_id"),
+                    board.first_move_id,
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
                     selector!("game_state"),
                     board.game_state,
                 );
@@ -550,6 +584,7 @@ pub mod game {
                         player1: board.player1,
                         player2: board.player2,
                         last_move_id: board.last_move_id,
+                        first_move_id: board.first_move_id,
                         game_state: board.game_state,
                     },
                 );
@@ -653,6 +688,7 @@ pub mod game {
             let move = Move {
                 id: move_id,
                 prev_move_id: board.last_move_id,
+                next_move_id: Option::None,
                 player_side,
                 tile: Option::None,
                 rotation: 0,
@@ -665,7 +701,57 @@ pub mod game {
             self.move_id_generator.write(move_id + 1);
 
             world.write_model(@move);
-            world.write_model(@board);
+            //Update the previous move
+            if prev_move_id.is_some() {
+                let prev_move_id = prev_move_id.unwrap();
+                let mut prev_move: Move = world.read_model(prev_move_id);
+                prev_move.next_move_id = Option::Some(move_id);
+                world.write_member(
+                    Model::<Move>::ptr_from_keys(prev_move_id),
+                    selector!("next_move_id"),
+                    prev_move.next_move_id,
+                );
+            } 
+            //if it's the first move
+            else {
+                board.first_move_id = Option::Some(move_id);
+            }
+
+            world   
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("blue_score"),
+                    board.blue_score,
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("red_score"),
+                    board.red_score,
+                );
+            
+                
+            world   
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("last_move_id"),
+                    board.last_move_id,
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("first_move_id"),
+                    board.first_move_id,
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("game_state"),
+                    board.game_state,
+                );
 
             world
                 .emit_event(@Skiped { move_id, player, prev_move_id: move.prev_move_id, board_id });
@@ -679,6 +765,7 @@ pub mod game {
                         player1: board.player1,
                         player2: board.player2,
                         last_move_id: board.last_move_id,
+                        first_move_id: board.first_move_id,
                         game_state: board.game_state,
                     },
                 );
