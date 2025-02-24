@@ -44,7 +44,7 @@ pub fn union(
         root2.red_points += root1.red_points;
         root2.open_edges += root1.open_edges;
         if !in_tile {
-            root1.open_edges -= 2;
+            root2.open_edges -= 2;
         }
         world.write_model(@root1);
         world.write_model(@root2);
