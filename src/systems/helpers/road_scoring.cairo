@@ -237,7 +237,7 @@ pub fn connect_adjacent_road_edges(
     return contest_results.span();
 }
 
-fn handle_contest(ref world: WorldStorage, mut road_root: RoadNode) -> Option<(PlayerSide, u16)> {
+pub fn handle_contest(ref world: WorldStorage, mut road_root: RoadNode) -> Option<(PlayerSide, u16)> {
     road_root.contested = true;
     if road_root.blue_points > road_root.red_points {
         // Blue player wins contest

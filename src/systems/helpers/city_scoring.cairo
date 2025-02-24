@@ -230,7 +230,7 @@ pub fn connect_adjacent_city_edges(
     return contest_result;
 }
 
-fn handle_city_contest(
+pub fn handle_city_contest(
     ref world: WorldStorage, mut city_root: CityNode,
 ) -> Option<(PlayerSide, u16)> {
     city_root.contested = true;

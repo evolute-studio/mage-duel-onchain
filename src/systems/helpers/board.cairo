@@ -430,7 +430,7 @@ pub fn draw_tile_from_board_deck(ref board: Board) -> Option<u8> {
         // + get_block_timestamp().into(), TODO: uncomment 
     );
     
-    let mut next_tile = dice.roll();
+    let mut next_tile = dice.roll() - 1;
 
     let tile: u8 = *avaliable_tiles.at(next_tile.into());
 
