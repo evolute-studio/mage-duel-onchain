@@ -107,14 +107,10 @@ pub fn connect_adjacent_road_edges(
         let edge_pos = convert_board_position_to_node_position(tile_position, 0);
         if row != 7 {
             let up_edge_pos = convert_board_position_to_node_position(tile_position + 1, 2);
-            println!("edge_pos: {:?}, up_edge_pos: {:?}", edge_pos, up_edge_pos);
             // check if the up edge is road
             let (tile, rotation, _) = *state.at((tile_position + 1).into());
-            println!("tile: {:?}, rotation: {:?}, tile_position + 1: {:?}", tile, rotation, tile_position + 1);
             let extended_up_tile = create_extended_tile(tile.into(), rotation);
-            println!("extended_up_tile: {:?}", extended_up_tile);
             if *extended_up_tile.edges.at(2) == (TEdge::R).into() {
-                println!("there");
                 union(ref world, board_id, up_edge_pos, edge_pos, false);
                 roads_connected.append(edge_pos);
             }
