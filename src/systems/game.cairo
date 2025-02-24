@@ -62,25 +62,25 @@ pub mod game {
             0, // RRRR - not in the deck
             4, // CCCF
             3, // CCCR
+            6, // CCRR
             4, // CFFF
-            0, // FFFR
+            0, // FFFR - not in the deck
             0, // CRRR - not in the deck
             4, // FRRR
-            0, // CCFF - not in the deck
+            7, // CCFF 
             6, // CFCF
-            0, // CCRR - not in the deck
             0, // CRCR - not in the deck
             9, // FFRR
             8, // FRFR
             0, // CCFR - not in the deck
             0, // CCRF - not in the deck
-            7, // CFCR
-            4, // CFFR
-            4, // CFRF
+            0, // CFCR - not in the deck
+            0, // CFFR - not in the deck
+            0, // CFRF - not in the deck
             0, // CRFF - not in the deck
             3, // CRRF
             4, // CRFR
-            4 // CFRR
+            4, // CFRR
         ];
         let edges = (1, 1);
         let joker_number = 3;
@@ -372,7 +372,7 @@ pub mod game {
                 rotation,
                 player_side.into(),
             );
-            
+
             if city_contest_scoring_result.is_some() {
                 let (winner, points_delta): (PlayerSide, u16) = city_contest_scoring_result.unwrap();
                 if winner == PlayerSide::Blue {
