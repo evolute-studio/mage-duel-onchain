@@ -372,8 +372,9 @@ pub mod game {
                 rotation,
                 player_side.into(),
             );
+            
             if city_contest_scoring_result.is_some() {
-                let (winner, points_delta) = city_contest_scoring_result.unwrap();
+                let (winner, points_delta): (PlayerSide, u16) = city_contest_scoring_result.unwrap();
                 if winner == PlayerSide::Blue {
                     board.blue_score += points_delta;
                     board.red_score -= points_delta;

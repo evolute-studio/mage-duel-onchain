@@ -34,7 +34,7 @@ mod tests {
     fn test_dict() {
         use core::dict::Felt252Dict;
         let mut dict: Felt252Dict<bool> = Default::default();
-        let check = dict.get(0);
+        let _check = dict.get(0);
         //println!("{:?}", check);
     }
 

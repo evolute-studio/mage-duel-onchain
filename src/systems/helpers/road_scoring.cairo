@@ -98,6 +98,7 @@ pub fn connect_adjacent_road_edges(
                 edge.red_points += 1;
             }
             world.write_model(@edge);
+            roads_connected.append(edge_pos);
         }
     }
 
@@ -186,7 +187,7 @@ pub fn connect_adjacent_road_edges(
 
     //check for contest(open_edges == 0) in union
     //TODO: if we have more than 2 roads or CRCR we can have multiple contests
-    let mut contest_results = ArrayTrait::new();
+    let mut contest_results: Array<Option<(PlayerSide, u16)>> = ArrayTrait::new();
     if tile_roads_number != 2 || tile == Tile::CRCR.into() {
         for i in 0..roads_connected.len() {
             let mut road_root = find(ref world, board_id, *roads_connected.at(i));
@@ -200,7 +201,7 @@ pub fn connect_adjacent_road_edges(
     } else if roads_connected.len() > 0 {
         let mut road_root = find(ref world, board_id, *roads_connected.at(0));
         if road_root.open_edges == 0 {
-            let contest_result = handle_contest(ref world, road_root);
+            let contest_result: Option<(PlayerSide, u16)> = handle_contest(ref world, road_root);
             if contest_result.is_some() {
                 contest_results.append(contest_result);
             }

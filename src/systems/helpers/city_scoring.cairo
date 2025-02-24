@@ -93,13 +93,18 @@ pub fn connect_adjacent_city_edges(
         } // tile is connected to bottom edge
         else if *initial_edge_state.at(col.into()) == TEdge::C.into() {
             let mut edge = find(ref world, board_id, edge_pos);
+            println!("edge before: {:?}", edge);
             edge.open_edges -= 1;
             if side == (PlayerSide::Blue).into() {
                 edge.blue_points += 2;
             } else {
                 edge.red_points += 2;
             }
+            println!("edge after: {:?}", edge);
             world.write_model(@edge);
+            cities_connected.append(edge_pos);
+            let new_edge: CityNode = world.read_model((board_id, edge_pos));
+            println!("new_edge: {:?}", new_edge);
         }
     }
 
@@ -189,6 +194,7 @@ pub fn connect_adjacent_city_edges(
     if cities_connected.len() > 0 {
         let mut city_root = find(ref world, board_id, *cities_connected.at(0));
         if city_root.open_edges == 0 {
+            println!("CONTEST");
             //TODO contest
             contest_result = handle_city_contest(ref world, city_root);
         }
@@ -227,6 +233,7 @@ pub fn connect_adjacent_city_edges(
 fn handle_city_contest(
     ref world: WorldStorage, mut city_root: CityNode,
 ) -> Option<(PlayerSide, u16)> {
+    city_root.contested = true;
     if city_root.blue_points > city_root.red_points {
         world
             .emit_event(
@@ -713,4 +720,70 @@ mod tests {
         let city_root = find(ref world, board_id, edge_pos_1);
         assert_eq!(city_root.open_edges, 0, "City contest is not conducted correctly");
     }
+
+    #[test]
+    fn test_contest_with_edge() {
+        // Инициализация тестового окружения
+        let caller = starknet::contract_address_const::<0x0>();
+        let ndef = namespace_def();
+
+        // Создание тестового мира
+        let mut world = spawn_test_world([ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+
+        let board_id = 1;
+        
+        // City and road just on bottom edge
+        let initial_edge_state = array![
+            2, 2, 0, 2, 2, 2, 1, 2,
+            2, 2, 2, 2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2, 2, 2, 2,
+        ];
+
+        // Размещаем два тайла рядом друг с другом
+        let tile_1 = Tile::CFRR;
+        let col1 = 2;
+        let row1 = 0;
+        let tile_position_1 = col1 * 8 + row1; 
+        let rotation1 = 2;
+        let side1 = PlayerSide::Blue;
+
+
+        connect_city_edges_in_tile(
+            ref world, board_id, tile_position_1, tile_1.into(), rotation1, side1.into(),
+        );
+
+        let root1 = find(
+            ref world, board_id, convert_board_position_to_node_position(tile_position_1, 2),
+        );
+
+        println!("{:?}", root1);
+        assert_eq!(root1.open_edges, 1, "City contest is not conducted correctly");
+        
+        let mut state: Array<(u8, u8, u8)> = ArrayTrait::new();
+        state.append_span([((Tile::Empty).into(), 0, 0); 64].span());
+
+        let scoring_result = connect_adjacent_city_edges(
+            ref world, board_id, state.clone(), initial_edge_state.clone(), tile_position_1, tile_1.into(), rotation1, side1.into(),
+        );
+        
+        println!("{:?}", scoring_result);
+        
+        let root2 = find(
+            ref world, board_id, convert_board_position_to_node_position(tile_position_1, 2),
+        );
+
+        println!("{:?}", root2);
+        assert_eq!(root2.open_edges, 0, "City contest is not conducted correctly");
+
+        for i in 0..64_u8 {
+            if i == tile_position_1 {
+                state.append((tile_1.into(), rotation1, side1.into()));
+            } else {
+                state.append((Tile::Empty.into(), 0, 0));
+            }
+        };
+    }
+
 }
