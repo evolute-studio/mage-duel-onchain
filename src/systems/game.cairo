@@ -329,7 +329,6 @@ pub mod game {
             let move = Move {
                 id: move_id,
                 prev_move_id: board.last_move_id,
-                next_move_id: Option::None,
                 player_side,
                 tile: Option::Some(tile.into()),
                 rotation: rotation,
@@ -349,10 +348,13 @@ pub mod game {
 
             //Tile scoring
             let tile_points = calcucate_tile_points(tile);
+            let (city_points, road_points) = tile_points;
             if player_side == PlayerSide::Blue {
-                board.blue_score += tile_points;
+                let (old_city_points, old_road_points) = board.blue_score;
+                board.blue_score = (old_city_points + city_points, old_road_points + road_points);
             } else {
-                board.red_score += tile_points;
+                let (old_city_points, old_road_points) = board.red_score;
+                board.red_score = (old_city_points + city_points, old_road_points + road_points);
             }
 
             //City scoring
@@ -376,11 +378,15 @@ pub mod game {
             if city_contest_scoring_result.is_some() {
                 let (winner, points_delta): (PlayerSide, u16) = city_contest_scoring_result.unwrap();
                 if winner == PlayerSide::Blue {
-                    board.blue_score += points_delta;
-                    board.red_score -= points_delta;
+                    let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                    board.blue_score = (old_blue_city_points + points_delta, old_blue_road_points);
+                    let (old_red_city_points, old_red_road_points) = board.red_score;
+                    board.red_score = (old_red_city_points - points_delta, old_red_road_points);
                 } else {
-                    board.red_score += points_delta;
-                    board.blue_score -= points_delta;
+                    let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                    board.blue_score = (old_blue_city_points - points_delta, old_blue_road_points);
+                    let (old_red_city_points, old_red_road_points) = board.red_score;
+                    board.red_score = (old_red_city_points + points_delta, old_red_road_points);
                 }
             }
 
@@ -404,11 +410,15 @@ pub mod game {
                 if road_scoring_result.is_some() {
                     let (winner, points_delta) = road_scoring_result.unwrap();
                     if winner == PlayerSide::Blue {
-                        board.blue_score += points_delta;
-                        board.red_score -= points_delta;
+                        let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                        board.blue_score = (old_blue_city_points, old_blue_road_points + points_delta);
+                        let (old_red_city_points, old_red_road_points) = board.red_score;
+                        board.red_score = (old_red_city_points, old_red_road_points - points_delta);
                     } else {
-                        board.red_score += points_delta;
-                        board.blue_score -= points_delta;
+                        let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                        board.blue_score = (old_blue_city_points, old_blue_road_points - points_delta);
+                        let (old_red_city_points, old_red_road_points) = board.red_score;
+                        board.red_score = (old_red_city_points, old_red_road_points + points_delta);
                     }
                 }
             };
@@ -434,11 +444,15 @@ pub mod game {
                     if city_scoring_result.is_some() {
                         let (winner, points_delta) = city_scoring_result.unwrap();
                         if winner == PlayerSide::Blue {
-                            board.blue_score += points_delta;
-                            board.red_score -= points_delta;
+                            let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                            board.blue_score = (old_blue_city_points + points_delta, old_blue_road_points);
+                            let (old_red_city_points, old_red_road_points) = board.red_score;
+                            board.red_score = (old_red_city_points - points_delta, old_red_road_points);
                         } else {
-                            board.red_score += points_delta;
-                            board.blue_score -= points_delta;
+                            let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                            board.blue_score = (old_blue_city_points - points_delta, old_blue_road_points);
+                            let (old_red_city_points, old_red_road_points) = board.red_score;
+                            board.red_score = (old_red_city_points + points_delta, old_red_road_points);
                         }
                     }
                 };
@@ -449,11 +463,15 @@ pub mod game {
                     if road_scoring_result.is_some() {
                         let (winner, points_delta) = road_scoring_result.unwrap();
                         if winner == PlayerSide::Blue {
-                            board.blue_score += points_delta;
-                            board.red_score -= points_delta;
+                            let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                            board.blue_score = (old_blue_city_points, old_blue_road_points + points_delta);
+                            let (old_red_city_points, old_red_road_points) = board.red_score;
+                            board.red_score = (old_red_city_points, old_red_road_points - points_delta);
                         } else {
-                            board.red_score += points_delta;
-                            board.blue_score -= points_delta;
+                            let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                            board.blue_score = (old_blue_city_points, old_blue_road_points - points_delta);
+                            let (old_red_city_points, old_red_road_points) = board.red_score;
+                            board.red_score = (old_red_city_points, old_red_road_points + points_delta);
                         }
                     }
                 };
@@ -472,23 +490,6 @@ pub mod game {
             }
 
             world.write_model(@move);
-
-
-            //Update the previous move
-            if prev_move_id.is_some() {
-                let prev_move_id = prev_move_id.unwrap();
-                let mut prev_move: Move = world.read_model(prev_move_id);
-                prev_move.next_move_id = Option::Some(move_id);
-                world.write_member(
-                    Model::<Move>::ptr_from_keys(prev_move_id),
-                    selector!("next_move_id"),
-                    prev_move.next_move_id,
-                );
-            } 
-            //if it's the first move
-            else {
-                board.first_move_id = Option::Some(move_id);
-            }
 
             world
                 .write_member(
@@ -550,13 +551,6 @@ pub mod game {
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
-                    selector!("first_move_id"),
-                    board.first_move_id,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
                     selector!("game_state"),
                     board.game_state,
                 );
@@ -584,8 +578,9 @@ pub mod game {
                         state: board.state,
                         player1: board.player1,
                         player2: board.player2,
+                        blue_score: board.blue_score,
+                        red_score: board.red_score,
                         last_move_id: board.last_move_id,
-                        first_move_id: board.first_move_id,
                         game_state: board.game_state,
                     },
                 );
@@ -648,11 +643,15 @@ pub mod game {
                         if city_scoring_result.is_some() {
                             let (winner, points_delta) = city_scoring_result.unwrap();
                             if winner == PlayerSide::Blue {
-                                board.blue_score += points_delta;
-                                board.red_score -= points_delta;
+                                let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                                board.blue_score = (old_blue_city_points + points_delta, old_blue_road_points);
+                                let (old_red_city_points, old_red_road_points) = board.red_score;
+                                board.red_score = (old_red_city_points - points_delta, old_red_road_points);
                             } else {
-                                board.red_score += points_delta;
-                                board.blue_score -= points_delta;
+                                let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                                board.blue_score = (old_blue_city_points - points_delta, old_blue_road_points);
+                                let (old_red_city_points, old_red_road_points) = board.red_score;
+                                board.red_score = (old_red_city_points + points_delta, old_red_road_points);
                             }
                         }
                     };
@@ -663,11 +662,15 @@ pub mod game {
                         if road_scoring_result.is_some() {
                             let (winner, points_delta) = road_scoring_result.unwrap();
                             if winner == PlayerSide::Blue {
-                                board.blue_score += points_delta;
-                                board.red_score -= points_delta;
+                                let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                                board.blue_score = (old_blue_city_points, old_blue_road_points + points_delta);
+                                let (old_red_city_points, old_red_road_points) = board.red_score;
+                                board.red_score = (old_red_city_points, old_red_road_points - points_delta);
                             } else {
-                                board.red_score += points_delta;
-                                board.blue_score -= points_delta;
+                                let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                                board.blue_score = (old_blue_city_points, old_blue_road_points - points_delta);
+                                let (old_red_city_points, old_red_road_points) = board.red_score;
+                                board.red_score = (old_red_city_points, old_red_road_points + points_delta);
                             }
                         }
                     };
@@ -689,7 +692,6 @@ pub mod game {
             let move = Move {
                 id: move_id,
                 prev_move_id: board.last_move_id,
-                next_move_id: Option::None,
                 player_side,
                 tile: Option::None,
                 rotation: 0,
@@ -702,21 +704,6 @@ pub mod game {
             self.move_id_generator.write(move_id + 1);
 
             world.write_model(@move);
-            //Update the previous move
-            if prev_move_id.is_some() {
-                let prev_move_id = prev_move_id.unwrap();
-                let mut prev_move: Move = world.read_model(prev_move_id);
-                prev_move.next_move_id = Option::Some(move_id);
-                world.write_member(
-                    Model::<Move>::ptr_from_keys(prev_move_id),
-                    selector!("next_move_id"),
-                    prev_move.next_move_id,
-                );
-            } 
-            //if it's the first move
-            else {
-                board.first_move_id = Option::Some(move_id);
-            }
 
             world   
                 .write_member(
@@ -743,13 +730,6 @@ pub mod game {
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
-                    selector!("first_move_id"),
-                    board.first_move_id,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
                     selector!("game_state"),
                     board.game_state,
                 );
@@ -765,8 +745,9 @@ pub mod game {
                         state: board.state,
                         player1: board.player1,
                         player2: board.player2,
+                        blue_score: board.blue_score,
+                        red_score: board.red_score,
                         last_move_id: board.last_move_id,
-                        first_move_id: board.first_move_id,
                         game_state: board.game_state,
                     },
                 );

@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x4807098474a9883511782a0ffb98044b79641141c49eb04baa5e9d8ec71431a",
-      "class_hash": "0x2ae6ea7597ecde3e414d0ba75e4d93641e7e9af16b00e12afc4256c45a4cd8a",
+      "address": "0x4c12773981652e4d4211e9e6d16fc3a90a495ef21d2cd9a1ca05a14dc77429c",
+      "class_hash": "0x1c616e636de9c3aa6129d984a683af03793fcc0dfb23cd8fea7b32bfbe0df1e",
       "abi": [
         {
           "type": "impl",
@@ -1846,7 +1846,7 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0x37199436c4d2bf60728dc6ac869fac77142e567181867aa27ed67d7d9dec8cc",
+      "class_hash": "0xe4886bb58d94d0aba5667c31a49c6bc824ab6f071fcd166f17e0081d1d7cb2",
       "tag": "evolute_duel-Board",
       "selector": "0x836ef99f75ec03877951d491db5b9730a3f3552e3fc7d1c38a9f1abc320947"
     },
@@ -1864,7 +1864,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x127b42e31190e61cfbfab2855ff144453e1954370b05525a36ee614a66e2a1e",
+      "class_hash": "0x59573d72d8bd1278344d5b9f8a911aeae55b0c2b262f1312c954b67ee1e1dec",
       "tag": "evolute_duel-Move",
       "selector": "0x6d7481ce108a8fbf6a107f7561809083890ccdb89931116448283bf99a278d5"
     },
@@ -1920,19 +1920,19 @@
     },
     {
       "members": [],
-      "class_hash": "0x3fdaee1fdb1e98d543e11a18a44c505a732bf23fcde4ff906554149a5a4748e",
+      "class_hash": "0x50e5dea221a92146bda841e7b61cfa072b2ebbe1e3e5f332f3b01a5b1d1bafe",
       "tag": "evolute_duel-BoardCreated",
       "selector": "0x1a41b9cde62dde29c4f35c38893fff421cffc41f9ff0b4c8b817f85d788d75c"
     },
     {
       "members": [],
-      "class_hash": "0x29db92b14b494253b9b1a2b5b750f55a886d8e26d47af7dc0062944bb367b1b",
+      "class_hash": "0xa928502bd24bd2e4ba1b22c822a251ddd07d921bfa451ff5121a3b6c27feea",
       "tag": "evolute_duel-BoardCreatedFromSnapshot",
       "selector": "0x198d6b562621b64d09a3506334acbbdaa24f1ab18f4691e1f46d98a332e1672"
     },
     {
       "members": [],
-      "class_hash": "0x4c6f6ae5e0944bf1c890503179b60d7985929fb1e9741d3dbb47cf160adb393",
+      "class_hash": "0x4c2570c7f798b2cad9149aaec06eac9bc87a5683d33e36a826d770a5532e390",
       "tag": "evolute_duel-BoardUpdated",
       "selector": "0x1352659f5307c3478b85ed999c391ac8768670156647c54e3d0edfd3acd61de"
     },

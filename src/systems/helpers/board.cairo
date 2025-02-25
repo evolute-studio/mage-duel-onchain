@@ -41,7 +41,6 @@ pub fn create_board(
     tiles.append_span([((Tile::Empty).into(), 0, 0); 64].span());
 
     let last_move_id = Option::None;
-    let first_move_id = Option::None;
     let game_state = GameState::InProgress;
 
     let mut board = Board {
@@ -52,10 +51,9 @@ pub fn create_board(
         state: tiles.clone(),
         player1: (player1, PlayerSide::Blue, rules.joker_number),
         player2: (player2, PlayerSide::Red, rules.joker_number),
-        blue_score: 0,
-        red_score: 0,
+        blue_score: (0, 0),
+        red_score: (0, 0),
         last_move_id,
-        first_move_id,
         game_state,
     };
 
@@ -84,6 +82,8 @@ pub fn create_board(
                 state: tiles,
                 player1: board.player1,
                 player2: board.player2,
+                blue_score: board.blue_score,
+                red_score: board.red_score,
                 last_move_id,
                 game_state,
             },
@@ -218,9 +218,6 @@ pub fn create_board_from_snapshot(
     // TODO: make more effective way to do this
 
     let mut old_board: Board = world.read_model(old_board_id);
-
-    let mut current_move_id = old_board.first_move_id;
-
     let new_board_id = board_id_generator.read();
 
     let rules: Rules = world.read_model(0);
@@ -238,17 +235,29 @@ pub fn create_board_from_snapshot(
         state: tiles.clone(),
         player1: (player1, PlayerSide::Blue, rules.joker_number),
         player2: (player1, PlayerSide::Red, rules.joker_number),
-        blue_score: 0,
-        red_score: 0,
+        blue_score: (0, 0),
+        red_score: (0, 0),
         last_move_id: Option::None,
-        first_move_id: old_board.first_move_id,
         game_state: GameState::InProgress,
     };
 
     let mut drawn_tiles: Felt252Dict<u8> = Default::default();
 
-    for _ in 0..move_number {
+    let mut move_ids = ArrayTrait::new();
+    let mut current_move_id = old_board.last_move_id;
+    while current_move_id.is_some() {
         let move_id = current_move_id.unwrap();
+        move_ids.append(move_id);
+        let move: Move = world.read_model(move_id);
+        current_move_id = move.prev_move_id;
+    };
+    
+    let mut move_ids = move_ids.span();
+    let mut current_move_id = move_ids.pop_back();
+    
+
+    for _ in 0..move_number {
+        let move_id = *current_move_id.unwrap();
         let move: Move = world.read_model(move_id);
 
         let tile = move.tile;
@@ -257,7 +266,7 @@ pub fn create_board_from_snapshot(
         let row = move.row;
         let is_joker = move.is_joker;
         let player_side = move.player_side;
-        let next_move_id = move.next_move_id;
+        let next_move_id = move_ids.pop_back();
 
         // If not skip move
         if tile.is_some() {
@@ -267,10 +276,13 @@ pub fn create_board_from_snapshot(
 
             //Tile scoring
             let tile_points = calcucate_tile_points(tile.into());
+            let (city_points, road_points) = tile_points;
             if player_side == PlayerSide::Blue {
-                new_board.blue_score += tile_points;
+                let (city_score, road_score) = new_board.blue_score;
+                new_board.blue_score = (city_score + city_points, road_score + road_points);
             } else {
-                new_board.red_score += tile_points;
+                let (city_score, road_score) = new_board.red_score;
+                new_board.red_score = (city_score + city_points, road_score + road_points);
             }
 
             //City scoring
@@ -293,11 +305,15 @@ pub fn create_board_from_snapshot(
             if city_contest_scoring_result.is_some() {
                 let (winner, points_delta) = city_contest_scoring_result.unwrap();
                 if winner == PlayerSide::Blue {
-                    new_board.blue_score += points_delta;
-                    new_board.red_score -= points_delta;
+                    let (city_score, road_score) = new_board.blue_score;
+                    new_board.blue_score = (city_score + points_delta, road_score);
+                    let (city_score, road_score) = new_board.red_score;
+                    new_board.red_score = (city_score - points_delta, road_score);
                 } else {
-                    new_board.red_score += points_delta;
-                    new_board.blue_score -= points_delta;
+                    let (city_score, road_score) = new_board.red_score;
+                    new_board.red_score = (city_score + points_delta, road_score);
+                    let (city_score, road_score) = new_board.blue_score;
+                    new_board.blue_score = (city_score - points_delta, road_score);
                 }
             }
 
@@ -321,11 +337,15 @@ pub fn create_board_from_snapshot(
                 if road_scoring_result.is_some() {
                     let (winner, points_delta) = road_scoring_result.unwrap();
                     if winner == PlayerSide::Blue {
-                        new_board.blue_score += points_delta;
-                        new_board.red_score -= points_delta;
+                        let (city_score, road_score) = new_board.blue_score;
+                        new_board.blue_score = (city_score, road_score + points_delta);
+                        let (city_score, road_score) = new_board.red_score;
+                        new_board.red_score = (city_score, road_score - points_delta);
                     } else {
-                        new_board.red_score += points_delta;
-                        new_board.blue_score -= points_delta;
+                        let (city_score, road_score) = new_board.red_score;
+                        new_board.red_score = (city_score, road_score + points_delta);
+                        let (city_score, road_score) = new_board.blue_score;
+                        new_board.blue_score = (city_score, road_score - points_delta);
                     }
                 }
             };
@@ -376,6 +396,8 @@ pub fn create_board_from_snapshot(
                 state: new_board.state,
                 player1: new_board.player1,
                 player2: new_board.player2,
+                blue_score: new_board.blue_score,
+                red_score: new_board.red_score,
                 last_move_id: new_board.last_move_id,
                 game_state: new_board.game_state,
             },

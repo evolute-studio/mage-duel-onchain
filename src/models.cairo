@@ -16,10 +16,11 @@ pub struct Board {
     pub player1: (ContractAddress, PlayerSide, u8),
     //(address, side, joker_number)
     pub player2: (ContractAddress, PlayerSide, u8),
-    pub blue_score: u16,
-    pub red_score: u16,
+    // (u16, u16) => (city_score, road_score)
+    pub blue_score: (u16, u16),
+    // (u16, u16) => (city_score, road_score)
+    pub red_score: (u16, u16),
     pub last_move_id: Option<felt252>,
-    pub first_move_id: Option<felt252>,
     pub game_state: GameState,
 }
 
@@ -30,7 +31,6 @@ pub struct Move {
     pub id: felt252,
     pub player_side: PlayerSide,
     pub prev_move_id: Option<felt252>,
-    pub next_move_id: Option<felt252>,
     pub tile: Option<u8>,
     // 0 - if no rotation
     pub rotation: u8,
