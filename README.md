@@ -1,68 +1,103 @@
-![Dojo Starter](./assets/cover.png)
+# Evolute Kingdom: Mage Duel
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset=".github/mark-dark.svg">
-  <img alt="Dojo logo" align="right" width="120" src=".github/mark-light.svg">
-</picture>
+Evolute Kingdom: Mage Duel is an on-chain game, built on Starknet using the [Dojo Engine](https://github.com/dojoengine/dojo)
 
-<a href="https://x.com/ohayo_dojo">
-<img src="https://img.shields.io/twitter/follow/dojostarknet?style=social"/>
-</a>
-<a href="https://github.com/dojoengine/dojo/stargazers">
-<img src="https://img.shields.io/github/stars/dojoengine/dojo?style=social"/>
-</a>
+# Development Setup
 
-[![discord](https://img.shields.io/badge/join-dojo-green?logo=discord&logoColor=white)](https://discord.com/invite/dojoengine)
-[![Telegram Chat][tg-badge]][tg-url]
+To start development, install `cairo` and the necessary toolchain using the [Cairo installation guide](https://book.cairo-lang.org/ch01-01-installation.html). Then, install the latest Dojo toolchain by following the [Dojo installation guide](https://book.dojoengine.org/getting-started). After setup, you will have access to:
 
-[tg-badge]: https://img.shields.io/endpoint?color=neon&logo=telegram&label=chat&style=flat-square&url=https%3A%2F%2Ftg.sumanjay.workers.dev%2Fdojoengine
-[tg-url]: https://t.me/dojoengine
+- [Sozo](https://book.dojoengine.org/toolchain/sozo) – the development tool for building and deploying smart contracts.
+- [Katana](https://book.dojoengine.org/toolchain/katana) – a local Starknet sequencer for testing.
+- [Torii](https://book.dojoengine.org/toolchain/torii) – an indexer for querying on-chain data.
 
-# Dojo Starter: Official Guide
+# **Building and Running the Project**
 
-A quickstart guide to help you build and deploy your first Dojo provable game.
+1. **Build the project**
+    
+    ```bash
+    sozo build
+    ```
+    
+2. **Start the Starknet sequencer (Katana) in development mode**
+    
+    ```bash
+    katana --dev --dev.no-fee
+    ```
+    
+3. **Migrate the world** (deploy contracts to Katana and obtain the world address)
+    
+    ```bash
+    sozo migrate
+    ```
+    
+    Example output:
+    
+    ```bash
+    🌍 World deployed at block 2 with txn hash: 0x0586002f82db7f903d2fc60edafde45a23d2e40d37dd4192e1d2952fc61c254f
+    ⛩️  Migration successful with world at address 0x06a4d87ac4a224fbc633b46ec896545f8783cfc6d87ce8a4ef8c5630a3c17711
+    ```
+    
+4. **Start the Torii indexer**
+    
+    ```bash
+    torii --world <World Address>
+    ```
+    
+    - This launches:
+        - A GraphQL API at `http://localhost:8080/graphql`
+        - A gRPC API at `http://localhost:8080`
+5. **Interact with the game using Sozo scripts**
+Predefined scripts in `Scarb.toml` allow local testing:
+    
+    ```bash
+    #Creates the game by predeployed player account
+    scarb run create_game
+    
+    #Joins the game from another player account and game started
+    scarb run join_game
+    
+    #First player makes a move
+    scarb run make_move1
+    
+    #Second player makes a move
+    scarb run make_move2
+    # and so on...
+    ```
+    
 
-Read the full tutorial [here](https://dojoengine.org/tutorial/dojo-starter).
+# Game rules
 
-## Running Locally
+Two mages stand against each other, not to destroy, but to create. Their power, **Evolute**, grants them the ability to shape matter itself — forming **Cities**, **Roads**, and **Fields** from pure magic. 
 
-#### Terminal one (Make sure this is running)
+Each move is a step toward building a greater world, but in the end, only one will prevail.
 
-```bash
-# Run Katana
-katana --dev --dev.no-fee
-```
+For detailed rules, check our [playbook](https://evolute.notion.site/playbook).
 
-#### Terminal two
+# Matchmaking
 
-```bash
-# Build the example
-sozo build
+Matchmaking works as follows:
 
-# Inspect the world
-sozo inspect
+- One player creates a game.
+- The second player sees the game in the list and joins.
+- The first player can cancel the game before another player joins.
+- When the second player joins, a board is generated with random parameters, and the game begins.
+- Once the game starts, it cannot be canceled, nor can a third player join.
+- A player can only participate in one game at a time.
 
-# Migrate the example
-sozo migrate
+# Snapshots
 
-# Start Torii
-# Replace <WORLD_ADDRESS> with the address of the deployed world from the previous step
-torii --world <WORLD_ADDRESS> --http.cors_origins "*"
-```
+Once a game has ended, a player can create a snapshot of the match by specifying the board ID and move number. This snapshot captures the state of the game at that moment.
 
----
+Using this snapshot, a new game can be started from that specific point, allowing two players to continue playing from an existing game state.
 
-## Contribution
+The matchmaking rules remain the same, except that the board parameters are pre-defined, and players begin from the recorded move instead of starting from scratch.
 
-1. **Report a Bug**
+# Architectural Decisions & Challenges
 
-    - If you think you have encountered a bug, and we should know about it, feel free to report it [here](https://github.com/dojoengine/dojo-starter/issues) and we will take care of it.
+## Event Sourcing for Snapshots
 
-2. **Request a Feature**
+To enable snapshots, we implemented an **event sourcing model** for moves. Each move is stored along with a reference to the previous move, allowing us to reconstruct the board state at any point in time. This approach also makes it easy to implement snapshots as forks from the main board.
 
-    - You can also request for a feature [here](https://github.com/dojoengine/dojo-starter/issues), and if it's viable, it will be picked for development.
+## Disjoint-Set Data Structure for Scoring
 
-3. **Create a Pull Request**
-    - It can't get better then this, your pull request will be appreciated by the community.
-
-Happy coding!
+To handle score calculations for contested cities and roads, we implemented a **custom Disjoint-Set data structure**. This allows us to efficiently merge roads and cities into sets while simultaneously updating each player's score and tracking the number of open edges in each set.
