@@ -18,11 +18,12 @@ pub mod game {
     use super::{IGame};
     use starknet::{ContractAddress, get_caller_address};
     use evolute_duel::{
-        models::{Board, Rules, Move, Game, Snapshot},
+        models::{Board, Rules, Move, Game, Snapshot, Player},
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
             PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
             Skiped, Moved, SnapshotCreated, SnapshotCreateFailed, BoardCreateFromSnapshotFalied,
+            CurrentPlayerBalance, 
         },
         systems::helpers::{
             board::{
@@ -487,6 +488,28 @@ pub mod game {
 
                 world.emit_event(@GameFinished { host_player: player1_address, board_id });
                 world.emit_event(@GameFinished { host_player: player2_address, board_id });
+
+                //add scores to players profiles
+                let mut player1: Player = world.read_model(player1_address);
+                let mut player2: Player = world.read_model(player2_address);
+
+                if player1_side == PlayerSide::Blue {
+                    let (city_points, road_points) = board.blue_score;
+                    player1.balance += city_points + road_points;
+                    let (city_points, road_points) = board.red_score;
+                    player2.balance += city_points + road_points;
+                } else {
+                    let (city_points, road_points) = board.red_score;
+                    player1.balance += city_points + road_points;
+                    let (city_points, road_points) = board.blue_score;
+                    player2.balance += city_points + road_points;
+                }
+
+                world.write_model(@player1);
+                world.emit_event(@CurrentPlayerBalance { player_id: player1_address, balance: player1.balance });
+
+                world.write_model(@player2);
+                world.emit_event(@CurrentPlayerBalance { player_id: player2_address, balance: player2.balance });
             }
 
             world.write_model(@move);
@@ -685,7 +708,29 @@ pub mod game {
                     world.write_model(@guest_game);
 
                     world.emit_event(@GameFinished { host_player: player1_address, board_id });
-                    world.emit_event(@GameFinished { host_player: player2_address, board_id })
+                    world.emit_event(@GameFinished { host_player: player2_address, board_id });
+
+                    //add scores to players profiles
+                    let mut player1: Player = world.read_model(player1_address);
+                    let mut player2: Player = world.read_model(player2_address);
+
+                    if player1_side == PlayerSide::Blue {
+                        let (city_points, road_points) = board.blue_score;
+                        player1.balance += city_points + road_points;
+                        let (city_points, road_points) = board.red_score;
+                        player2.balance += city_points + road_points;
+                    } else {
+                        let (city_points, road_points) = board.red_score;
+                        player1.balance += city_points + road_points;
+                        let (city_points, road_points) = board.blue_score;
+                        player2.balance += city_points + road_points;
+                    }
+
+                    world.write_model(@player1);
+                    world.emit_event(@CurrentPlayerBalance { player_id: player1_address, balance: player1.balance });
+
+                    world.write_model(@player2);
+                    world.emit_event(@CurrentPlayerBalance { player_id: player2_address, balance: player2.balance });
                 }
             };
 
