@@ -92,11 +92,15 @@ Using this snapshot, a new game can be started from that specific point, allowin
 
 The matchmaking rules remain the same, except that the board parameters are pre-defined, and players begin from the recorded move instead of starting from scratch.
 
+![](assets/Matchmaking.png)
+
 # Architectural Decisions & Challenges
 
 ## Event Sourcing for Snapshots
 
 To enable snapshots, we implemented an **event sourcing model** for moves. Each move is stored along with a reference to the previous move, allowing us to reconstruct the board state at any point in time. This approach also makes it easy to implement snapshots as forks from the main board.
+
+![](assets/EventSourcing.png)
 
 ## Disjoint-Set Data Structure for Scoring
 
