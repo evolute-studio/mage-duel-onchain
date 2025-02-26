@@ -105,3 +105,11 @@ To enable snapshots, we implemented an **event sourcing model** for moves. Each 
 ## Disjoint-Set Data Structure for Scoring
 
 To handle score calculations for contested cities and roads, we implemented a **custom Disjoint-Set data structure**. This allows us to efficiently merge roads and cities into sets while simultaneously updating each player's score and tracking the number of open edges in each set.
+
+## Modular Rule System
+
+We separated the game rules into an independent model, allowing us to modify rules dynamically without affecting the core game logic. This approach offers flexibility for introducing the number of cities and roads spawned on edges, the number of each type of tile in the deck, and the number of jokers without requiring a complete overhaul of the system.
+
+## Randomized Tile Draw Mechanism
+
+To prevent players from predicting the order of tile draws, we implemented a system where only the top tile of the deck is revealed randomly each turn. The randomization is enforced through blockchain-based entropy, ensuring fairness and unpredictability in tile distribution. This ensures that the sequence of upcoming tiles remains unknown, maintaining strategic depth and preventing players from planning moves too far in advance.
