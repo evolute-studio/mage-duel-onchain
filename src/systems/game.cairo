@@ -85,8 +85,9 @@ pub mod game {
         ];
         let edges = (1, 1);
         let joker_number = 3;
+        let joker_price = 5;
 
-        let rules = Rules { id, deck, edges, joker_number };
+        let rules = Rules { id, deck, edges, joker_number, joker_price };
         world.write_model(@rules);
     }
 
@@ -493,16 +494,27 @@ pub mod game {
                 let mut player1: Player = world.read_model(player1_address);
                 let mut player2: Player = world.read_model(player2_address);
 
+
+                //Score unused jokers
+                let rules: Rules = world.read_model(0);
+                let joker_price = rules.joker_price;
+                let blue_joker_points = joker_number1.into() * joker_price;
+                let red_joker_points = joker_number2.into() * joker_price;
+
                 if player1_side == PlayerSide::Blue {
                     let (city_points, road_points) = board.blue_score;
                     player1.balance += city_points + road_points;
                     let (city_points, road_points) = board.red_score;
                     player2.balance += city_points + road_points;
+                    player1.balance += blue_joker_points;
+                    player2.balance += red_joker_points;
                 } else {
                     let (city_points, road_points) = board.red_score;
                     player1.balance += city_points + road_points;
                     let (city_points, road_points) = board.blue_score;
                     player2.balance += city_points + road_points;
+                    player1.balance += red_joker_points;
+                    player2.balance += blue_joker_points;
                 }
 
                 world.write_model(@player1);
@@ -714,16 +726,28 @@ pub mod game {
                     let mut player1: Player = world.read_model(player1_address);
                     let mut player2: Player = world.read_model(player2_address);
 
+                    //Score unused jokers
+                    let rules: Rules = world.read_model(0);
+                    let joker_price = rules.joker_price;
+                    let (_, _, joker_number1) = board.player1;
+                    let (_, _, joker_number2) = board.player2;
+                    let blue_joker_points = joker_number1.into() * joker_price;
+                    let red_joker_points = joker_number2.into() * joker_price;
+
                     if player1_side == PlayerSide::Blue {
                         let (city_points, road_points) = board.blue_score;
                         player1.balance += city_points + road_points;
                         let (city_points, road_points) = board.red_score;
                         player2.balance += city_points + road_points;
+                        player1.balance += blue_joker_points;
+                        player2.balance += red_joker_points;
                     } else {
                         let (city_points, road_points) = board.red_score;
                         player1.balance += city_points + road_points;
                         let (city_points, road_points) = board.blue_score;
                         player2.balance += city_points + road_points;
+                        player1.balance += red_joker_points;
+                        player2.balance += blue_joker_points;
                     }
 
                     world.write_model(@player1);

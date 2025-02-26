@@ -60,6 +60,7 @@ pub struct Rules {
     pub edges: (u8, u8),
     // How many jokers for each player
     pub joker_number: u8,
+    pub joker_price: u16,
 }
 
 #[derive(Drop, Serde, Introspect, Debug)]
