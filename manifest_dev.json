@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x2863f9c01d25ac20344da0352c03b982f174f85b97a3d5c6debed0227c9dd8d",
-      "class_hash": "0x1852c907d9f8054b18239a1243fdaae4e4f54b297878acea54ba002806526d0",
+      "address": "0x3f9f4de43e59e72cb97490482d1c080bc99cf7cfd27a21e871b2fcb5a1fd59f",
+      "class_hash": "0x32e2b4cc59973c34da6aa0e228137740dcfa460d00b19d5bb9d0cf306cdc6ff",
       "abi": [
         {
           "type": "impl",
@@ -1858,7 +1858,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x72e20e73f7031a9cf8a98641575834d2b90f213697d895f0cdf51e8e3eff491",
+      "class_hash": "0x1471b9f611dc950526ffa5c5b48b65637074cab24764b3dc8dac27d97251eae",
       "tag": "evolute_duel-Game",
       "selector": "0x50eb71734a5acf3d804e250ff9e59bb3566e8bf9d30d0587d38cc2cc032e232"
     },

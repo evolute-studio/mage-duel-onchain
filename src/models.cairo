@@ -70,6 +70,7 @@ pub struct Game {
     pub player: ContractAddress,
     pub status: GameStatus,
     pub board_id: Option<felt252>,
+    pub snapshot_id: Option<felt252>,
 }
 
 
