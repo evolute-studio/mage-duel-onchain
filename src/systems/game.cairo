@@ -109,6 +109,7 @@ pub mod game {
             status = GameStatus::Created;
             game.status = status;
             game.board_id = Option::None;
+            game.snapshot_id = Option::None;
 
             world.write_model(@game);
 
@@ -179,6 +180,7 @@ pub mod game {
                             ref world, board_id, host_player, move_number, self.board_id_generator,
                         ),
                     );
+            game.snapshot_id = Option::Some(snapshot_id);
 
             world.write_model(@game);
 
@@ -197,6 +199,7 @@ pub mod game {
                 let new_status = GameStatus::Canceled;
                 game.status = new_status;
                 game.board_id = Option::None;
+                game.snapshot_id = Option::None;
 
                 world.write_model(@game);
 
@@ -247,12 +250,14 @@ pub mod game {
                     selector!("player2"),
                     board.player2,
                 );
+
                 board_id           
             };
-
+            
             host_game.board_id = Option::Some(board_id);
             guest_game.board_id = Option::Some(board_id);
-
+            guest_game.snapshot_id = host_game.snapshot_id;
+            
             world.write_model(@host_game);
             world.write_model(@guest_game);
             world.emit_event(@GameStarted { host_player, guest_player, board_id });
