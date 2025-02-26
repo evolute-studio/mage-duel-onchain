@@ -1,23 +1,48 @@
 [package]
 cairo-version = "=2.9.2"
-name = "dojo_starter"
-version = "1.1.0"
+name = "evolute_duel"
+version = "1.2.1"
 edition = "2024_07"
 
 [cairo]
 sierra-replace-ids = true
 
 [scripts]
-migrate = "sozo build && sozo migrate"                      # scarb run migrate
-spawn = "sozo execute dojo_starter-actions spawn --wait"    # scarb run spawn
-move = "sozo execute dojo_starter-actions move -c 1 --wait" # scarb run move
+migrate = "sozo build && sozo migrate"
+create_game = "sozo execute evolute_duel-game create_game --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+join_game = "sozo execute evolute_duel-game join_game 0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --account-address=0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7 --private-key=0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b --wait"
+make_move1 = "sozo execute evolute_duel-game make_move 1 0 1 7 --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+make_move2 = "sozo execute evolute_duel-game make_move 1 0 2 7 --account-address=0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7 --private-key=0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b --wait"
+make_move3 = "sozo execute evolute_duel-game make_move 1 1 2 6 --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+
+make_joker_move1 = "sozo execute evolute_duel-game make_move 0 9 3 0 0 --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+make_joker_move2 = "sozo execute evolute_duel-game make_move 0 14 1 0 1 --account-address=0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7 --private-key=0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b --wait"
+
+skip_move1 = "sozo execute evolute_duel-game skip_move --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+skip_move2 = "sozo execute evolute_duel-game skip_move --account-address=0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7 --private-key=0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b --wait"
+
+balance = "sozo execute evolute_duel-player_profile_actions balance --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+username = "sozo execute evolute_duel-player_profile_actions username --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+active_skin = "sozo execute evolute_duel-player_profile_actions active_skin --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+
+change_username = "sozo execute evolute_duel-player_profile_actions change_username sstr:'player1' --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+change_skin = "sozo execute evolute_duel-player_profile_actions change_skin 1  --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+
+create_snapshot = "sozo execute evolute_duel-game create_snapshot 0 2 --account-address=0x17cc6ca902ed4e8baa8463a7009ff18cc294fa85a94b4ce6ac30a9ebd6057c7 --private-key=0x14d6672dcb4b77ca36a887e9a11cd9d637d5012468175829e9c6e770c61642 --wait"
+cancel_game = "sozo execute evolute_duel-game cancel_game --account-address=0x17cc6ca902ed4e8baa8463a7009ff18cc294fa85a94b4ce6ac30a9ebd6057c7 --private-key=0x14d6672dcb4b77ca36a887e9a11cd9d637d5012468175829e9c6e770c61642 --wait"
+
+create_game_from_snapshot = "sozo execute evolute_duel-game create_game_from_snapshot 0 --account-address=0x17cc6ca902ed4e8baa8463a7009ff18cc294fa85a94b4ce6ac30a9ebd6057c7 --private-key=0x14d6672dcb4b77ca36a887e9a11cd9d637d5012468175829e9c6e770c61642 --wait"
+join_game_from_snapshot = "sozo execute evolute_duel-game join_game 0x17cc6ca902ed4e8baa8463a7009ff18cc294fa85a94b4ce6ac30a9ebd6057c7 --account-address=0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7 --private-key=0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b --wait"
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.1.1" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.1" }
+origami_random = { git = "https://github.com/dojoengine/origami" }
+
 
 [[target.starknet-contract]]
 build-external-contracts = ["dojo::world::world_contract::world"]
 
 [dev-dependencies]
 cairo_test = "=2.9.2"
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.1.1" }
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.1" }
+assert_macros = "2.9.2"
