@@ -2,6 +2,8 @@
 
 Evolute Kingdom: Mage Duel is an on-chain game, built on Starknet using the [Dojo Engine](https://github.com/dojoengine/dojo)
 
+Play Evolute Kingdom: Mage Duel there: https://mageduel.evolute.network/
+
 # Development Setup
 
 To start development, install `cairo` and the necessary toolchain using the [Cairo installation guide](https://book.cairo-lang.org/ch01-01-installation.html). Then, install the latest Dojo toolchain by following the [Dojo installation guide](https://book.dojoengine.org/getting-started). After setup, you will have access to:
@@ -126,3 +128,11 @@ To deploy the game, we set up a dedicated **sovereign world** infrastructure:
 - The **game UI** interacts with Katana and Torii running on Slot, ensuring smooth gameplay and data retrieval.
 
 ![](assets/Deployment.jpg)
+
+Provable Katana RPC: https://api.cartridge.gg/x/evolute-duel/katana
+
+Provable Torii GraphQL RPC: https://api.cartridge.gg/x/evolute-duel/torii/graphql
+
+Release Katana RPC: https://api.cartridge.gg/x/liyard-evolute-duel/katana
+
+Release Torii GraphQL RPC: https://api.cartridge.gg/x/liyard-evolute-duel/torii/graphql
