@@ -93,18 +93,20 @@ pub fn connect_adjacent_city_edges(
         } // tile is connected to bottom edge
         else if *initial_edge_state.at(col.into()) == TEdge::C.into() {
             let mut edge = find(ref world, board_id, edge_pos);
-            println!("edge before: {:?}", edge);
             edge.open_edges -= 1;
             if side == (PlayerSide::Blue).into() {
                 edge.blue_points += 2;
             } else {
                 edge.red_points += 2;
             }
-            println!("edge after: {:?}", edge);
             world.write_model(@edge);
             cities_connected.append(edge_pos);
-            let new_edge: CityNode = world.read_model((board_id, edge_pos));
-            println!("new_edge: {:?}", new_edge);
+        }
+        else if *initial_edge_state.at(col.into()) == TEdge::M.into() {
+            let mut edge = find(ref world, board_id, edge_pos);
+            edge.open_edges -= 1;
+            world.write_model(@edge);
+            cities_connected.append(edge_pos);
         }
     }
 
@@ -130,6 +132,12 @@ pub fn connect_adjacent_city_edges(
             } else {
                 edge.red_points += 2;
             }
+            world.write_model(@edge);
+            cities_connected.append(edge_pos);
+        }
+        else if *initial_edge_state.at((23 - col).into()) == TEdge::M.into() {
+            let mut edge = find(ref world, board_id, edge_pos);
+            edge.open_edges -= 1;
             world.write_model(@edge);
             cities_connected.append(edge_pos);
         }
@@ -160,6 +168,12 @@ pub fn connect_adjacent_city_edges(
             world.write_model(@edge);
             cities_connected.append(edge_pos);
         }
+        else if *initial_edge_state.at((31 - row).into()) == TEdge::M.into() {
+            let mut edge = find(ref world, board_id, edge_pos);
+            edge.open_edges -= 1;
+            world.write_model(@edge);
+            cities_connected.append(edge_pos);
+        }
     }
 
     //connect right edge
@@ -184,6 +198,12 @@ pub fn connect_adjacent_city_edges(
             } else {
                 edge.red_points += 2;
             }
+            world.write_model(@edge);
+            cities_connected.append(edge_pos);
+        }
+        else if *initial_edge_state.at((8 + row).into()) == TEdge::M.into() {
+            let mut edge = find(ref world, board_id, edge_pos);
+            edge.open_edges -= 1;
             world.write_model(@edge);
             cities_connected.append(edge_pos);
         }
