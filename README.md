@@ -125,6 +125,4 @@ To deploy the game, we set up a dedicated **sovereign world** infrastructure:
     - Sends proofs to Celestia for verification.
 - The **game UI** interacts with Katana and Torii running on Slot, ensuring smooth gameplay and data retrieval.
 
-This architecture ensures decentralization, security, and efficient game state verification.
-
 ![](assets/Deployment.jpg)
