@@ -1,12 +1,24 @@
-// define the interface
+/// Interface defining actions for player profile management.
 #[starknet::interface]
 pub trait IPlayerProfileActions<T> {
+    /// Retrieves the player's balance.
     fn balance(ref self: T);
+
+    /// Retrieves the player's username.
     fn username(ref self: T);
+
+    /// Retrieves the player's active skin.
     fn active_skin(ref self: T);
+
+    /// Changes the player's username.
+    /// - `new_username`: The new username to be set.
     fn change_username(ref self: T, new_username: felt252);
+
+    /// Changes the player's active skin.
+    /// - `skin_id`: The ID of the new skin to be applied.
     fn change_skin(ref self: T, skin_id: u8);
 }
+
 
 // dojo decorator
 #[dojo::contract]
@@ -30,7 +42,7 @@ pub mod player_profile_actions {
         let mut world = self.world(@"evolute_duel");
         let id = 0;
 
-        let skin_prices = array![0, 0, 30];
+        let skin_prices = array![0, 0, 100, 500];
 
         let shop = Shop { shop_id: id, skin_prices };
         world.write_model(@shop);
@@ -77,6 +89,9 @@ pub mod player_profile_actions {
             let player_id = get_caller_address();
             let mut player: Player = world.read_model(player_id);
             let shop: Shop = world.read_model(0);
+            if skin_id.into() >= shop.skin_prices.len() {
+                return;
+            }
             let skin_price = *shop.skin_prices.at(skin_id.into());
 
             if player.balance < skin_price {

@@ -113,3 +113,16 @@ We separated the game rules into an independent model, allowing us to modify rul
 ## Randomized Tile Draw Mechanism
 
 To prevent players from predicting the order of tile draws, we implemented a system where only the top tile of the deck is revealed randomly each turn. The randomization is enforced through blockchain-based entropy, ensuring fairness and unpredictability in tile distribution. This ensures that the sequence of upcoming tiles remains unknown, maintaining strategic depth and preventing players from planning moves too far in advance.
+
+# Sovereign World
+
+To deploy the game, we set up a dedicated **sovereign world** infrastructure:
+
+- On **Slot**, we deployed the **Katana sequencer** and **Torii indexer**.
+- On **DigitalOcean**, we deployed a **Celestia light node** and **Saya**, which:
+    - Fetches blocks from Katana.
+    - Proves the blocks.
+    - Sends proofs to Celestia for verification.
+- The **game UI** interacts with Katana and Torii running on Slot, ensuring smooth gameplay and data retrieval.
+
+![](assets/Deployment.jpg)
