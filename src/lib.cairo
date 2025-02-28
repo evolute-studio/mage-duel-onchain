@@ -8,6 +8,7 @@ pub mod systems {
         pub mod tile_helpers;
         pub mod road_union_find;
         pub mod road_scoring;
+        pub mod validation;
     }
 }
 

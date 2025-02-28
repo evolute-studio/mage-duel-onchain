@@ -133,8 +133,14 @@ pub struct Skiped {
 #[dojo::event]
 pub struct InvalidMove {
     #[key]
-    pub move_id: felt252,
     pub player: ContractAddress,
+    pub prev_move_id: Option<felt252>,
+    pub tile: Option<u8>,
+    pub rotation: u8,
+    pub col: u8,
+    pub row: u8,
+    pub is_joker: bool,
+    pub board_id: felt252,
 }
 
 
