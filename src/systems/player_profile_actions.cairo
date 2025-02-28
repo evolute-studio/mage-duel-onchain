@@ -30,7 +30,7 @@ pub mod player_profile_actions {
         let mut world = self.world(@"evolute_duel");
         let id = 0;
 
-        let skin_prices = array![0, 0, 30];
+        let skin_prices = array![0, 0, 100, 500];
 
         let shop = Shop { shop_id: id, skin_prices };
         world.write_model(@shop);
@@ -77,6 +77,9 @@ pub mod player_profile_actions {
             let player_id = get_caller_address();
             let mut player: Player = world.read_model(player_id);
             let shop: Shop = world.read_model(0);
+            if skin_id.into() >= shop.skin_prices.len() {
+                return;
+            }
             let skin_price = *shop.skin_prices.at(skin_id.into());
 
             if player.balance < skin_price {
