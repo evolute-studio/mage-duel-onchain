@@ -121,7 +121,12 @@ pub mod game {
             let player = get_caller_address();
 
             let board: Board = world.read_model(board_id);
-            if board.game_state != GameState::Finished || move_number == 0 {
+            let (_, _, joker_number1) = board.player1;
+            let (_, _, joker_number2) = board.player2;
+            let is_top_tipe = if board.top_tile.is_some() { 1 } else { 0 };
+            let max_move_number: u32 = 70 - board.available_tiles_in_deck.len() - is_top_tipe - joker_number1.into() - joker_number2.into();
+
+            if move_number.into() > max_move_number {
                 world
                     .emit_event(
                         @SnapshotCreateFailed {
@@ -152,16 +157,6 @@ pub mod game {
             let move_number = snapshot.move_number;
 
             let board: Board = world.read_model(board_id);
-
-            if board.game_state != GameState::Finished || move_number == 0 {
-                world
-                    .emit_event(
-                        @BoardCreateFromSnapshotFalied {
-                            player: host_player, old_board_id: board_id, move_number,
-                        },
-                    );
-                return;
-            }
 
             let mut game: Game = world.read_model(host_player);
             let mut status = game.status;
