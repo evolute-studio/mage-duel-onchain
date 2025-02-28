@@ -88,7 +88,7 @@ Matchmaking works as follows:
 
 # Snapshots
 
-Once a game has ended, a player can create a snapshot of the match by specifying the board ID and move number. This snapshot captures the state of the game at that moment.
+Once a game has ended, a player (or community) can create a snapshot of the match by specifying the board ID and move number. This snapshot captures the state of the game at that moment.
 
 Using this snapshot, a new game can be started from that specific point, allowing two players to continue playing from an existing game state.
 
