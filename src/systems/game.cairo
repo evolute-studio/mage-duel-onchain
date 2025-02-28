@@ -43,7 +43,7 @@ pub mod game {
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
             PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
-            Skiped, Moved, SnapshotCreated, SnapshotCreateFailed,CurrentPlayerBalance, InvalidMove
+            Skiped, Moved, SnapshotCreated, SnapshotCreateFailed, CurrentPlayerBalance, InvalidMove,
         },
         systems::helpers::{
             board::{
@@ -56,8 +56,7 @@ pub mod game {
             road_scoring::{
                 connect_road_edges_in_tile, connect_adjacent_road_edges, close_all_roads,
             },
-            tile_helpers::{calcucate_tile_points},
-            validation::{is_valid_move},
+            tile_helpers::{calcucate_tile_points}, validation::{is_valid_move},
         },
         packing::{GameStatus, Tile, GameState, PlayerSide},
     };
@@ -361,7 +360,9 @@ pub mod game {
             };
 
             //TODO: check if the move is valid
-            if !is_valid_move(tile, rotation, col, row, board.state.span(), board.initial_edge_state.span()) {
+            if !is_valid_move(
+                tile, rotation, col, row, board.state.span(), board.initial_edge_state.span(),
+            ) {
                 world
                     .emit_event(
                         @InvalidMove {
@@ -372,7 +373,7 @@ pub mod game {
                             col: move.col,
                             row: move.row,
                             is_joker: move.is_joker,
-                            board_id
+                            board_id,
                         },
                     );
                 return;
