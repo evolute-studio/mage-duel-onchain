@@ -20,6 +20,7 @@ pub fn is_valid_move(tile: Tile, rotation: u8, col: u8, row: u8, state: Span<(u8
     }
 
     let edges = extended_tile.edges;
+    let mut actual_connections = 0;
 
     //check adjacent tiles
    
@@ -28,10 +29,15 @@ pub fn is_valid_move(tile: Tile, rotation: u8, col: u8, row: u8, state: Span<(u8
         let extended_down_tile = create_extended_tile(tile.into(), rotation);
         if *extended_down_tile.edges.at(0) != *edges.at(2) {
             return false;
+        } else {
+            actual_connections += 1;
         }
     } // tile is connected to bottom edge
-    else if *initial_edge_state.at(col.into()) != (*edges.at(2)).into() {
+    else if *initial_edge_state.at(col.into()) != (*edges.at(2)).into() 
+        && *initial_edge_state.at(col.into()) != TEdge::M.into() {
         return false;
+    } else if *initial_edge_state.at(col.into()) == (*edges.at(2)).into() {
+        actual_connections += 1;
     }
     
 
@@ -41,10 +47,15 @@ pub fn is_valid_move(tile: Tile, rotation: u8, col: u8, row: u8, state: Span<(u8
         let extended_up_tile = create_extended_tile(tile.into(), rotation);
         if *extended_up_tile.edges.at(2) != *edges.at(0) {
             return false;
+        } else {
+            actual_connections += 1;
         }
     } // tile is connected to top edge
-    else if *initial_edge_state.at((23 - col).into()) != (*edges.at(0)).into() {
+    else if *initial_edge_state.at((23 - col).into()) != (*edges.at(0)).into() 
+        && *initial_edge_state.at((23 - col).into()) != TEdge::M.into() {
         return false;
+    } else if *initial_edge_state.at((23 - col).into()) == (*edges.at(0)).into() {
+        actual_connections += 1;
     }
 
 
@@ -54,10 +65,15 @@ pub fn is_valid_move(tile: Tile, rotation: u8, col: u8, row: u8, state: Span<(u8
         let extended_left_tile = create_extended_tile(tile.into(), rotation);
         if *extended_left_tile.edges.at(1) != *edges.at(3) {
             return false;
+        } else {
+            actual_connections += 1;
         }
     } // tile is connected to left edge
-    else if *initial_edge_state.at((31 - row).into()) != (*edges.at(3)).into() {
+    else if *initial_edge_state.at((31 - row).into()) != (*edges.at(3)).into() 
+        && *initial_edge_state.at((31 - row).into()) != TEdge::M.into() {
         return false;
+    } else if *initial_edge_state.at((31 - row).into()) == (*edges.at(3)).into() {
+        actual_connections += 1;
     }
 
 
@@ -67,13 +83,21 @@ pub fn is_valid_move(tile: Tile, rotation: u8, col: u8, row: u8, state: Span<(u8
         let extended_right_tile = create_extended_tile(tile.into(), rotation);
         if *extended_right_tile.edges.at(3) != *edges.at(1) {
             return false;
-            
+        } else {
+            actual_connections += 1;
         }
     } // tile is connected to right edge
-    else if *initial_edge_state.at((8 + row).into()) != (*edges.at(1)).into() {
+    else if *initial_edge_state.at((8 + row).into()) != (*edges.at(1)).into() 
+        && *initial_edge_state.at((8 + row).into()) != TEdge::M.into() {
         return false;
+    } else if *initial_edge_state.at((8 + row).into()) == (*edges.at(1)).into() {
+        actual_connections += 1;
     }
     
+
+    if actual_connections == 0 {
+        return false;
+    }
 
     true
 }
