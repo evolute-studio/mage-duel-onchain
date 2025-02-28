@@ -125,34 +125,6 @@ impl TileToU8 of Into<Tile, u8> {
 }
 
 #[derive(Copy, Drop, Serde, Debug, IntrospectPacked, PartialEq)]
-pub enum Skin {
-    Skin1,
-    Skin2,
-    Skin3,
-}
-
-impl SkinToU8 of Into<Skin, u8> {
-    fn into(self: Skin) -> u8 {
-        match self {
-            Skin::Skin1 => 0,
-            Skin::Skin2 => 1,
-            Skin::Skin3 => 2,
-        }
-    }
-}
-
-impl U8ToSkin of Into<u8, Skin> {
-    fn into(self: u8) -> Skin {
-        match self {
-            0 => Skin::Skin1,
-            1 => Skin::Skin2,
-            2 => Skin::Skin3,
-            _ => panic!("Unsupported Skin"),
-        }
-    }
-}
-
-#[derive(Copy, Drop, Serde, Debug, IntrospectPacked, PartialEq)]
 pub enum GameState {
     InProgress,
     Finished,

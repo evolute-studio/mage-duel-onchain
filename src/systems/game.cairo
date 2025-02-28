@@ -292,7 +292,7 @@ pub mod game {
                     match @board.top_tile {
                         Option::Some(top_tile) => { (*top_tile).into() },
                         Option::None => {
-                            //TODO: Error: no joker and no top tile. Move is impossible
+                            panic!("No tiles in the deck");
                             return;
                         },
                     }
@@ -307,20 +307,17 @@ pub mod game {
             } else if player == player2_address {
                 (player2_side, joker_number2)
             } else {
-                //Error: player is not in the game
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id });
                 return;
             };
 
             let is_joker = joker_tile.is_some();
 
-            //check if enough jokers
             if is_joker && joker_number == 0 {
                 world.emit_event(@NotEnoughJokers { player_id: player, board_id });
                 return;
             }
 
-            //check if it is the player's turn
             let prev_move_id = board.last_move_id;
             if prev_move_id.is_some() {
                 let prev_move_id = prev_move_id.unwrap();
@@ -328,7 +325,6 @@ pub mod game {
                 let prev_player_side = prev_move.player_side;
 
                 if player_side == prev_player_side {
-                    //Error: turn of the other player
                     world.emit_event(@NotYourTurn { player_id: player, board_id });
                     return;
                 }
@@ -347,14 +343,12 @@ pub mod game {
 
             //TODO: check if the move is valid
 
-            //Draw a tile from the board deck if it is not a joker
             let top_tile = if !is_joker {
                 draw_tile_from_board_deck(ref board)
             } else {
                 board.top_tile
             };
 
-            //Tile scoring
             let tile_points = calcucate_tile_points(tile);
             let (city_points, road_points) = tile_points;
             if player_side == PlayerSide::Blue {
@@ -365,13 +359,10 @@ pub mod game {
                 board.red_score = (old_city_points + city_points, old_road_points + road_points);
             }
 
-            //City scoring
             let tile_position = (col * 8 + row).into();
-            //TODO: use span instead of clone
             connect_city_edges_in_tile(
                 ref world, board_id, tile_position, tile.into(), rotation, player_side.into(),
             );
-            //TODO: use span instead of clone
             let city_contest_scoring_result = connect_adjacent_city_edges(
                 ref world,
                 board_id,
@@ -399,7 +390,6 @@ pub mod game {
                 }
             }
 
-            //Road scoring
             connect_road_edges_in_tile(
                 ref world, board_id, tile_position, tile.into(), rotation, player_side.into(),
             );
@@ -436,10 +426,8 @@ pub mod game {
                 }
             };
 
-            //Update board state
             update_board_state(ref board, tile, rotation, col, row, is_joker, player_side);
 
-            //Update joker number
             let (joker_number1, joker_number2) = update_board_joker_number(
                 ref board, player_side, is_joker,
             );
@@ -450,7 +438,6 @@ pub mod game {
             if top_tile.is_none() && joker_number1 == 0 && joker_number2 == 0 {
                 //FINISH THE GAME
 
-                //Score all potantial cities and roads
                 let city_scoring_results = close_all_cities(ref world, board_id);
                 for i in 0..city_scoring_results.len() {
                     let city_scoring_result = *city_scoring_results.at(i.into());
@@ -517,11 +504,9 @@ pub mod game {
                 world.emit_event(@GameFinished { host_player: player1_address, board_id });
                 world.emit_event(@GameFinished { host_player: player2_address, board_id });
 
-                //add scores to players profiles
                 let mut player1: Player = world.read_model(player1_address);
                 let mut player2: Player = world.read_model(player2_address);
 
-                //Score unused jokers
                 let rules: Rules = world.read_model(0);
                 let joker_price = rules.joker_price;
                 let blue_joker_points = joker_number1.into() * joker_price;
@@ -648,8 +633,6 @@ pub mod game {
                         game_state: board.game_state,
                     },
                 );
-            // // Check if the game is in progress.
-
         }
 
         fn skip_move(ref self: ContractState) {
@@ -680,12 +663,10 @@ pub mod game {
             } else if player == player2_address {
                 player2_side
             } else {
-                //TODO: Error: player is not in the game
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id });
                 return;
             };
 
-            //check if it is the player's turn
             let prev_move_id = board.last_move_id;
             if prev_move_id.is_some() {
                 let prev_move_id = prev_move_id.unwrap();
@@ -693,12 +674,10 @@ pub mod game {
                 let prev_player_side = prev_move.player_side;
 
                 if player_side == prev_player_side {
-                    //TODO: Error: turn of the other player
                     world.emit_event(@NotYourTurn { player_id: player, board_id });
                     return;
                 }
 
-                //check if last move was a skip
                 if prev_move.tile.is_none() && !prev_move.is_joker {
                     //FINISH THE GAME
                     let city_scoring_results = close_all_cities(ref world, board_id);
@@ -767,11 +746,9 @@ pub mod game {
                     world.emit_event(@GameFinished { host_player: player1_address, board_id });
                     world.emit_event(@GameFinished { host_player: player2_address, board_id });
 
-                    //add scores to players profiles
                     let mut player1: Player = world.read_model(player1_address);
                     let mut player2: Player = world.read_model(player2_address);
 
-                    //Score unused jokers
                     let rules: Rules = world.read_model(0);
                     let joker_price = rules.joker_price;
                     let (_, _, joker_number1) = board.player1;
@@ -877,93 +854,6 @@ pub mod game {
         }
     }
 
-
-    // fn is_move_valid(
-    //     mut board: Board, mut tile: Option<Tile>, rotation: u8, col: u8, row: u8, is_joker: bool,
-    // ) -> bool {
-    //     // Check if the tile on top of the random deck.
-    //     if board.random_deck.is_empty() {
-    //         return false;
-    //     }
-
-    //     if is_joker {
-    //         if tile == Option::None {
-    //             return false;
-    //         }
-    //     } else {
-    //         tile = Option::Some(board.random_deck.pop_front().unwrap().into());
-    //     }
-
-    //     // Check if the tile is already placed on the board.
-    //     if board.tiles.get((col + row * 8).into()).is_some() {
-    //         return false;
-    //     }
-
-    //     let tile: TileStruct = tile.unwrap().into();
-    //     // Check if the tile can be placed on the board.
-    //     if !is_tile_allowed_to_place(board, tile, rotation, col, row) {
-    //         return false;
-    //     }
-
-    //     return true;
-    // }
-
-    // fn is_tile_allowed_to_place(
-    //     board: Board, tile: TileStruct, rotation: u8, col: u8, row: u8,
-    // ) -> bool {
-    //     let edges: [TEdge; 4] = [
-    //         *tile.edges.span()[((0 + rotation) % 4).into()],
-    //         *tile.edges.span()[((1 + rotation) % 4).into()],
-    //         *tile.edges.span()[((2 + rotation) % 4).into()],
-    //         *tile.edges.span()[((3 + rotation) % 4).into()],
-    //     ];
-    //     let edges = edges.span();
-
-    //     let mut is_move_valid = true;
-
-    //     for i in 0..4_u8 {
-    //         let mut neighbor_col = col;
-    //         let mut neighbor_row = row;
-    //         if (i == 0) {
-    //             if neighbor_row == 0 {
-    //                 continue;
-    //             }
-    //             neighbor_row -= 1;
-    //         } else if (i == 1) {
-    //             if neighbor_col == 7 {
-    //                 continue;
-    //             }
-    //             neighbor_col += 1;
-    //         } else if (i == 2) {
-    //             if neighbor_row == 7 {
-    //                 continue;
-    //             }
-    //             neighbor_row += 1;
-    //         } else {
-    //             if neighbor_col == 0 {
-    //                 continue;
-    //             }
-    //             neighbor_col -= 1;
-    //         }
-
-    //         let neighbor_tile: Option<TileStruct> = *board
-    //             .tiles
-    //             .at((neighbor_col + neighbor_row * 8).into());
-
-    //         if neighbor_tile.is_some() {
-    //             let neighbor_tile: TileStruct = neighbor_tile.unwrap();
-    //             let neighbor_edges = neighbor_tile.edges.span();
-    //             let neighbor_edge: TEdge = *neighbor_edges.at(((i + 2) % 4).into());
-
-    //             if *edges.at(i.into()) != neighbor_edge {
-    //                 is_move_valid = false;
-    //                 break;
-    //             }
-    //         }
-    //     };
-
-    //     return true;
-    // }
 
     #[generate_trait]
     impl InternalImpl of InternalTrait {

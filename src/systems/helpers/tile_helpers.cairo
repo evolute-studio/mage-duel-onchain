@@ -36,7 +36,6 @@ pub fn create_extended_tile(tile: Tile, rotation: u8) -> ExtendedTile {
 
     let rotation = (rotation % 4);
 
-    // Rotate the edges
     for _ in 0..rotation {
         edges = [*edges[3], *edges[0], *edges[1], *edges[2]].span();
     };
