@@ -8,13 +8,13 @@ use origami_random::dice::{DiceTrait};
 use core::dict::Felt252Dict;
 
 use evolute_duel::{
-    events::{BoardCreated, BoardCreatedFromSnapshot},
-    models::{Board, Rules, Move}, packing::{GameState, TEdge, Tile, PlayerSide},
+    events::{BoardCreated, BoardCreatedFromSnapshot}, models::{Board, Rules, Move},
+    packing::{GameState, TEdge, Tile, PlayerSide},
     systems::helpers::{
         city_scoring::{connect_adjacent_city_edges, connect_city_edges_in_tile},
         road_scoring::{connect_adjacent_road_edges, connect_road_edges_in_tile},
         tile_helpers::{calcucate_tile_points},
-    }
+    },
 };
 
 use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -251,10 +251,9 @@ pub fn create_board_from_snapshot(
         let move: Move = world.read_model(move_id);
         current_move_id = move.prev_move_id;
     };
-    
+
     let mut move_ids = move_ids.span();
     let mut current_move_id = move_ids.pop_back();
-    
 
     for _ in 0..move_number {
         let move_id = *current_move_id.unwrap();
@@ -351,12 +350,12 @@ pub fn create_board_from_snapshot(
             };
 
             //Update board state
-            update_board_state(ref new_board, tile.into(), rotation, col, row, is_joker, player_side);
+            update_board_state(
+                ref new_board, tile.into(), rotation, col, row, is_joker, player_side,
+            );
 
             //Update joker number
-            update_board_joker_number(
-                ref new_board, player_side, is_joker,
-            );
+            update_board_joker_number(ref new_board, player_side, is_joker);
         }
         new_board.last_move_id = Option::Some(move_id);
         current_move_id = next_move_id;
@@ -384,7 +383,7 @@ pub fn create_board_from_snapshot(
             old_board.initial_edge_state.clone(),
         );
 
-    world 
+    world
         .emit_event(
             @BoardCreatedFromSnapshot {
                 board_id: new_board_id,
@@ -448,9 +447,9 @@ pub fn draw_tile_from_board_deck(ref board: Board) -> Option<u8> {
         return Option::None;
     }
     let mut dice = DiceTrait::new(
-        avaliable_tiles.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into(), 
+        avaliable_tiles.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into(),
     );
-    
+
     let mut next_tile = dice.roll() - 1;
 
     let tile: u8 = *avaliable_tiles.at(next_tile.into());
@@ -477,7 +476,7 @@ pub fn generate_initial_board_state(
 
     for side in 0..4_u8 {
         let mut deck = DeckTrait::new(
-            ('SEED' + side.into() + get_block_timestamp().into() + board_id).into(), 8
+            ('SEED' + side.into() + get_block_timestamp().into() + board_id).into(), 8,
         );
         let mut edge: Felt252Dict<u8> = Default::default();
         for i in 0..8_u8 {
