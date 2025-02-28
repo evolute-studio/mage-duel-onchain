@@ -235,7 +235,7 @@ pub fn create_board_from_snapshot(
         new_board.last_move_id = Option::Some(move_id);
         current_move_id = next_move_id;
     };
-    
+
     let mut updated_avaliable_tiles: Array<u8> = ArrayTrait::new();
     for i in 0..deck_rules_flat.len() {
         let tile = *deck_rules_flat.at(i.into());

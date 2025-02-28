@@ -49,11 +49,9 @@ mod tests {
 
     #[test]
     fn test_contest1() {
-        
         let caller = starknet::contract_address_const::<0x0>();
         let ndef = namespace_def();
 
-        
         let mut world = spawn_test_world([ndef].span());
         world.sync_perms_and_inits(contract_defs());
 
@@ -100,7 +98,6 @@ mod tests {
             state.append((Tile::Empty.into(), 0, 0));
         };
 
-        
         let tile_1 = Tile::FRRR;
         let col1 = 0;
         let row1 = 7;

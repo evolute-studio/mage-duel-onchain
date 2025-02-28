@@ -1,12 +1,24 @@
-// define the interface
+/// Interface defining actions for player profile management.
 #[starknet::interface]
 pub trait IPlayerProfileActions<T> {
+    /// Retrieves the player's balance.
     fn balance(ref self: T);
+
+    /// Retrieves the player's username.
     fn username(ref self: T);
+
+    /// Retrieves the player's active skin.
     fn active_skin(ref self: T);
+
+    /// Changes the player's username.
+    /// - `new_username`: The new username to be set.
     fn change_username(ref self: T, new_username: felt252);
+
+    /// Changes the player's active skin.
+    /// - `skin_id`: The ID of the new skin to be applied.
     fn change_skin(ref self: T, skin_id: u8);
 }
+
 
 // dojo decorator
 #[dojo::contract]

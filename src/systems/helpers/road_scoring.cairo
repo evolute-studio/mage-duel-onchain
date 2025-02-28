@@ -77,7 +77,7 @@ pub fn connect_adjacent_road_edges(
         let edge_pos = convert_board_position_to_node_position(tile_position, 2);
         if row != 0 {
             let down_edge_pos = convert_board_position_to_node_position(tile_position - 1, 0);
-            
+
             let (tile, rotation, _) = *state.at((tile_position - 1).into());
             let extended_down_tile = create_extended_tile(tile.into(), rotation);
             if *extended_down_tile.edges.at(0) == (TEdge::R).into() {
@@ -108,7 +108,7 @@ pub fn connect_adjacent_road_edges(
         let edge_pos = convert_board_position_to_node_position(tile_position, 0);
         if row != 7 {
             let up_edge_pos = convert_board_position_to_node_position(tile_position + 1, 2);
-           
+
             let (tile, rotation, _) = *state.at((tile_position + 1).into());
             let extended_up_tile = create_extended_tile(tile.into(), rotation);
             if *extended_up_tile.edges.at(2) == (TEdge::R).into() {
@@ -139,7 +139,7 @@ pub fn connect_adjacent_road_edges(
         let edge_pos = convert_board_position_to_node_position(tile_position, 3);
         if col != 0 {
             let left_edge_pos = convert_board_position_to_node_position(tile_position - 8, 1);
-            
+
             let (tile, rotation, _) = *state.at((tile_position - 8).into());
             let extended_left_tile = create_extended_tile(tile.into(), rotation);
             if *extended_left_tile.edges.at(1) == (TEdge::R).into() {
@@ -170,7 +170,7 @@ pub fn connect_adjacent_road_edges(
         let edge_pos = convert_board_position_to_node_position(tile_position, 1);
         if col != 7 {
             let right_edge_pos = convert_board_position_to_node_position(tile_position + 8, 3);
-            
+
             let (tile, rotation, _) = *state.at((tile_position + 8).into());
             let extended_right_tile = create_extended_tile(tile.into(), rotation);
             if *extended_right_tile.edges.at(3) == (TEdge::R).into() {
@@ -430,18 +430,15 @@ mod tests {
 
     #[test]
     fn test_connect_adjacent_road_edges() {
-        
         let caller = starknet::contract_address_const::<0x0>();
         let ndef = namespace_def();
 
-        
         let mut world = spawn_test_world([ndef].span());
         world.sync_perms_and_inits(contract_defs());
 
         let board_id = 1;
 
-        
-        let tile_position_1 = 10; 
+        let tile_position_1 = 10;
         let tile_position_2 = 18;
 
         let tile_1 = Tile::FRFR;
@@ -449,9 +446,8 @@ mod tests {
         let rotation = 0;
         let side = PlayerSide::Blue;
 
-        
         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
-        
+
         connect_road_edges_in_tile(
             ref world, board_id, tile_position_1, tile_1.into(), rotation, side.into(),
         );
@@ -470,7 +466,6 @@ mod tests {
             }
         };
 
-        
         connect_adjacent_road_edges(
             ref world,
             board_id,
@@ -493,7 +488,6 @@ mod tests {
             side.into(),
         );
 
-        
         let edge_pos_1 = convert_board_position_to_node_position(tile_position_1, 1);
         let edge_pos_2 = convert_board_position_to_node_position(tile_position_2, 3);
 
@@ -507,17 +501,14 @@ mod tests {
 
     #[test]
     fn test_connect_adjacent_road_edges_contest() {
-        
         let caller = starknet::contract_address_const::<0x0>();
         let ndef = namespace_def();
 
-        
         let mut world = spawn_test_world([ndef].span());
         world.sync_perms_and_inits(contract_defs());
 
         let board_id = 1;
 
-        
         let tile_position_1 = 10; // CCFF 
         let tile_position_2 = 11; // FCCF
         let tile_position_3 = 19; // FFCC
@@ -536,9 +527,8 @@ mod tests {
         let side3 = PlayerSide::Blue;
         let side4 = PlayerSide::Blue;
 
-        
         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
-        
+
         connect_road_edges_in_tile(
             ref world, board_id, tile_position_1, tile_1.into(), rotation1, side1.into(),
         );
@@ -588,7 +578,6 @@ mod tests {
             }
         };
 
-        
         connect_adjacent_road_edges(
             ref world,
             board_id,
@@ -696,7 +685,6 @@ mod tests {
         //println!("Rot4: {:?}", rot4);
         assert_eq!(rot4.open_edges, 0, "Road contest is not conducted correctly");
 
-        
         // 1 and 2
         let edge_pos_1 = convert_board_position_to_node_position(tile_position_1, 0);
         let edge_pos_2 = convert_board_position_to_node_position(tile_position_2, 2);
@@ -741,7 +729,6 @@ mod tests {
             edge_pos_1,
         );
 
-        
         let road_root = find(ref world, board_id, edge_pos_1);
         assert_eq!(road_root.open_edges, 0, "Road contest is not conducted correctly");
     }

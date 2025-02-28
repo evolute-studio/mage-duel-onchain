@@ -18,7 +18,7 @@ pub fn union(
 ) -> CityNode {
     let mut root1 = find(ref world, board_id, position1);
     let mut root2 = find(ref world, board_id, position2);
-    
+
     if root1.position == root2.position {
         if !in_tile {
             root1.open_edges -= 2;

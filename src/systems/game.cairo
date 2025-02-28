@@ -1,16 +1,37 @@
 use starknet::ContractAddress;
 
-// define the interface
+/// Interface defining core game actions and player interactions.
 #[starknet::interface]
 pub trait IGame<T> {
+    /// Creates a new game session.
     fn create_game(ref self: T);
+
+    /// Cancels an ongoing or pending game session.
     fn cancel_game(ref self: T);
+
+    /// Allows a player to join an existing game hosted by another player.
     fn join_game(ref self: T, host_player: ContractAddress);
+
+    /// Makes a move by placing a tile on the board.
+    /// - `joker_tile`: Optional joker tile played during the move.
+    /// - `rotation`: Rotation applied to the placed tile.
+    /// - `col`: Column where the tile is placed.
+    /// - `row`: Row where the tile is placed.
     fn make_move(ref self: T, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8);
+
+    /// Skips the current player's move.
     fn skip_move(ref self: T);
+
+    /// Creates a snapshot of the current game state.
+    /// - `board_id`: ID of the board being saved.
+    /// - `move_number`: Move number at the time of snapshot.
     fn create_snapshot(ref self: T, board_id: felt252, move_number: u8);
+
+    /// Restores a game session from a snapshot.
+    /// - `snapshot_id`: ID of the snapshot to restore from.
     fn create_game_from_snapshot(ref self: T, snapshot_id: felt252);
 }
+
 
 // dojo decorator
 #[dojo::contract]
@@ -291,10 +312,7 @@ pub mod game {
                 Option::None => {
                     match @board.top_tile {
                         Option::Some(top_tile) => { (*top_tile).into() },
-                        Option::None => {
-                            panic!("No tiles in the deck");
-                            return;
-                        },
+                        Option::None => { return panic!("No tiles in the deck"); },
                     }
                 },
             };
