@@ -235,6 +235,9 @@ pub mod game {
 
                 world.write_model(@game);
                 world.emit_event(@GameCanceled { host_player: another_player, status: new_status });
+
+                board.game_state = GameState::Finished;
+                world.write_model(@board);
             }
 
             let new_status = GameStatus::Canceled;
