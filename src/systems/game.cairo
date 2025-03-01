@@ -218,6 +218,7 @@ pub mod game {
 
             if status == GameStatus::InProgress {
                 let mut board: Board = world.read_model(game.board_id.unwrap());
+                let board_id = board.id.clone();
                 let (player1_address, _, _) = board.player1;
                 let (player2_address, _, _) = board.player2;
 
@@ -236,8 +237,12 @@ pub mod game {
                 world.write_model(@game);
                 world.emit_event(@GameCanceled { host_player: another_player, status: new_status });
 
-                board.game_state = GameState::Finished;
-                world.write_model(@board);
+                world
+                    .write_member(
+                        Model::<Board>::ptr_from_keys(board_id),
+                        selector!("game_state"),
+                        GameState::Finished,
+                    );
             }
 
             let new_status = GameStatus::Canceled;
