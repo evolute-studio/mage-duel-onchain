@@ -216,18 +216,34 @@ pub mod game {
             let mut game: Game = world.read_model(host_player);
             let status = game.status;
 
-            if status == GameStatus::Created {
+            if status == GameStatus::InProgress {
+                let mut board: Board = world.read_model(game.board_id.unwrap());
+                let (player1_address, _, _) = board.player1;
+                let (player2_address, _, _) = board.player2;
+
+                let another_player = if player1_address == host_player {
+                    player2_address
+                } else {
+                    player1_address
+                };
+
+                let mut game: Game = world.read_model(another_player);
                 let new_status = GameStatus::Canceled;
                 game.status = new_status;
                 game.board_id = Option::None;
                 game.snapshot_id = Option::None;
 
                 world.write_model(@game);
-
-                world.emit_event(@GameCanceled { host_player, status: new_status });
-            } else {
-                world.emit_event(@GameCreateFailed { host_player, status });
+                world.emit_event(@GameCanceled { host_player: another_player, status: new_status });
             }
+
+            let new_status = GameStatus::Canceled;
+            game.status = new_status;
+            game.board_id = Option::None;
+            game.snapshot_id = Option::None;
+
+            world.write_model(@game);
+            world.emit_event(@GameCanceled { host_player, status: new_status });
         }
 
         fn join_game(ref self: ContractState, host_player: ContractAddress) {
