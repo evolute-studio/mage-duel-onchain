@@ -383,25 +383,25 @@ pub mod game {
                 is_joker,
             };
 
-            //TODO: check if the move is valid
-            if !is_valid_move(
-                tile, rotation, col, row, board.state.span(), board.initial_edge_state.span(),
-            ) {
-                world
-                    .emit_event(
-                        @InvalidMove {
-                            player,
-                            prev_move_id: move.prev_move_id,
-                            tile: move.tile,
-                            rotation: move.rotation,
-                            col: move.col,
-                            row: move.row,
-                            is_joker: move.is_joker,
-                            board_id,
-                        },
-                    );
-                return;
-            }
+            //TODO: revert invalid move when it's stable
+            // if !is_valid_move(
+            //     tile, rotation, col, row, board.state.span(), board.initial_edge_state.span(),
+            // ) {
+            //     world
+            //         .emit_event(
+            //             @InvalidMove {
+            //                 player,
+            //                 prev_move_id: move.prev_move_id,
+            //                 tile: move.tile,
+            //                 rotation: move.rotation,
+            //                 col: move.col,
+            //                 row: move.row,
+            //                 is_joker: move.is_joker,
+            //                 board_id,
+            //             },
+            //         );
+            //     return;
+            // }
 
             let top_tile = if !is_joker {
                 draw_tile_from_board_deck(ref board)
