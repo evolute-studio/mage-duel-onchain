@@ -381,6 +381,7 @@ pub mod game {
                 col,
                 row,
                 is_joker,
+                first_board_id: board_id,
             };
 
             //TODO: check if the move is valid
@@ -859,6 +860,7 @@ pub mod game {
                 col: 0,
                 row: 0,
                 is_joker: false,
+                first_board_id: board_id,
             };
 
             board.last_move_id = Option::Some(move_id);
