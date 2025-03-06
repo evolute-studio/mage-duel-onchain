@@ -48,7 +48,7 @@ pub mod game {
         systems::helpers::{
             board::{
                 create_board, draw_tile_from_board_deck, update_board_state,
-                update_board_joker_number, create_board_from_snapshot,
+                update_board_joker_number, create_board_from_snapshot, update_board,
             },
             city_scoring::{
                 connect_city_edges_in_tile, connect_adjacent_city_edges, close_all_cities,
@@ -290,12 +290,7 @@ pub mod game {
                 let mut board: Board = world.read_model(board_id);
                 let (_, player1_side, joker_number1) = board.player2;
                 board.player2 = (guest_player, player1_side, joker_number1);
-                world
-                    .write_member(
-                        Model::<Board>::ptr_from_keys(board.id),
-                        selector!("player2"),
-                        board.player2,
-                    );
+                update_board(ref world, board);
 
                 board_id
             };

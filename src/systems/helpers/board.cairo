@@ -21,7 +21,6 @@ use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAcces
 
 use core::starknet::get_block_timestamp;
 
-
 pub fn create_board(
     ref world: WorldStorage,
     player1: ContractAddress,
@@ -279,6 +278,19 @@ pub fn create_board_from_snapshot(
 
     board_id_generator.write(new_board_id + 1);
     new_board_id
+}
+
+pub fn update_board(ref world: WorldStorage, board: Board) {
+    world.write_member(Model::<Board>::ptr_from_keys(board.id), selector!("state"), board.state);
+    world.write_member(Model::<Board>::ptr_from_keys(board.id), selector!("blue_score"), board.blue_score);
+    world.write_member(Model::<Board>::ptr_from_keys(board.id), selector!("red_score"), board.red_score);
+    world.write_member(Model::<Board>::ptr_from_keys(board.id), selector!("last_move_id"), board.last_move_id);
+    world.write_member(Model::<Board>::ptr_from_keys(board.id), selector!("game_state"), board.game_state);
+    world.write_member(Model::<Board>::ptr_from_keys(board.id), selector!("top_tile"), board.top_tile);
+    world.write_member(Model::<Board>::ptr_from_keys(board.id), selector!("available_tiles_in_deck"), board.available_tiles_in_deck);
+    world.write_member(Model::<Board>::ptr_from_keys(board.id), selector!("player1"), board.player1);
+    world.write_member(Model::<Board>::ptr_from_keys(board.id), selector!("player2"), board.player2);
+    world.write_member(Model::<Board>::ptr_from_keys(board.id), selector!("initial_edge_state"), board.initial_edge_state);
 }
 
 pub fn update_board_state(
