@@ -1,7 +1,7 @@
 [package]
 cairo-version = "=2.9.2"
 name = "evolute_duel"
-version = "1.2.1"
+version = "1.2.2"
 edition = "2024_07"
 
 [cairo]
@@ -40,7 +40,7 @@ cancel_game1 = "sozo --release execute evolute_duel-game cancel_game --account-a
 
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.1" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.2" }
 origami_random = { git = "https://github.com/dojoengine/origami" }
 
 
@@ -49,7 +49,7 @@ build-external-contracts = ["dojo::world::world_contract::world"]
 
 [dev-dependencies]
 cairo_test = "=2.9.2"
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.1" }
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.2" }
 assert_macros = "2.9.2"
 
 [profile.provable]
