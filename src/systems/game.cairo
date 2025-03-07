@@ -78,8 +78,7 @@ pub mod game {
         let mut world = self.world(@"evolute_duel");
         let id = 0;
         let deck: Array<u8> = array![
-            1, // CCCC
-            1, // FFFF
+            2, // CCCC
             0, // RRRR - not in the deck
             4, // CCCF
             3, // CCCR
