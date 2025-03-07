@@ -79,6 +79,7 @@ pub mod game {
         let id = 0;
         let deck: Array<u8> = array![
             2, // CCCC
+            0, // FFFF
             0, // RRRR - not in the deck
             4, // CCCF
             3, // CCCR
