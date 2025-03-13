@@ -155,10 +155,6 @@ pub fn calculate_adjacent_edge_points(
     tile: Tile,
     rotation: u8,
 ) -> (u16, u16) {
-    if col != 0 || col != 7 || row != 0 || row != 7 {
-        return (0, 0);
-    }
-
     let mut city_points = 0;
     let mut road_points = 0;
 
