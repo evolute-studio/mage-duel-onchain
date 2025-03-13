@@ -147,3 +147,55 @@ pub fn tile_city_number(tile: Tile) -> u8 {
         Tile::Empty => 0,
     }
 }
+
+pub fn calculate_adjacent_edge_points(
+    initial_edge_state: Array<u8>,
+    col: u8,
+    row: u8,
+    tile: Tile,
+    rotation: u8,
+) -> (u16, u16) {
+    if col != 0 || col != 7 || row != 0 || row != 7 {
+        return (0, 0);
+    }
+
+    let mut city_points = 0;
+    let mut road_points = 0;
+
+    let extended_tile = create_extended_tile(tile, rotation);
+    let edges = extended_tile.edges;
+
+    if col == 0 && *initial_edge_state.at((31 - row).into()) == (*edges.at(3)).into() {
+        if *edges.at(3) == TEdge::C {
+            city_points += 2;
+        } else if *edges.at(3) == TEdge::R {
+            road_points += 1;
+        }
+    }
+
+    if col == 7 && *initial_edge_state.at((8 + row).into()) == (*edges.at(1)).into() {
+        if *edges.at(1) == TEdge::C {
+            city_points += 2;
+        } else if *edges.at(1) == TEdge::R {
+            road_points += 1;
+        }
+    }
+
+    if row == 0 && *initial_edge_state.at(col.into()) == (*edges.at(2)).into() {
+        if *edges.at(2) == TEdge::C {
+            city_points += 2;
+        } else if *edges.at(2) == TEdge::R {
+            road_points += 1;
+        }
+    }
+
+    if row == 7 && *initial_edge_state.at((23 - col).into()) == (*edges.at(0)).into() {
+        if *edges.at(0) == TEdge::C {
+            city_points += 2;
+        } else if *edges.at(0) == TEdge::R {
+            road_points += 1;
+        }
+    }
+
+    (city_points, road_points)
+}

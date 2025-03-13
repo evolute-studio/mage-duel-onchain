@@ -56,7 +56,7 @@ pub mod game {
             road_scoring::{
                 connect_road_edges_in_tile, connect_adjacent_road_edges, close_all_roads,
             },
-            tile_helpers::{calcucate_tile_points}, validation::{is_valid_move},
+            tile_helpers::{calcucate_tile_points, calculate_adjacent_edge_points}, validation::{is_valid_move},
         },
         packing::{GameStatus, Tile, GameState, PlayerSide},
     };
@@ -410,8 +410,18 @@ pub mod game {
                 board.top_tile
             };
 
-            let tile_points = calcucate_tile_points(tile);
-            let (city_points, road_points) = tile_points;
+            let (tile_city_points, tile_road_points) = calcucate_tile_points(tile);
+            let (edges_city_points, edges_road_points) = calculate_adjacent_edge_points(
+                board.initial_edge_state.clone(),
+                col,
+                row,
+                tile.into(),
+                rotation,
+            );
+            let (city_points, road_points) = (
+                tile_city_points + edges_city_points,
+                tile_road_points + edges_road_points,
+            );
             if player_side == PlayerSide::Blue {
                 let (old_city_points, old_road_points) = board.blue_score;
                 board.blue_score = (old_city_points + city_points, old_road_points + road_points);
