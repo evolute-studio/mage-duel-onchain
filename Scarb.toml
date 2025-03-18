@@ -54,4 +54,4 @@ assert_macros = "2.9.2"
 
 [profile.provable]
 
-# [profile.test]
+[profile.testing]
