@@ -228,6 +228,7 @@ pub struct Player {
     pub balance: u16,
     pub games_played: felt252,
     pub active_skin: u8,
+    pub is_bot: bool,
 }
 
 /// Represents a shop where players can purchase in-game items.

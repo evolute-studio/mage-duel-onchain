@@ -17,6 +17,9 @@ pub trait IPlayerProfileActions<T> {
     /// Changes the player's active skin.
     /// - `skin_id`: The ID of the new skin to be applied.
     fn change_skin(ref self: T, skin_id: u8);
+
+    /// Player becomes a bot
+    fn become_bot(ref self: T);
 }
 
 
@@ -112,6 +115,14 @@ pub mod player_profile_actions {
                 .emit_event(
                     @CurrentPlayerActiveSkin { player_id, active_skin: player.active_skin },
                 );
+        }
+
+        fn become_bot(ref self: ContractState) {
+            let mut world = self.world_default();
+            let player_id = get_caller_address();
+            let mut player: Player = world.read_model(player_id);
+            player.is_bot = true;
+            world.write_model(@player);
         }
     }
 
