@@ -48,7 +48,7 @@ pub mod game {
         systems::helpers::{
             board::{
                 create_board, draw_tile_from_board_deck, update_board_state,
-                update_board_joker_number, create_board_from_snapshot,
+                update_board_joker_number, create_board_from_snapshot, redraw_tile_from_board_deck
             },
             city_scoring::{
                 connect_city_edges_in_tile, connect_adjacent_city_edges, close_all_cities,
@@ -873,6 +873,8 @@ pub mod game {
                 first_board_id: board_id,
             };
 
+            redraw_tile_from_board_deck(ref board);
+
             board.last_move_id = Option::Some(move_id);
             self.move_id_generator.write(move_id + 1);
 
@@ -904,6 +906,18 @@ pub mod game {
                     Model::<Board>::ptr_from_keys(board_id),
                     selector!("game_state"),
                     board.game_state,
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("available_tiles_in_deck"),
+                    board.available_tiles_in_deck.clone(),
+                );
+            
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
                 );
 
             world

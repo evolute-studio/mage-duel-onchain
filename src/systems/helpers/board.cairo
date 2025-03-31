@@ -343,6 +343,37 @@ pub fn draw_tile_from_board_deck(ref board: Board) -> Option<u8> {
     return Option::Some(tile);
 }
 
+pub fn redraw_tile_from_board_deck(ref board: Board) {
+    let mut avaliable_tiles: Array<u8> = board.available_tiles_in_deck.clone();
+    
+    if board.top_tile.is_some() {
+        avaliable_tiles.append(board.top_tile.unwrap());
+    }
+
+    if avaliable_tiles.len() == 0 {
+        board.top_tile = Option::None;
+        return;
+    }
+    let mut dice = DiceTrait::new(
+        avaliable_tiles.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into(),
+    );
+
+    let mut next_tile = dice.roll() - 1;
+
+    let tile: u8 = *avaliable_tiles.at(next_tile.into());
+
+    // Remove the drawn tile from the deck.
+    let mut updated_available_tiles: Array<u8> = ArrayTrait::new();
+    for i in 0..avaliable_tiles.len() {
+        if i != next_tile.into() {
+            updated_available_tiles.append(*avaliable_tiles.at(i.into()));
+        }
+    };
+
+    board.available_tiles_in_deck = updated_available_tiles.clone();
+    board.top_tile = Option::Some(tile.into());
+}
+
 
 pub fn generate_initial_board_state(
     cities_on_edges: u8, roads_on_edges: u8, board_id: felt252,
