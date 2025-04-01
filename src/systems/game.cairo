@@ -37,7 +37,7 @@ pub trait IGame<T> {
 #[dojo::contract]
 pub mod game {
     use super::{IGame};
-    use starknet::{ContractAddress, get_caller_address};
+    use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
     use evolute_duel::{
         models::{Board, Rules, Move, Game, Snapshot, Player},
         events::{
@@ -72,6 +72,8 @@ pub mod game {
         move_id_generator: felt252,
         snapshot_id_generator: felt252,
     }
+
+    const MOVE_TIME : u64 = 2 * 60; // 2 min
 
 
     fn dojo_init(self: @ContractState) {
@@ -367,8 +369,16 @@ pub mod game {
                 let prev_player_side = prev_move.player_side;
 
                 if player_side == prev_player_side {
-                    world.emit_event(@NotYourTurn { player_id: player, board_id });
-                    return;
+                    let time = get_block_timestamp();
+                    let prev_move_time = prev_move.timestamp;
+                    if time - prev_move_time > MOVE_TIME && time - prev_move_time <= 2 * MOVE_TIME {
+                        //Skip the move of the previous player
+                        let another_player = if player == player1_address {player2_address} else {player1_address};
+                        self._skip_move(another_player, self.move_id_generator)
+                    } else {
+                        world.emit_event(@NotYourTurn { player_id: player, board_id });
+                        return;
+                    }
                 }
             };
 
@@ -382,6 +392,7 @@ pub mod game {
                 row,
                 is_joker,
                 first_board_id: board_id,
+                timestamp: get_block_timestamp(),
             };
 
             //TODO: revert invalid move when it's stable
@@ -707,8 +718,23 @@ pub mod game {
         }
 
         fn skip_move(ref self: ContractState) {
-            let mut world = self.world_default();
             let player = get_caller_address();
+        
+            self._skip_move(player, self.move_id_generator);
+        }
+    }
+
+
+    #[generate_trait]
+    impl InternalImpl of InternalTrait {
+        fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
+            self.world(@"evolute_duel")
+        }
+
+        fn _skip_move(self: @ContractState, player: ContractAddress, move_id_generator: core::starknet::storage::StorageBase::<
+            core::starknet::storage::Mutable<core::felt252>,
+        >) {
+            let mut world = self.world_default();
             let game: Game = world.read_model(player);
 
             if game.board_id.is_none() {
@@ -724,7 +750,7 @@ pub mod game {
                 return;
             }
 
-            let move_id = self.move_id_generator.read();
+            let move_id = move_id_generator.read();
 
             let (player1_address, player1_side, _) = board.player1;
             let (player2_address, player2_side, _) = board.player2;
@@ -745,8 +771,16 @@ pub mod game {
                 let prev_player_side = prev_move.player_side;
 
                 if player_side == prev_player_side {
-                    world.emit_event(@NotYourTurn { player_id: player, board_id });
-                    return;
+                    let time = get_block_timestamp();
+                    let prev_move_time = prev_move.timestamp;
+                    if time - prev_move_time > MOVE_TIME && time - prev_move_time <= 2 * MOVE_TIME {
+                        //Skip the move of the previous player
+                        let another_player = if player == player1_address {player2_address} else {player1_address};
+                        self._skip_move(another_player, move_id_generator)
+                    } else {
+                        world.emit_event(@NotYourTurn { player_id: player, board_id });
+                        return;
+                    }
                 }
 
                 if prev_move.tile.is_none() && !prev_move.is_joker {
@@ -871,12 +905,13 @@ pub mod game {
                 row: 0,
                 is_joker: false,
                 first_board_id: board_id,
+                timestamp: get_block_timestamp(),
             };
 
             redraw_tile_from_board_deck(ref board);
 
             board.last_move_id = Option::Some(move_id);
-            self.move_id_generator.write(move_id + 1);
+            move_id_generator.write(move_id + 1);
 
             world.write_model(@move);
 
@@ -937,14 +972,6 @@ pub mod game {
                         game_state: board.game_state,
                     },
                 );
-        }
-    }
-
-
-    #[generate_trait]
-    impl InternalImpl of InternalTrait {
-        fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
-            self.world(@"evolute_duel")
-        }
+        }            
     }
 }
