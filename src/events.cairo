@@ -116,6 +116,7 @@ pub struct Moved {
     pub row: u8,
     pub is_joker: bool,
     pub board_id: felt252,
+    pub timestamp: u64,
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Debug)]
@@ -126,6 +127,7 @@ pub struct Skiped {
     pub player: ContractAddress,
     pub prev_move_id: Option<felt252>,
     pub board_id: felt252,
+    pub timestamp: u64,
 }
 
 

@@ -333,16 +333,6 @@ pub mod game {
 
             let move_id = self.move_id_generator.read();
 
-            let tile: Tile = match joker_tile {
-                Option::Some(tile_index) => { tile_index.into() },
-                Option::None => {
-                    match @board.top_tile {
-                        Option::Some(top_tile) => { (*top_tile).into() },
-                        Option::None => { return panic!("No tiles in the deck"); },
-                    }
-                },
-            };
-
             let (player1_address, player1_side, joker_number1) = board.player1;
             let (player2_address, player2_side, joker_number2) = board.player2;
 
@@ -381,6 +371,16 @@ pub mod game {
                         return;
                     }
                 }
+            };
+
+            let tile: Tile = match joker_tile {
+                Option::Some(tile_index) => { tile_index.into() },
+                Option::None => {
+                    match @board.top_tile {
+                        Option::Some(top_tile) => { (*top_tile).into() },
+                        Option::None => { return panic!("No tiles in the deck"); },
+                    }
+                },
             };
 
             let move = Move {
@@ -594,6 +594,7 @@ pub mod game {
                         row: move.row,
                         is_joker: move.is_joker,
                         board_id,
+                        timestamp: move.timestamp,
                     },
                 );
             world
@@ -671,6 +672,7 @@ pub mod game {
             };
         
             self._skip_move(player, player_side, ref board, self.move_id_generator);
+
             redraw_tile_from_board_deck(ref board);
             world
                 .write_member(
@@ -699,6 +701,8 @@ pub mod game {
             let move_id = self.move_id_generator.read();
             let board_id = board.id;
 
+            let timestamp = get_block_timestamp();
+
             let move = Move {
                 id: move_id,
                 prev_move_id: board.last_move_id,
@@ -709,7 +713,7 @@ pub mod game {
                 row: 0,
                 is_joker: false,
                 first_board_id: board_id,
-                timestamp: get_block_timestamp(),
+                timestamp,
             };
 
 
@@ -726,7 +730,7 @@ pub mod game {
                 );
 
             world
-                .emit_event(@Skiped { move_id, player, prev_move_id: move.prev_move_id, board_id });
+                .emit_event(@Skiped { move_id, player, prev_move_id: move.prev_move_id, board_id, timestamp});
             world
                 .emit_event(
                     @BoardUpdated {
