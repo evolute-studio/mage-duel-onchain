@@ -359,12 +359,22 @@ pub mod game {
                 if player_side == prev_player_side {
                     let time = get_block_timestamp();
                     let prev_move_time = prev_move.timestamp;
-                    if time - prev_move_time > MOVE_TIME && time - prev_move_time <= 2 * MOVE_TIME {
+                    let time_delta = time - prev_move_time;
+                    if time_delta > MOVE_TIME {
                         //Skip the move of the previous player
                         let another_player = if player == player1_address {player2_address} else {player1_address};
                         let another_player_side = if player == player1_address {player2_side} else {player1_side};
                         self._skip_move(another_player, another_player_side, ref board, self.move_id_generator)
-                    } else {
+                    } 
+                    
+                    if time_delta > 2 * MOVE_TIME {
+                        //FINISH THE GAME
+                        self._skip_move(player, player_side, ref board, self.move_id_generator);
+                        self._finish_game(ref board);
+                        return;
+                    }
+                    
+                    if time_delta <= MOVE_TIME {
                         world.emit_event(@NotYourTurn { player_id: player, board_id });
                         return;
                     }
@@ -655,12 +665,22 @@ pub mod game {
                 if player_side == prev_player_side {
                     let time = get_block_timestamp();
                     let prev_move_time = prev_move.timestamp;
-                    if time - prev_move_time > MOVE_TIME && time - prev_move_time <= 2 * MOVE_TIME {
+                    let time_delta = time - prev_move_time;
+                    if time_delta > MOVE_TIME {
                         //Skip the move of the previous player
                         let another_player = if player == player1_address {player2_address} else {player1_address};
                         let another_player_side = if player == player1_address {player2_side} else {player1_side};
                         self._skip_move(another_player, another_player_side, ref board, self.move_id_generator)
-                    } else {
+                    } 
+                    
+                    if time_delta > 2 * MOVE_TIME {
+                        //FINISH THE GAME
+                        self._skip_move(player, player_side, ref board, self.move_id_generator);
+                        self._finish_game(ref board);
+                        return;
+                    }
+                    
+                    if time_delta <= MOVE_TIME {
                         world.emit_event(@NotYourTurn { player_id: player, board_id });
                         return;
                     }
