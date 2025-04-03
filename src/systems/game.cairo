@@ -30,6 +30,9 @@ pub trait IGame<T> {
     /// Restores a game session from a snapshot.
     /// - `snapshot_id`: ID of the snapshot to restore from.
     fn create_game_from_snapshot(ref self: T, snapshot_id: felt252);
+
+    /// Finishes the game and determines the winner.
+    fn finish_game(ref self: T, board_id: felt252);
 }
 
 
@@ -44,6 +47,7 @@ pub mod game {
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
             PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
             Skiped, Moved, SnapshotCreated, SnapshotCreateFailed, CurrentPlayerBalance, InvalidMove,
+            CantFinishGame,
         },
         systems::helpers::{
             board::{
@@ -355,11 +359,11 @@ pub mod game {
                 let prev_move_id = prev_move_id.unwrap();
                 let prev_move: Move = world.read_model(prev_move_id);
                 let prev_player_side = prev_move.player_side;
+                let time = get_block_timestamp();
+                let prev_move_time = prev_move.timestamp;
+                let time_delta = time - prev_move_time;
 
-                if player_side == prev_player_side {
-                    let time = get_block_timestamp();
-                    let prev_move_time = prev_move.timestamp;
-                    let time_delta = time - prev_move_time;
+                if player_side == prev_player_side {    
                     if time_delta > MOVE_TIME {
                         //Skip the move of the previous player
                         let another_player = if player == player1_address {player2_address} else {player1_address};
@@ -367,14 +371,12 @@ pub mod game {
                         self._skip_move(another_player, another_player_side, ref board, self.move_id_generator)
                     } 
                     
-                    if time_delta > 2 * MOVE_TIME {
-                        //FINISH THE GAME
-                        self._skip_move(player, player_side, ref board, self.move_id_generator);
-                        self._finish_game(ref board);
+                    if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
+                        world.emit_event(@NotYourTurn { player_id: player, board_id });
                         return;
                     }
-                    
-                    if time_delta <= MOVE_TIME {
+                } else {
+                    if time_delta > MOVE_TIME {
                         world.emit_event(@NotYourTurn { player_id: player, board_id });
                         return;
                     }
@@ -661,11 +663,12 @@ pub mod game {
                 let prev_move_id = prev_move_id.unwrap();
                 let prev_move: Move = world.read_model(prev_move_id);
                 let prev_player_side = prev_move.player_side;
+                
+                let time = get_block_timestamp();
+                let prev_move_time = prev_move.timestamp;
+                let time_delta = time - prev_move_time;
 
-                if player_side == prev_player_side {
-                    let time = get_block_timestamp();
-                    let prev_move_time = prev_move.timestamp;
-                    let time_delta = time - prev_move_time;
+                if player_side == prev_player_side {    
                     if time_delta > MOVE_TIME {
                         //Skip the move of the previous player
                         let another_player = if player == player1_address {player2_address} else {player1_address};
@@ -673,18 +676,19 @@ pub mod game {
                         self._skip_move(another_player, another_player_side, ref board, self.move_id_generator)
                     } 
                     
-                    if time_delta > 2 * MOVE_TIME {
-                        //FINISH THE GAME
-                        self._skip_move(player, player_side, ref board, self.move_id_generator);
-                        self._finish_game(ref board);
+                    if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
+                        world.emit_event(@NotYourTurn { player_id: player, board_id });
                         return;
                     }
-                    
-                    if time_delta <= MOVE_TIME {
+                } else {
+                    if time_delta > MOVE_TIME {
                         world.emit_event(@NotYourTurn { player_id: player, board_id });
                         return;
                     }
                 }
+
+                let prev_move_id = board.last_move_id.unwrap();
+                let prev_move: Move = world.read_model(prev_move_id);
 
                 if prev_move.tile.is_none() && !prev_move.is_joker {
                     //FINISH THE GAME
@@ -705,6 +709,37 @@ pub mod game {
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
                 );
+        }
+
+        fn finish_game(ref self: ContractState, board_id: felt252) {
+            let player = get_caller_address();
+
+            let mut world = self.world_default();
+            let game: Game = world.read_model(player);
+
+            if game.board_id.is_none() || game.board_id.unwrap() != board_id {
+                world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
+                return;
+            }
+
+            let mut board: Board = world.read_model(board_id);
+
+            if game.status == GameStatus::Finished {
+                world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
+                return;
+            }
+
+            let last_move: Move = world.read_model(board.last_move_id.unwrap());
+            let timestamp = get_block_timestamp();
+            let time_delta = timestamp - last_move.timestamp;
+            if time_delta > 2 * MOVE_TIME {
+                //FINISH THE GAME
+                self._finish_game(ref board);
+                return;
+            } else {
+                world.emit_event(@CantFinishGame { player_id: player, board_id });
+                return;
+            }
         }
     }
 

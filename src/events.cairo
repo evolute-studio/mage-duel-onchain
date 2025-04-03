@@ -240,6 +240,14 @@ pub struct GameIsAlreadyFinished {
     pub board_id: felt252,
 }
 
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct CantFinishGame {
+    #[key]
+    pub player_id: ContractAddress,
+    pub board_id: felt252,
+}
+
 // --------------------------------------
 // Contest Events
 // --------------------------------------
