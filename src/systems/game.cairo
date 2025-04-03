@@ -331,8 +331,6 @@ pub mod game {
                 return;
             }
 
-            let move_id = self.move_id_generator.read();
-
             let (player1_address, player1_side, joker_number1) = board.player1;
             let (player2_address, player2_side, joker_number2) = board.player2;
 
@@ -382,6 +380,9 @@ pub mod game {
                     }
                 },
             };
+            
+            let move_id = self.move_id_generator.read();
+
 
             let move = Move {
                 id: move_id,
