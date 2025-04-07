@@ -30,6 +30,9 @@ pub trait IGame<T> {
     /// Restores a game session from a snapshot.
     /// - `snapshot_id`: ID of the snapshot to restore from.
     fn create_game_from_snapshot(ref self: T, snapshot_id: felt252);
+
+    /// Finishes the game and determines the winner.
+    fn finish_game(ref self: T, board_id: felt252);
 }
 
 
@@ -37,13 +40,14 @@ pub trait IGame<T> {
 #[dojo::contract]
 pub mod game {
     use super::{IGame};
-    use starknet::{ContractAddress, get_caller_address};
+    use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
     use evolute_duel::{
         models::{Board, Rules, Move, Game, Snapshot, Player},
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
             PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
             Skiped, Moved, SnapshotCreated, SnapshotCreateFailed, CurrentPlayerBalance, InvalidMove,
+            CantFinishGame,
         },
         systems::helpers::{
             board::{
@@ -72,6 +76,8 @@ pub mod game {
         move_id_generator: felt252,
         snapshot_id_generator: felt252,
     }
+
+    const MOVE_TIME : u64 = 2 * 60; // 2 min
 
 
     fn dojo_init(self: @ContractState) {
@@ -329,18 +335,6 @@ pub mod game {
                 return;
             }
 
-            let move_id = self.move_id_generator.read();
-
-            let tile: Tile = match joker_tile {
-                Option::Some(tile_index) => { tile_index.into() },
-                Option::None => {
-                    match @board.top_tile {
-                        Option::Some(top_tile) => { (*top_tile).into() },
-                        Option::None => { return panic!("No tiles in the deck"); },
-                    }
-                },
-            };
-
             let (player1_address, player1_side, joker_number1) = board.player1;
             let (player2_address, player2_side, joker_number2) = board.player2;
 
@@ -365,12 +359,42 @@ pub mod game {
                 let prev_move_id = prev_move_id.unwrap();
                 let prev_move: Move = world.read_model(prev_move_id);
                 let prev_player_side = prev_move.player_side;
+                let time = get_block_timestamp();
+                let prev_move_time = prev_move.timestamp;
+                let time_delta = time - prev_move_time;
 
-                if player_side == prev_player_side {
-                    world.emit_event(@NotYourTurn { player_id: player, board_id });
-                    return;
+                if player_side == prev_player_side {    
+                    if time_delta > MOVE_TIME {
+                        //Skip the move of the previous player
+                        let another_player = if player == player1_address {player2_address} else {player1_address};
+                        let another_player_side = if player == player1_address {player2_side} else {player1_side};
+                        self._skip_move(another_player, another_player_side, ref board, self.move_id_generator)
+                    } 
+                    
+                    if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
+                        world.emit_event(@NotYourTurn { player_id: player, board_id });
+                        return;
+                    }
+                } else {
+                    if time_delta > MOVE_TIME {
+                        world.emit_event(@NotYourTurn { player_id: player, board_id });
+                        return;
+                    }
                 }
             };
+
+            let tile: Tile = match joker_tile {
+                Option::Some(tile_index) => { tile_index.into() },
+                Option::None => {
+                    match @board.top_tile {
+                        Option::Some(top_tile) => { (*top_tile).into() },
+                        Option::None => { return panic!("No tiles in the deck"); },
+                    }
+                },
+            };
+            
+            let move_id = self.move_id_generator.read();
+
 
             let move = Move {
                 id: move_id,
@@ -382,27 +406,28 @@ pub mod game {
                 row,
                 is_joker,
                 first_board_id: board_id,
+                timestamp: get_block_timestamp(),
             };
 
             //TODO: revert invalid move when it's stable
-            // if !is_valid_move(
-            //     tile, rotation, col, row, board.state.span(), board.initial_edge_state.span(),
-            // ) {
-            //     world
-            //         .emit_event(
-            //             @InvalidMove {
-            //                 player,
-            //                 prev_move_id: move.prev_move_id,
-            //                 tile: move.tile,
-            //                 rotation: move.rotation,
-            //                 col: move.col,
-            //                 row: move.row,
-            //                 is_joker: move.is_joker,
-            //                 board_id,
-            //             },
-            //         );
-            //     return;
-            // }
+            if !is_valid_move(
+                tile, rotation, col, row, board.state.span(), board.initial_edge_state.span(),
+            ) {
+                world
+                    .emit_event(
+                        @InvalidMove {
+                            player,
+                            prev_move_id: move.prev_move_id,
+                            tile: move.tile,
+                            rotation: move.rotation,
+                            col: move.col,
+                            row: move.row,
+                            is_joker: move.is_joker,
+                            board_id,
+                        },
+                    );
+                return;
+            }
 
             let top_tile = if !is_joker {
                 draw_tile_from_board_deck(ref board)
@@ -508,112 +533,7 @@ pub mod game {
 
             if top_tile.is_none() && joker_number1 == 0 && joker_number2 == 0 {
                 //FINISH THE GAME
-
-                let city_scoring_results = close_all_cities(ref world, board_id);
-                for i in 0..city_scoring_results.len() {
-                    let city_scoring_result = *city_scoring_results.at(i.into());
-                    if city_scoring_result.is_some() {
-                        let (winner, points_delta) = city_scoring_result.unwrap();
-                        if winner == PlayerSide::Blue {
-                            let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                            board
-                                .blue_score =
-                                    (old_blue_city_points + points_delta, old_blue_road_points);
-                            let (old_red_city_points, old_red_road_points) = board.red_score;
-                            board
-                                .red_score =
-                                    (old_red_city_points - points_delta, old_red_road_points);
-                        } else {
-                            let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                            board
-                                .blue_score =
-                                    (old_blue_city_points - points_delta, old_blue_road_points);
-                            let (old_red_city_points, old_red_road_points) = board.red_score;
-                            board
-                                .red_score =
-                                    (old_red_city_points + points_delta, old_red_road_points);
-                        }
-                    }
-                };
-
-                let road_scoring_results = close_all_roads(ref world, board_id);
-                for i in 0..road_scoring_results.len() {
-                    let road_scoring_result = *road_scoring_results.at(i.into());
-                    if road_scoring_result.is_some() {
-                        let (winner, points_delta) = road_scoring_result.unwrap();
-                        if winner == PlayerSide::Blue {
-                            let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                            board
-                                .blue_score =
-                                    (old_blue_city_points, old_blue_road_points + points_delta);
-                            let (old_red_city_points, old_red_road_points) = board.red_score;
-                            board
-                                .red_score =
-                                    (old_red_city_points, old_red_road_points - points_delta);
-                        } else {
-                            let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                            board
-                                .blue_score =
-                                    (old_blue_city_points, old_blue_road_points - points_delta);
-                            let (old_red_city_points, old_red_road_points) = board.red_score;
-                            board
-                                .red_score =
-                                    (old_red_city_points, old_red_road_points + points_delta);
-                        }
-                    }
-                };
-
-                board.game_state = GameState::Finished;
-                let mut host_game: Game = world.read_model(player1_address);
-                let mut guest_game: Game = world.read_model(player2_address);
-                host_game.status = GameStatus::Finished;
-                guest_game.status = GameStatus::Finished;
-
-                world.write_model(@host_game);
-                world.write_model(@guest_game);
-
-                world.emit_event(@GameFinished { host_player: player1_address, board_id });
-                world.emit_event(@GameFinished { host_player: player2_address, board_id });
-
-                let mut player1: Player = world.read_model(player1_address);
-                let mut player2: Player = world.read_model(player2_address);
-
-                let rules: Rules = world.read_model(0);
-                let joker_price = rules.joker_price;
-                let blue_joker_points = joker_number1.into() * joker_price;
-                let red_joker_points = joker_number2.into() * joker_price;
-
-                if player1_side == PlayerSide::Blue {
-                    let (city_points, road_points) = board.blue_score;
-                    player1.balance += city_points + road_points;
-                    let (city_points, road_points) = board.red_score;
-                    player2.balance += city_points + road_points;
-                    player1.balance += blue_joker_points;
-                    player2.balance += red_joker_points;
-                } else {
-                    let (city_points, road_points) = board.red_score;
-                    player1.balance += city_points + road_points;
-                    let (city_points, road_points) = board.blue_score;
-                    player2.balance += city_points + road_points;
-                    player1.balance += red_joker_points;
-                    player2.balance += blue_joker_points;
-                }
-
-                world.write_model(@player1);
-                world
-                    .emit_event(
-                        @CurrentPlayerBalance {
-                            player_id: player1_address, balance: player1.balance,
-                        },
-                    );
-
-                world.write_model(@player2);
-                world
-                    .emit_event(
-                        @CurrentPlayerBalance {
-                            player_id: player2_address, balance: player2.balance,
-                        },
-                    );
+                self._finish_game(ref board);
             }
 
             world.write_model(@move);
@@ -687,6 +607,7 @@ pub mod game {
                         row: move.row,
                         is_joker: move.is_joker,
                         board_id,
+                        timestamp: move.timestamp,
                     },
                 );
             world
@@ -707,8 +628,9 @@ pub mod game {
         }
 
         fn skip_move(ref self: ContractState) {
-            let mut world = self.world_default();
             let player = get_caller_address();
+
+            let mut world = self.world_default();
             let game: Game = world.read_model(player);
 
             if game.board_id.is_none() {
@@ -723,8 +645,6 @@ pub mod game {
                 world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
                 return;
             }
-
-            let move_id = self.move_id_generator.read();
 
             let (player1_address, player1_side, _) = board.player1;
             let (player2_address, player2_side, _) = board.player2;
@@ -743,123 +663,100 @@ pub mod game {
                 let prev_move_id = prev_move_id.unwrap();
                 let prev_move: Move = world.read_model(prev_move_id);
                 let prev_player_side = prev_move.player_side;
+                
+                let time = get_block_timestamp();
+                let prev_move_time = prev_move.timestamp;
+                let time_delta = time - prev_move_time;
 
-                if player_side == prev_player_side {
-                    world.emit_event(@NotYourTurn { player_id: player, board_id });
-                    return;
+                if player_side == prev_player_side {    
+                    if time_delta > MOVE_TIME {
+                        //Skip the move of the previous player
+                        let another_player = if player == player1_address {player2_address} else {player1_address};
+                        let another_player_side = if player == player1_address {player2_side} else {player1_side};
+                        self._skip_move(another_player, another_player_side, ref board, self.move_id_generator)
+                    } 
+                    
+                    if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
+                        world.emit_event(@NotYourTurn { player_id: player, board_id });
+                        return;
+                    }
+                } else {
+                    if time_delta > MOVE_TIME {
+                        world.emit_event(@NotYourTurn { player_id: player, board_id });
+                        return;
+                    }
                 }
+
+                let prev_move_id = board.last_move_id.unwrap();
+                let prev_move: Move = world.read_model(prev_move_id);
 
                 if prev_move.tile.is_none() && !prev_move.is_joker {
                     //FINISH THE GAME
-                    let city_scoring_results = close_all_cities(ref world, board_id);
-                    for i in 0..city_scoring_results.len() {
-                        let city_scoring_result = *city_scoring_results.at(i.into());
-                        if city_scoring_result.is_some() {
-                            let (winner, points_delta) = city_scoring_result.unwrap();
-                            if winner == PlayerSide::Blue {
-                                let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                                board
-                                    .blue_score =
-                                        (old_blue_city_points + points_delta, old_blue_road_points);
-                                let (old_red_city_points, old_red_road_points) = board.red_score;
-                                board
-                                    .red_score =
-                                        (old_red_city_points - points_delta, old_red_road_points);
-                            } else {
-                                let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                                board
-                                    .blue_score =
-                                        (old_blue_city_points - points_delta, old_blue_road_points);
-                                let (old_red_city_points, old_red_road_points) = board.red_score;
-                                board
-                                    .red_score =
-                                        (old_red_city_points + points_delta, old_red_road_points);
-                            }
-                        }
-                    };
-
-                    let road_scoring_results = close_all_roads(ref world, board_id);
-                    for i in 0..road_scoring_results.len() {
-                        let road_scoring_result = *road_scoring_results.at(i.into());
-                        if road_scoring_result.is_some() {
-                            let (winner, points_delta) = road_scoring_result.unwrap();
-                            if winner == PlayerSide::Blue {
-                                let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                                board
-                                    .blue_score =
-                                        (old_blue_city_points, old_blue_road_points + points_delta);
-                                let (old_red_city_points, old_red_road_points) = board.red_score;
-                                board
-                                    .red_score =
-                                        (old_red_city_points, old_red_road_points - points_delta);
-                            } else {
-                                let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                                board
-                                    .blue_score =
-                                        (old_blue_city_points, old_blue_road_points - points_delta);
-                                let (old_red_city_points, old_red_road_points) = board.red_score;
-                                board
-                                    .red_score =
-                                        (old_red_city_points, old_red_road_points + points_delta);
-                            }
-                        }
-                    };
-
-                    board.game_state = GameState::Finished;
-                    let mut host_game: Game = world.read_model(player1_address);
-                    let mut guest_game: Game = world.read_model(player2_address);
-                    host_game.status = GameStatus::Finished;
-                    guest_game.status = GameStatus::Finished;
-
-                    world.write_model(@host_game);
-                    world.write_model(@guest_game);
-
-                    world.emit_event(@GameFinished { host_player: player1_address, board_id });
-                    world.emit_event(@GameFinished { host_player: player2_address, board_id });
-
-                    let mut player1: Player = world.read_model(player1_address);
-                    let mut player2: Player = world.read_model(player2_address);
-
-                    let rules: Rules = world.read_model(0);
-                    let joker_price = rules.joker_price;
-                    let (_, _, joker_number1) = board.player1;
-                    let (_, _, joker_number2) = board.player2;
-                    let blue_joker_points = joker_number1.into() * joker_price;
-                    let red_joker_points = joker_number2.into() * joker_price;
-
-                    if player1_side == PlayerSide::Blue {
-                        let (city_points, road_points) = board.blue_score;
-                        player1.balance += city_points + road_points;
-                        let (city_points, road_points) = board.red_score;
-                        player2.balance += city_points + road_points;
-                        player1.balance += blue_joker_points;
-                        player2.balance += red_joker_points;
-                    } else {
-                        let (city_points, road_points) = board.red_score;
-                        player1.balance += city_points + road_points;
-                        let (city_points, road_points) = board.blue_score;
-                        player2.balance += city_points + road_points;
-                        player1.balance += red_joker_points;
-                        player2.balance += blue_joker_points;
-                    }
-
-                    world.write_model(@player1);
-                    world
-                        .emit_event(
-                            @CurrentPlayerBalance {
-                                player_id: player1_address, balance: player1.balance,
-                            },
-                        );
-
-                    world.write_model(@player2);
-                    world
-                        .emit_event(
-                            @CurrentPlayerBalance {
-                                player_id: player2_address, balance: player2.balance,
-                            },
-                        );
+                    self._finish_game(ref board);
                 }
             };
+            redraw_tile_from_board_deck(ref board);
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("available_tiles_in_deck"),
+                    board.available_tiles_in_deck.clone(),
+                );
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
+                );
+
+            self._skip_move(player, player_side, ref board, self.move_id_generator);
+        }
+
+        fn finish_game(ref self: ContractState, board_id: felt252) {
+            let player = get_caller_address();
+
+            let mut world = self.world_default();
+            let game: Game = world.read_model(player);
+
+            if game.board_id.is_none() || game.board_id.unwrap() != board_id {
+                world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
+                return;
+            }
+
+            let mut board: Board = world.read_model(board_id);
+
+            if game.status == GameStatus::Finished {
+                world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
+                return;
+            }
+
+            let last_move: Move = world.read_model(board.last_move_id.unwrap());
+            let timestamp = get_block_timestamp();
+            let time_delta = timestamp - last_move.timestamp;
+            if time_delta > 2 * MOVE_TIME {
+                //FINISH THE GAME
+                self._finish_game(ref board);
+                return;
+            } else {
+                world.emit_event(@CantFinishGame { player_id: player, board_id });
+                return;
+            }
+        }
+    }
+
+
+    #[generate_trait]
+    impl InternalImpl of InternalTrait {
+        fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
+            self.world(@"evolute_duel")
+        }
+
+        fn _skip_move(self: @ContractState, player: ContractAddress, player_side: PlayerSide, ref board: Board, move_id_generator: core::starknet::storage::StorageBase::<
+            core::starknet::storage::Mutable<core::felt252>,
+        >) {
+            let mut world = self.world_default();
+            let move_id = self.move_id_generator.read();
+            let board_id = board.id;
+
+            let timestamp = get_block_timestamp();
 
             let move = Move {
                 id: move_id,
@@ -871,28 +768,14 @@ pub mod game {
                 row: 0,
                 is_joker: false,
                 first_board_id: board_id,
+                timestamp,
             };
 
-            redraw_tile_from_board_deck(ref board);
 
             board.last_move_id = Option::Some(move_id);
-            self.move_id_generator.write(move_id + 1);
+            move_id_generator.write(move_id + 1);
 
             world.write_model(@move);
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("blue_score"),
-                    board.blue_score,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("red_score"),
-                    board.red_score,
-                );
 
             world
                 .write_member(
@@ -902,33 +785,14 @@ pub mod game {
                 );
 
             world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("game_state"),
-                    board.game_state,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("available_tiles_in_deck"),
-                    board.available_tiles_in_deck.clone(),
-                );
-            
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
-                );
-
-            world
-                .emit_event(@Skiped { move_id, player, prev_move_id: move.prev_move_id, board_id });
+                .emit_event(@Skiped { move_id, player, prev_move_id: move.prev_move_id, board_id, timestamp});
             world
                 .emit_event(
                     @BoardUpdated {
                         board_id: board.id,
-                        available_tiles_in_deck: board.available_tiles_in_deck,
+                        available_tiles_in_deck: board.available_tiles_in_deck.clone(),
                         top_tile: board.top_tile,
-                        state: board.state,
+                        state: board.state.clone(),
                         player1: board.player1,
                         player2: board.player2,
                         blue_score: board.blue_score,
@@ -937,14 +801,156 @@ pub mod game {
                         game_state: board.game_state,
                     },
                 );
-        }
-    }
+        }     
+
+        fn _finish_game(self: @ContractState, ref board: Board) {
+            //FINISH THE GAME
+            let mut world = self.world_default();
+            let city_scoring_results = close_all_cities(ref world, board.id);
+            for i in 0..city_scoring_results.len() {
+                let city_scoring_result = *city_scoring_results.at(i.into());
+                if city_scoring_result.is_some() {
+                    let (winner, points_delta) = city_scoring_result.unwrap();
+                    if winner == PlayerSide::Blue {
+                        let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                        board
+                            .blue_score =
+                                (old_blue_city_points + points_delta, old_blue_road_points);
+                        let (old_red_city_points, old_red_road_points) = board.red_score;
+                        board
+                            .red_score =
+                                (old_red_city_points - points_delta, old_red_road_points);
+                    } else {
+                        let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                        board
+                            .blue_score =
+                                (old_blue_city_points - points_delta, old_blue_road_points);
+                        let (old_red_city_points, old_red_road_points) = board.red_score;
+                        board
+                            .red_score =
+                                (old_red_city_points + points_delta, old_red_road_points);
+                    }
+                }
+            };
+
+            let road_scoring_results = close_all_roads(ref world, board.id);
+            for i in 0..road_scoring_results.len() {
+                let road_scoring_result = *road_scoring_results.at(i.into());
+                if road_scoring_result.is_some() {
+                    let (winner, points_delta) = road_scoring_result.unwrap();
+                    if winner == PlayerSide::Blue {
+                        let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                        board
+                            .blue_score =
+                                (old_blue_city_points, old_blue_road_points + points_delta);
+                        let (old_red_city_points, old_red_road_points) = board.red_score;
+                        board
+                            .red_score =
+                                (old_red_city_points, old_red_road_points - points_delta);
+                    } else {
+                        let (old_blue_city_points, old_blue_road_points) = board.blue_score;
+                        board
+                            .blue_score =
+                                (old_blue_city_points, old_blue_road_points - points_delta);
+                        let (old_red_city_points, old_red_road_points) = board.red_score;
+                        board
+                            .red_score =
+                                (old_red_city_points, old_red_road_points + points_delta);
+                    }
+                }
+            };
+
+            let (player1_address, player1_side, joker_number1) = board.player1;
+            let (player2_address, _player2_side, joker_number2) = board.player2;
+
+            board.game_state = GameState::Finished;
+            let mut host_game: Game = world.read_model(player1_address);
+            let mut guest_game: Game = world.read_model(player2_address);
+            host_game.status = GameStatus::Finished;
+            guest_game.status = GameStatus::Finished;
+
+            world.write_model(@host_game);
+            world.write_model(@guest_game);
+
+            world.emit_event(@GameFinished { host_player: player1_address, board_id: board.id });
+            world.emit_event(@GameFinished { host_player: player2_address, board_id: board.id });
+
+            let mut player1: Player = world.read_model(player1_address);
+            let mut player2: Player = world.read_model(player2_address);
+
+            let rules: Rules = world.read_model(0);
+            let joker_price = rules.joker_price;
+            let blue_joker_points = joker_number1.into() * joker_price;
+            let red_joker_points = joker_number2.into() * joker_price;
+
+            if player1_side == PlayerSide::Blue {
+                let (city_points, road_points) = board.blue_score;
+                player1.balance += city_points + road_points;
+                let (city_points, road_points) = board.red_score;
+                player2.balance += city_points + road_points;
+                player1.balance += blue_joker_points;
+                player2.balance += red_joker_points;
+            } else {
+                let (city_points, road_points) = board.red_score;
+                player1.balance += city_points + road_points;
+                let (city_points, road_points) = board.blue_score;
+                player2.balance += city_points + road_points;
+                player1.balance += red_joker_points;
+                player2.balance += blue_joker_points;
+            }
+
+            world.write_model(@player1);
+            world
+                .emit_event(
+                    @CurrentPlayerBalance {
+                        player_id: player1_address, balance: player1.balance,
+                    },
+                );
+
+            world.write_model(@player2);
+            world
+                .emit_event(
+                    @CurrentPlayerBalance {
+                        player_id: player2_address, balance: player2.balance,
+                    },
+                );
 
 
-    #[generate_trait]
-    impl InternalImpl of InternalTrait {
-        fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
-            self.world(@"evolute_duel")
-        }
+                world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board.id),
+                    selector!("blue_score"),
+                    board.blue_score,
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board.id),
+                    selector!("red_score"),
+                    board.red_score,
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board.id),
+                    selector!("game_state"),
+                    board.game_state,
+                );
+            world
+                .emit_event(
+                    @BoardUpdated {
+                        board_id: board.id,
+                        available_tiles_in_deck: board.available_tiles_in_deck.clone(),
+                        top_tile: board.top_tile,
+                        state: board.state.clone(),
+                        player1: board.player1,
+                        player2: board.player2,
+                        blue_score: board.blue_score,
+                        red_score: board.red_score,
+                        last_move_id: board.last_move_id,
+                        game_state: board.game_state,
+                    },
+                );
+        }       
     }
 }
