@@ -148,20 +148,9 @@ pub mod game {
             let player = get_caller_address();
 
             let board: Board = world.read_model(board_id);
-            let (_, _, joker_number1) = board.player1;
-            let (_, _, joker_number2) = board.player2;
-            let is_top_tile = if board.top_tile.is_some() {
-                1
-            } else {
-                0
-            };
-            let max_move_number: u32 = 70
-                - board.available_tiles_in_deck.len()
-                - is_top_tile
-                - joker_number1.into()
-                - joker_number2.into();
+            let max_move_number = board.moves_done;
 
-            if move_number.into() > max_move_number {
+            if move_number > max_move_number {
                 world
                     .emit_event(
                         @SnapshotCreateFailed {
@@ -266,8 +255,6 @@ pub mod game {
         fn join_game(ref self: ContractState, host_player: ContractAddress) {
             let mut world = self.world_default();
             let guest_player = get_caller_address();
-
-            println!("(From contract)Guest player: {:?}", guest_player);
 
             let mut host_game: Game = world.read_model(host_player);
             let host_game_status = host_game.status;
@@ -414,25 +401,25 @@ pub mod game {
                 timestamp: get_block_timestamp(),
             };
 
-            //TODO: revert invalid move when it's stable
-            // if !is_valid_move(
-            //     tile, rotation, col, row, board.state.span(), board.initial_edge_state.span(),
-            // ) {
-            //     world
-            //         .emit_event(
-            //             @InvalidMove {
-            //                 player,
-            //                 prev_move_id: move.prev_move_id,
-            //                 tile: move.tile,
-            //                 rotation: move.rotation,
-            //                 col: move.col,
-            //                 row: move.row,
-            //                 is_joker: move.is_joker,
-            //                 board_id,
-            //             },
-            //         );
-            //     return;
-            // }
+            // TODO: revert invalid move when it's stable
+            if !is_valid_move(
+                tile, rotation, col, row, board.state.span(), board.initial_edge_state.span(),
+            ) {
+                world
+                    .emit_event(
+                        @InvalidMove {
+                            player,
+                            prev_move_id: move.prev_move_id,
+                            tile: move.tile,
+                            rotation: move.rotation,
+                            col: move.col,
+                            row: move.row,
+                            is_joker: move.is_joker,
+                            board_id,
+                        },
+                    );
+                return;
+            }
 
             let top_tile = if !is_joker {
                 draw_tile_from_board_deck(ref board)
@@ -537,6 +524,7 @@ pub mod game {
             );
 
             board.last_move_id = Option::Some(move_id);
+            board.moves_done = board.moves_done + 1;    
             self.move_id_generator.write(move_id + 1);
 
             if top_tile.is_none() && joker_number1 == 0 && joker_number2 == 0 {
@@ -599,6 +587,13 @@ pub mod game {
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
+                    selector!("moves_done"),
+                    board.moves_done,
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
                     selector!("game_state"),
                     board.game_state,
                 );
@@ -630,6 +625,7 @@ pub mod game {
                         blue_score: board.blue_score,
                         red_score: board.red_score,
                         last_move_id: board.last_move_id,
+                        moves_done: board.moves_done,
                         game_state: board.game_state,
                     },
                 );
@@ -782,6 +778,7 @@ pub mod game {
 
 
             board.last_move_id = Option::Some(move_id);
+            board.moves_done = board.moves_done + 1;
             move_id_generator.write(move_id + 1);
 
             world.write_model(@move);
@@ -791,6 +788,13 @@ pub mod game {
                     Model::<Board>::ptr_from_keys(board_id),
                     selector!("last_move_id"),
                     board.last_move_id,
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("moves_done"),
+                    board.moves_done,
                 );
 
             world
@@ -807,6 +811,7 @@ pub mod game {
                         blue_score: board.blue_score,
                         red_score: board.red_score,
                         last_move_id: board.last_move_id,
+                        moves_done: board.moves_done,
                         game_state: board.game_state,
                     },
                 );
@@ -957,6 +962,7 @@ pub mod game {
                         blue_score: board.blue_score,
                         red_score: board.red_score,
                         last_move_id: board.last_move_id,
+                        moves_done: board.moves_done,
                         game_state: board.game_state,
                     },
                 );

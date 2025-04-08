@@ -394,6 +394,13 @@ mod tests {
             (Option::None, 1, 0, 0),
             (Option::None, 3, 0, 1),
             (Option::None, 1, 1, 1),
+        ];
+        make_multiple_moves(game_system, host_player, guest_player, moves);
+
+        let board_on_4th_move: Board = world.read_model(game1.board_id.unwrap());
+        println!("Board after 4th move: {:?}", board_on_4th_move);
+
+        let moves = array![
             (Option::None, 1, 6, 0),
             (Option::None, 3, 1, 2),
             (Option::None, 1, 2, 2),
@@ -407,6 +414,7 @@ mod tests {
             (Option::Some(10), 2, 0, 2),
             (Option::None, 2, 1, 5),
         ];
+
         make_multiple_moves(game_system, host_player, guest_player, moves);
 
         let board_id = game1.board_id.unwrap();
@@ -418,7 +426,7 @@ mod tests {
 
         // Create a snapshot
         starknet::testing::set_contract_address(host_player);
-        game_system.create_snapshot(board_id, 0);
+        game_system.create_snapshot(board_id, 4);
         let snapshot: Snapshot = world.read_model(board_id);
         println!("Snapshot: {:?}", snapshot);
 
@@ -431,5 +439,8 @@ mod tests {
         let new_board_id = new_game.board_id.unwrap();
         let new_board: Board = world.read_model(new_board_id);
         println!("New Board: {:?}", new_board);
+        assert(new_board.state == board_on_4th_move.state, 'state is not the same');
+        assert(new_board.blue_score == board_on_4th_move.blue_score, 'blue_score is not the same');
+        assert(new_board.red_score == board_on_4th_move.red_score, 'red_score is not the same');
     }
 }

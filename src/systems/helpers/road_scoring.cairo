@@ -89,7 +89,7 @@ pub fn connect_adjacent_road_edges(
     if *edges.at(2) == TEdge::R {
         let edge_pos = convert_board_position_to_node_position(tile_position, 2);
         // println!("Edge pos: {:?}", edge_pos);
-        let edge = find(ref world, board_id, edge_pos);
+        // let edge = find(ref world, board_id, edge_pos);
         // println!("Edge before: {:?}", edge);
         if row != 0 {
             if !visited.get((tile_position - 1).into()) {
@@ -128,7 +128,7 @@ pub fn connect_adjacent_road_edges(
     if *edges.at(0) == TEdge::R {
         let edge_pos = convert_board_position_to_node_position(tile_position, 0);
         // println!("Edge pos: {:?}", edge_pos);
-        let edge = find(ref world, board_id, edge_pos);
+        // let edge = find(ref world, board_id, edge_pos);
         // println!("Edge before: {:?}", edge);
         if row != 7 {
             if !visited.get((tile_position + 1).into()) {
@@ -166,7 +166,7 @@ pub fn connect_adjacent_road_edges(
     if *edges.at(3) == TEdge::R {
         let edge_pos = convert_board_position_to_node_position(tile_position, 3);
         // println!("Edge pos: {:?}", edge_pos);
-        let edge = find(ref world, board_id, edge_pos);
+        // let edge = find(ref world, board_id, edge_pos);
         // println!("Edge before: {:?}", edge);
         // println!("1");
         if col != 0 {
@@ -217,7 +217,7 @@ pub fn connect_adjacent_road_edges(
     if *edges.at(1) == TEdge::R {
         let edge_pos = convert_board_position_to_node_position(tile_position, 1);
         // println!("Edge pos: {:?}", edge_pos);
-        let edge = find(ref world, board_id, edge_pos);
+        // let edge = find(ref world, board_id, edge_pos);
         // println!("Edge before: {:?}", edge);
         if col != 7 {
             if !visited.get((tile_position + 8).into()) {
