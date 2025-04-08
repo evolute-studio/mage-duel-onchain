@@ -97,7 +97,6 @@ mod tests {
     #[test]
     fn test_find() {
         // Initialize test environment
-        let caller = starknet::contract_address_const::<0x0>();
         let ndef = namespace_def();
 
         // Register the resources.
@@ -128,7 +127,6 @@ mod tests {
     #[test]
     fn test_union() {
         // Initialize test environment
-        let caller = starknet::contract_address_const::<0x0>();
         let ndef = namespace_def();
 
         // Register the resources.
@@ -164,9 +162,9 @@ mod tests {
                 },
             );
 
-        let root = union(ref world, board_id, 0, 1, false);
-        let root1 = find(ref world, board_id, 0);
-        let root2 = find(ref world, board_id, 1);
+        let _root = union(ref world, board_id, 0, 1, false);
+        let _root1 = find(ref world, board_id, 0);
+        let _root2 = find(ref world, board_id, 1);
         assert!(
             find(ref world, board_id, 0).position == find(ref world, board_id, 1).position,
             "Position should be the same",
@@ -176,7 +174,6 @@ mod tests {
     #[test]
     fn test_connected() {
         // Initialize test environment
-        let caller = starknet::contract_address_const::<0x0>();
         let ndef = namespace_def();
 
         // Register the resources.
@@ -212,7 +209,7 @@ mod tests {
                 },
             );
 
-        let root = union(ref world, board_id, 0, 1, false);
+        let _root = union(ref world, board_id, 0, 1, false);
         let connected = connected(ref world, board_id, 0, 1);
         assert!(connected, "Nodes should be connected");
     }

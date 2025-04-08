@@ -69,6 +69,7 @@ pub mod game {
     use dojo::model::{ModelStorage, Model};
 
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use core::dict::Felt252Dict;
 
     #[storage]
     struct Storage {
@@ -149,14 +150,14 @@ pub mod game {
             let board: Board = world.read_model(board_id);
             let (_, _, joker_number1) = board.player1;
             let (_, _, joker_number2) = board.player2;
-            let is_top_tipe = if board.top_tile.is_some() {
+            let is_top_tile = if board.top_tile.is_some() {
                 1
             } else {
                 0
             };
             let max_move_number: u32 = 70
                 - board.available_tiles_in_deck.len()
-                - is_top_tipe
+                - is_top_tile
                 - joker_number1.into()
                 - joker_number2.into();
 
@@ -189,6 +190,8 @@ pub mod game {
             let snapshot: Snapshot = world.read_model(snapshot_id);
             let board_id = snapshot.board_id;
             let move_number = snapshot.move_number;
+
+            println!("Move number: {:?}", move_number);
 
             let mut game: Game = world.read_model(host_player);
             let mut status = game.status;
@@ -263,6 +266,8 @@ pub mod game {
         fn join_game(ref self: ContractState, host_player: ContractAddress) {
             let mut world = self.world_default();
             let guest_player = get_caller_address();
+
+            println!("(From contract)Guest player: {:?}", guest_player);
 
             let mut host_game: Game = world.read_model(host_player);
             let host_game_status = host_game.status;
@@ -410,24 +415,24 @@ pub mod game {
             };
 
             //TODO: revert invalid move when it's stable
-            if !is_valid_move(
-                tile, rotation, col, row, board.state.span(), board.initial_edge_state.span(),
-            ) {
-                world
-                    .emit_event(
-                        @InvalidMove {
-                            player,
-                            prev_move_id: move.prev_move_id,
-                            tile: move.tile,
-                            rotation: move.rotation,
-                            col: move.col,
-                            row: move.row,
-                            is_joker: move.is_joker,
-                            board_id,
-                        },
-                    );
-                return;
-            }
+            // if !is_valid_move(
+            //     tile, rotation, col, row, board.state.span(), board.initial_edge_state.span(),
+            // ) {
+            //     world
+            //         .emit_event(
+            //             @InvalidMove {
+            //                 player,
+            //                 prev_move_id: move.prev_move_id,
+            //                 tile: move.tile,
+            //                 rotation: move.rotation,
+            //                 col: move.col,
+            //                 row: move.row,
+            //                 is_joker: move.is_joker,
+            //                 board_id,
+            //             },
+            //         );
+            //     return;
+            // }
 
             let top_tile = if !is_joker {
                 draw_tile_from_board_deck(ref board)
@@ -455,6 +460,7 @@ pub mod game {
                 board.red_score = (old_city_points + city_points, old_road_points + road_points);
             }
 
+            let mut visited: Felt252Dict<bool> = Default::default();
             let tile_position = (col * 8 + row).into();
             connect_city_edges_in_tile(
                 ref world, board_id, tile_position, tile.into(), rotation, player_side.into(),
@@ -462,12 +468,13 @@ pub mod game {
             let city_contest_scoring_result = connect_adjacent_city_edges(
                 ref world,
                 board_id,
-                board.state.clone(),
-                board.initial_edge_state.clone(),
+                ref board.state,
+                ref board.initial_edge_state,
                 tile_position,
                 tile.into(),
                 rotation,
                 player_side.into(),
+                ref visited,
             );
 
             if city_contest_scoring_result.is_some() {
@@ -492,12 +499,13 @@ pub mod game {
             let road_contest_scoring_results = connect_adjacent_road_edges(
                 ref world,
                 board_id,
-                board.state.clone(),
-                board.initial_edge_state.clone(),
+                ref board.state,
+                ref board.initial_edge_state,
                 tile_position,
                 tile.into(),
                 rotation,
                 player_side.into(),
+                ref visited,
             );
 
             for i in 0..road_contest_scoring_results.len() {
