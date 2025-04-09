@@ -33,8 +33,8 @@ pub struct Board {
     // (u16, u16) => (city_score, road_score)
     pub red_score: (u16, u16),
     pub last_move_id: Option<felt252>,
-    pub moves_done: u8,
     pub game_state: GameState,
+    pub moves_done: u8,
 }
 
 /// Represents a player's move, tracking tile placement and game progression.
