@@ -713,9 +713,6 @@ pub mod game {
                     self._finish_game(ref board);
                 }
             };
-        
-            self._skip_move(player, player_side, ref board, self.move_id_generator);
-
             redraw_tile_from_board_deck(ref board);
             world
                 .write_member(
@@ -727,6 +724,8 @@ pub mod game {
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
                 );
+
+            self._skip_move(player, player_side, ref board, self.move_id_generator);
         }
 
         fn finish_game(ref self: ContractState, board_id: felt252) {
