@@ -35,6 +35,7 @@ pub struct Board {
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
     pub moves_done: u8,
+    pub last_update_timestamp: u64,
 }
 
 /// Represents a player's move, tracking tile placement and game progression.

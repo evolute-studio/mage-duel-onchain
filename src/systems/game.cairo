@@ -294,6 +294,13 @@ pub mod game {
                         selector!("player2"),
                         board.player2,
                     );
+                
+                world
+                    .write_member(
+                        Model::<Board>::ptr_from_keys(board.id),
+                        selector!("last_update_timestamp"),
+                        get_block_timestamp(),
+                    );
 
                 board_id
             };
@@ -352,8 +359,8 @@ pub mod game {
                 let prev_move: Move = world.read_model(prev_move_id);
                 let prev_player_side = prev_move.player_side;
                 let time = get_block_timestamp();
-                let prev_move_time = prev_move.timestamp;
-                let time_delta = time - prev_move_time;
+                let last_update_timestamp = board.last_update_timestamp;
+                let time_delta = time - last_update_timestamp;
 
                 if player_side == prev_player_side {    
                     if time_delta > MOVE_TIME {
@@ -599,6 +606,13 @@ pub mod game {
                 );
 
             world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("last_update_timestamp"),
+                    get_block_timestamp(),
+                );
+
+            world
                 .emit_event(
                     @Moved {
                         move_id,
@@ -669,8 +683,8 @@ pub mod game {
                 let prev_player_side = prev_move.player_side;
                 
                 let time = get_block_timestamp();
-                let prev_move_time = prev_move.timestamp;
-                let time_delta = time - prev_move_time;
+                let last_update_timestamp = board.last_update_timestamp;
+                let time_delta = time - last_update_timestamp;
 
                 if player_side == prev_player_side {    
                     if time_delta > MOVE_TIME {
@@ -733,9 +747,9 @@ pub mod game {
                 return;
             }
 
-            let last_move: Move = world.read_model(board.last_move_id.unwrap());
+            let last_update_timestamp = board.last_update_timestamp;
             let timestamp = get_block_timestamp();
-            let time_delta = timestamp - last_move.timestamp;
+            let time_delta = timestamp - last_update_timestamp;
             if time_delta > 2 * MOVE_TIME {
                 //FINISH THE GAME
                 self._finish_game(ref board);
@@ -788,6 +802,13 @@ pub mod game {
                     Model::<Board>::ptr_from_keys(board_id),
                     selector!("last_move_id"),
                     board.last_move_id,
+                );
+            
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("last_update_timestamp"),
+                    get_block_timestamp(),
                 );
 
             world
@@ -950,6 +971,14 @@ pub mod game {
                     selector!("game_state"),
                     board.game_state,
                 );
+            
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board.id),
+                    selector!("last_update_timestamp"),
+                    get_block_timestamp(),
+                );
+
             world
                 .emit_event(
                     @BoardUpdated {

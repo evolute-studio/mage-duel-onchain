@@ -56,6 +56,7 @@ pub fn create_board(
         last_move_id,
         moves_done: 0,
         game_state,
+        last_update_timestamp: get_block_timestamp(),
     };
 
     let top_tile = draw_tile_from_board_deck(ref board);
@@ -187,6 +188,7 @@ pub fn create_board_from_snapshot(
         last_move_id,
         moves_done: move_number,
         game_state: GameState::InProgress,
+        last_update_timestamp: get_block_timestamp(),
     };
 
     world.write_model(@board);
