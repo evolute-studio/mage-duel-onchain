@@ -239,6 +239,7 @@ pub fn handle_city_contest(
     ref world: WorldStorage, mut city_root: CityNode,
 ) -> Option<(PlayerSide, u16)> {
     city_root.contested = true;
+    let mut result: Option<(PlayerSide, u16)> = Option::None; 
     if city_root.blue_points > city_root.red_points {
         world
             .emit_event(
@@ -254,8 +255,7 @@ pub fn handle_city_contest(
         let points_delta = city_root.red_points;
         city_root.blue_points += city_root.red_points;
         city_root.red_points = 0;
-        world.write_model(@city_root);
-        return Option::Some((winner, points_delta));
+        result = Option::Some((winner, points_delta));
     } else if city_root.blue_points < city_root.red_points {
         world
             .emit_event(
@@ -271,8 +271,7 @@ pub fn handle_city_contest(
         let points_delta = city_root.blue_points;
         city_root.red_points += city_root.blue_points;
         city_root.blue_points = 0;
-        world.write_model(@city_root);
-        return Option::Some((winner, points_delta));
+        result = Option::Some((winner, points_delta));
     } else {
         world
             .emit_event(
@@ -283,8 +282,10 @@ pub fn handle_city_contest(
                     blue_points: city_root.blue_points,
                 },
             );
-        return Option::None;
+        result = Option::None;
     }
+    world.write_model(@city_root);
+    return result;
 }
 
 pub fn close_all_cities(

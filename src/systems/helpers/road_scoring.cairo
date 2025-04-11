@@ -252,6 +252,7 @@ pub fn handle_contest(
     ref world: WorldStorage, mut road_root: RoadNode,
 ) -> Option<(PlayerSide, u16)> {
     road_root.contested = true;
+    let mut result = Option::None;
     if road_root.blue_points > road_root.red_points {
         world
             .emit_event(
@@ -267,8 +268,7 @@ pub fn handle_contest(
         let points_delta = road_root.red_points;
         road_root.blue_points += road_root.red_points;
         road_root.red_points = 0;
-        world.write_model(@road_root);
-        return Option::Some((winner, points_delta));
+        result = Option::Some((winner, points_delta));
     } else if road_root.blue_points < road_root.red_points {
         world
             .emit_event(
@@ -284,8 +284,7 @@ pub fn handle_contest(
         let points_delta = road_root.blue_points;
         road_root.red_points += road_root.blue_points;
         road_root.blue_points = 0;
-        world.write_model(@road_root);
-        return Option::Some((winner, points_delta));
+        result = Option::Some((winner, points_delta));
     } else {
         world
             .emit_event(
@@ -296,9 +295,12 @@ pub fn handle_contest(
                     blue_points: road_root.blue_points,
                 },
             );
-        world.write_model(@road_root);
-        return Option::None;
+        result = Option::None;
     }
+
+    world.write_model(@road_root);
+
+    return result;
 }
 
 pub fn close_all_roads(
