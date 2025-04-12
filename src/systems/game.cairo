@@ -78,7 +78,7 @@ pub mod game {
         snapshot_id_generator: felt252,
     }
 
-    const MOVE_TIME: u64 = 2 * 60; // 2 min
+    const MOVE_TIME : u64 = 60; // 1 min
 
 
     fn dojo_init(self: @ContractState) {
