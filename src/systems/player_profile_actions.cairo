@@ -4,6 +4,11 @@ pub trait IPlayerProfileActions<T> {
     /// Retrieves the player's balance.
     fn balance(ref self: T);
 
+    /// Lets admin set the player's balance.
+    /// - `balance`: The new balance to be set.
+    /// - `player_id`: The ID of the player whose balance is to be set.
+    fn set_balance(ref self: T, balance: u16, player_id: felt252);
+
     /// Retrieves the player's username.
     fn username(ref self: T);
 
@@ -22,15 +27,14 @@ pub trait IPlayerProfileActions<T> {
     fn become_bot(ref self: T);
 }
 
-
 // dojo decorator
 #[dojo::contract]
 pub mod player_profile_actions {
-    use dojo::event::EventStorage;
     use super::{IPlayerProfileActions};
-    use starknet::{get_caller_address};
+    use starknet::{get_caller_address, ContractAddress};
 
-    use dojo::model::{ModelStorage};
+    use dojo::event::EventStorage;
+    use dojo::model::ModelStorage;
 
 
     use evolute_duel::{
@@ -40,8 +44,30 @@ pub mod player_profile_actions {
         },
         models::{Player, Shop}, packing::{},
     };
+    use openzeppelin_access::ownable::OwnableComponent;
 
-    fn dojo_init(self: @ContractState) {
+    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
+
+    // Ownable Mixin
+    #[abi(embed_v0)]
+    impl OwnableMixinImpl = OwnableComponent::OwnableMixinImpl<ContractState>;
+    impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
+ 
+    #[storage]
+    struct Storage {
+        #[substorage(v0)]
+        ownable: OwnableComponent::Storage
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        OwnableEvent: OwnableComponent::Event
+    }
+
+
+    fn dojo_init(ref self: ContractState, creator_address: ContractAddress) {
         let mut world = self.world(@"evolute_duel");
         let id = 0;
 
@@ -49,6 +75,9 @@ pub mod player_profile_actions {
 
         let shop = Shop { shop_id: id, skin_prices };
         world.write_model(@shop);
+
+        println!("Owner: {creator_address:?}");
+        self.ownable.initializer(creator_address);
     }
 
     #[abi(embed_v0)]
@@ -58,6 +87,14 @@ pub mod player_profile_actions {
             let player_id = get_caller_address();
             let player: Player = world.read_model(player_id);
             world.emit_event(@CurrentPlayerBalance { player_id, balance: player.balance });
+        }
+
+        fn set_balance(ref self: ContractState, balance: u16, player_id: felt252) {
+            self.ownable.assert_only_owner();
+            let mut world = self.world_default();
+            let mut player: Player = world.read_model(player_id);
+            player.balance = balance;
+            world.write_model(@player);
         }
 
         fn username(ref self: ContractState) {

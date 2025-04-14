@@ -52,7 +52,7 @@ pub mod game {
         systems::helpers::{
             board::{
                 create_board, draw_tile_from_board_deck, update_board_state,
-                update_board_joker_number, create_board_from_snapshot, redraw_tile_from_board_deck
+                update_board_joker_number, create_board_from_snapshot, redraw_tile_from_board_deck,
             },
             city_scoring::{
                 connect_city_edges_in_tile, connect_adjacent_city_edges, close_all_cities,
@@ -60,7 +60,8 @@ pub mod game {
             road_scoring::{
                 connect_road_edges_in_tile, connect_adjacent_road_edges, close_all_roads,
             },
-            tile_helpers::{calcucate_tile_points, calculate_adjacent_edge_points}, validation::{is_valid_move},
+            tile_helpers::{calcucate_tile_points, calculate_adjacent_edge_points},
+            validation::{is_valid_move},
         },
         packing::{GameStatus, Tile, GameState, PlayerSide},
     };
@@ -78,7 +79,7 @@ pub mod game {
         snapshot_id_generator: felt252,
     }
 
-    const MOVE_TIME : u64 = 2 * 60; // 2 min
+    const MOVE_TIME : u64 = 60; // 1 min
 
 
     fn dojo_init(self: @ContractState) {
@@ -362,14 +363,28 @@ pub mod game {
                 let last_update_timestamp = board.last_update_timestamp;
                 let time_delta = time - last_update_timestamp;
 
-                if player_side == prev_player_side {    
+                if player_side == prev_player_side {
                     if time_delta > MOVE_TIME {
                         //Skip the move of the previous player
-                        let another_player = if player == player1_address {player2_address} else {player1_address};
-                        let another_player_side = if player == player1_address {player2_side} else {player1_side};
-                        self._skip_move(another_player, another_player_side, ref board, self.move_id_generator)
-                    } 
-                    
+                        let another_player = if player == player1_address {
+                            player2_address
+                        } else {
+                            player1_address
+                        };
+                        let another_player_side = if player == player1_address {
+                            player2_side
+                        } else {
+                            player1_side
+                        };
+                        self
+                            ._skip_move(
+                                another_player,
+                                another_player_side,
+                                ref board,
+                                self.move_id_generator,
+                            )
+                    }
+
                     if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
                         world.emit_event(@NotYourTurn { player_id: player, board_id });
                         return;
@@ -391,9 +406,8 @@ pub mod game {
                     }
                 },
             };
-            
-            let move_id = self.move_id_generator.read();
 
+            let move_id = self.move_id_generator.read();
 
             let move = Move {
                 id: move_id,
@@ -436,15 +450,10 @@ pub mod game {
 
             let (tile_city_points, tile_road_points) = calcucate_tile_points(tile);
             let (edges_city_points, edges_road_points) = calculate_adjacent_edge_points(
-                board.initial_edge_state.clone(),
-                col,
-                row,
-                tile.into(),
-                rotation,
+                board.initial_edge_state.clone(), col, row, tile.into(), rotation,
             );
             let (city_points, road_points) = (
-                tile_city_points + edges_city_points,
-                tile_road_points + edges_road_points,
+                tile_city_points + edges_city_points, tile_road_points + edges_road_points,
             );
             if player_side == PlayerSide::Blue {
                 let (old_city_points, old_road_points) = board.blue_score;
@@ -681,19 +690,33 @@ pub mod game {
                 let prev_move_id = prev_move_id.unwrap();
                 let prev_move: Move = world.read_model(prev_move_id);
                 let prev_player_side = prev_move.player_side;
-                
+
                 let time = get_block_timestamp();
                 let last_update_timestamp = board.last_update_timestamp;
                 let time_delta = time - last_update_timestamp;
 
-                if player_side == prev_player_side {    
+                if player_side == prev_player_side {
                     if time_delta > MOVE_TIME {
                         //Skip the move of the previous player
-                        let another_player = if player == player1_address {player2_address} else {player1_address};
-                        let another_player_side = if player == player1_address {player2_side} else {player1_side};
-                        self._skip_move(another_player, another_player_side, ref board, self.move_id_generator)
-                    } 
-                    
+                        let another_player = if player == player1_address {
+                            player2_address
+                        } else {
+                            player1_address
+                        };
+                        let another_player_side = if player == player1_address {
+                            player2_side
+                        } else {
+                            player1_side
+                        };
+                        self
+                            ._skip_move(
+                                another_player,
+                                another_player_side,
+                                ref board,
+                                self.move_id_generator,
+                            )
+                    }
+
                     if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
                         world.emit_event(@NotYourTurn { player_id: player, board_id });
                         return;
@@ -767,9 +790,15 @@ pub mod game {
             self.world(@"evolute_duel")
         }
 
-        fn _skip_move(self: @ContractState, player: ContractAddress, player_side: PlayerSide, ref board: Board, move_id_generator: core::starknet::storage::StorageBase::<
-            core::starknet::storage::Mutable<core::felt252>,
-        >) {
+        fn _skip_move(
+            self: @ContractState,
+            player: ContractAddress,
+            player_side: PlayerSide,
+            ref board: Board,
+            move_id_generator: core::starknet::storage::StorageBase::<
+                core::starknet::storage::Mutable<core::felt252>,
+            >,
+        ) {
             let mut world = self.world_default();
             let move_id = self.move_id_generator.read();
             let board_id = board.id;
@@ -788,7 +817,6 @@ pub mod game {
                 first_board_id: board_id,
                 timestamp,
             };
-
 
             board.last_move_id = Option::Some(move_id);
             board.moves_done = board.moves_done + 1;
@@ -818,7 +846,11 @@ pub mod game {
                 );
 
             world
-                .emit_event(@Skiped { move_id, player, prev_move_id: move.prev_move_id, board_id, timestamp});
+                .emit_event(
+                    @Skiped {
+                        move_id, player, prev_move_id: move.prev_move_id, board_id, timestamp,
+                    },
+                );
             world
                 .emit_event(
                     @BoardUpdated {
@@ -835,7 +867,7 @@ pub mod game {
                         game_state: board.game_state,
                     },
                 );
-        }     
+        }
 
         fn _finish_game(self: @ContractState, ref board: Board) {
             //FINISH THE GAME
@@ -851,18 +883,14 @@ pub mod game {
                             .blue_score =
                                 (old_blue_city_points + points_delta, old_blue_road_points);
                         let (old_red_city_points, old_red_road_points) = board.red_score;
-                        board
-                            .red_score =
-                                (old_red_city_points - points_delta, old_red_road_points);
+                        board.red_score = (old_red_city_points - points_delta, old_red_road_points);
                     } else {
                         let (old_blue_city_points, old_blue_road_points) = board.blue_score;
                         board
                             .blue_score =
                                 (old_blue_city_points - points_delta, old_blue_road_points);
                         let (old_red_city_points, old_red_road_points) = board.red_score;
-                        board
-                            .red_score =
-                                (old_red_city_points + points_delta, old_red_road_points);
+                        board.red_score = (old_red_city_points + points_delta, old_red_road_points);
                     }
                 }
             };
@@ -878,18 +906,14 @@ pub mod game {
                             .blue_score =
                                 (old_blue_city_points, old_blue_road_points + points_delta);
                         let (old_red_city_points, old_red_road_points) = board.red_score;
-                        board
-                            .red_score =
-                                (old_red_city_points, old_red_road_points - points_delta);
+                        board.red_score = (old_red_city_points, old_red_road_points - points_delta);
                     } else {
                         let (old_blue_city_points, old_blue_road_points) = board.blue_score;
                         board
                             .blue_score =
                                 (old_blue_city_points, old_blue_road_points - points_delta);
                         let (old_red_city_points, old_red_road_points) = board.red_score;
-                        board
-                            .red_score =
-                                (old_red_city_points, old_red_road_points + points_delta);
+                        board.red_score = (old_red_city_points, old_red_road_points + points_delta);
                     }
                 }
             };
@@ -936,21 +960,16 @@ pub mod game {
             world.write_model(@player1);
             world
                 .emit_event(
-                    @CurrentPlayerBalance {
-                        player_id: player1_address, balance: player1.balance,
-                    },
+                    @CurrentPlayerBalance { player_id: player1_address, balance: player1.balance },
                 );
 
             world.write_model(@player2);
             world
                 .emit_event(
-                    @CurrentPlayerBalance {
-                        player_id: player2_address, balance: player2.balance,
-                    },
+                    @CurrentPlayerBalance { player_id: player2_address, balance: player2.balance },
                 );
 
-
-                world
+            world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board.id),
                     selector!("blue_score"),
@@ -994,6 +1013,6 @@ pub mod game {
                         game_state: board.game_state,
                     },
                 );
-        }       
+        }
     }
 }

@@ -28,8 +28,22 @@ version = "1.2.2"
 dependencies = [
  "dojo",
  "dojo_cairo_test",
+ "openzeppelin_access",
  "origami_random",
 ]
+
+[[package]]
+name = "openzeppelin_access"
+version = "0.20.0"
+source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v0.20.0#7756fd1de2b4ebd239fa6e372d75535cea02e5e5"
+dependencies = [
+ "openzeppelin_introspection",
+]
+
+[[package]]
+name = "openzeppelin_introspection"
+version = "0.20.0"
+source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v0.20.0#7756fd1de2b4ebd239fa6e372d75535cea02e5e5"
 
 [[package]]
 name = "origami_random"

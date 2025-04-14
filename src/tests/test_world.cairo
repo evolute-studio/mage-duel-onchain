@@ -9,58 +9,37 @@ mod tests {
     };
 
     use evolute_duel::{
-            models::{
-                Game, m_Game, Board, m_Board, Move, m_Move,
-                Rules, m_Rules, Snapshot, m_Snapshot,
-                PotentialCityContests, m_PotentialCityContests,
-                CityNode, m_CityNode,
-                PotentialRoadContests, m_PotentialRoadContests,
-                RoadNode, m_RoadNode,
-                Player, m_Player,
-                Shop, m_Shop,
-            }, events::{
-                BoardCreated, e_BoardCreated,
-                BoardCreatedFromSnapshot, e_BoardCreatedFromSnapshot,
-                BoardCreateFromSnapshotFalied, e_BoardCreateFromSnapshotFalied,
-                SnapshotCreated, e_SnapshotCreated,
-                SnapshotCreateFailed, e_SnapshotCreateFailed,
-                BoardUpdated, e_BoardUpdated,
-                RulesCreated, e_RulesCreated,
-                Moved, e_Moved,
-                Skiped, e_Skiped,
-                InvalidMove, e_InvalidMove,
-                GameFinished, e_GameFinished,
-                GameStarted, e_GameStarted,
-                GameCreated, e_GameCreated,
-                GameCreateFailed, e_GameCreateFailed,
-                GameJoinFailed, e_GameJoinFailed,
-                GameCanceled, e_GameCanceled,
-                GameCanceleFailed, e_GameCanceleFailed,
-                PlayerNotInGame, e_PlayerNotInGame,
-                NotYourTurn, e_NotYourTurn,
-                NotEnoughJokers, e_NotEnoughJokers,
-                GameIsAlreadyFinished, e_GameIsAlreadyFinished,
-                CantFinishGame, e_CantFinishGame,
-                CityContestWon, e_CityContestWon,
-                CityContestDraw, e_CityContestDraw,
-                RoadContestWon, e_RoadContestWon,
-                RoadContestDraw, e_RoadContestDraw,
-                CurrentPlayerBalance, e_CurrentPlayerBalance,
-                CurrentPlayerUsername, e_CurrentPlayerUsername,
-                CurrentPlayerActiveSkin, e_CurrentPlayerActiveSkin,
-                PlayerUsernameChanged, e_PlayerUsernameChanged,
-                PlayerSkinChanged, e_PlayerSkinChanged,
-                PlayerSkinChangeFailed, e_PlayerSkinChangeFailed,
-            }, 
-            packing::{GameStatus},
-            systems::{
-                game::{game, IGameDispatcher, IGameDispatcherTrait},
-                player_profile_actions::{
-                    player_profile_actions,
-                    IPlayerProfileActionsDispatcher,
-                    IPlayerProfileActionsDispatcherTrait,
-                },
-            }
+        models::{
+            Game, m_Game, Board, m_Board, Move, m_Move, Rules, m_Rules, Snapshot, m_Snapshot,
+            PotentialCityContests, m_PotentialCityContests, CityNode, m_CityNode,
+            PotentialRoadContests, m_PotentialRoadContests, RoadNode, m_RoadNode, Player, m_Player,
+            Shop, m_Shop,
+        },
+        events::{
+            BoardCreated, e_BoardCreated, BoardCreatedFromSnapshot, e_BoardCreatedFromSnapshot,
+            BoardCreateFromSnapshotFalied, e_BoardCreateFromSnapshotFalied, SnapshotCreated,
+            e_SnapshotCreated, SnapshotCreateFailed, e_SnapshotCreateFailed, BoardUpdated,
+            e_BoardUpdated, RulesCreated, e_RulesCreated, Moved, e_Moved, Skiped, e_Skiped,
+            InvalidMove, e_InvalidMove, GameFinished, e_GameFinished, GameStarted, e_GameStarted,
+            GameCreated, e_GameCreated, GameCreateFailed, e_GameCreateFailed, GameJoinFailed,
+            e_GameJoinFailed, GameCanceled, e_GameCanceled, GameCanceleFailed, e_GameCanceleFailed,
+            PlayerNotInGame, e_PlayerNotInGame, NotYourTurn, e_NotYourTurn, NotEnoughJokers,
+            e_NotEnoughJokers, GameIsAlreadyFinished, e_GameIsAlreadyFinished, CantFinishGame,
+            e_CantFinishGame, CityContestWon, e_CityContestWon, CityContestDraw, e_CityContestDraw,
+            RoadContestWon, e_RoadContestWon, RoadContestDraw, e_RoadContestDraw,
+            CurrentPlayerBalance, e_CurrentPlayerBalance, CurrentPlayerUsername,
+            e_CurrentPlayerUsername, CurrentPlayerActiveSkin, e_CurrentPlayerActiveSkin,
+            PlayerUsernameChanged, e_PlayerUsernameChanged, PlayerSkinChanged, e_PlayerSkinChanged,
+            PlayerSkinChangeFailed, e_PlayerSkinChangeFailed,
+        },
+        packing::{GameStatus},
+        systems::{
+            game::{game, IGameDispatcher, IGameDispatcherTrait},
+            player_profile_actions::{
+                player_profile_actions, IPlayerProfileActionsDispatcher,
+                IPlayerProfileActionsDispatcherTrait,
+            },
+        },
     };
     use starknet::{testing, ContractAddress};
 
@@ -231,12 +210,11 @@ mod tests {
 
         starknet::testing::set_contract_address(host_player);
 
-
         let ndef = namespace_def();
         let mut world = spawn_test_world([ndef].span());
         world.sync_perms_and_inits(contract_defs());
 
-            let (contract_address, _) = world.dns(@"game").unwrap();
+        let (contract_address, _) = world.dns(@"game").unwrap();
         let game_system = IGameDispatcher { contract_address };
 
         let initial_game: Game = world.read_model(host_player);
@@ -266,12 +244,24 @@ mod tests {
         // println!("Board: {:?}", board);
     }
 
-    fn move(game_system: IGameDispatcher, caller: ContractAddress, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8) {
+    fn move(
+        game_system: IGameDispatcher,
+        caller: ContractAddress,
+        joker_tile: Option<u8>,
+        rotation: u8,
+        col: u8,
+        row: u8,
+    ) {
         starknet::testing::set_contract_address(caller);
         game_system.make_move(joker_tile, rotation, col, row);
     }
 
-    fn make_multiple_moves(game_system: IGameDispatcher, player1: ContractAddress, player2: ContractAddress, moves: Array<(Option<u8>, u8, u8, u8)>) {
+    fn make_multiple_moves(
+        game_system: IGameDispatcher,
+        player1: ContractAddress,
+        player2: ContractAddress,
+        moves: Array<(Option<u8>, u8, u8, u8)>,
+    ) {
         for i in 0..moves.len() {
             let (joker_tile, rotation, col, row) = *moves.at(i);
             if i % 2 == 0 {
@@ -415,6 +405,9 @@ mod tests {
             (Option::None, 2, 1, 5),
         ];
 
+        let board_on_16th_move: Board = world.read_model(game1.board_id.unwrap());
+        println!("Board before 16th move: {:?}", board_on_16th_move);
+
         make_multiple_moves(game_system, host_player, guest_player, moves);
 
         let board_id = game1.board_id.unwrap();
@@ -426,10 +419,9 @@ mod tests {
 
         // Create a snapshot
         starknet::testing::set_contract_address(host_player);
-        game_system.create_snapshot(board_id, 4);
+        game_system.create_snapshot(board_id, 16);
         let snapshot: Snapshot = world.read_model(board_id);
         println!("Snapshot: {:?}", snapshot);
-
 
         // Create a new game from snapshot
         game_system.create_game_from_snapshot(0);
@@ -439,8 +431,44 @@ mod tests {
         let new_board_id = new_game.board_id.unwrap();
         let new_board: Board = world.read_model(new_board_id);
         println!("New Board: {:?}", new_board);
-        assert(new_board.state == board_on_4th_move.state, 'state is not the same');
-        assert(new_board.blue_score == board_on_4th_move.blue_score, 'blue_score is not the same');
-        assert(new_board.red_score == board_on_4th_move.red_score, 'red_score is not the same');
+        assert(new_board.state == board.state, 'state is not the same');
+        assert(new_board.blue_score == board.blue_score, 'blue_score is not the same');
+        assert(new_board.red_score == board.red_score, 'red_score is not the same');
+        game_system.cancel_game();
+
+        loop {
+            if let Option::Some((mut keys, mut data)) = testing::pop_log_raw(contract_address) {
+                println!("[Event]");
+                println!("Keys: {:?}", keys);
+                println!("Data: {:?}", data);
+            } else {
+                break;
+            }
+        }
+    }
+
+    #[test]
+    fn test_max_events() {
+        let host_player = starknet::contract_address_const::<0x0>();
+        let guest_player = starknet::contract_address_const::<0x1>();
+
+        starknet::testing::set_contract_address(host_player);
+
+        let ndef = namespace_def();
+        let mut world = spawn_test_world([ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+        for i in 0..1005_u64 {
+            let felt_i: felt252 = i.try_into().unwrap();
+            let address: ContractAddress = felt_i.try_into().unwrap();
+            world
+                .write_model_test(
+                    @Game {
+                        player: address,
+                        status: GameStatus::InProgress,
+                        board_id: Option::None,
+                        snapshot_id: Option::None,
+                    },
+                );
+        }
     }
 }
