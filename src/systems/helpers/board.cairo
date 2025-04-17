@@ -8,8 +8,9 @@ use origami_random::dice::{DiceTrait};
 use core::dict::Felt252Dict;
 
 use evolute_duel::{
+    models::UnionFind,
     events::{BoardCreated, BoardCreatedFromSnapshot, BoardCreateFromSnapshotFalied}, models::{Board, Rules, Move},
-    packing::{GameState, TEdge, Tile, PlayerSide},
+    packing::{GameState, TEdge, Tile, PlayerSide, UnionNode},
     systems::helpers::{
         city_scoring::{connect_adjacent_city_edges, connect_city_edges_in_tile},
         road_scoring::{connect_adjacent_road_edges, connect_road_edges_in_tile},
@@ -20,6 +21,8 @@ use evolute_duel::{
 use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
 use core::starknet::get_block_timestamp;
+
+use alexandria_data_structures::vec::{NullableVec, VecTrait};
 
 
 pub fn create_board(
@@ -34,7 +37,7 @@ pub fn create_board(
     board_id_generator.write(board_id + 1);
 
     let rules: Rules = world.read_model(0);
-    let mut deck_rules_flat = flatten_deck_rules(@rules.deck);
+    let mut deck_rules_flat = flatten_deck_rules(rules.deck);
 
     // Create an empty board.
     let mut tiles: Array<(u8, u8, u8)> = ArrayTrait::new();
@@ -45,8 +48,8 @@ pub fn create_board(
 
     let mut board = Board {
         id: board_id,
-        initial_edge_state: array![],
-        available_tiles_in_deck: deck_rules_flat.clone(),
+        initial_edge_state: array![].span(),
+        available_tiles_in_deck: deck_rules_flat,
         top_tile: Option::None,
         state: tiles.clone(),
         player1: (player1, PlayerSide::Blue, rules.joker_number),
@@ -68,6 +71,7 @@ pub fn create_board(
     let initial_edge_state = generate_initial_board_state(
         cities_on_edges, roads_on_edges, board_id,
     );
+
     world
         .write_member(
             Model::<Board>::ptr_from_keys(board_id),
@@ -177,8 +181,8 @@ pub fn create_board_from_snapshot(
 
     let mut board = Board {
         id: board_id,
-        initial_edge_state: array![],
-        available_tiles_in_deck,
+        initial_edge_state: array![].span(),
+        available_tiles_in_deck: available_tiles_in_deck,
         top_tile,
         state: updated_state,
         player1: (player1, player1_side, joker_number1),
@@ -197,7 +201,49 @@ pub fn create_board_from_snapshot(
     
     // println!("new_board: {:?}", board);
     //TODO: calculate scores from state
-    build_score_from_state(ref world, ref board);
+
+    let mut road_nodes: NullableVec<UnionNode> = VecTrait::new();
+    for _ in 0..256_u16 {
+        road_nodes.push(Default::default());
+    };
+
+    let mut city_nodes: NullableVec<UnionNode> = VecTrait::new();
+    for _ in 0..256_u16 {
+        city_nodes.push(Default::default());
+    };
+
+    let mut potential_city_contests: Array<u8> = array![];
+    let mut potential_road_contests: Array<u8> = array![];
+
+    build_score_from_state(
+        ref world, 
+        ref board, 
+        ref road_nodes, 
+        ref potential_road_contests,
+        ref city_nodes,
+        ref potential_city_contests,
+    );
+
+    let mut road_nodes_arr: Array<UnionNode> = array![];
+    for i in 0..road_nodes.len() {
+        road_nodes_arr.append(road_nodes.at(i.into()));
+    };
+    let mut city_nodes_arr: Array<UnionNode> = array![];
+    for i in 0..city_nodes.len() {
+        city_nodes_arr.append(city_nodes.at(i.into()));
+    };
+
+    let union_find = UnionFind {
+        board_id,
+        road_nodes: road_nodes_arr.span(),
+        city_nodes: city_nodes_arr.span(),
+        potential_road_contests,
+        potential_city_contests,
+    };
+
+    world.write_model(@union_find);
+
+
 
     // println!("Final board created from snapshot: {:?}", board);
 
@@ -266,24 +312,24 @@ pub fn create_board_from_snapshot(
         );    
     board_id_generator.write(board_id + 1);
 
-    // world
-    //     .emit_event(
-    //         @BoardCreatedFromSnapshot {
-    //             board_id: board_id,
-    //             old_board_id,
-    //             move_number,
-    //             initial_edge_state: board.initial_edge_state,
-    //             available_tiles_in_deck: board.available_tiles_in_deck,
-    //             top_tile: board.top_tile,
-    //             state: board.state,
-    //             player1: board.player1,
-    //             player2: board.player2,
-    //             blue_score: board.blue_score,
-    //             red_score: board.red_score,
-    //             last_move_id: board.last_move_id,
-    //             game_state: board.game_state,
-    //         },
-    //     );
+    world
+        .emit_event(
+            @BoardCreatedFromSnapshot {
+                board_id: board_id,
+                old_board_id,
+                move_number,
+                initial_edge_state: board.initial_edge_state,
+                available_tiles_in_deck: board.available_tiles_in_deck.span(),
+                top_tile: board.top_tile,
+                state: board.state,
+                player1: board.player1,
+                player2: board.player2,
+                blue_score: board.blue_score,
+                red_score: board.red_score,
+                last_move_id: board.last_move_id,
+                game_state: board.game_state,
+            },
+        );
 
     board_id
 }
@@ -291,6 +337,10 @@ pub fn create_board_from_snapshot(
 fn build_score_from_state(
     ref world: WorldStorage,
     ref board: Board,
+    ref road_nodes: NullableVec<UnionNode>,
+    ref potential_road_contests: Array<u8>,
+    ref city_nodes: NullableVec<UnionNode>,
+    ref potential_city_contests: Array<u8>,
 ) {
     let mut visited: Felt252Dict<bool> = Default::default();
 
@@ -301,7 +351,7 @@ fn build_score_from_state(
         
         let (tile_city_points, tile_road_points) = calcucate_tile_points(tile.into());
         let (edges_city_points, edges_road_points) = calculate_adjacent_edge_points(
-            board.initial_edge_state.clone(),
+            ref board.initial_edge_state,
             col,
             row,
             tile.into(),
@@ -322,7 +372,7 @@ fn build_score_from_state(
         if tile != Tile::Empty.into() {
             connect_road_edges_in_tile(
                 ref world,
-                board.id,
+                ref road_nodes,
                 i,
                 tile,
                 rotation,
@@ -330,7 +380,7 @@ fn build_score_from_state(
             );
             connect_city_edges_in_tile(
                 ref world,
-                board.id,
+                ref city_nodes,
                 i,
                 tile,
                 rotation,
@@ -350,6 +400,10 @@ fn build_score_from_state(
                 ref world,
                 ref visited,
                 ref board,
+                ref road_nodes,
+                ref potential_road_contests,
+                ref city_nodes,
+                ref potential_city_contests,
                 i,
             );
         }
@@ -360,6 +414,10 @@ fn bfs(
     ref world: WorldStorage,
     ref visited: Felt252Dict<bool>,
     ref board: Board,
+    ref road_nodes: NullableVec<UnionNode>,
+    ref potential_road_contests: Array<u8>,
+    ref city_nodes: NullableVec<UnionNode>,
+    ref potential_city_contests: Array<u8>,
     index: u8,
 ) {
     let mut queue: Array<u8> = ArrayTrait::new();
@@ -380,13 +438,15 @@ fn bfs(
         let road_contest_scoring_results = connect_adjacent_road_edges(
             ref world,
             board.id,
-            ref board.state,
+            board.state.span(),
             ref board.initial_edge_state,
+            ref road_nodes,
             current_index,
             tile_type,
             rotation,
             side,
             ref visited,
+            ref potential_road_contests,
         );
 
          for i in 0..road_contest_scoring_results.len() {
@@ -415,13 +475,15 @@ fn bfs(
         let city_contest_scoring_result = connect_adjacent_city_edges(
             ref world,
             board.id,
-            ref board.state,
+            board.state.span(),
             ref board.initial_edge_state,
+            ref city_nodes,
             current_index,
             tile_type,
             rotation,
             side,
             ref visited,
+            ref potential_city_contests,
         );
 
 
@@ -584,7 +646,7 @@ pub fn generate_initial_board_state(
     return initial_state;
 }
 
-fn flatten_deck_rules(deck_rules: @Array<u8>) -> Array<u8> {
+fn flatten_deck_rules(deck_rules: Span<u8>) -> Array<u8> {
     let mut deck_rules_flat = ArrayTrait::new();
     for tile_index in 0..24_u8 {
         let tile_type: u8 = tile_index;

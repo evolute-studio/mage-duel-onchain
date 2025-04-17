@@ -42,7 +42,7 @@ pub mod game {
     use super::{IGame};
     use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
     use evolute_duel::{
-        models::{Board, Rules, Move, Game, Snapshot, Player},
+        models::{Board, Rules, Move, Game, Snapshot, Player, UnionFind},
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
             PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
@@ -63,7 +63,7 @@ pub mod game {
             tile_helpers::{calcucate_tile_points, calculate_adjacent_edge_points},
             validation::{is_valid_move},
         },
-        packing::{GameStatus, Tile, GameState, PlayerSide},
+        packing::{GameStatus, GameState, PlayerSide, UnionNode},
     };
 
     use dojo::event::EventStorage;
@@ -71,6 +71,8 @@ pub mod game {
 
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use core::dict::Felt252Dict;
+
+    use alexandria_data_structures::vec::{NullableVec, VecTrait};
 
     #[storage]
     struct Storage {
@@ -85,7 +87,7 @@ pub mod game {
     fn dojo_init(self: @ContractState) {
         let mut world = self.world(@"evolute_duel");
         let id = 0;
-        let deck: Array<u8> = array![
+        let deck: Span<u8> = array![
             2, // CCCC
             0, // FFFF
             0, // RRRR - not in the deck
@@ -110,7 +112,7 @@ pub mod game {
             3, // CRRF
             4, // CRFR
             4 // CFRR
-        ];
+        ].span();
         let edges = (1, 1);
         let joker_number = 3;
         let joker_price = 5;
@@ -282,6 +284,24 @@ pub mod game {
                 let board = create_board(
                     ref world, host_player, guest_player, self.board_id_generator,
                 );
+                let mut road_nodes = array![];
+                for _ in 0..256_u16 {
+                    road_nodes.append(Default::default());
+                };
+                let mut city_nodes = array![];
+                for _ in 0..256_u16 {
+                    city_nodes.append(Default::default());
+                };
+                let potential_city_contests = array![];
+                let potential_road_contests = array![];
+                let union_find = UnionFind {
+                    board_id: board.id,
+                    road_nodes: road_nodes.span(),
+                    city_nodes: city_nodes.span(),
+                    potential_road_contests,
+                    potential_city_contests,
+                };
+                world.write_model(@union_find);
                 board.id
             } // When game is created from snapshot
             else {
@@ -397,11 +417,11 @@ pub mod game {
                 }
             };
 
-            let tile: Tile = match joker_tile {
-                Option::Some(tile_index) => { tile_index.into() },
+            let tile = match joker_tile {
+                Option::Some(tile_index) => { tile_index },
                 Option::None => {
                     match @board.top_tile {
-                        Option::Some(top_tile) => { (*top_tile).into() },
+                        Option::Some(top_tile) => { *top_tile },
                         Option::None => { return panic!("No tiles in the deck"); },
                     }
                 },
@@ -417,14 +437,14 @@ pub mod game {
                 rotation: rotation,
                 col,
                 row,
-                is_joker,
+                is_joker, 
                 first_board_id: board_id,
                 timestamp: get_block_timestamp(),
             };
 
             // TODO: revert invalid move when it's stable
             if !is_valid_move(
-                tile, rotation, col, row, board.state.span(), board.initial_edge_state.span(),
+                tile.into(), rotation, col, row, board.state.span(), board.initial_edge_state,
             ) {
                 world
                     .emit_event(
@@ -448,9 +468,24 @@ pub mod game {
                 board.top_tile
             };
 
-            let (tile_city_points, tile_road_points) = calcucate_tile_points(tile);
+            let mut union_find: UnionFind = world.read_model(board_id);
+
+            let mut city_nodes = VecTrait::<NullableVec, UnionNode>::new();
+            for i in 0..union_find.city_nodes.len() {
+                let city_node = *union_find.city_nodes.at(i.into());
+                city_nodes.push(city_node);
+            };
+            let mut road_nodes = VecTrait::<NullableVec, UnionNode>::new();
+            for i in 0..union_find.road_nodes.len() {
+                let road_node = *union_find.road_nodes.at(i.into());
+                road_nodes.push(road_node);
+            };
+
+            print!("0");
+
+            let (tile_city_points, tile_road_points) = calcucate_tile_points(tile.into());
             let (edges_city_points, edges_road_points) = calculate_adjacent_edge_points(
-                board.initial_edge_state.clone(), col, row, tile.into(), rotation,
+                ref board.initial_edge_state, col, row, tile.into(), rotation,
             );
             let (city_points, road_points) = (
                 tile_city_points + edges_city_points, tile_road_points + edges_road_points,
@@ -465,19 +500,24 @@ pub mod game {
 
             let mut visited: Felt252Dict<bool> = Default::default();
             let tile_position = (col * 8 + row).into();
+
+            print!("1");
             connect_city_edges_in_tile(
-                ref world, board_id, tile_position, tile.into(), rotation, player_side.into(),
+                ref world, ref city_nodes, tile_position, tile.into(), rotation, player_side.into(),
             );
+            println!("2");
             let city_contest_scoring_result = connect_adjacent_city_edges(
                 ref world,
                 board_id,
-                ref board.state,
+                board.state.span(),
                 ref board.initial_edge_state,
+                ref city_nodes,
                 tile_position,
                 tile.into(),
                 rotation,
                 player_side.into(),
                 ref visited,
+                ref union_find.potential_city_contests,
             );
 
             if city_contest_scoring_result.is_some() {
@@ -496,21 +536,25 @@ pub mod game {
                 }
             }
 
+            println!("3");
             connect_road_edges_in_tile(
-                ref world, board_id, tile_position, tile.into(), rotation, player_side.into(),
+                ref world, ref road_nodes, tile_position, tile.into(), rotation, player_side.into(),
             );
+            println!("4");
             let road_contest_scoring_results = connect_adjacent_road_edges(
                 ref world,
                 board_id,
-                ref board.state,
+                board.state.span(),
                 ref board.initial_edge_state,
+                ref road_nodes,
                 tile_position,
                 tile.into(),
                 rotation,
                 player_side.into(),
                 ref visited,
+                ref union_find.potential_road_contests,
             );
-
+            println!("5");
             for i in 0..road_contest_scoring_results.len() {
                 let road_scoring_result = *road_contest_scoring_results.at(i.into());
                 if road_scoring_result.is_some() {
@@ -533,7 +577,7 @@ pub mod game {
                 }
             };
 
-            update_board_state(ref board, tile, rotation, col, row, is_joker, player_side);
+            update_board_state(ref board, tile.into(), rotation, col, row, is_joker, player_side);
 
             let (joker_number1, joker_number2) = update_board_joker_number(
                 ref board, player_side, is_joker,
@@ -545,8 +589,30 @@ pub mod game {
 
             if top_tile.is_none() && joker_number1 == 0 && joker_number2 == 0 {
                 //FINISH THE GAME
-                self._finish_game(ref board);
+                self
+                    ._finish_game(
+                        ref board, 
+                        union_find.potential_city_contests.span(), 
+                        union_find.potential_road_contests.span(),
+                        ref city_nodes,
+                        ref road_nodes,
+                    );
             }
+
+            let mut new_road_nodes = array![];
+            for i in 0..road_nodes.len() {
+                let road_node = road_nodes.at(i.into());
+                new_road_nodes.append(road_node);
+            };
+            union_find.road_nodes = new_road_nodes.span();
+
+            let mut new_city_nodes = array![];
+            for i in 0..city_nodes.len() {
+                let city_node = city_nodes.at(i.into());
+                new_city_nodes.append(city_node);
+            };
+            union_find.city_nodes = new_city_nodes.span();
+            world.write_model(@union_find);
 
             world.write_model(@move);
 
@@ -640,9 +706,9 @@ pub mod game {
                 .emit_event(
                     @BoardUpdated {
                         board_id: board.id,
-                        available_tiles_in_deck: board.available_tiles_in_deck,
+                        available_tiles_in_deck: board.available_tiles_in_deck.span(),
                         top_tile: board.top_tile,
-                        state: board.state,
+                        state: board.state.span(),
                         player1: board.player1,
                         player2: board.player2,
                         blue_score: board.blue_score,
@@ -683,6 +749,18 @@ pub mod game {
             } else {
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id });
                 return;
+            };
+
+            let mut union_find: UnionFind = world.read_model(board_id);
+            let mut city_nodes = VecTrait::<NullableVec, UnionNode>::new();
+            for i in 0..union_find.city_nodes.len() {
+                let city_node = *union_find.city_nodes.at(i.into());
+                city_nodes.push(city_node);
+            };
+            let mut road_nodes = VecTrait::<NullableVec, UnionNode>::new();
+            for i in 0..union_find.road_nodes.len() {
+                let road_node = *union_find.road_nodes.at(i.into());
+                road_nodes.push(road_node);
             };
 
             let prev_move_id = board.last_move_id;
@@ -733,7 +811,28 @@ pub mod game {
 
                 if prev_move.tile.is_none() && !prev_move.is_joker {
                     //FINISH THE GAME
-                    self._finish_game(ref board);
+                    self
+                        ._finish_game(
+                            ref board, 
+                            union_find.potential_city_contests.span(), 
+                            union_find.potential_road_contests.span(),
+                            ref city_nodes,
+                            ref road_nodes,
+                        );
+                    let mut new_road_nodes = array![];
+                    for i in 0..road_nodes.len() {
+                        let road_node = road_nodes.at(i.into());
+                        new_road_nodes.append(road_node);
+                    };
+                    union_find.road_nodes = new_road_nodes.span();
+
+                    let mut new_city_nodes = array![];
+                    for i in 0..city_nodes.len() {
+                        let city_node = city_nodes.at(i.into());
+                        new_city_nodes.append(city_node);
+                    };
+                    union_find.city_nodes = new_city_nodes.span();
+                    world.write_model(@union_find);
                 }
             };
             redraw_tile_from_board_deck(ref board);
@@ -774,7 +873,25 @@ pub mod game {
             let time_delta = timestamp - last_update_timestamp;
             if time_delta > 2 * MOVE_TIME {
                 //FINISH THE GAME
-                self._finish_game(ref board);
+                let mut union_find: UnionFind = world.read_model(board_id);
+                let mut city_nodes = VecTrait::<NullableVec, UnionNode>::new();
+                for i in 0..union_find.city_nodes.len() {
+                    let city_node = *union_find.city_nodes.at(i.into());
+                    city_nodes.push(city_node);
+                };
+                let mut road_nodes = VecTrait::<NullableVec, UnionNode>::new();
+                for i in 0..union_find.road_nodes.len() {
+                    let road_node = *union_find.road_nodes.at(i.into());
+                    road_nodes.push(road_node);
+                };
+                self
+                    ._finish_game(
+                        ref board, 
+                        union_find.potential_city_contests.span(), 
+                        union_find.potential_road_contests.span(),
+                        ref city_nodes,
+                        ref road_nodes,
+                    );
                 return;
             } else {
                 world.emit_event(@CantFinishGame { player_id: player, board_id });
@@ -855,9 +972,9 @@ pub mod game {
                 .emit_event(
                     @BoardUpdated {
                         board_id: board.id,
-                        available_tiles_in_deck: board.available_tiles_in_deck.clone(),
+                        available_tiles_in_deck: board.available_tiles_in_deck.span(),
                         top_tile: board.top_tile,
-                        state: board.state.clone(),
+                        state: board.state.span(),
                         player1: board.player1,
                         player2: board.player2,
                         blue_score: board.blue_score,
@@ -869,10 +986,16 @@ pub mod game {
                 );
         }
 
-        fn _finish_game(self: @ContractState, ref board: Board) {
+        fn _finish_game(
+            self: @ContractState, ref board: Board,
+            potential_city_contests: Span<u8>,
+            potential_road_contests: Span<u8>,
+            ref city_nodes: NullableVec<UnionNode>,
+            ref road_nodes: NullableVec<UnionNode>
+        ) {
             //FINISH THE GAME
             let mut world = self.world_default();
-            let city_scoring_results = close_all_cities(ref world, board.id);
+            let city_scoring_results = close_all_cities(ref world, potential_city_contests, ref city_nodes, board.id);
             for i in 0..city_scoring_results.len() {
                 let city_scoring_result = *city_scoring_results.at(i.into());
                 if city_scoring_result.is_some() {
@@ -895,7 +1018,7 @@ pub mod game {
                 }
             };
 
-            let road_scoring_results = close_all_roads(ref world, board.id);
+            let road_scoring_results = close_all_roads(ref world, potential_road_contests, ref road_nodes, board.id);
             for i in 0..road_scoring_results.len() {
                 let road_scoring_result = *road_scoring_results.at(i.into());
                 if road_scoring_result.is_some() {
@@ -1001,9 +1124,9 @@ pub mod game {
                 .emit_event(
                     @BoardUpdated {
                         board_id: board.id,
-                        available_tiles_in_deck: board.available_tiles_in_deck.clone(),
+                        available_tiles_in_deck: board.available_tiles_in_deck.span(),
                         top_tile: board.top_tile,
-                        state: board.state.clone(),
+                        state: board.state.span(),
                         player1: board.player1,
                         player2: board.player2,
                         blue_score: board.blue_score,

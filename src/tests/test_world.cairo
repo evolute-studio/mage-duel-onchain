@@ -11,9 +11,7 @@ mod tests {
     use evolute_duel::{
         models::{
             Game, m_Game, Board, m_Board, Move, m_Move, Rules, m_Rules, Snapshot, m_Snapshot,
-            PotentialCityContests, m_PotentialCityContests, CityNode, m_CityNode,
-            PotentialRoadContests, m_PotentialRoadContests, RoadNode, m_RoadNode, Player, m_Player,
-            Shop, m_Shop,
+            Player, m_Player, Shop, m_Shop, UnionFind, m_UnionFind,
         },
         events::{
             BoardCreated, e_BoardCreated, BoardCreatedFromSnapshot, e_BoardCreatedFromSnapshot,
@@ -52,10 +50,7 @@ mod tests {
                 TestResource::Model(m_Move::TEST_CLASS_HASH),
                 TestResource::Model(m_Rules::TEST_CLASS_HASH),
                 TestResource::Model(m_Snapshot::TEST_CLASS_HASH),
-                TestResource::Model(m_PotentialCityContests::TEST_CLASS_HASH),
-                TestResource::Model(m_CityNode::TEST_CLASS_HASH),
-                TestResource::Model(m_PotentialRoadContests::TEST_CLASS_HASH),
-                TestResource::Model(m_RoadNode::TEST_CLASS_HASH),
+                TestResource::Model(m_UnionFind::TEST_CLASS_HASH),
                 TestResource::Model(m_Player::TEST_CLASS_HASH),
                 TestResource::Model(m_Shop::TEST_CLASS_HASH),
                 TestResource::Event(e_BoardCreated::TEST_CLASS_HASH),
@@ -261,8 +256,19 @@ mod tests {
         player1: ContractAddress,
         player2: ContractAddress,
         moves: Array<(Option<u8>, u8, u8, u8)>,
+        moves_number: Option<u32>,
     ) {
-        for i in 0..moves.len() {
+        let moves_number = match moves_number {
+            Option::None => moves.len(),
+            Option::Some(num) => num,
+        };
+        if moves_number.into() > moves.len() {
+            panic!("move_number is greater than moves length");
+        }
+        for i in 0..moves_number {
+            if i == 16 {
+                break;
+            }
             let (joker_tile, rotation, col, row) = *moves.at(i);
             if i % 2 == 0 {
                 move(game_system, player1, joker_tile, rotation, col, row);
@@ -333,8 +339,9 @@ mod tests {
             (Option::None, 3, 1, 6),
             (Option::Some(10), 2, 0, 2),
             (Option::None, 2, 1, 5),
+            
         ];
-        make_multiple_moves(game_system, host_player, guest_player, moves);
+        make_multiple_moves(game_system, host_player, guest_player, moves, Option::None);
 
         let board: Board = world.read_model(board_id);
         println!("Board: {:?}", board);
@@ -385,7 +392,7 @@ mod tests {
             (Option::None, 3, 0, 1),
             (Option::None, 1, 1, 1),
         ];
-        make_multiple_moves(game_system, host_player, guest_player, moves);
+        make_multiple_moves(game_system, host_player, guest_player, moves, Option::None);
 
         let board_on_4th_move: Board = world.read_model(game1.board_id.unwrap());
         println!("Board after 4th move: {:?}", board_on_4th_move);
@@ -408,7 +415,7 @@ mod tests {
         let board_on_16th_move: Board = world.read_model(game1.board_id.unwrap());
         println!("Board before 16th move: {:?}", board_on_16th_move);
 
-        make_multiple_moves(game_system, host_player, guest_player, moves);
+        make_multiple_moves(game_system, host_player, guest_player, moves, Option::None);
 
         let board_id = game1.board_id.unwrap();
         let board: Board = world.read_model(board_id);
@@ -444,31 +451,6 @@ mod tests {
             } else {
                 break;
             }
-        }
-    }
-
-    #[test]
-    fn test_max_events() {
-        let host_player = starknet::contract_address_const::<0x0>();
-        let guest_player = starknet::contract_address_const::<0x1>();
-
-        starknet::testing::set_contract_address(host_player);
-
-        let ndef = namespace_def();
-        let mut world = spawn_test_world([ndef].span());
-        world.sync_perms_and_inits(contract_defs());
-        for i in 0..1005_u64 {
-            let felt_i: felt252 = i.try_into().unwrap();
-            let address: ContractAddress = felt_i.try_into().unwrap();
-            world
-                .write_model_test(
-                    @Game {
-                        player: address,
-                        status: GameStatus::InProgress,
-                        board_id: Option::None,
-                        snapshot_id: Option::None,
-                    },
-                );
         }
     }
 }

@@ -71,7 +71,7 @@ pub mod player_profile_actions {
         let mut world = self.world(@"evolute_duel");
         let id = 0;
 
-        let skin_prices = array![0, 0, 100, 500];
+        let skin_prices = array![0, 0, 100, 500].span();
 
         let shop = Shop { shop_id: id, skin_prices };
         world.write_model(@shop);
