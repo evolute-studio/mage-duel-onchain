@@ -43,20 +43,20 @@ pub fn connect_road_edges_in_tile(
                 open_edges,
                 contested: false,
             };
-            println!("4");
-            println!("Position: {:?}", position);
-            println!("Road node: {:?}", road_node);
-            println!("Road nodes: {:?}", road_nodes.len());
+            //println!("4");
+            //println!("Position: {:?}", position);
+            //println!("Road node: {:?}", road_node);
+            //println!("Road nodes: {:?}", road_nodes.len());
             road_nodes.set(position.into(), road_node);
-            println!("5");
+            //println!("5");
         }
     };
-    println!("6");
+    //println!("6");
     if roads.len() == 2 && tile != Tile::CRCR.into() {
         union(ref world, ref road_nodes, *roads.at(0), *roads.at(1), true);
-        // println!("After union in tile");
-        // println!("{:?}", find(ref world, board_id, *roads.at(0)));
-        // println!("{:?}", find(ref world, board_id, *roads.at(1)));
+        // //println!("After union in tile");
+        // //println!("{:?}", find(ref world, board_id, *roads.at(0)));
+        // //println!("{:?}", find(ref world, board_id, *roads.at(1)));
     }
 
 }
@@ -83,19 +83,19 @@ pub fn connect_adjacent_road_edges(
     let mut roads_connected: Array<u8> = ArrayTrait::new();
     let edges = extended_tile.edges;
 
-    // println!("Extended tile: {:?}", extended_tile);
-    // println!("Initial edge state: {:?}", initial_edge_state);
-    // println!("State: {:?}", state);
-    // println!("Tile position: {:?}", tile_position);
-    // println!("Row: {:?}", row);
-    // println!("Col: {:?}", col);
-    // println!("Side: {:?}", side);
+    // //println!("Extended tile: {:?}", extended_tile);
+    // //println!("Initial edge state: {:?}", initial_edge_state);
+    // //println!("State: {:?}", state);
+    // //println!("Tile position: {:?}", tile_position);
+    // //println!("Row: {:?}", row);
+    // //println!("Col: {:?}", col);
+    // //println!("Side: {:?}", side);
     //connect bottom edge
     if *edges.at(2) == TEdge::R {
         let edge_pos = find(ref world, ref road_nodes, convert_board_position_to_node_position(tile_position, 2));
-        // println!("Edge pos: {:?}", edge_pos);
+        // //println!("Edge pos: {:?}", edge_pos);
         // let edge = find(ref world, board_id, edge_pos);
-        // println!("Edge before: {:?}", edge);
+        // //println!("Edge before: {:?}", edge);
         if row != 0 {
             if !visited.get((tile_position - 1).into()) {
  
@@ -122,16 +122,16 @@ pub fn connect_adjacent_road_edges(
             road_nodes.set(edge_pos.into(), edge);
             roads_connected.append(edge_pos)
         }
-        // println!("Edge after: {:?}", find(ref world, board_id, edge_pos));
+        // //println!("Edge after: {:?}", find(ref world, board_id, edge_pos));
     }
 
 
     //connect top edge
     if *edges.at(0) == TEdge::R {
         let edge_pos = find(ref world, ref road_nodes, convert_board_position_to_node_position(tile_position, 0));
-        // println!("Edge pos: {:?}", edge_pos);
+        // //println!("Edge pos: {:?}", edge_pos);
         // let edge = find(ref world, board_id, edge_pos);
-        // println!("Edge before: {:?}", edge);
+        // //println!("Edge before: {:?}", edge);
         if row != 7 {
             if !visited.get((tile_position + 1).into()) {
                 let up_edge_pos = convert_board_position_to_node_position(tile_position + 1, 2);
@@ -157,38 +157,38 @@ pub fn connect_adjacent_road_edges(
             road_nodes.set(edge_pos.into(), edge);
             roads_connected.append(edge_pos);
         }
-        // println!("Edge after: {:?}", find(ref world, board_id, edge_pos));
+        // //println!("Edge after: {:?}", find(ref world, board_id, edge_pos));
     }
 
     //connect left edge
     if *edges.at(3) == TEdge::R {
         let edge_pos = find(ref world, ref road_nodes, convert_board_position_to_node_position(tile_position, 3));
-        // println!("Edge pos: {:?}", edge_pos);
+        // //println!("Edge pos: {:?}", edge_pos);
         // let edge = find(ref world, board_id, edge_pos);
-        // println!("Edge before: {:?}", edge);
-        // println!("1");
+        // //println!("Edge before: {:?}", edge);
+        // //println!("1");
         if col != 0 {
             if !visited.get((tile_position - 8).into()) {
-            // println!("2");
+            // //println!("2");
                 let left_edge_pos = convert_board_position_to_node_position(tile_position - 8, 1);
 
                 let (tile, rotation, _) = *state.at((tile_position - 8).into());
                 let extended_left_tile = create_extended_tile(tile.into(), rotation);
                 if *extended_left_tile.edges.at(1) == (TEdge::R).into() {
-                    // println!("3");
+                    // //println!("3");
                     union(ref world, ref road_nodes, left_edge_pos, edge_pos, false);
-                    // println!("4");
+                    // //println!("4");
                     roads_connected.append(edge_pos);
                 }
             }
         } // tile is connected to left edge
         else {
-            // println!("5");
+            // //println!("5");
             let mut edge = road_nodes.at(edge_pos.into());
-            // println!("6");
+            // //println!("6");
             //print all the information
             edge.open_edges -= 1;
-            // println!("7");
+            // //println!("7");
             if *initial_edge_state.at((31 - row).into()) == TEdge::R.into() {
                 if side == (PlayerSide::Blue).into() {
                     edge.blue_points += 1;
@@ -199,16 +199,16 @@ pub fn connect_adjacent_road_edges(
             road_nodes.set(edge_pos.into(), edge);
             roads_connected.append(edge_pos);
         }
-        // println!("Edge after: {:?}", find(ref world, board_id, edge_pos));
+        // //println!("Edge after: {:?}", find(ref world, board_id, edge_pos));
     }
 
 
     //connect right edge
     if *edges.at(1) == TEdge::R {
         let edge_pos = find(ref world, ref road_nodes, convert_board_position_to_node_position(tile_position, 1));
-        // println!("Edge pos: {:?}", edge_pos);
+        // //println!("Edge pos: {:?}", edge_pos);
         // let edge = find(ref world, board_id, edge_pos);
-        // println!("Edge before: {:?}", edge);
+        // //println!("Edge before: {:?}", edge);
         if col != 7 {
             if !visited.get((tile_position + 8).into()) {
                 let right_edge_pos = convert_board_position_to_node_position(tile_position + 8, 3);
@@ -234,7 +234,7 @@ pub fn connect_adjacent_road_edges(
             road_nodes.set(edge_pos.into(), edge);
             roads_connected.append(edge_pos);
         }
-        // println!("Edge after: {:?}", find(ref world, board_id, edge_pos));
+        // //println!("Edge after: {:?}", find(ref world, board_id, edge_pos));
     }
 
 
@@ -454,8 +454,8 @@ pub fn close_all_roads(
 //         let root = find(ref world, board_id, base_pos).position;
 //         let _road_node: RoadNode = world.read_model((board_id, base_pos + 2));
 
-//         //println!("Root1: {:?}", find(ref world, board_id, base_pos));
-//         //println!("Root2: {:?}", road_node);
+//         ////println!("Root1: {:?}", find(ref world, board_id, base_pos));
+//         ////println!("Root2: {:?}", road_node);
 
 //         for i in 0..4_u8 {
 //             if i % 2 == 1 {
@@ -582,7 +582,7 @@ pub fn close_all_roads(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_1, 0),
 //         );
 //         assert_eq!(root1.open_edges, 2, "Road contest is not conducted correctly");
-//         //println!("Root1: {:?}", root1);
+//         ////println!("Root1: {:?}", root1);
 
 //         connect_road_edges_in_tile(
 //             ref world, board_id, tile_position_2, tile_2.into(), rotation2, side2.into(),
@@ -592,7 +592,7 @@ pub fn close_all_roads(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_2, 1),
 //         );
 //         assert_eq!(root2.open_edges, 2, "Road contest is not conducted correctly");
-//         //println!("Root2: {:?}", root2);
+//         ////println!("Root2: {:?}", root2);
 
 //         connect_road_edges_in_tile(
 //             ref world, board_id, tile_position_3, tile_3.into(), rotation3, side3.into(),
@@ -602,7 +602,7 @@ pub fn close_all_roads(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_3, 2),
 //         );
 //         assert_eq!(root3.open_edges, 2, "Road contest is not conducted correctly");
-//         //println!("Root3: {:?}", root3);
+//         ////println!("Root3: {:?}", root3);
 
 //         connect_road_edges_in_tile(
 //             ref world, board_id, tile_position_4, tile_4.into(), rotation4, side4.into(),
@@ -612,7 +612,7 @@ pub fn close_all_roads(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_4, 3),
 //         );
 //         assert_eq!(root4.open_edges, 2, "Road contest is not conducted correctly");
-//         //println!("Root4: {:?}", root4);
+//         ////println!("Root4: {:?}", root4);
 
 //         let mut state = ArrayTrait::new();
 //         for i in 0..64_u8 {
@@ -640,7 +640,7 @@ pub fn close_all_roads(
 //         let rot1 = find(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_1, 0),
 //         );
-//         //println!("Rot1: {:?}", rot1);
+//         ////println!("Rot1: {:?}", rot1);
 //         assert_eq!(rot1.open_edges, 2, "Road contest is not conducted correctly");
 
 //         let mut state = ArrayTrait::new();
@@ -669,7 +669,7 @@ pub fn close_all_roads(
 //         let rot2 = find(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_2, 1),
 //         );
-//         //println!("Rot2: {:?}", rot2);
+//         ////println!("Rot2: {:?}", rot2);
 //         assert_eq!(rot2.open_edges, 2, "Road contest is not conducted correctly");
 
 //         let mut state = ArrayTrait::new();
@@ -700,7 +700,7 @@ pub fn close_all_roads(
 //         let rot3 = find(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_3, 2),
 //         );
-//         //println!("Rot3: {:?}", rot3);
+//         ////println!("Rot3: {:?}", rot3);
 //         assert_eq!(rot3.open_edges, 2, "Road contest is not conducted correctly");
 
 //         let mut state = ArrayTrait::new();
@@ -733,7 +733,7 @@ pub fn close_all_roads(
 //         let rot4 = find(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_4, 3),
 //         );
-//         //println!("Rot4: {:?}", rot4);
+//         ////println!("Rot4: {:?}", rot4);
 //         assert_eq!(rot4.open_edges, 0, "Road contest is not conducted correctly");
 
 //         // 1 and 2

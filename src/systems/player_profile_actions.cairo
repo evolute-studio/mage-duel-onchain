@@ -76,7 +76,7 @@ pub mod player_profile_actions {
         let shop = Shop { shop_id: id, skin_prices };
         world.write_model(@shop);
 
-        println!("Owner: {creator_address:?}");
+        //println!("Owner: {creator_address:?}");
         self.ownable.initializer(creator_address);
     }
 

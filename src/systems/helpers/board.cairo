@@ -111,16 +111,16 @@ pub fn create_board_from_snapshot(
  
     let old_board: Board = world.read_model(old_board_id);
 
-    // println!("old_board: {:?}", old_board);
+    // ////println!("old_board: {:?}", old_board);
     let mut deleted_tiles_positions: Felt252Dict<bool> = Default::default();
     let (_, player1_side, mut joker_number1) = old_board.player1;
     let (_, player2_side, mut joker_number2) = old_board.player2;
 
     let old_board_move_number = old_board.moves_done;
     
-    // println!("old_board_move_number: {:?}", old_board_move_number);
-    // println!("move_number: {:?}", move_number);
-    // println!("number of reverted moves: {:?}", old_board_move_number - move_number.into());
+    // ////println!("old_board_move_number: {:?}", old_board_move_number);
+    // ////println!("move_number: {:?}", move_number);
+    // //println!("number of reverted moves: {:?}", old_board_move_number - move_number.into());
 
     let mut last_move_id = old_board.last_move_id;
     let mut top_tile = old_board.top_tile;
@@ -164,7 +164,7 @@ pub fn create_board_from_snapshot(
             }
             top_tile = move.tile;
         }
-        // println!("move REVERTED: {:?}", move);
+        // //println!("move REVERTED: {:?}", move);
     };
 
     // Update board state
@@ -199,7 +199,7 @@ pub fn create_board_from_snapshot(
 
     board.initial_edge_state = old_board.initial_edge_state.clone();
     
-    // println!("new_board: {:?}", board);
+    // //println!("new_board: {:?}", board);
     //TODO: calculate scores from state
 
     let mut road_nodes: NullableVec<UnionNode> = VecTrait::new();
@@ -245,7 +245,7 @@ pub fn create_board_from_snapshot(
 
 
 
-    // println!("Final board created from snapshot: {:?}", board);
+    // //println!("Final board created from snapshot: {:?}", board);
 
     world
         .write_member(
@@ -389,13 +389,13 @@ fn build_score_from_state(
         }
     };
 
-    // println!("blue_score: {:?}", board.blue_score);
-    // println!("red_score: {:?}", board.red_score);
+    // //println!("blue_score: {:?}", board.blue_score);
+    // //println!("red_score: {:?}", board.red_score);
     
     for i in 0..64_u8 {
 
         if !visited.get(i.into()) {
-            // println!("start iteration {i}");
+            // //println!("start iteration {i}");
             bfs(
                 ref world,
                 ref visited,
@@ -433,7 +433,7 @@ fn bfs(
         let (tile_type, rotation, side) = *board.state.at(current_index.into());
 
         
-        // println!("1");
+        // //println!("1");
 
         let road_contest_scoring_results = connect_adjacent_road_edges(
             ref world,
@@ -586,7 +586,7 @@ pub fn draw_tile_from_board_deck(ref board: Board) -> Option<u8> {
     }
     let mut dice = DiceTrait::new(
         avaliable_tiles.len().try_into().unwrap(), 'SEED' 
-        // + get_block_timestamp().into(),
+        + get_block_timestamp().into(),
     );
 
     let mut next_tile = dice.roll() - 1;
@@ -624,8 +624,8 @@ pub fn generate_initial_board_state(
 
     for side in 0..4_u8 {
         let mut deck = DeckTrait::new(
-            'SEED',
-            // + side.into() + get_block_timestamp().into() + board_id).into(),
+            ('SEED'
+            + side.into() + get_block_timestamp().into() + board_id).into(),
              8,
         );
         let mut edge: Felt252Dict<u8> = Default::default();
