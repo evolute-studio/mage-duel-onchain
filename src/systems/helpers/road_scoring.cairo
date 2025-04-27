@@ -1,7 +1,10 @@
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use evolute_duel::{
-    models::{RoadNode, PotentialRoadContests}, events::{RoadContestWon, RoadContestDraw},
+    models::{
+        scoring::{RoadNode, PotentialRoadContests}
+    }, 
+    events::{RoadContestWon, RoadContestDraw},
     systems::helpers::{
         road_union_find::{find, union}, board::{},
         tile_helpers::{

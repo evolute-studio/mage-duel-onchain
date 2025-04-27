@@ -1,5 +1,5 @@
 [package]
-cairo-version = "=2.9.2"
+cairo-version = "=2.9.4"
 name = "evolute_duel"
 version = "1.2.2"
 edition = "2024_07"
@@ -40,18 +40,22 @@ cancel_game1 = "sozo --release execute evolute_duel-game cancel_game --account-a
 
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.2" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.4.0" }
 origami_random = { git = "https://github.com/dojoengine/origami" }
-openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.20.0" }
+openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v1.0.0" }
+tournaments = { git = "https://github.com/Provable-Games/tournaments.git" }
+openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
+openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
+nft_combo = { git = "https://github.com/underware-gg/cairo-nft-combo", tag = "v1.0.0"}
 
 
 [[target.starknet-contract]]
 build-external-contracts = ["dojo::world::world_contract::world"]
 
 [dev-dependencies]
-cairo_test = "=2.9.2"
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.2" }
-assert_macros = "2.9.2"
+cairo_test = "=2.9.4"
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.4.0" }
+assert_macros = "2.9.4"
 
 [profile.provable]
 

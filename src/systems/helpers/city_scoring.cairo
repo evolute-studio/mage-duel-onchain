@@ -1,7 +1,7 @@
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use evolute_duel::{
-    models::{CityNode, PotentialCityContests}, events::{CityContestWon, CityContestDraw},
+    models::scoring::{CityNode, PotentialCityContests}, events::{CityContestWon, CityContestDraw},
     systems::helpers::{
         city_union_find::{find, union}, board::{},
         tile_helpers::{

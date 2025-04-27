@@ -42,7 +42,7 @@ pub mod player_profile_actions {
             CurrentPlayerBalance, CurrentPlayerActiveSkin, CurrentPlayerUsername,
             PlayerUsernameChanged, PlayerSkinChanged, PlayerSkinChangeFailed,
         },
-        models::{Player, Shop}, packing::{},
+        models::player::{Player, Shop}, packing::{},
     };
     use openzeppelin_access::ownable::OwnableComponent;
 

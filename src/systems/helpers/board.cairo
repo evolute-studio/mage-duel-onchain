@@ -8,7 +8,7 @@ use origami_random::dice::{DiceTrait};
 use core::dict::Felt252Dict;
 
 use evolute_duel::{
-    events::{BoardCreated, BoardCreatedFromSnapshot}, models::{Board, Rules, Move},
+    events::{BoardCreated, BoardCreatedFromSnapshot}, models::game::{Board, Rules, Move},
     packing::{GameState, TEdge, Tile, PlayerSide},
     systems::helpers::{
         city_scoring::{connect_adjacent_city_edges, connect_city_edges_in_tile},

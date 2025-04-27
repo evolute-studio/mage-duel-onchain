@@ -1,5 +1,5 @@
 use dojo::model::ModelStorage;
-use evolute_duel::models::{CityNode};
+use evolute_duel::models::scoring::{CityNode};
 use dojo::world::{WorldStorage};
 //Union find on CityNode
 pub fn find(ref world: WorldStorage, board_id: felt252, position: u8) -> CityNode {

@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x4f3e21c7dcaffd228f9daba3a7d480536c2eea4c0e09b00abb54362864de5c8",
-      "class_hash": "0x549ca0106d47e8ee802cea284293e10f4b10414738fe7a15d2646ec0c6ef189",
+      "address": "0x3b9709e82e854f96056689b754f053735bfe2cfc299266e8bca06751fe6d290",
+      "class_hash": "0x75860fec2653ebdf0b82f8a95e19c177ca2ac73939d692e15aa5e5a7a3161d6",
       "abi": [
         {
           "type": "impl",
@@ -1479,6 +1479,18 @@
               ],
               "outputs": [],
               "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "finish_game",
+              "inputs": [
+                {
+                  "name": "board_id",
+                  "type": "core::felt252"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
             }
           ]
         },
@@ -1601,12 +1613,13 @@
         "skip_move",
         "create_snapshot",
         "create_game_from_snapshot",
+        "finish_game",
         "upgrade"
       ]
     },
     {
-      "address": "0x693f1a1bba2704e2694b2402dbc5de4e4dcaf03aabbf4d2bad3e47c6a3de4dd",
-      "class_hash": "0x24cdd7452e6c59124ca813fabd3cf91db43e9fdc91c9e52c48d3e6e32bd40d6",
+      "address": "0x6355ccd53925f155aefceca0890be6ab0f19f875b7ba4645e00c1cf7471edc",
+      "class_hash": "0x6267fbc12484e65bfcd82dc7ed466d53d557f5774036ce567a3d31a19b507c2",
       "abi": [
         {
           "type": "impl",
@@ -1661,9 +1674,14 @@
         {
           "type": "function",
           "name": "dojo_init",
-          "inputs": [],
+          "inputs": [
+            {
+              "name": "creator_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
           "outputs": [],
-          "state_mutability": "view"
+          "state_mutability": "external"
         },
         {
           "type": "impl",
@@ -1678,6 +1696,22 @@
               "type": "function",
               "name": "balance",
               "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "set_balance",
+              "inputs": [
+                {
+                  "name": "balance",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "player_id",
+                  "type": "core::felt252"
+                }
+              ],
               "outputs": [],
               "state_mutability": "external"
             },
@@ -1784,6 +1818,66 @@
           ]
         },
         {
+          "type": "impl",
+          "name": "OwnableMixinImpl",
+          "interface_name": "openzeppelin_access::ownable::interface::OwnableABI"
+        },
+        {
+          "type": "interface",
+          "name": "openzeppelin_access::ownable::interface::OwnableABI",
+          "items": [
+            {
+              "type": "function",
+              "name": "owner",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "transfer_ownership",
+              "inputs": [
+                {
+                  "name": "new_owner",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "renounce_ownership",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "transferOwnership",
+              "inputs": [
+                {
+                  "name": "newOwner",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "renounceOwnership",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
           "type": "constructor",
           "name": "constructor",
           "inputs": []
@@ -1820,6 +1914,57 @@
         },
         {
           "type": "event",
+          "name": "openzeppelin_access::ownable::ownable::OwnableComponent::OwnershipTransferred",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "previous_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "key"
+            },
+            {
+              "name": "new_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "key"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "openzeppelin_access::ownable::ownable::OwnableComponent::OwnershipTransferStarted",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "previous_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "key"
+            },
+            {
+              "name": "new_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "key"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "openzeppelin_access::ownable::ownable::OwnableComponent::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "OwnershipTransferred",
+              "type": "openzeppelin_access::ownable::ownable::OwnableComponent::OwnershipTransferred",
+              "kind": "nested"
+            },
+            {
+              "name": "OwnershipTransferStarted",
+              "type": "openzeppelin_access::ownable::ownable::OwnableComponent::OwnershipTransferStarted",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
           "name": "evolute_duel::systems::player_profile_actions::player_profile_actions::Event",
           "kind": "enum",
           "variants": [
@@ -1832,21 +1977,34 @@
               "name": "WorldProviderEvent",
               "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
               "kind": "nested"
+            },
+            {
+              "name": "OwnableEvent",
+              "type": "openzeppelin_access::ownable::ownable::OwnableComponent::Event",
+              "kind": "flat"
             }
           ]
         }
       ],
-      "init_calldata": [],
+      "init_calldata": [
+        "0x64ca22e94267b4ce3107fba4f4d42c8046d191ed03fbf09dc9f9d06eb7c0f2"
+      ],
       "tag": "evolute_duel-player_profile_actions",
       "selector": "0x2fe51480cb4bcea87b911f6a9be5f5a1a39ee57c9aabb0617792aa4e03370e0",
       "systems": [
+        "dojo_init",
         "balance",
+        "set_balance",
         "username",
         "active_skin",
         "change_username",
         "change_skin",
         "become_bot",
-        "upgrade"
+        "upgrade",
+        "transfer_ownership",
+        "renounce_ownership",
+        "transferOwnership",
+        "renounceOwnership"
       ]
     }
   ],
@@ -1943,6 +2101,12 @@
       "class_hash": "0x4c2570c7f798b2cad9149aaec06eac9bc87a5683d33e36a826d770a5532e390",
       "tag": "evolute_duel-BoardUpdated",
       "selector": "0x1352659f5307c3478b85ed999c391ac8768670156647c54e3d0edfd3acd61de"
+    },
+    {
+      "members": [],
+      "class_hash": "0x6499a268759f0960f18abb9b23f35410203ff9243860e2c8283ba9621e10a60",
+      "tag": "evolute_duel-CantFinishGame",
+      "selector": "0x14f1a8ea9c149031ed92e29d428b5c1a01d55284c6ce102488150ddc292c1fa"
     },
     {
       "members": [],

@@ -42,7 +42,10 @@ pub mod game {
     use super::{IGame};
     use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
     use evolute_duel::{
-        models::{Board, Rules, Move, Game, Snapshot, Player},
+        models::{
+            game::{Board, Rules, Move, Game, Snapshot},
+            player::{Player}
+        },
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
             PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
