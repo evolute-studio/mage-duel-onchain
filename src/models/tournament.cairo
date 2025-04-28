@@ -1,4 +1,5 @@
 use evolute_duel::types::timestamp::{Period};
+use starknet::ContractAddress;
 
 //------------------------------------
 // Tournament entry (tournament_token)
@@ -11,7 +12,7 @@ pub struct TournamentPass {
     //------
     pub tournament_id: u64,         // budokan tournament_id
     pub entry_number: u8,           // entry number in the tournament
-    pub duelist_id: u128,           // enlisted duelist id
+    pub player_address: ContractAddress,           // enlisted duelist id
     // progress
     pub current_round_number: u8,   // current round this player is in
     pub score: u32,                 // budokan score (Fame less decimals)

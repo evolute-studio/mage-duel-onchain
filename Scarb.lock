@@ -98,7 +98,7 @@ source = "git+https://github.com/dojoengine/origami#4d6a98e4fee4c71c885a1669660a
 [[package]]
 name = "tournaments"
 version = "0.0.1"
-source = "git+https://github.com/Provable-Games/tournaments.git#6adb53fdc9b9514dce0e4d08efce47a47a84796f"
+source = "git+https://github.com/underware-gg/tournaments?branch=pistols#7c62855f042370d6de33bff89d214c8ca198354d"
 dependencies = [
  "dojo",
  "openzeppelin_introspection",

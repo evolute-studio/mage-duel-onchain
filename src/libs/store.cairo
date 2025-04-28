@@ -28,10 +28,19 @@ pub use evolute_duel::models::{
         PotentialCityContests, PotentialCityContestsValue, 
         PotentialRoadContests, PotentialRoadContestsValue
     },
-    tournament::*,
+    tournament::{
+        Tournament, TournamentValue,
+        TournamentPass, TournamentPassValue,
+        TournamentSettings, TournamentSettingsValue,
+        TournamentRound, TournamentRoundValue,
+        TournamentType,
+        TournamentDuelKeys,
+        TournamentRules,
+        TournamentState,
+    },
 };
 // pub use pistols::systems::components::{
-//     token_bound::{
+//     token_bound::{s
 //         TokenBoundAddress, TokenBoundAddressValue,
 //     },
 // };
@@ -39,7 +48,7 @@ pub use evolute_duel::models::{
 //     rules::{RewardValues},
 // };
 use tournaments::components::models::game::{TokenMetadata, TokenMetadataValue};
-
+use evolute_duel::interfaces::dns::{ITournamentDispatcher};
 
 #[derive(Copy, Drop)]
 pub struct Store {
@@ -113,6 +122,14 @@ pub impl StoreImpl of StoreTrait {
         (self.world.read_value((tournament_id, round_number),))
     }
 
+    #[inline(always)]
+    fn get_budokan_token_metadata(self: @Store, pass_id: u64) -> TokenMetadata {
+        (self.world.read_model(pass_id))
+    }
+    #[inline(always)]
+    fn get_budokan_token_metadata_value(self: @Store, pass_id: u64) -> TokenMetadataValue {
+        (self.world.read_value(pass_id))
+    }
 
 
     //----------------------------------
@@ -269,10 +286,10 @@ pub impl StoreImpl of StoreTrait {
     //     let tournament_type: TournamentType = self.world.read_member(Model::<TournamentSettings>::ptr_from_keys(settings_id), selector!("tournament_type"));
     //     (tournament_type.rules())
     // }
-    // #[inline(always)]
-    // fn get_tournament_pass_minter_address(self: @Store, pass_id: u64) -> ContractAddress {
-    //     (self.world.read_member(Model::<TokenMetadata>::ptr_from_keys(pass_id), selector!("minted_by")))
-    // }
+    #[inline(always)]
+    fn get_tournament_pass_minter_address(self: @Store, pass_id: u64) -> ContractAddress {
+        (self.world.read_member(Model::<TokenMetadata>::ptr_from_keys(pass_id), selector!("minted_by")))
+    }
     // #[inline(always)]
     // fn get_tournament_duel_id(self: @Store, keys: @TournamentDuelKeys) -> u128 {
     //     (self.world.read_member(Model::<TournamentToChallenge>::ptr_from_keys(*keys), selector!("duel_id")))
@@ -366,4 +383,14 @@ pub impl StoreImpl of StoreTrait {
     //         timestamp: starknet::get_block_timestamp(),
     //     });
     // }
+
+    //--------------------------
+    // dispatchers
+    //
+
+    #[inline(always)]
+    fn budokan_dispatcher_from_pass_id(self: @Store, pass_id: u64) -> ITournamentDispatcher {
+        (ITournamentDispatcher{ contract_address: self.get_tournament_pass_minter_address(pass_id) })
+    }
+
 }

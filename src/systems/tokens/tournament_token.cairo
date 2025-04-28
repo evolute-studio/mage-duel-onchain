@@ -77,8 +77,8 @@ pub trait ITournamentToken<TState> {
     fn get_tournament_id(self: @TState, pass_id: u64) -> u64;
     fn can_start_tournament(self: @TState, pass_id: u64) -> bool;
     fn start_tournament(ref self: TState, pass_id: u64) -> u64;
-    fn can_enlist_duelist(self: @TState, pass_id: u64, duelist_id: u128) -> bool;
-    fn enlist_duelist(ref self: TState, pass_id: u64, duelist_id: u128);
+    fn can_enlist_duelist(self: @TState, pass_id: u64) -> bool;
+    fn enlist_duelist(ref self: TState, pass_id: u64);
     fn can_join_duel(self: @TState, pass_id: u64) -> bool;
     fn join_duel(ref self: TState, pass_id: u64) -> u128;
     fn can_end_round(self: @TState, pass_id: u64) -> bool;
@@ -95,25 +95,25 @@ pub trait ITournamentTokenPublic<TState> {
 
     // Phase 1 -- Enlist Duelist (per player)
     // - can be called by before or after start_tournament()
-    fn can_enlist_duelist(self: @TState, pass_id: u64, duelist_id: u128) -> bool;
-    fn enlist_duelist(ref self: TState, pass_id: u64, duelist_id: u128);
+    fn can_enlist_duelist(self: @TState, pass_id: u64) -> bool;
+    fn enlist_duelist(ref self: TState, pass_id: u64);
 
-    // Phase 2 -- Start tournament (any contestant can start)
-    // - will shuffle initial bracket
-    // - requires VRF!
-    fn can_start_tournament(self: @TState, pass_id: u64) -> bool;
-    fn start_tournament(ref self: TState, pass_id: u64) -> u64; // returns tournament_id
+    // // Phase 2 -- Start tournament (any contestant can start)
+    // // - will shuffle initial bracket
+    // // - requires VRF!
+    // fn can_start_tournament(self: @TState, pass_id: u64) -> bool;
+    // fn start_tournament(ref self: TState, pass_id: u64) -> u64; // returns tournament_id
 
-    // Phase 3 -- Join tournament (per player)
-    fn can_join_duel(self: @TState, pass_id: u64) -> bool;
-    fn join_duel(ref self: TState, pass_id: u64) -> u128; // returns duel_id
+    // // Phase 3 -- Join tournament (per player)
+    // fn can_join_duel(self: @TState, pass_id: u64) -> bool;
+    // fn join_duel(ref self: TState, pass_id: u64) -> u128; // returns duel_id
 
-    // Phase 4 -- End round (any contestant can end)
-    // - will shuffle next bracket
-    // - or close tournament
-    // - requires VRF!
-    fn can_end_round(self: @TState, pass_id: u64) -> bool;
-    fn end_round(ref self: TState, pass_id: u64) -> Option<u8>; // returns next round number
+    // // Phase 4 -- End round (any contestant can end)
+    // // - will shuffle next bracket
+    // // - or close tournament
+    // // - requires VRF!
+    // fn can_end_round(self: @TState, pass_id: u64) -> bool;
+    // fn end_round(ref self: TState, pass_id: u64) -> Option<u8>; // returns next round number
 }
 
 // Exposed to world and admins
@@ -136,32 +136,37 @@ pub mod tournament_token {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait, IERC721Metadata};
-    use openzeppelin_token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
+    use openzeppelin_token::erc721::{ERC721Component};
+    use nft_combo::erc721::erc721_combo::ERC721ComboComponent;
+    use nft_combo::erc721::erc721_combo::ERC721ComboComponent::{ERC721HooksImpl};
+    use nft_combo::utils::renderer::{ContractMetadata, TokenMetadata, Attribute};
+    use nft_combo::utils::encoder::{Encoder};
     use tournaments::components::game::{game_component};
     use tournaments::components::interfaces::{IGameDetails, ISettings};//, IGameToken};
     component!(path: game_component, storage: game, event: GameEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    component!(path: ERC721ComboComponent, storage: erc721_combo, event: ERC721ComboEvent);
+
     
     #[abi(embed_v0)]
     impl GameImpl = game_component::GameImpl<ContractState>;
     impl GameInternalImpl = game_component::InternalImpl<ContractState>;
 
-    #[abi(embed_v0)]
-    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
-    #[abi(embed_v0)]
-    impl ERC721CamelOnlyImpl = ERC721Component::ERC721CamelOnlyImpl<ContractState>;
     impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
-
-    #[abi(embed_v0)]
-    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
     
+    #[abi(embed_v0)]
+    impl ERC721ComboMixinImpl = ERC721ComboComponent::ERC721ComboMixinImpl<ContractState>;
+    impl ERC721ComboInternalImpl = ERC721ComboComponent::InternalImpl<ContractState>;
+
     #[storage]
     struct Storage {
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         #[substorage(v0)]
         erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        erc721_combo: ERC721ComboComponent::Storage,
         #[substorage(v0)]
         game: game_component::Storage,
     }
@@ -172,6 +177,8 @@ pub mod tournament_token {
         SRC5Event: SRC5Component::Event,
         #[flat]
         ERC721Event: ERC721Component::Event,
+        #[flat]
+        ERC721ComboEvent: ERC721ComboComponent::Event,
         #[flat]
         GameEvent: game_component::Event,
     }
@@ -204,25 +211,29 @@ pub mod tournament_token {
     //     constants::{METADATA},
     //     timestamp::{Period, PeriodTrait, TIMESTAMP},
     // };
-    // use pistols::interfaces::dns::{
-    //     DnsTrait, SELECTORS,
-    //     IDuelistTokenDispatcher, IDuelistTokenDispatcherTrait,
-    //     ITournamentDispatcher, ITournamentDispatcherTrait,
-    //     IVrfProviderDispatcherTrait, Source,
-    //     IDuelTokenProtectedDispatcherTrait,
-    //     IGameDispatcherTrait,
-    // };
+    use evolute_duel::interfaces::dns::{
+        DnsTrait, SELECTORS,
+        ITournamentDispatcher, ITournamentDispatcherTrait,
+        IGameDispatcherTrait,
+    };
     // use pistols::systems::rng::{RngWrap, RngWrapTrait};
-    // use pistols::libs::store::{Store, StoreTrait};
+    use evolute_duel::libs::store::{Store, StoreTrait};
     // use pistols::utils::short_string::{ShortStringTrait};
     // use graffiti::url::{UrlImpl};
 
-    use evolute_duel::interfaces::{
-        dns::{DnsTrait, SELECTORS}
-    };
-
     use evolute_duel::models::{
-        tournament::{Tournament, TournamentType, TournamentTypeTrait, TournamentTypeImpl, TournamentSettings, TournamentSettingsValue}
+        tournament::{
+            TournamentPass, TournamentPassValue,
+            TournamentSettings, TournamentSettingsValue,
+            TournamentType, TournamentTypeTrait,
+            TournamentRules,
+            Tournament, TournamentValue,
+            TournamentState,
+            TournamentRound, TournamentRoundTrait,
+            TournamentRoundValue,
+            TournamentBracketTrait,
+            TournamentResultsTrait,
+        }
     };
 
     use evolute_duel::utils::{
@@ -341,80 +352,58 @@ pub mod tournament_token {
     //-----------------------------------
     // Public
     //
-    // #[abi(embed_v0)]
-    // impl TournamentTokenPublicImpl of super::ITournamentTokenPublic<ContractState> {
+    #[abi(embed_v0)]
+    impl TournamentTokenPublicImpl of super::ITournamentTokenPublic<ContractState> {
 
-        // fn get_tournament_id(self: @ContractState, pass_id: u64) -> u64 {
-        //     assert(self.erc721_combo.token_exists(pass_id.into()), Errors::INVALID_ENTRY);
-        //     let store: Store = StoreTrait::new(self.world_default());
-        //     // verify tournament not started
-        //     let (_, tournament_id): (ITournamentDispatcher, u64) = self._get_budokan_tournament_id(@store, pass_id);
-        //     (tournament_id)
-        // }
+        fn get_tournament_id(self: @ContractState, pass_id: u64) -> u64 {
 
-        // //-----------------------------------
-        // // Phase 1 -- Enlist Duelist
-        // //
-        // fn can_enlist_duelist(self: @ContractState, pass_id: u64, duelist_id: u128) -> bool {
-        //     let store: Store = StoreTrait::new(self.world_default());
-        //     // get updates duelist lives
-        //     let duelist_dispatcher: IDuelistTokenDispatcher = store.world.duelist_token_dispatcher();
-        //     duelist_dispatcher.poke(duelist_id);
-        //     let lives: u8 = duelist_dispatcher.life_count(duelist_id);
-        //     // get tournament settings
-        //     let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
-        //     let rules: TournamentRules = store.get_tournament_settings_rules(token_metadata.settings_id);
-        //     (
-        //         // owns entry
-        //         self.is_owner_of(starknet::get_caller_address(), pass_id.into()) &&
-        //         // owns duelist
-        //         duelist_dispatcher.is_owner_of(starknet::get_caller_address(), duelist_id.into()) &&
-        //         // not enlisted
-        //         store.get_tournament_pass_value(pass_id).duelist_id.is_zero() &&
-        //         // lives are valid
-        //         lives >= rules.min_lives && lives <= rules.max_lives
-        //     )
-        // }
-        // fn enlist_duelist(ref self: ContractState, pass_id: u64, duelist_id: u128) {
-        //     let mut store: Store = StoreTrait::new(self.world_default());
-        //     // validate entry ownership
-        //     let caller: ContractAddress = starknet::get_caller_address();
-        //     assert(self.is_owner_of(caller, pass_id.into()) == true, Errors::NOT_YOUR_ENTRY);
-        //     assert(duelist_id.is_non_zero(), Errors::INVALID_DUELIST);
-        //     // validate duelist ownership
-        //     let duelist_dispatcher: IDuelistTokenDispatcher = store.world.duelist_token_dispatcher();
-        //     assert(duelist_dispatcher.is_owner_of(caller, duelist_id.into()) == true, Errors::NOT_YOUR_DUELIST);
+            assert(self.erc721_combo.token_exists(pass_id.into()), Errors::INVALID_ENTRY);
+            let store: Store = StoreTrait::new(self.world_default());
+            // verify tournament not started
+            let (_, tournament_id): (ITournamentDispatcher, u64) = self._get_budokan_tournament_id(@store, pass_id);
+            (tournament_id)
+        }
 
-        //     // validate duelist health
-        //     let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
-        //     let rules: TournamentRules = store.get_tournament_settings_rules(token_metadata.settings_id);
-        //     duelist_dispatcher.poke(duelist_id);
-        //     let lives: u8 = duelist_dispatcher.life_count(duelist_id);
-        //     assert(lives > 0, Errors::DUELIST_IS_DEAD);
-        //     assert(lives >= rules.min_lives, Errors::INSUFFICIENT_LIVES);
-        //     assert(lives <= rules.max_lives, Errors::TOO_MANY_LIVES);
+        //-----------------------------------
+        // Phase 1 -- Enlist Duelist
+        //
+        fn can_enlist_duelist(self: @ContractState, pass_id: u64) -> bool {
+            let store: Store = StoreTrait::new(self.world_default());
+            (
+                // owns entry
+                self.is_owner_of(starknet::get_caller_address(), pass_id.into()) &&
+                // not enlisted
+                store.get_tournament_pass_value(pass_id).player_address.is_zero()
+            )
+        }
+        fn enlist_duelist(ref self: ContractState, pass_id: u64) {
+            let mut store: Store = StoreTrait::new(self.world_default());
+            // validate entry ownership
+            let caller: ContractAddress = starknet::get_caller_address();
+            assert(self.is_owner_of(caller, pass_id.into()) == true, Errors::NOT_YOUR_ENTRY);
 
-        //     // enlist duelist in this tournament
-        //     let registration: Option<Registration> = self._get_budokan_registration(@store, pass_id);
-        //     match registration {
-        //         Option::Some(registration) => {
-        //             let mut entry: TournamentPass = store.get_tournament_pass(pass_id);
-        //             assert(entry.duelist_id.is_zero(), Errors::ALREADY_ENLISTED);
-        //             assert(registration.entry_number.is_non_zero(), Errors::INVALID_ENTRY_NUMBER);
-        //             assert(registration.entry_number <= TournamentRoundTrait::MAX_ENTRIES.into(), Errors::TOURNAMENT_FULL);
-        //             entry.tournament_id = registration.tournament_id;
-        //             entry.entry_number = registration.entry_number.try_into().unwrap();
-        //             entry.duelist_id = duelist_id;
-        //             store.set_tournament_pass(@entry);
-        //             // validate and create DuelistAssignment
-        //             DuelistTrait::enter_tournament(ref store, duelist_id, pass_id);
-        //         },
-        //         Option::None => {
-        //             // should never get here since entry is owned and exists
-        //             assert(false, Errors::INVALID_ENTRY);
-        //         },
-        //     }
-        // }
+            // enlist duelist in this tournament
+            let registration: Option<Registration> = self._get_budokan_registration(@store, pass_id);
+            match registration {
+                Option::Some(registration) => {
+                    let mut entry: TournamentPass = store.get_tournament_pass(pass_id);
+                    assert(entry.player_address.is_zero(), Errors::ALREADY_ENLISTED);
+                    assert(registration.entry_number.is_non_zero(), Errors::INVALID_ENTRY_NUMBER);
+                    assert(registration.entry_number <= TournamentRoundTrait::MAX_ENTRIES.into(), Errors::TOURNAMENT_FULL);
+                    entry.tournament_id = registration.tournament_id;
+                    entry.entry_number = registration.entry_number.try_into().unwrap();
+                    entry.player_address = caller;
+                    store.set_tournament_pass(@entry);
+                    // validate and create DuelistAssignment
+                    //TODO: logic of entering tournament for game
+                    // DuelistTrait::enter_tournament(ref store, duelist_id, pass_id);
+                },
+                Option::None => {
+                    // should never get here since entry is owned and exists
+                    assert(false, Errors::INVALID_ENTRY);
+                },
+            }
+        }
 
         // //-----------------------------------
         // // Phase 2 -- Start tournament
@@ -627,7 +616,7 @@ pub mod tournament_token {
 
         //     (result)
         // }
-    // }
+    }
 
 
     //-----------------------------------
@@ -652,26 +641,25 @@ pub mod tournament_token {
         }
 
         fn _create_settings(ref self: ContractState) {
-            let mut world = self.world_default();
-            let settings: @TournamentSettings = TournamentType::LastManStanding.tournament_settings();
-            world.write_model(settings);
+            let mut store: Store = StoreTrait::new(self.world_default());
+            store.set_tournament_settings(TournamentType::LastManStanding.tournament_settings());
         }
 
-        // fn _get_budokan_tournament_id(self: @ContractState, store: @Store, pass_id: u64) -> (ITournamentDispatcher, u64) {
-        //     let budokan_dispatcher: ITournamentDispatcher = store.budokan_dispatcher_from_pass_id(pass_id);
-        //     let tournament_id: u64 = if (budokan_dispatcher.contract_address.is_non_zero()) {
-        //         budokan_dispatcher.get_tournament_id_for_token_id(starknet::get_contract_address(), pass_id)
-        //     } else {0}; // invalid entry
-        //     (budokan_dispatcher, tournament_id)
-        // }
+        fn _get_budokan_tournament_id(self: @ContractState, store: @Store, pass_id: u64) -> (ITournamentDispatcher, u64) {
+            let budokan_dispatcher: ITournamentDispatcher = store.budokan_dispatcher_from_pass_id(pass_id);
+            let tournament_id: u64 = if (budokan_dispatcher.contract_address.is_non_zero()) {
+                budokan_dispatcher.get_tournament_id_for_token_id(starknet::get_contract_address(), pass_id)
+            } else {0}; // invalid entry
+            (budokan_dispatcher, tournament_id)
+        }
 
-        // fn _get_budokan_registration(self: @ContractState, store: @Store, pass_id: u64) -> Option<Registration> {
-        //     let budokan_dispatcher: ITournamentDispatcher = store.budokan_dispatcher_from_pass_id(pass_id);
-        //     (if (budokan_dispatcher.contract_address.is_non_zero())
-        //         {Option::Some(budokan_dispatcher.get_registration(starknet::get_contract_address(), pass_id))}
-        //         else {Option::None}
-        //     )
-        // }
+        fn _get_budokan_registration(self: @ContractState, store: @Store, pass_id: u64) -> Option<Registration> {
+            let budokan_dispatcher: ITournamentDispatcher = store.budokan_dispatcher_from_pass_id(pass_id);
+            (if (budokan_dispatcher.contract_address.is_non_zero())
+                {Option::Some(budokan_dispatcher.get_registration(starknet::get_contract_address(), pass_id))}
+                else {Option::None}
+            )
+        }
 
         // fn _initialize_round(ref self: ContractState,
         //     ref store: Store,
@@ -722,82 +710,82 @@ pub mod tournament_token {
 
 
     
-    // //-----------------------------------
-    // // ERC721ComboHooksTrait
-    // //
-    // pub impl ERC721ComboHooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
-    //     fn render_contract_uri(self: @ERC721Component::ComponentState<ContractState>) -> Option<ContractMetadata> {
-    //         // let self = self.get_contract(); // get the component's contract state
-    //         // let base_uri: ByteArray = self.erc721._base_uri();
-    //         // // let mut store: Store = StoreTrait::new(self.world_default());
-    //         // // return the metadata to be rendered by the component
-    //         // // https://docs.opensea.io/docs/contract-level-metadata
-    //         // let metadata = ContractMetadata {
-    //         //     name: self.name(),
-    //         //     symbol: self.symbol(),
-    //         //     description: "Pistols at Dawn Tournament Entry",
-    //         //     image: Option::Some(METADATA::CONTRACT_IMAGE(base_uri.clone())),
-    //         //     banner_image: Option::Some(METADATA::CONTRACT_BANNER_IMAGE(base_uri.clone())),
-    //         //     featured_image: Option::Some(METADATA::CONTRACT_FEATURED_IMAGE(base_uri.clone())),
-    //         //     external_link: Option::Some(METADATA::EXTERNAL_LINK()),
-    //         //     collaborators: Option::None,
-    //         // };
-    //         // (Option::Some(metadata))
+    //-----------------------------------
+    // ERC721ComboHooksTrait
+    //
+    pub impl ERC721ComboHooksImpl of ERC721ComboComponent::ERC721ComboHooksTrait<ContractState> {
+        fn render_contract_uri(self: @ERC721ComboComponent::ComponentState<ContractState>) -> Option<ContractMetadata> {
+            // let self = self.get_contract(); // get the component's contract state
+            // let base_uri: ByteArray = self.erc721._base_uri();
+            // // let mut store: Store = StoreTrait::new(self.world_default());
+            // // return the metadata to be rendered by the component
+            // // https://docs.opensea.io/docs/contract-level-metadata
+            // let metadata = ContractMetadata {
+            //     name: self.name(),
+            //     symbol: self.symbol(),
+            //     description: "Pistols at Dawn Tournament Entry",
+            //     image: Option::Some(METADATA::CONTRACT_IMAGE(base_uri.clone())),
+            //     banner_image: Option::Some(METADATA::CONTRACT_BANNER_IMAGE(base_uri.clone())),
+            //     featured_image: Option::Some(METADATA::CONTRACT_FEATURED_IMAGE(base_uri.clone())),
+            //     external_link: Option::Some(METADATA::EXTERNAL_LINK()),
+            //     collaborators: Option::None,
+            // };
+            // (Option::Some(metadata))
 
-    //         Option::None
-    //     }
+            Option::None
+        }
 
-    //     fn render_token_uri(self: @ERC721Component::ComponentState<ContractState>, token_id: u256) -> Option<TokenMetadata> {
-    //         // let self = self.get_contract(); // get the component's contract state
-    //         // let mut _store: Store = StoreTrait::new(self.world_default());
-    //         // // gather data
-    //         // let base_uri: ByteArray = self.erc721._base_uri();
-    //         // // let tournament: TournamentValue = store.get_tournament_value(token_id.low);
-    //         // // let winner_duelist: DuelistValue = store.get_duelist_value(tournament.winner_duelist_id);
-    //         // // let winner_name: ByteArray = format!("Duelist #{}", winner_duelist.duelist_id);
-    //         // // Image
-    //         // let image: ByteArray = UrlImpl::new(format!("{}/api/pistols/tournament_token/{}/image", base_uri.clone(), token_id))
-    //         //     // .add("winner_address", format!("0x{:x}", tournament.winner_address), false)
-    //         //     // .add("winner_duelist_id", tournament.winner_duelist_id.to_string(), false)
-    //         //     // .add("winner_name", winner_name.clone(), false)
-    //         //     // .add("profile_type", winner_duelist.profile_type.into(), false)
-    //         //     // .add("profile_id", winner_duelist.profile_type.profile_id().to_string(), false)
-    //         //     .build();
-    //         // // Attributes
-    //         // let mut attributes: Array<Attribute> = array![
-    //         //     // Attribute {
-    //         //     //     key: "Tournament ID",
-    //         //     //     value: challenge.duel_type.to_string(),
-    //         //     // },
-    //         //     // Attribute {
-    //         //     //     key: "Table",
-    //         //     //     value: challenge.duel_type.to_string(),
-    //         //     // },
-    //         // ];
-    //         // // if (tournament.winner_address.is_non_zero()) {
-    //         // //     attributes.append(Attribute {
-    //         // //         key: "Winner",
-    //         // //         value: winner_name.clone(),
-    //         // //     });
-    //         // // }
-    //         // // return the metadata to be rendered by the component
-    //         // // https://docs.opensea.io/docs/metadata-standards#metadata-structure
-    //         // let metadata = TokenMetadata {
-    //         //     token_id,
-    //         //     name: format!("Tournament #{}", token_id),
-    //         //     description: format!("Pistols at Dawn Tournament Entry #{}. https://pistols.gg", token_id),
-    //         //     image: Option::Some(image),
-    //         //     image_data: Option::None,
-    //         //     external_url: Option::Some(METADATA::EXTERNAL_LINK()), // TODO: format external token link
-    //         //     background_color: Option::Some("000000"),
-    //         //     animation_url: Option::None,
-    //         //     youtube_url: Option::None,
-    //         //     attributes: Option::Some(attributes.span()),
-    //         //     additional_metadata: Option::None,
-    //         // };
-    //         // (Option::Some(metadata))
-    //         Option::None
-    //     }
-    // }
+        fn render_token_uri(self: @ERC721ComboComponent::ComponentState<ContractState>, token_id: u256) -> Option<TokenMetadata> {
+            // let self = self.get_contract(); // get the component's contract state
+            // let mut _store: Store = StoreTrait::new(self.world_default());
+            // // gather data
+            // let base_uri: ByteArray = self.erc721._base_uri();
+            // // let tournament: TournamentValue = store.get_tournament_value(token_id.low);
+            // // let winner_duelist: DuelistValue = store.get_duelist_value(tournament.winner_duelist_id);
+            // // let winner_name: ByteArray = format!("Duelist #{}", winner_duelist.duelist_id);
+            // // Image
+            // let image: ByteArray = UrlImpl::new(format!("{}/api/pistols/tournament_token/{}/image", base_uri.clone(), token_id))
+            //     // .add("winner_address", format!("0x{:x}", tournament.winner_address), false)
+            //     // .add("winner_duelist_id", tournament.winner_duelist_id.to_string(), false)
+            //     // .add("winner_name", winner_name.clone(), false)
+            //     // .add("profile_type", winner_duelist.profile_type.into(), false)
+            //     // .add("profile_id", winner_duelist.profile_type.profile_id().to_string(), false)
+            //     .build();
+            // // Attributes
+            // let mut attributes: Array<Attribute> = array![
+            //     // Attribute {
+            //     //     key: "Tournament ID",
+            //     //     value: challenge.duel_type.to_string(),
+            //     // },
+            //     // Attribute {
+            //     //     key: "Table",
+            //     //     value: challenge.duel_type.to_string(),
+            //     // },
+            // ];
+            // // if (tournament.winner_address.is_non_zero()) {
+            // //     attributes.append(Attribute {
+            // //         key: "Winner",
+            // //         value: winner_name.clone(),
+            // //     });
+            // // }
+            // // return the metadata to be rendered by the component
+            // // https://docs.opensea.io/docs/metadata-standards#metadata-structure
+            // let metadata = TokenMetadata {
+            //     token_id,
+            //     name: format!("Tournament #{}", token_id),
+            //     description: format!("Pistols at Dawn Tournament Entry #{}. https://pistols.gg", token_id),
+            //     image: Option::Some(image),
+            //     image_data: Option::None,
+            //     external_url: Option::Some(METADATA::EXTERNAL_LINK()), // TODO: format external token link
+            //     background_color: Option::Some("000000"),
+            //     animation_url: Option::None,
+            //     youtube_url: Option::None,
+            //     attributes: Option::Some(attributes.span()),
+            //     additional_metadata: Option::None,
+            // };
+            // (Option::Some(metadata))
+            Option::None
+        }
+    }
 
 }

@@ -43,7 +43,7 @@ cancel_game1 = "sozo --release execute evolute_duel-game cancel_game --account-a
 dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.4.0" }
 origami_random = { git = "https://github.com/dojoengine/origami" }
 openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v1.0.0" }
-tournaments = { git = "https://github.com/Provable-Games/tournaments.git" }
+tournaments = { git = "https://github.com/underware-gg/tournaments", branch = "pistols" }
 openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
 openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
 nft_combo = { git = "https://github.com/underware-gg/cairo-nft-combo", tag = "v1.0.0"}
