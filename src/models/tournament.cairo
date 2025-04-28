@@ -162,14 +162,14 @@ pub mod TOURNAMENT_RULES {
 // Traits
 //
 use core::num::traits::Zero;
-// use pistols::systems::tokens::tournament_token::tournament_token::{Errors as TournamentErrors};
-// use pistols::systems::rng::{RngWrap, Shuffle, ShuffleTrait};
-// use pistols::models::challenge::{Challenge};
-// use pistols::libs::store::{Store, StoreTrait};
-// use pistols::utils::bitwise::{BitwiseU128};
-// use pistols::utils::bytemap::{BytemapU256};
-// use pistols::utils::nibblemap::{NibblemapU128};
-// use pistols::utils::short_string::{ShortStringTrait};
+use evolute_duel::types::errors::tournament::{Errors as TournamentErrors};
+use evolute_duel::systems::rng::{RngWrap, Shuffle, ShuffleTrait};
+use evolute_duel::models::challenge::{Challenge};
+use evolute_duel::libs::store::{Store, StoreTrait};
+use evolute_duel::utils::bitwise::{BitwiseU128};
+use evolute_duel::utils::bytemap::{BytemapU256};
+use evolute_duel::utils::nibblemap::{NibblemapU128};
+use evolute_duel::utils::short_string::{ShortStringTrait};
 
 #[generate_trait]
 pub impl TournamentTypeImpl of TournamentTypeTrait {
@@ -230,165 +230,165 @@ pub impl TournamentRoundImpl of TournamentRoundTrait {
     //     (challenge)
     // }
 
-    // //------------------------------------
-    // // initializers
-    // //
-    // fn shuffle_all(ref self: TournamentRound, wrapped: @RngWrap, seed: felt252) {
-    //     let mut shuffle: Shuffle = ShuffleTrait::new(wrapped, seed, self.entry_count, Self::SHUFFLE_SALT);
-    //     let mut i: u8 = 0;
-    //     while (i < self.entry_count / 2) {
-    //         // ps: if odd, last entry will be unpaired (value = 0), leading to a free win
-    //         let entry_a: u8 = shuffle.draw_next();
-    //         let entry_b: u8 = shuffle.draw_next();
-    //         // println!("shuffle({}): {}-{} of {}", i, entry_a, entry_b, self.entry_count);
-    //         let index_a: usize = entry_a.into() - 1;
-    //         let index_b: usize = entry_b.into() - 1;
-    //         self.bracket = BytemapU256::set_byte(self.bracket, index_a, entry_b.into());
-    //         self.bracket = BytemapU256::set_byte(self.bracket, index_b, entry_a.into());
-    //         i += 1;
-    //     };
-    //     self.results = BitwiseU128::shr(
-    //         if (self.entry_count % 2 == 0)
-    //             // even entries: all duelists are playing and losing (0b1100)
-    //             {0xcccccccccccccccccccccccccccccccc}
-    //             // odd entries: last player wins (0b1101) > but still need to join_duel()
-    //             else {0xdccccccccccccccccccccccccccccccc},
-    //         ((Self::MAX_ENTRIES - self.entry_count) * 4).into()
-    //     );
-    // }
-    // fn shuffle_survivors(ref self: TournamentRound, wrapped: @RngWrap, seed: felt252, survivors: Span<u8>) {
-    //     assert(self.entry_count.into() == survivors.len(), TournamentErrors::IMPOSSIBLE_ERROR);
-    //     let mut shuffle: Shuffle = ShuffleTrait::new(wrapped, seed, self.entry_count, Self::SHUFFLE_SALT);
-    //     let mut i: u8 = 0;
-    //     while (i < self.entry_count / 2) {
-    //         let entry_a: u8 = *survivors[shuffle.draw_next().into() - 1];
-    //         let entry_b: u8 = *survivors[shuffle.draw_next().into() - 1];
-    //         // println!("shuffle({}): {}-{} of {}", i, entry_a, entry_b, self.entry_count);
-    //         let index_a: usize = entry_a.into() - 1;
-    //         let index_b: usize = entry_b.into() - 1;
-    //         self.bracket = BytemapU256::set_byte(self.bracket, index_a, entry_b.into());
-    //         self.bracket = BytemapU256::set_byte(self.bracket, index_b, entry_a.into());
-    //         self.moved_second(entry_a, entry_b); // both need to play
-    //         i += 1;
-    //     };
-    //     if (self.entry_count % 2 == 1) {
-    //         let entry_last: u8 = *survivors[shuffle.draw_next().into() - 1];
-    //         // odd entries: last player wins (0b1101) > but still need to join_duel()
-    //         self.moved_first(entry_last, 0); // winning
-    //     }
-    // }
+    //------------------------------------
+    // initializers
+    //
+    fn shuffle_all(ref self: TournamentRound, wrapped: @RngWrap, seed: felt252) {
+        let mut shuffle: Shuffle = ShuffleTrait::new(wrapped, seed, self.entry_count, Self::SHUFFLE_SALT);
+        let mut i: u8 = 0;
+        while (i < self.entry_count / 2) {
+            // ps: if odd, last entry will be unpaired (value = 0), leading to a free win
+            let entry_a: u8 = shuffle.draw_next();
+            let entry_b: u8 = shuffle.draw_next();
+            // println!("shuffle({}): {}-{} of {}", i, entry_a, entry_b, self.entry_count);
+            let index_a: usize = entry_a.into() - 1;
+            let index_b: usize = entry_b.into() - 1;
+            self.bracket = BytemapU256::set_byte(self.bracket, index_a, entry_b.into());
+            self.bracket = BytemapU256::set_byte(self.bracket, index_b, entry_a.into());
+            i += 1;
+        };
+        self.results = BitwiseU128::shr(
+            if (self.entry_count % 2 == 0)
+                // even entries: all duelists are playing and losing (0b1100)
+                {0xcccccccccccccccccccccccccccccccc}
+                // odd entries: last player wins (0b1101) > but still need to join_duel()
+                else {0xdccccccccccccccccccccccccccccccc},
+            ((Self::MAX_ENTRIES - self.entry_count) * 4).into()
+        );
+    }
+    fn shuffle_survivors(ref self: TournamentRound, wrapped: @RngWrap, seed: felt252, survivors: Span<u8>) {
+        assert(self.entry_count.into() == survivors.len(), TournamentErrors::IMPOSSIBLE_ERROR);
+        let mut shuffle: Shuffle = ShuffleTrait::new(wrapped, seed, self.entry_count, Self::SHUFFLE_SALT);
+        let mut i: u8 = 0;
+        while (i < self.entry_count / 2) {
+            let entry_a: u8 = *survivors[shuffle.draw_next().into() - 1];
+            let entry_b: u8 = *survivors[shuffle.draw_next().into() - 1];
+            // println!("shuffle({}): {}-{} of {}", i, entry_a, entry_b, self.entry_count);
+            let index_a: usize = entry_a.into() - 1;
+            let index_b: usize = entry_b.into() - 1;
+            self.bracket = BytemapU256::set_byte(self.bracket, index_a, entry_b.into());
+            self.bracket = BytemapU256::set_byte(self.bracket, index_b, entry_a.into());
+            self.moved_second(entry_a, entry_b); // both need to play
+            i += 1;
+        };
+        if (self.entry_count % 2 == 1) {
+            let entry_last: u8 = *survivors[shuffle.draw_next().into() - 1];
+            // odd entries: last player wins (0b1101) > but still need to join_duel()
+            self.moved_first(entry_last, 0); // winning
+        }
+    }
 
-    // //------------------------------------
-    // // duelling
-    // //
-    // fn moved_first(ref self: TournamentRound, entry_number: u8, _opponent_entry_number: u8) {
-    //     self.results._set_nibble(entry_number, 0b1101);              // player who moved is winning
-    //     // self.results._set_nibble(opponent_entry_number, 0b1100);  // already unset (original state)
-    // }
-    // fn moved_second(ref self: TournamentRound, entry_number: u8, opponent_entry_number: u8) {
-    //     self.results._set_nibble(entry_number, 0b1100);          // needs to move (losing)
-    //     self.results._set_nibble(opponent_entry_number, 0b1100); // needs to move
-    // }
-    // fn finished_duel(ref self: TournamentRound,
-    //     entry_number_a: u8, entry_number_b: u8,
-    //     survived_a: bool, survived_b: bool,
-    //     winner: u8,
-    // ) {
-    //     let value_a: u128 =
-    //         if (winner == 1) {0b1011}       // winners always survive
-    //         else if (survived_a) {0b1010}   // lost but survived
-    //         else {0b1000};                  // out!
-    //     self.results._set_nibble(entry_number_a, value_a);
-    //     // if odd entries, second is empty
-    //     if (entry_number_b != 0) {
-    //         let value_b: u128 =
-    //             if (winner == 2) {0b1011}       // winners always survive
-    //             else if (survived_b) {0b1010}   // lost but survived
-    //             else {0b1000};                  // out!
-    //         self.results._set_nibble(entry_number_b, value_b);
-    //     }
-    // }
-    // fn ended_round(ref self: TournamentRound) {
-    //     // clear all playing bits (0b0100)
-    //     self.results = self.results & ~0x44444444444444444444444444444444;
-    //     // make winners survivors (shift 0b0001 to 0b0010)
-    //     self.results = self.results | BitwiseU128::shl(self.results & 0x11111111111111111111111111111111, 1);
-    // }
+    //------------------------------------
+    // duelling
+    //
+    fn moved_first(ref self: TournamentRound, entry_number: u8, _opponent_entry_number: u8) {
+        self.results._set_nibble(entry_number, 0b1101);              // player who moved is winning
+        // self.results._set_nibble(opponent_entry_number, 0b1100);  // already unset (original state)
+    }
+    fn moved_second(ref self: TournamentRound, entry_number: u8, opponent_entry_number: u8) {
+        self.results._set_nibble(entry_number, 0b1100);          // needs to move (losing)
+        self.results._set_nibble(opponent_entry_number, 0b1100); // needs to move
+    }
+    fn finished_duel(ref self: TournamentRound,
+        entry_number_a: u8, entry_number_b: u8,
+        survived_a: bool, survived_b: bool,
+        winner: u8,
+    ) {
+        let value_a: u128 =
+            if (winner == 1) {0b1011}       // winners always survive
+            else if (survived_a) {0b1010}   // lost but survived
+            else {0b1000};                  // out!
+        self.results._set_nibble(entry_number_a, value_a);
+        // if odd entries, second is empty
+        if (entry_number_b != 0) {
+            let value_b: u128 =
+                if (winner == 2) {0b1011}       // winners always survive
+                else if (survived_b) {0b1010}   // lost but survived
+                else {0b1000};                  // out!
+            self.results._set_nibble(entry_number_b, value_b);
+        }
+    }
+    fn ended_round(ref self: TournamentRound) {
+        // clear all playing bits (0b0100)
+        self.results = self.results & ~0x44444444444444444444444444444444;
+        // make winners survivors (shift 0b0001 to 0b0010)
+        self.results = self.results | BitwiseU128::shl(self.results & 0x11111111111111111111111111111111, 1);
+    }
 }
 
 #[generate_trait]
 pub impl TournamentBracketImpl of TournamentBracketTrait {
-    // fn get_opponent_entry_number(self: u256, entry_number: u8) -> u8 {
-    //     (if (entry_number > 0 && entry_number <= TournamentRoundTrait::MAX_ENTRIES) {
-    //         let index: usize = (entry_number - 1).try_into().unwrap();
-    //         let entry: u8 = BytemapU256::get_byte(self, index).try_into().unwrap();
-    //         (entry)
-    //     } else {
-    //         (0)
-    //     })
-    // }
+    fn get_opponent_entry_number(self: u256, entry_number: u8) -> u8 {
+        (if (entry_number > 0 && entry_number <= TournamentRoundTrait::MAX_ENTRIES) {
+            let index: usize = (entry_number - 1).try_into().unwrap();
+            let entry: u8 = BytemapU256::get_byte(self, index).try_into().unwrap();
+            (entry)
+        } else {
+            (0)
+        })
+    }
 }
 
 #[generate_trait]
 pub impl TournamentResultsImpl of TournamentResultsTrait {
-    // #[inline(always)]
-    // fn is_playing(self: u128, entry_number: u8) -> bool {
-    //     ((self._get_nibble(entry_number) & 0b0100) == 0b0100) // check playing bit (0b0100)
-    // }
-    // #[inline(always)]
-    // fn is_winning(self: u128, entry_number: u8) -> bool {
-    //     ((self._get_nibble(entry_number) & 0b0001) == 0b0001) // check winning bit (0b0001)
-    // }
-    // #[inline(always)]
-    // fn is_losing(self: u128, entry_number: u8) -> bool {
-    //     ((self._get_nibble(entry_number) & 0b0001) == 0) // check winning bit (0b0001)
-    // }
-    // #[inline(always)]
-    // fn has_survived(self: u128, entry_number: u8) -> bool {
-    //     ((self._get_nibble(entry_number) & 0b0010) == 0b0010) // check survived bit (0b0010)
-    // }
+    #[inline(always)]
+    fn is_playing(self: u128, entry_number: u8) -> bool {
+        ((self._get_nibble(entry_number) & 0b0100) == 0b0100) // check playing bit (0b0100)
+    }
+    #[inline(always)]
+    fn is_winning(self: u128, entry_number: u8) -> bool {
+        ((self._get_nibble(entry_number) & 0b0001) == 0b0001) // check winning bit (0b0001)
+    }
+    #[inline(always)]
+    fn is_losing(self: u128, entry_number: u8) -> bool {
+        ((self._get_nibble(entry_number) & 0b0001) == 0) // check winning bit (0b0001)
+    }
+    #[inline(always)]
+    fn has_survived(self: u128, entry_number: u8) -> bool {
+        ((self._get_nibble(entry_number) & 0b0010) == 0b0010) // check survived bit (0b0010)
+    }
 
-    // fn playing_count(self: u128) -> u8 {
-    //     // count playing bits (0b0100)
-    //     let mut count: u8 = 0;
-    //     let mut e: u8 = 1;  
-    //     while (e <= TournamentRoundTrait::MAX_ENTRIES) {
-    //         if ((self._get_nibble(e) & 0b0100) == 0b0100) {
-    //             count += 1;
-    //         }
-    //         e += 1;
-    //     };
-    //     (count)
-    // }
-    // #[inline(always)]
-    // fn have_all_duels_finished(self: u128) -> bool {
-    //     // check if all playing bits are cleared (0b0100)
-    //     ((self & 0x44444444444444444444444444444444) == 0)
-    // }
-    // fn get_surviving_entries(self: u128) -> Span<u8> {
-    //     let mut result: Array<u8> = array![];
-    //     let mut i: u8 = 0;
-    //     while (i < TournamentRoundTrait::MAX_ENTRIES) {
-    //         // if ((NibblemapU128::get_nibble(self, i.into()) & 0b0011) != 0) {     // survived OR winning
-    //         if ((NibblemapU128::get_nibble(self, i.into()) & 0b0010) == 0b0010) {   // survived after round ended
-    //             result.append(i + 1);
-    //         }
-    //         i += 1;
-    //     };
-    //     (result.span())
-    // }
+    fn playing_count(self: u128) -> u8 {
+        // count playing bits (0b0100)
+        let mut count: u8 = 0;
+        let mut e: u8 = 1;  
+        while (e <= TournamentRoundTrait::MAX_ENTRIES) {
+            if ((self._get_nibble(e) & 0b0100) == 0b0100) {
+                count += 1;
+            }
+            e += 1;
+        };
+        (count)
+    }
+    #[inline(always)]
+    fn have_all_duels_finished(self: u128) -> bool {
+        // check if all playing bits are cleared (0b0100)
+        ((self & 0x44444444444444444444444444444444) == 0)
+    }
+    fn get_surviving_entries(self: u128) -> Span<u8> {
+        let mut result: Array<u8> = array![];
+        let mut i: u8 = 0;
+        while (i < TournamentRoundTrait::MAX_ENTRIES) {
+            // if ((NibblemapU128::get_nibble(self, i.into()) & 0b0011) != 0) {     // survived OR winning
+            if ((NibblemapU128::get_nibble(self, i.into()) & 0b0010) == 0b0010) {   // survived after round ended
+                result.append(i + 1);
+            }
+            i += 1;
+        };
+        (result.span())
+    }
 
-    // //------------------------------------
-    // // internal
-    // //
-    // #[inline(always)]
-    // fn _get_nibble(self: u128, entry_number: u8) -> u8 {
-    //     (NibblemapU128::get_nibble(self, (entry_number - 1).into())).try_into().unwrap()
-    // }
-    // #[inline(always)]
-    // fn _set_nibble(ref self: u128, entry_number: u8, value: u128) {
-    //     self = NibblemapU128::set_nibble(self, (entry_number - 1).into(), value);
-    // }
+    //------------------------------------
+    // internal
+    //
+    #[inline(always)]
+    fn _get_nibble(self: u128, entry_number: u8) -> u8 {
+        (NibblemapU128::get_nibble(self, (entry_number - 1).into())).try_into().unwrap()
+    }
+    #[inline(always)]
+    fn _set_nibble(ref self: u128, entry_number: u8, value: u128) {
+        self = NibblemapU128::set_nibble(self, (entry_number - 1).into(), value);
+    }
 }
 
 

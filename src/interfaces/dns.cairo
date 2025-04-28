@@ -11,8 +11,11 @@ pub use evolute_duel::systems::{
         tournament_token::{ITournamentToken, ITournamentTokenDispatcher}
     }
 };
+pub use evolute_duel::interfaces::{
+    vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source},
+};
+pub use evolute_duel::libs::store::{Store, StoreTrait};
 pub use tournaments::components::tournament::{ITournamentDispatcher, ITournamentDispatcherTrait};
-use tournaments::components::models::game::{TokenMetadata, TokenMetadataValue};
 
 pub mod SELECTORS {
     // systems
@@ -63,7 +66,16 @@ pub impl DnsImpl of DnsTrait {
     fn tournament_token_address(self: @WorldStorage) -> ContractAddress {
         (self.find_contract_address(@"tournament_token"))
     }
-
+    #[inline(always)]
+    fn rng_address(self: @WorldStorage) -> ContractAddress {
+        let result = self.find_contract_address(@"rng");
+        if (result.is_non_zero()) {result} // deployments always have the rng contract
+        else {self.rng_mock_address()}     // but for testing, we can skip it and deploy this
+    }
+    #[inline(always)]
+    fn rng_mock_address(self: @WorldStorage) -> ContractAddress {
+        (self.find_contract_address(@"rng_mock"))
+    }
     //--------------------------
     // address validators
     //
@@ -93,10 +105,12 @@ pub impl DnsImpl of DnsTrait {
     fn tournament_token_dispatcher(self: @WorldStorage) -> ITournamentTokenDispatcher {
         (ITournamentTokenDispatcher{ contract_address: self.tournament_token_address() })
     }
-
     #[inline(always)]
-    fn budokan_dispatcher_from_pass_id(self: @WorldStorage, pass_id: u64) -> ITournamentDispatcher {
-        let tournament_pass_minter_address: ContractAddress = self.read_member(Model::<TokenMetadata>::ptr_from_keys(pass_id), selector!("minted_by"));
-        (ITournamentDispatcher{ contract_address: tournament_pass_minter_address })
+    fn vrf_dispatcher(self: @Store) -> IVrfProviderDispatcher {
+        (IVrfProviderDispatcher{ contract_address: self.get_config_vrf_address() })
+    }
+    #[inline(always)]
+    fn budokan_dispatcher_from_pass_id(self: @Store, pass_id: u64) -> ITournamentDispatcher {
+        (ITournamentDispatcher{ contract_address: self.get_tournament_pass_minter_address(pass_id) })
     }
 }

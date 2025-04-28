@@ -16,7 +16,11 @@ pub use evolute_duel::models::{
     //     LordsReleaseBill,
     // },
     player::{
-        Player, PlayerValue, Shop, ShopValue
+        Player, PlayerValue,
+        PlayerAssignment, PlayerAssignmentValue,
+    },
+    skins::{
+        Shop, ShopValue,
     },
     game::{
         Board, BoardValue, Game, GameValue, 
@@ -37,6 +41,11 @@ pub use evolute_duel::models::{
         TournamentDuelKeys,
         TournamentRules,
         TournamentState,
+    },
+    config::{
+        CONFIG,
+        Config, ConfigValue,
+        TokenConfig, TokenConfigValue,
     },
 };
 // pub use pistols::systems::components::{
@@ -131,6 +140,14 @@ pub impl StoreImpl of StoreTrait {
         (self.world.read_value(pass_id))
     }
 
+    #[inline(always)]
+    fn get_player_challenge(self: @Store, player_address: ContractAddress) -> PlayerAssignment {
+        (self.world.read_model(player_address))
+    }
+    #[inline(always)]
+    fn get_player_challenge_value(self: @Store, player_address: ContractAddress) -> PlayerAssignmentValue {
+        (self.world.read_value(player_address))
+    }
 
     //----------------------------------
     // Model Setters
@@ -161,10 +178,10 @@ pub impl StoreImpl of StoreTrait {
     //     self.world.write_model(model);
     // }
 
-    // #[inline(always)]
-    // fn set_duelist_challenge(ref self: Store, model: @DuelistAssignment) {
-    //     self.world.write_model(model);
-    // }
+    #[inline(always)]
+    fn set_player_challenge(ref self: Store, model: @PlayerAssignment) {
+        self.world.write_model(model);
+    }
 
     // #[inline(always)]
     // fn set_duelist_memorial(ref self: Store, model: @DuelistMemorial) {
@@ -263,10 +280,10 @@ pub impl StoreImpl of StoreTrait {
     // fn get_config_lords_address(self: @Store) -> ContractAddress {
     //     (self.world.read_member(Model::<Config>::ptr_from_keys(CONFIG::CONFIG_KEY), selector!("lords_address")))
     // }
-    // #[inline(always)]
-    // fn get_config_vrf_address(self: @Store) -> ContractAddress {
-    //     (self.world.read_member(Model::<Config>::ptr_from_keys(CONFIG::CONFIG_KEY), selector!("vrf_address")))
-    // }
+    #[inline(always)]
+    fn get_config_vrf_address(self: @Store) -> ContractAddress {
+        (self.world.read_member(Model::<Config>::ptr_from_keys(CONFIG::CONFIG_KEY), selector!("vrf_address")))
+    }
     // #[inline(always)]
     // fn get_config_treasury_address(self: @Store) -> ContractAddress {
     //     (self.world.read_member(Model::<Config>::ptr_from_keys(CONFIG::CONFIG_KEY), selector!("treasury_address")))
@@ -383,14 +400,4 @@ pub impl StoreImpl of StoreTrait {
     //         timestamp: starknet::get_block_timestamp(),
     //     });
     // }
-
-    //--------------------------
-    // dispatchers
-    //
-
-    #[inline(always)]
-    fn budokan_dispatcher_from_pass_id(self: @Store, pass_id: u64) -> ITournamentDispatcher {
-        (ITournamentDispatcher{ contract_address: self.get_tournament_pass_minter_address(pass_id) })
-    }
-
 }

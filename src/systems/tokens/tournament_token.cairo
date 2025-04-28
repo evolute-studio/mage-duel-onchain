@@ -98,11 +98,11 @@ pub trait ITournamentTokenPublic<TState> {
     fn can_enlist_duelist(self: @TState, pass_id: u64) -> bool;
     fn enlist_duelist(ref self: TState, pass_id: u64);
 
-    // // Phase 2 -- Start tournament (any contestant can start)
-    // // - will shuffle initial bracket
-    // // - requires VRF!
-    // fn can_start_tournament(self: @TState, pass_id: u64) -> bool;
-    // fn start_tournament(ref self: TState, pass_id: u64) -> u64; // returns tournament_id
+    // Phase 2 -- Start tournament (any contestant can start)
+    // - will shuffle initial bracket
+    // - requires VRF!
+    fn can_start_tournament(self: @TState, pass_id: u64) -> bool;
+    fn start_tournament(ref self: TState, pass_id: u64) -> u64; // returns tournament_id
 
     // // Phase 3 -- Join tournament (per player)
     // fn can_join_duel(self: @TState, pass_id: u64) -> bool;
@@ -212,11 +212,11 @@ pub mod tournament_token {
     //     timestamp::{Period, PeriodTrait, TIMESTAMP},
     // };
     use evolute_duel::interfaces::dns::{
-        DnsTrait, SELECTORS,
+        DnsTrait, SELECTORS, Source,
         ITournamentDispatcher, ITournamentDispatcherTrait,
-        IGameDispatcherTrait,
+        IGameDispatcherTrait, IVrfProviderDispatcherTrait
     };
-    // use pistols::systems::rng::{RngWrap, RngWrapTrait};
+    use evolute_duel::systems::rng::{RngWrap, RngWrapTrait};
     use evolute_duel::libs::store::{Store, StoreTrait};
     // use pistols::utils::short_string::{ShortStringTrait};
     // use graffiti::url::{UrlImpl};
@@ -233,11 +233,23 @@ pub mod tournament_token {
             TournamentRoundValue,
             TournamentBracketTrait,
             TournamentResultsTrait,
-        }
+        },
+        player::{PlayerTrait},
     };
 
     use evolute_duel::utils::{
         short_string::{ShortStringTrait}
+    };
+
+    use evolute_duel::types::{
+        errors::{
+            tournament::{
+                Errors,
+            }
+        },
+        timestamp::{Period, PeriodTrait, TIMESTAMP},
+        constants::{METADATA},
+        challenge_state::{ChallengeState, ChallengeStateTrait},
     };
 
     use tournaments::components::models::{
@@ -248,32 +260,6 @@ pub mod tournament_token {
     use tournaments::components::libs::{
         lifecycle::{LifecycleTrait},
     };
-
-    pub mod Errors {
-        pub const INVALID_ENTRY: felt252            = 'TOURNAMENT: Invalid entry';
-        pub const BUDOKAN_NOT_STARTABLE: felt252    = 'TOURNAMENT: Not startable';
-        pub const BUDOKAN_NOT_PLAYABLE: felt252     = 'TOURNAMENT: Not playable';
-        pub const ALREADY_STARTED: felt252          = 'TOURNAMENT: Already started';
-        pub const ALREADY_ENLISTED: felt252         = 'TOURNAMENT: Already enlisted';
-        pub const NOT_YOUR_ENTRY: felt252           = 'TOURNAMENT: Not your entry';
-        pub const NOT_YOUR_DUELIST: felt252         = 'TOURNAMENT: Not your duelist';
-        pub const INVALID_ENTRY_NUMBER: felt252     = 'TOURNAMENT: Invalid entry num';
-        pub const TOURNAMENT_FULL: felt252          = 'TOURNAMENT: Full!';
-        pub const INVALID_DUELIST: felt252          = 'TOURNAMENT: Invalid duelist';
-        pub const DUELIST_IS_DEAD: felt252          = 'TOURNAMENT: Duelist is dead';
-        pub const INSUFFICIENT_LIVES: felt252       = 'TOURNAMENT: Insufficient lives';
-        pub const TOO_MANY_LIVES: felt252           = 'TOURNAMENT: Too many lives';
-        pub const NOT_ENLISTED: felt252             = 'TOURNAMENT: Not enlisted';
-        pub const NOT_STARTED: felt252              = 'TOURNAMENT: Not started';
-        pub const HAS_ENDED: felt252                = 'TOURNAMENT: Has ended';
-        pub const NOT_QUALIFIED: felt252            = 'TOURNAMENT: Not qualified';
-        pub const DUELIST_IN_CHALLENGE: felt252     = 'TOURNAMENT: In a challenge';
-        pub const DUELIST_IN_TOURNAMENT: felt252    = 'TOURNAMENT: In a tournament';
-        pub const INVALID_ROUND: felt252            = 'TOURNAMENT: Invalid round';
-        pub const STILL_PLAYABLE: felt252           = 'TOURNAMENT: Still playable';
-        pub const CALLER_NOT_OWNER: felt252         = 'TOURNAMENT: Caller not owner';
-        pub const IMPOSSIBLE_ERROR: felt252         = 'TOURNAMENT: Impossible error';
-    }
 
     //*******************************
     // erc721
@@ -396,7 +382,7 @@ pub mod tournament_token {
                     store.set_tournament_pass(@entry);
                     // validate and create DuelistAssignment
                     //TODO: logic of entering tournament for game
-                    // DuelistTrait::enter_tournament(ref store, duelist_id, pass_id);
+                    PlayerTrait::enter_tournament(ref store, caller, pass_id);
                 },
                 Option::None => {
                     // should never get here since entry is owned and exists
@@ -405,56 +391,56 @@ pub mod tournament_token {
             }
         }
 
-        // //-----------------------------------
-        // // Phase 2 -- Start tournament
-        // //
-        // fn can_start_tournament(self: @ContractState, pass_id: u64) -> bool {
-        //     if (!self.erc721_combo.token_exists(pass_id.into())) {
-        //         return false;
-        //     }
-        //     let store: Store = StoreTrait::new(self.world_default());
-        //     let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
-        //     let (_, tournament_id): (ITournamentDispatcher, u64) = self._get_budokan_tournament_id(@store, pass_id);
-        //     let tournament: TournamentValue = store.get_tournament_value(tournament_id);
-        //     (
-        //         // owns entry
-        //         self.is_owner_of(starknet::get_caller_address(), pass_id.into()) &&
-        //         // correct lifecycle
-        //         token_metadata.lifecycle.can_start(starknet::get_block_timestamp()) &&
-        //         // tournament not started (don't exist yet)
-        //         tournament.state == TournamentState::Undefined
-        //     )
-        // }
-        // fn start_tournament(ref self: ContractState, pass_id: u64) -> u64 {
-        //     assert(self.erc721_combo.token_exists(pass_id.into()), Errors::INVALID_ENTRY);
-        //     let mut store: Store = StoreTrait::new(self.world_default());
-        //     // validate ownership
-        //     let caller: ContractAddress = starknet::get_caller_address();
-        //     assert(self.is_owner_of(caller, pass_id.into()) == true, Errors::NOT_YOUR_ENTRY);
-        //     // verify lifecycle
-        //     let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
-        //     assert(token_metadata.lifecycle.can_start(starknet::get_block_timestamp()), Errors::BUDOKAN_NOT_STARTABLE);
-        //     // verify tournament not started
-        //     let (budokan_dispatcher, tournament_id): (ITournamentDispatcher, u64) = self._get_budokan_tournament_id(@store, pass_id);
-        //     let mut tournament: Tournament = store.get_tournament(tournament_id);
-        //     assert(tournament.state == TournamentState::Undefined, Errors::ALREADY_STARTED);
-        //     tournament.state = TournamentState::InProgress;
-        //     tournament.round_number = 1;
-        //     // initialize round
-        //     let seed: felt252 = store.vrf_dispatcher().consume_random(Source::Nonce(caller));
-        //     let round: TournamentRound = self._initialize_round(ref store,
-        //         tournament_id, 1,
-        //         token_metadata.lifecycle,
-        //         core::cmp::min(budokan_dispatcher.tournament_entries(tournament_id), TournamentRoundTrait::MAX_ENTRIES.into()),
-        //         Option::None,
-        //         seed,
-        //     );
-        //     // store!
-        //     store.set_tournament(@tournament);
-        //     store.set_tournament_round(@round);
-        //     // return tournament id
-        //     (tournament_id)
-        // }
+        //-----------------------------------
+        // Phase 2 -- Start tournament
+        //
+        fn can_start_tournament(self: @ContractState, pass_id: u64) -> bool {
+            if (!self.erc721_combo.token_exists(pass_id.into())) {
+                return false;
+            }
+            let store: Store = StoreTrait::new(self.world_default());
+            let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
+            let (_, tournament_id): (ITournamentDispatcher, u64) = self._get_budokan_tournament_id(@store, pass_id);
+            let tournament: TournamentValue = store.get_tournament_value(tournament_id);
+            (
+                // owns entry
+                self.is_owner_of(starknet::get_caller_address(), pass_id.into()) &&
+                // correct lifecycle
+                token_metadata.lifecycle.can_start(starknet::get_block_timestamp()) &&
+                // tournament not started (don't exist yet)
+                tournament.state == TournamentState::Undefined
+            )
+        }
+        fn start_tournament(ref self: ContractState, pass_id: u64) -> u64 {
+            assert(self.erc721_combo.token_exists(pass_id.into()), Errors::INVALID_ENTRY);
+            let mut store: Store = StoreTrait::new(self.world_default());
+            // validate ownership
+            let caller: ContractAddress = starknet::get_caller_address();
+            assert(self.is_owner_of(caller, pass_id.into()) == true, Errors::NOT_YOUR_ENTRY);
+            // verify lifecycle
+            let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
+            assert(token_metadata.lifecycle.can_start(starknet::get_block_timestamp()), Errors::BUDOKAN_NOT_STARTABLE);
+            // verify tournament not started
+            let (budokan_dispatcher, tournament_id): (ITournamentDispatcher, u64) = self._get_budokan_tournament_id(@store, pass_id);
+            let mut tournament: Tournament = store.get_tournament(tournament_id);
+            assert(tournament.state == TournamentState::Undefined, Errors::ALREADY_STARTED);
+            tournament.state = TournamentState::InProgress;
+            tournament.round_number = 1;
+            // initialize round
+            let seed: felt252 = store.vrf_dispatcher().consume_random(Source::Nonce(caller));
+            let round: TournamentRound = self._initialize_round(ref store,
+                tournament_id, 1,
+                token_metadata.lifecycle,
+                core::cmp::min(budokan_dispatcher.tournament_entries(tournament_id), TournamentRoundTrait::MAX_ENTRIES.into()),
+                Option::None,
+                seed,
+            );
+            // store!
+            store.set_tournament(@tournament);
+            store.set_tournament_round(@round);
+            // return tournament id
+            (tournament_id)
+        }
 
         // //-----------------------------------
         // // Phase 3 -- Join Duel
@@ -661,51 +647,51 @@ pub mod tournament_token {
             )
         }
 
-        // fn _initialize_round(ref self: ContractState,
-        //     ref store: Store,
-        //     tournament_id: u64,
-        //     round_number: u8,
-        //     lifecycle: Lifecycle,
-        //     entry_count: u32,
-        //     survivors: Option<Span<u8>>,
-        //     seed: felt252,
-        // ) -> TournamentRound {
-        //     let mut timestamps: Period = Period {
-        //         start: starknet::get_block_timestamp(),
-        //         end: starknet::get_block_timestamp() + TIMESTAMP::ONE_DAY
-        //     };
-        //     match lifecycle.end {
-        //         Option::Some(end) => {
-        //             if (end < timestamps.end) {
-        //                 timestamps.end = end;
-        //             };
-        //         },
-        //         _ => {}
-        //     };
-        //     let mut round = TournamentRound {
-        //         tournament_id,
-        //         round_number,
-        //         entry_count: entry_count.try_into().unwrap(),
-        //         bracket: 0,
-        //         results: 0,
-        //         timestamps,
-        //     };
-        //     // shuffle entries
-        //     let wrapped: @RngWrap = RngWrapTrait::new(store.world.rng_address());
-        //     match survivors {
-        //         Option::Some(survivors) => {
-        //             // nth round!
-        //             assert(round_number > 1, Errors::IMPOSSIBLE_ERROR);
-        //             round.shuffle_survivors(wrapped, seed, survivors);
-        //         },
-        //         Option::None => {
-        //             // 1st round!
-        //             assert(round_number == 1, Errors::IMPOSSIBLE_ERROR);
-        //             round.shuffle_all(wrapped, seed);
-        //         },
-        //     }
-        //     (round)
-        // }
+        fn _initialize_round(ref self: ContractState,
+            ref store: Store,
+            tournament_id: u64,
+            round_number: u8,
+            lifecycle: Lifecycle,
+            entry_count: u32,
+            survivors: Option<Span<u8>>,
+            seed: felt252,
+        ) -> TournamentRound {
+            let mut timestamps: Period = Period {
+                start: starknet::get_block_timestamp(),
+                end: starknet::get_block_timestamp() + TIMESTAMP::ONE_DAY
+            };
+            match lifecycle.end {
+                Option::Some(end) => {
+                    if (end < timestamps.end) {
+                        timestamps.end = end;
+                    };
+                },
+                _ => {}
+            };
+            let mut round = TournamentRound {
+                tournament_id,
+                round_number,
+                entry_count: entry_count.try_into().unwrap(),
+                bracket: 0,
+                results: 0,
+                timestamps,
+            };
+            // shuffle entries
+            let wrapped: @RngWrap = RngWrapTrait::new(store.world.rng_address());
+            match survivors {
+                Option::Some(survivors) => {
+                    // nth round!
+                    assert(round_number > 1, Errors::IMPOSSIBLE_ERROR);
+                    round.shuffle_survivors(wrapped, seed, survivors);
+                },
+                Option::None => {
+                    // 1st round!
+                    assert(round_number == 1, Errors::IMPOSSIBLE_ERROR);
+                    round.shuffle_all(wrapped, seed);
+                },
+            }
+            (round)
+        }
     }
 
 

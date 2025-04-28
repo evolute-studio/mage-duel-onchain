@@ -19,14 +19,55 @@ pub struct Player {
     pub is_bot: bool,
 }
 
-/// Represents a shop where players can purchase in-game items.
-///
-/// - `shop_id`: Unique identifier for the shop.
-/// - `skin_prices`: List of prices for different skins available in the shop.
-#[derive(Drop, Serde, Introspect, Debug)]
+#[derive(Copy, Drop, Serde)]
 #[dojo::model]
-pub struct Shop {
+pub struct PlayerAssignment {
     #[key]
-    pub shop_id: felt252,
-    pub skin_prices: Array<u16>,
+    pub player_address: ContractAddress,
+    //-----------------------
+    pub duel_id: u128,      // current Challenge a Duelist is in
+    pub pass_id: u64,       // current Tournament a Duelist is in
+}
+
+use core::num::traits::Zero;
+use evolute_duel::libs::store::{
+    Store, StoreImpl
+};
+use evolute_duel::types::errors::{
+    duel::{
+        Errors as DuelErrors
+    },
+    tournament::{
+        Errors as TournamentErrors
+    }
+};
+
+
+#[generate_trait]
+pub impl PlayerImpl of PlayerTrait {
+    fn enter_challenge(ref self: Store, player_address: ContractAddress, duel_id: u128) {
+        let mut assignment: PlayerAssignment = self.get_player_challenge(player_address);
+        assert(assignment.duel_id == 0, DuelErrors::DUELIST_IN_CHALLENGE);
+        assignment.duel_id = duel_id;
+        self.set_player_challenge(@assignment);
+    }
+    fn exit_challenge(ref self: Store, player_address: ContractAddress) {
+        if (player_address.is_non_zero()) {
+            let mut assignment: PlayerAssignment = self.get_player_challenge(player_address);
+            assignment.duel_id = 0;
+            self.set_player_challenge(@assignment);
+        }
+    }
+    fn enter_tournament(ref self: Store, player_address: ContractAddress, pass_id: u64) {
+        let mut assignment: PlayerAssignment = self.get_player_challenge(player_address);
+        assert(assignment.duel_id.is_zero(), TournamentErrors::DUELIST_IN_CHALLENGE);
+        assert(assignment.pass_id.is_zero(), TournamentErrors::DUELIST_IN_TOURNAMENT);
+        assignment.pass_id = pass_id;
+        self.set_player_challenge(@assignment);
+    }
+    fn exit_tournament(ref self: Store, player_address: ContractAddress) {
+        let mut assignment: PlayerAssignment = self.get_player_challenge(player_address);
+        assignment.pass_id = 0;
+        self.set_player_challenge(@assignment);
+    }
 }
