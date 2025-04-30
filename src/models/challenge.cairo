@@ -16,8 +16,6 @@ pub struct Challenge {
     // duelists
     pub address_a: ContractAddress, // Challenger wallet
     pub address_b: ContractAddress, // Challenged wallet
-    pub duelist_id_a: u128,         // Challenger duelist
-    pub duelist_id_b: u128,         // Challenged duelist 
     // progress and results
     pub state: ChallengeState,      // curerent state
     pub winner: u8,                 // 0:draw, 1:duelist_a, 2:duelist_b
@@ -28,83 +26,48 @@ pub struct Challenge {
 #[derive(Serde, Copy, Drop, PartialEq, Introspect)]
 pub enum DuelType {
     Undefined,      // 0
-    Seasonal,       // 1
+    Regular,       // 1
     Tournament,     // 2
-    Tutorial,       // 3
-    Practice,       // 4
-}
-
-#[derive(Clone, Drop, Serde)]
-#[dojo::model]
-pub struct ChallengeMessage {
-    #[key]
-    pub duel_id: u128,
-    //-------------------------
-    pub message: ByteArray,
+    // Practice,       // 3
 }
 
 //------------------------------------
 // Traits
 //
-// use core::num::traits::Zero;
-// use pistols::types::cards::{
-//     deck::{Deck, DeckType, DeckTypeTrait},
-//     hand::{DuelistHand},
-//     paces::{PacesCardTrait},
-//     hand::{FinalBlow},
-// };
-// use pistols::types::{
-//     duelist_profile::{CharacterProfile},
-//     rules::{Rules, RulesTrait},
-//     timestamp::{TimestampTrait},
-//     constants::{CONST},
-// };
-// use pistols::utils::arrays::{SpanUtilsTrait};
-// use pistols::utils::hash::{hash_values};
-// use pistols::utils::misc::{FeltToLossy, ZERO};
-// use pistols::utils::math::{MathTrait};
+use core::num::traits::Zero;
+use evolute_duel::types::{
+    // rules::{Rules, RulesTrait},
+    timestamp::{TimestampTrait},
+    constants::{CONST},
+};
+// use evolute_duel::utils::arrays::{SpanUtilsTrait};
+use evolute_duel::utils::hash::{hash_values};
+use evolute_duel::utils::misc::{FeltToLossy, ZERO};
+use evolute_duel::utils::math::{MathTrait};
 
-// #[generate_trait]
-// pub impl ChallengeImpl of ChallengeTrait {
-//     #[inline(always)]
-//     fn duelist_number(self: @Challenge, duelist_id: u128) -> u8 {
-//         (if (duelist_id == *self.duelist_id_a) {(1)}
-//         else if (duelist_id == *self.duelist_id_b) {(2)}
-//         else {(0)})
-//     }
-//     #[inline(always)]
-//     fn winner_address(self: @Challenge) -> ContractAddress {
-//         (if (*self.winner == 1) {*self.address_a}
-//         else if (*self.winner == 2) {*self.address_b}
-//         else {ZERO()})
-//     }
-//     #[inline(always)]
-//     fn exists(self: @Challenge) -> bool {
-//         ((*self).state.exists())
-//     }
-//     #[inline(always)]
-//     fn is_tutorial(self: @Challenge) -> bool {
-//         (*self.duel_type == DuelType::Tutorial)
-//     }
-//     #[inline(always)]
-//     fn is_tournament(self: @Challenge) -> bool {
-//         (*self.duel_type == DuelType::Tournament)
-//     }
-//     fn get_deck_type(self: @Challenge) -> DeckType {
-//         if (
-//             self.is_tutorial() &&
-//             ((*self).duelist_id_a.into() == CharacterProfile::Drunkard || (*self).duelist_id_b.into() == CharacterProfile::Drunkard)
-//         ) {
-//             (DeckType::PacesOnly)
-//         } else {
-//             (DeckType::Classic)
-//         }
-//     }
-//     #[inline(always)]
-//     fn get_deck(self: @Challenge) -> Deck {
-//         (self.get_deck_type().build_deck())
-//     }
-// }
+#[generate_trait]
+pub impl ChallengeImpl of ChallengeTrait {
+    #[inline(always)]
+    fn duelist_number(self: @Challenge, player_address: ContractAddress) -> u8 {
+        (if (player_address == *self.address_a) {(1)}
+        else if (player_address == *self.address_b) {(2)}
+        else {(0)})
+    }
+    #[inline(always)]
+    fn winner_address(self: @Challenge) -> ContractAddress {
+        (if (*self.winner == 1) {*self.address_a}
+        else if (*self.winner == 2) {*self.address_b}
+        else {ZERO()})
+    }
+    #[inline(always)]
+    fn exists(self: @Challenge) -> bool {
+        ((*self).state.exists())
+    }
+    #[inline(always)]
+    fn is_tournament(self: @Challenge) -> bool {
+        (*self.duel_type == DuelType::Tournament)
+    }
+}
 
 // #[generate_trait]
 // pub impl RoundImpl of RoundTrait {

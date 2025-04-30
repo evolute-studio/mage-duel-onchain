@@ -41,12 +41,21 @@ pub use evolute_duel::models::{
         TournamentDuelKeys,
         TournamentRules,
         TournamentState,
+        TournamentToChallenge,
+        ChallengeToTournament,
+        TournamentTypeTrait
     },
     config::{
         CONFIG,
         Config, ConfigValue,
         TokenConfig, TokenConfigValue,
     },
+    challenge::{
+        Challenge, ChallengeValue, DuelType,
+    },
+    pact::{
+        Pact, PactTrait, PactValue,
+    }
 };
 // pub use pistols::systems::components::{
 //     token_bound::{s
@@ -149,24 +158,44 @@ pub impl StoreImpl of StoreTrait {
         (self.world.read_value(player_address))
     }
 
+    #[inline(always)]
+    fn get_challenge(self: @Store, duel_id: u128) -> Challenge {
+        (self.world.read_model(duel_id))
+    }
+
+    // #[inline(always)]
+    // fn get_round(self: @Store, duel_id: u128) -> Round {
+    //     (self.world.read_model(duel_id))
+    // }
+    // #[inline(always)]
+    // fn get_round_value(self: @Store, duel_id: u128) -> RoundValue {
+    //     (self.world.read_value(duel_id))
+    // }
+
+    #[inline(always)]
+    fn get_pact(self: @Store, duel_type: DuelType, a: u256, b: u256) -> Pact {
+        let pair: u128 = PactTrait::make_pair(a, b);
+        (self.world.read_model((duel_type, pair),))
+    }
+
     //----------------------------------
     // Model Setters
     //
 
-    // #[inline(always)]
-    // fn set_player(ref self: Store, model: @Player) {
-    //     self.world.write_model(model);
-    // }
+    #[inline(always)]
+    fn set_player(ref self: Store, model: @Player) {
+        self.world.write_model(model);
+    }
 
     // #[inline(always)]
     // fn set_pack(ref self: Store, model: @Pack) {
     //     self.world.write_model(model);
     // }
 
-    // #[inline(always)]
-    // fn set_challenge(ref self: Store, model: @Challenge) {
-    //     self.world.write_model(model);
-    // }
+    #[inline(always)]
+    fn set_challenge(ref self: Store, model: @Challenge) {
+        self.world.write_model(model);
+    }
 
     // #[inline(always)]
     // fn set_round(ref self: Store, model: @Round) {
@@ -188,14 +217,14 @@ pub impl StoreImpl of StoreTrait {
     //     self.world.write_model(model);
     // }
 
-    // #[inline(always)]
-    // fn set_pact(ref self: Store, model: @Pact) {
-    //     self.world.write_model(model);
-    // }
-    // #[inline(always)]
-    // fn delete_pact(ref self: Store, model: @Pact) {
-    //     self.world.erase_model(model);
-    // }
+    #[inline(always)]
+    fn set_pact(ref self: Store, model: @Pact) {
+        self.world.write_model(model);
+    }
+    #[inline(always)]
+    fn delete_pact(ref self: Store, model: @Pact) {
+        self.world.erase_model(model);
+    }
 
     // #[inline(always)]
     // fn set_scoreboard(ref self: Store, model: @SeasonScoreboard) {
@@ -257,14 +286,14 @@ pub impl StoreImpl of StoreTrait {
         self.world.write_model(model);
     }
 
-    // #[inline(always)]
-    // fn set_challenge_to_tournament(ref self: Store, model: @ChallengeToTournament) {
-    //     self.world.write_model(model);
-    // }
-    // #[inline(always)]
-    // fn set_tournament_to_challenge(ref self: Store, model: @TournamentToChallenge) {
-    //     self.world.write_model(model);
-    // }
+    #[inline(always)]
+    fn set_challenge_to_tournament(ref self: Store, model: @ChallengeToTournament) {
+        self.world.write_model(model);
+    }
+    #[inline(always)]
+    fn set_tournament_to_challenge(ref self: Store, model: @TournamentToChallenge) {
+        self.world.write_model(model);
+    }
 
     //----------------------------------
     // Single member setters
@@ -298,19 +327,19 @@ pub impl StoreImpl of StoreTrait {
     //     (self.world.read_member(Model::<SeasonConfig>::ptr_from_keys(season_id), selector!("rules")))
     // }
 
-    // #[inline(always)]
-    // fn get_tournament_settings_rules(self: @Store, settings_id: u32) -> TournamentRules {
-    //     let tournament_type: TournamentType = self.world.read_member(Model::<TournamentSettings>::ptr_from_keys(settings_id), selector!("tournament_type"));
-    //     (tournament_type.rules())
-    // }
+    #[inline(always)]
+    fn get_tournament_settings_rules(self: @Store, settings_id: u32) -> TournamentRules {
+        let tournament_type: TournamentType = self.world.read_member(Model::<TournamentSettings>::ptr_from_keys(settings_id), selector!("tournament_type"));
+        (tournament_type.rules())
+    }
     #[inline(always)]
     fn get_tournament_pass_minter_address(self: @Store, pass_id: u64) -> ContractAddress {
         (self.world.read_member(Model::<TokenMetadata>::ptr_from_keys(pass_id), selector!("minted_by")))
     }
-    // #[inline(always)]
-    // fn get_tournament_duel_id(self: @Store, keys: @TournamentDuelKeys) -> u128 {
-    //     (self.world.read_member(Model::<TournamentToChallenge>::ptr_from_keys(*keys), selector!("duel_id")))
-    // }
+    #[inline(always)]
+    fn get_tournament_duel_id(self: @Store, keys: @TournamentDuelKeys) -> u128 {
+        (self.world.read_member(Model::<TournamentToChallenge>::ptr_from_keys(*keys), selector!("duel_id")))
+    }
     // #[inline(always)]
     // fn get_duel_tournament_keys(self: @Store, duel_id: u128) -> TournamentDuelKeys {
     //     (self.world.read_member(Model::<ChallengeToTournament>::ptr_from_keys(duel_id), selector!("keys")))

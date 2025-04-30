@@ -1,5 +1,6 @@
 pub mod systems {
     pub mod game;
+    pub mod duel;
     pub mod player_profile_actions;
     pub mod rng;
     pub mod rng_mock;
@@ -26,6 +27,7 @@ pub mod models {
     pub mod scoring;
     pub mod tournament;
     pub mod config;
+    pub mod pact;
 }
 
 pub mod events;
@@ -35,6 +37,7 @@ pub mod types {
     pub mod errors {
         pub mod duel;
         pub mod tournament;
+        pub mod duelist;
     }
     pub mod timestamp;
     pub mod constants;
@@ -54,6 +57,8 @@ pub mod utils {
     pub mod bytemap;
     pub mod nibblemap;
     pub mod hash;
+    pub mod math; 
+    pub mod byte_arrays;
 }
 
 pub mod libs {

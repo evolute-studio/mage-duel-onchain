@@ -16,7 +16,6 @@ pub struct TournamentPass {
     // progress
     pub current_round_number: u8,   // current round this player is in
     pub score: u32,                 // budokan score (Fame less decimals)
-    pub fame: u128,                 // duelist FAME
 }
 
 //------------------------------------
@@ -217,18 +216,18 @@ pub impl TournamentRoundImpl of TournamentRoundTrait {
     const NIBBLE_LOSING: u8 = 0b1100;   // playing and losing
     const NIBBLE_WINNING: u8 = 0b1101;  // playing and winning
 
-    // fn get_challenge(self: @TournamentRound, store: @Store, entry_number: u8) -> Challenge {
-    //     let opponent_entry_number: u8 = (*self.bracket).get_opponent_entry_number(entry_number);
-    //     let keys: @TournamentDuelKeys = TournamentDuelKeysTrait::new(
-    //         *self.tournament_id,
-    //         *self.round_number,
-    //         entry_number,
-    //         opponent_entry_number,
-    //     );
-    //     let mut duel_id: u128 = store.get_tournament_duel_id(keys);
-    //     let mut challenge: Challenge = store.get_challenge(duel_id);
-    //     (challenge)
-    // }
+    fn get_challenge(self: @TournamentRound, store: @Store, entry_number: u8) -> Challenge {
+        let opponent_entry_number: u8 = (*self.bracket).get_opponent_entry_number(entry_number);
+        let keys: @TournamentDuelKeys = TournamentDuelKeysTrait::new(
+            *self.tournament_id,
+            *self.round_number,
+            entry_number,
+            opponent_entry_number,
+        );
+        let mut duel_id: u128 = store.get_tournament_duel_id(keys);
+        let mut challenge: Challenge = store.get_challenge(duel_id);
+        (challenge)
+    }
 
     //------------------------------------
     // initializers

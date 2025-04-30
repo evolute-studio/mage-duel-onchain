@@ -9,7 +9,8 @@ pub use evolute_duel::systems::{
     game::{IGameDispatcher, IGameDispatcherTrait},
     tokens::{
         tournament_token::{ITournamentToken, ITournamentTokenDispatcher}
-    }
+    },
+    duel::{IDuelProtectedDispatcher, IDuelProtectedDispatcherTrait},
 };
 pub use evolute_duel::interfaces::{
     vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source},
@@ -76,6 +77,10 @@ pub impl DnsImpl of DnsTrait {
     fn rng_mock_address(self: @WorldStorage) -> ContractAddress {
         (self.find_contract_address(@"rng_mock"))
     }
+    #[inline(always)]
+    fn duel_token_address(self: @WorldStorage) -> ContractAddress {
+        (self.find_contract_address(@"duel"))
+    }
     //--------------------------
     // address validators
     //
@@ -112,5 +117,9 @@ pub impl DnsImpl of DnsTrait {
     #[inline(always)]
     fn budokan_dispatcher_from_pass_id(self: @Store, pass_id: u64) -> ITournamentDispatcher {
         (ITournamentDispatcher{ contract_address: self.get_tournament_pass_minter_address(pass_id) })
+    }
+    #[inline(always)]
+    fn duel_protected_dispatcher(self: @WorldStorage) -> IDuelProtectedDispatcher {
+        (IDuelProtectedDispatcher{ contract_address: self.duel_token_address() })
     }
 }

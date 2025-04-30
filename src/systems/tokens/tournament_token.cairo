@@ -105,8 +105,8 @@ pub trait ITournamentTokenPublic<TState> {
     fn start_tournament(ref self: TState, pass_id: u64) -> u64; // returns tournament_id
 
     // // Phase 3 -- Join tournament (per player)
-    // fn can_join_duel(self: @TState, pass_id: u64) -> bool;
-    // fn join_duel(ref self: TState, pass_id: u64) -> u128; // returns duel_id
+    fn can_join_duel(self: @TState, pass_id: u64) -> bool;
+    fn join_duel(ref self: TState, pass_id: u64) -> u128; // returns duel_id
 
     // // Phase 4 -- End round (any contestant can end)
     // // - will shuffle next bracket
@@ -186,9 +186,6 @@ pub mod tournament_token {
     // ERC-721 End
     //-----------------------------------
 
-    // use pistols::interfaces::dns::{
-    //     DnsTrait,
-    // };
     // use pistols::models::{
     //     challenge::{Challenge},
     //     duelist::{DuelistTrait},
@@ -214,7 +211,8 @@ pub mod tournament_token {
     use evolute_duel::interfaces::dns::{
         DnsTrait, SELECTORS, Source,
         ITournamentDispatcher, ITournamentDispatcherTrait,
-        IGameDispatcherTrait, IVrfProviderDispatcherTrait
+        IGameDispatcherTrait, IVrfProviderDispatcherTrait,
+        IDuelProtectedDispatcherTrait,
     };
     use evolute_duel::systems::rng::{RngWrap, RngWrapTrait};
     use evolute_duel::libs::store::{Store, StoreTrait};
@@ -235,6 +233,9 @@ pub mod tournament_token {
             TournamentResultsTrait,
         },
         player::{PlayerTrait},
+        challenge::{
+            Challenge,
+        },
     };
 
     use evolute_duel::utils::{
@@ -442,76 +443,77 @@ pub mod tournament_token {
             (tournament_id)
         }
 
-        // //-----------------------------------
-        // // Phase 3 -- Join Duel
-        // //
-        // fn can_join_duel(self: @ContractState, pass_id: u64) -> bool {
-        //     let store: Store = StoreTrait::new(self.world_default());
-        //     let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
-        //     let entry: TournamentPassValue = store.get_tournament_pass_value(pass_id);
-        //     let tournament: TournamentValue = store.get_tournament_value(entry.tournament_id);
-        //     let round: TournamentRound = store.get_tournament_round(entry.tournament_id, tournament.round_number);
-        //     let challenge: Challenge = round.get_challenge(@store, entry.entry_number);
-        //     (
-        //         // owns entry
-        //         self.is_owner_of(starknet::get_caller_address(), pass_id.into()) &&
-        //         // correct lifecycle
-        //         token_metadata.lifecycle.is_playable(starknet::get_block_timestamp()) &&
-        //         // enlisted
-        //         entry.tournament_id.is_non_zero() &&
-        //         // tournament has started
-        //         tournament.state == TournamentState::InProgress &&
-        //         // is qualified
-        //         round.results.is_playing(entry.entry_number) &&
-        //         // not joined
-        //         (!challenge.state.exists() || (challenge.duelist_id_a != entry.duelist_id && challenge.duelist_id_b != entry.duelist_id))
-        //     )
-        // }
-        // fn join_duel(ref self: ContractState, pass_id: u64) -> u128 {
-        //     let mut store: Store = StoreTrait::new(self.world_default());
-        //     // validate ownership
-        //     let caller: ContractAddress = starknet::get_caller_address();
-        //     assert(self.is_owner_of(caller, pass_id.into()) == true, Errors::NOT_YOUR_ENTRY);
-        //     // budokan must be playable
-        //     let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
-        //     assert(token_metadata.lifecycle.is_playable(starknet::get_block_timestamp()), Errors::BUDOKAN_NOT_PLAYABLE);
-        //     // enlisted
-        //     let mut entry: TournamentPass = store.get_tournament_pass(pass_id);
-        //     assert(entry.tournament_id.is_non_zero(), Errors::NOT_ENLISTED);
-        //     assert(entry.duelist_id.is_non_zero(), Errors::NOT_ENLISTED);
-        //     // tournament has started
-        //     let tournament: TournamentValue = store.get_tournament_value(entry.tournament_id);
-        //     assert(tournament.state != TournamentState::Finished, Errors::HAS_ENDED);
-        //     assert(tournament.state == TournamentState::InProgress, Errors::NOT_STARTED);
-        //     // collect pending duels
-        //     if (tournament.round_number > 1) {
-        //         let prev_round: TournamentRound = store.get_tournament_round(entry.tournament_id, tournament.round_number - 1);
-        //         let prev_challenge: Challenge = prev_round.get_challenge(@store, entry.entry_number);
-        //         if (prev_challenge.state == ChallengeState::InProgress) {
-        //             store.world.game_dispatcher().collect_duel(prev_challenge.duel_id);
-        //         }
-        //     }
-        //     // update entry
-        //     entry.current_round_number = tournament.round_number;
-        //     store.set_tournament_pass(@entry);
-        //     // Get round pairing
-        //     let round: TournamentRoundValue = store.get_tournament_round_value(entry.tournament_id, tournament.round_number);
-        //     assert(round.results.is_playing(entry.entry_number), Errors::NOT_QUALIFIED);
-        //     let opponent_entry_number: u8 = round.bracket.get_opponent_entry_number(entry.entry_number);
-        //     // Create duel
-        //     let rules: TournamentRules = store.get_tournament_settings_rules(token_metadata.settings_id);
-        //     let duel_id: u128 = store.world.duel_token_protected_dispatcher().join_tournament_duel(
-        //         caller,
-        //         entry.duelist_id,
-        //         entry.tournament_id,
-        //         tournament.round_number,
-        //         entry.entry_number,
-        //         opponent_entry_number,
-        //         rules,
-        //         round.timestamps.end,
-        //     );
-        //     (duel_id)
-        // }
+        //-----------------------------------
+        // Phase 3 -- Join Duel
+        //
+        fn can_join_duel(self: @ContractState, pass_id: u64) -> bool {
+            let store: Store = StoreTrait::new(self.world_default());
+            let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
+            let entry: TournamentPassValue = store.get_tournament_pass_value(pass_id);
+            let tournament: TournamentValue = store.get_tournament_value(entry.tournament_id);
+            let round: TournamentRound = store.get_tournament_round(entry.tournament_id, tournament.round_number);
+            let challenge: Challenge = round.get_challenge(@store, entry.entry_number);
+            (
+                // owns entry
+                self.is_owner_of(starknet::get_caller_address(), pass_id.into()) &&
+                // correct lifecycle
+                token_metadata.lifecycle.is_playable(starknet::get_block_timestamp()) &&
+                // enlisted
+                entry.tournament_id.is_non_zero() &&
+                // tournament has started
+                tournament.state == TournamentState::InProgress &&
+                // is qualified
+                round.results.is_playing(entry.entry_number) &&
+                // not joined
+                (!challenge.state.exists() || (challenge.address_a != entry.player_address && challenge.address_b != entry.player_address))
+            )
+        }
+        fn join_duel(ref self: ContractState, pass_id: u64) -> u128 {
+            let mut store: Store = StoreTrait::new(self.world_default());
+            // validate ownership
+            let caller: ContractAddress = starknet::get_caller_address();
+            assert(self.is_owner_of(caller, pass_id.into()) == true, Errors::NOT_YOUR_ENTRY);
+            // budokan must be playable
+            let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
+            assert(token_metadata.lifecycle.is_playable(starknet::get_block_timestamp()), Errors::BUDOKAN_NOT_PLAYABLE);
+            // enlisted
+            let mut entry: TournamentPass = store.get_tournament_pass(pass_id);
+            assert(entry.tournament_id.is_non_zero(), Errors::NOT_ENLISTED);
+            assert(entry.player_address.is_non_zero(), Errors::NOT_ENLISTED);
+            // tournament has started
+            let tournament: TournamentValue = store.get_tournament_value(entry.tournament_id);
+            assert(tournament.state != TournamentState::Finished, Errors::HAS_ENDED);
+            assert(tournament.state == TournamentState::InProgress, Errors::NOT_STARTED);
+            // collect pending duels
+            if (tournament.round_number > 1) {
+                let prev_round: TournamentRound = store.get_tournament_round(entry.tournament_id, tournament.round_number - 1);
+                let prev_challenge: Challenge = prev_round.get_challenge(@store, entry.entry_number);
+                if (prev_challenge.state == ChallengeState::InProgress) {
+                    //TODO: finish challenge and determine winner
+                    // store.world.game_dispatcher().collect_duel(prev_challenge.duel_id);
+                }
+            }
+            // update entry
+            entry.current_round_number = tournament.round_number;
+            store.set_tournament_pass(@entry);
+            // Get round pairing
+            let round: TournamentRoundValue = store.get_tournament_round_value(entry.tournament_id, tournament.round_number);
+            assert(round.results.is_playing(entry.entry_number), Errors::NOT_QUALIFIED);
+            let opponent_entry_number: u8 = round.bracket.get_opponent_entry_number(entry.entry_number);
+            // Create duel
+            let rules: TournamentRules = store.get_tournament_settings_rules(token_metadata.settings_id);
+            //TODO: create duel
+            let duel_id: u128 = store.world.duel_protected_dispatcher().join_tournament_duel(
+                caller,
+                entry.tournament_id,
+                tournament.round_number,
+                entry.entry_number,
+                opponent_entry_number,
+                rules,
+                round.timestamps.end,
+            );
+            (duel_id)
+        }
 
         // //-----------------------------------
         // // Phase 4 -- End round
