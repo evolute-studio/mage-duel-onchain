@@ -77,7 +77,7 @@ pub struct SnapshotCreateFailed {
 #[dojo::event]
 pub struct BoardUpdated {
     #[key]
-    pub board_id: felt252,
+    pub duel_id: felt252,
     pub available_tiles_in_deck: Array<u8>,
     pub top_tile: Option<u8>,
     pub state: Array<(u8, u8, u8)>,
@@ -115,7 +115,7 @@ pub struct Moved {
     pub col: u8,
     pub row: u8,
     pub is_joker: bool,
-    pub board_id: felt252,
+    pub duel_id: felt252,
     pub timestamp: u64,
 }
 
@@ -126,7 +126,7 @@ pub struct Skiped {
     pub move_id: felt252,
     pub player: ContractAddress,
     pub prev_move_id: Option<felt252>,
-    pub board_id: felt252,
+    pub duel_id: felt252,
     pub timestamp: u64,
 }
 
@@ -142,7 +142,7 @@ pub struct InvalidMove {
     pub col: u8,
     pub row: u8,
     pub is_joker: bool,
-    pub board_id: felt252,
+    pub duel_id: felt252,
 }
 
 
@@ -151,7 +151,7 @@ pub struct InvalidMove {
 pub struct GameFinished {
     #[key]
     pub host_player: ContractAddress,
-    pub board_id: felt252,
+    pub duel_id: felt252,
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Debug)]
@@ -167,8 +167,10 @@ pub struct GameStarted {
 #[dojo::event]
 pub struct GameCreated {
     #[key]
-    pub host_player: ContractAddress,
-    pub status: GameStatus,
+    pub duel_id: felt252,
+    pub player_a: ContractAddress,
+    pub player_b: ContractAddress,
+    pub timestamp: u64,
 }
 
 
@@ -212,7 +214,7 @@ pub struct GameCanceleFailed {
 pub struct PlayerNotInGame {
     #[key]
     pub player_id: ContractAddress,
-    pub board_id: felt252,
+    pub duel_id: felt252,
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Debug)]
@@ -220,7 +222,7 @@ pub struct PlayerNotInGame {
 pub struct NotYourTurn {
     #[key]
     pub player_id: ContractAddress,
-    pub board_id: felt252,
+    pub duel_id: felt252,
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Debug)]
@@ -228,7 +230,7 @@ pub struct NotYourTurn {
 pub struct NotEnoughJokers {
     #[key]
     pub player_id: ContractAddress,
-    pub board_id: felt252,
+    pub duel_id: felt252,
 }
 
 
@@ -245,7 +247,7 @@ pub struct GameIsAlreadyFinished {
 pub struct CantFinishGame {
     #[key]
     pub player_id: ContractAddress,
-    pub board_id: felt252,
+    pub duel_id: felt252,
 }
 
 // --------------------------------------

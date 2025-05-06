@@ -10,37 +10,47 @@ pub trait IDuel<TState> {
     fn world_dispatcher(self: @TState) -> IWorldDispatcher;
 
     // IDuelTokenPublic
-    fn get_pact(self: @TState, duel_type: DuelType, address_a: ContractAddress, address_b: ContractAddress) -> u128;
+    fn get_pact(self: @TState, duel_type: DuelType, address_a: ContractAddress, address_b: ContractAddress) -> felt252;
     fn has_pact(self: @TState, duel_type: DuelType, address_a: ContractAddress, address_b: ContractAddress) -> bool;
-    fn create_duel(ref self: TState, duel_type: DuelType, duelist_id: u128, challenged_address: ContractAddress, lives_staked: u8, expire_hours: u64, message: ByteArray) -> u128;
-    fn reply_duel(ref self: TState, duel_id: u128, duelist_id: u128, accepted: bool) -> ChallengeState;
+    fn create_duel(ref self: TState, duel_type: DuelType, challenged_address: ContractAddress) -> felt252;
+    fn reply_duel(ref self: TState, duel_id: felt252, duelist_id: u128, accepted: bool) -> ChallengeState;
 }
 
 // Exposed to clients
 #[starknet::interface]
 pub trait IDuelPublic<TState> {
     // view
-    fn get_pact(self: @TState, duel_type: DuelType, address_a: ContractAddress, address_b: ContractAddress) -> u128;
+    fn get_pact(self: @TState, duel_type: DuelType, address_a: ContractAddress, address_b: ContractAddress) -> felt252;
     fn has_pact(self: @TState, duel_type: DuelType, address_a: ContractAddress, address_b: ContractAddress) -> bool;
     // write
     fn create_duel( //@description: Create a Duel
         ref self: TState,
-        duel_type: DuelType,
         challenged_address: ContractAddress,
-        lives_staked: u8,
+        tournament_id: u64,
         expire_hours: u64,
-    ) -> u128;
+    ) -> felt252;
+    fn create_duel_from_snapshot( //@description: Create a Duel from a snapshot
+        ref self: TState,
+        challenged_address: ContractAddress,
+        expire_hours: u64,
+        snapshot_id: felt252,
+    ) -> felt252;
+    fn cancel_duel( //@description: Cancel a Duel
+        ref self: TState,
+    ) -> ChallengeState;
     fn reply_duel( //@description: Reply to a Duel (accept or reject)
         ref self: TState,
-        duel_id: u128,
+        duel_id: felt252,
         accepted: bool,
     ) -> ChallengeState;
+
+
 }
 
 // Exposed to world
 #[starknet::interface]
 pub trait IDuelProtected<TState> {
-    // fn transfer_to_winner(ref self: TState, duel_id: u128);
+    // fn transfer_to_winner(ref self: TState, duel_id: felt252);
     fn join_tournament_duel(
         ref self: TState,
         player_address: ContractAddress,
@@ -50,7 +60,7 @@ pub trait IDuelProtected<TState> {
         opponent_entry_number: u8,
         rules: TournamentRules,
         timestamp_end: u64,
-    ) -> u128;
+    ) -> felt252;
 }
 
 #[dojo::contract]
@@ -61,7 +71,7 @@ pub mod duel {
 
     #[storage]
     struct Storage {
-        id_generator: u128,
+        id_generator: felt252,
     }
 
     use evolute_duel::interfaces::dns::{
@@ -77,6 +87,8 @@ pub mod duel {
             TournamentRules,
             ChallengeToTournament, TournamentToChallenge,
         },
+        game::{Board, Snapshot,},
+        registration::{Registration},
     };
     use evolute_duel::types::{
         challenge_state::{ChallengeState, ChallengeStateTrait},
@@ -90,6 +102,9 @@ pub mod duel {
 
     use evolute_duel::types::errors::duel::{Errors};
 
+    use evolute_duel::systems::helpers::{
+        board::{create_board, create_board_from_snapshot},
+    };
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
     // use tournaments::components::{
@@ -104,12 +119,6 @@ pub mod duel {
     fn TOKEN_NAME()   -> ByteArray {("Pistols at Dawn Duels")}
     fn TOKEN_SYMBOL() -> ByteArray {("DUEL")}
     //*******************************
-
-    fn dojo_init(
-        ref self: ContractState,
-    ) {
-        self.id_generator.write(1);
-    }
 
     #[generate_trait]
     impl WorldDefaultImpl of WorldDefaultTrait {
@@ -129,7 +138,7 @@ pub mod duel {
         //-----------------------------------
         // View calls
         //
-        fn get_pact(self: @ContractState, duel_type: DuelType, address_a: ContractAddress, address_b: ContractAddress) -> u128 {
+        fn get_pact(self: @ContractState, duel_type: DuelType, address_a: ContractAddress, address_b: ContractAddress) -> felt252 {
             let mut store: Store = StoreTrait::new(self.world_default());
             (store.get_pact(duel_type, address_a.into(), address_b.into()).duel_id)
         }
@@ -143,35 +152,33 @@ pub mod duel {
         //
         fn create_duel(
             ref self: ContractState,
-            duel_type: DuelType,
             challenged_address: ContractAddress,
-            lives_staked: u8,
+            tournament_id: u64,
             expire_hours: u64,
-        ) -> u128 {
+        ) -> felt252 {
             let mut store: Store = StoreTrait::new(self.world_default());
 
             // mint to game, so it can transfer to winner
-            let duel_id: u128 = self._next_duel_id();
+            let duel_id: felt252 = self._next_duel_id();
 
             // validate duelist ownership
             let address_a: ContractAddress = starknet::get_caller_address();
 
-            // validate duelist health
-// println!("poke A... {}", duelist_id_a);
             // validate challenged
             let address_b: ContractAddress = challenged_address;
             // assert(address_b.is_non_zero(), Errors::INVALID_CHALLENGED); // allow open challenge
             assert(address_b != address_a, Errors::INVALID_CHALLENGED_SELF);
 
-            // validate duel type
-            match duel_type {
-                DuelType::Regular => {}, // ok!
-                DuelType::Undefined | 
-                DuelType::Tournament => {
-                    // create tutorials with the tutorial contact only
-                    assert(false, Errors::INVALID_DUEL_TYPE);
-                },
+            let duel_type: DuelType = if tournament_id == 0 {
+                DuelType::Regular
+            } else {
+                DuelType::Tournament
             };
+
+            if tournament_id != 0 {
+                let registration: Registration = store.get_registration(tournament_id, address_a);
+                assert(registration.is_registered, Errors::NOT_REGISTERED); 
+            }
 
             // assert duelist is not in a challenge
             store.enter_challenge(address_a, duel_id);
@@ -228,12 +235,127 @@ pub mod duel {
 
             // events
             // PlayerTrait::check_in(ref store, Activity::ChallengeCreated, address_a, duel_id.into());
-
+            store.emit_game_created(
+                duel_id.into(),
+                address_a.into(),
+                address_b.into(),
+            );
             (duel_id)
+        }
+
+        fn cancel_duel(ref self: ContractState) -> ChallengeState {
+            let mut store: Store = StoreTrait::new(self.world_default());
+            let address_a: ContractAddress = starknet::get_caller_address();
+            let duel_id: felt252 = store.get_player_challenge(address_a).duel_id;
+            assert(duel_id != 0, Errors::NO_CALLENGE);
+
+            // validate chalenge
+            let mut challenge: Challenge = store.get_challenge(duel_id);
+            assert(challenge.exists(), Errors::INVALID_CHALLENGE);
+            assert(challenge.state == ChallengeState::Awaiting, Errors::CHALLENGE_NOT_AWAITING);
+
+            // cancel it!
+            challenge.state = ChallengeState::Refused;
+            challenge.timestamps.end = starknet::get_block_timestamp();
+            challenge.unset_pact(ref store);
+            store.exit_challenge(address_a);
+
+            // events
+            // PlayerTrait::check_in(ref store, Activity::ChallengeCanceled, address_a, duel_id.into());
+
+            // update challenge
+            store.set_challenge(@challenge);
+
+            (challenge.state)
+        }
+
+        fn create_duel_from_snapshot(
+            ref self: ContractState,
+            challenged_address: ContractAddress,
+            expire_hours: u64,
+            snapshot_id: felt252,
+        ) -> felt252 {
+             let mut store: Store = StoreTrait::new(self.world_default());
+
+            // mint to game, so it can transfer to winner
+            let duel_id: felt252 = self._next_duel_id();
+
+            // validate duelist ownership
+            let address_a: ContractAddress = starknet::get_caller_address();
+            
+            // validate challenged
+            let address_b: ContractAddress = challenged_address;
+            // assert(address_b.is_non_zero(), Errors::INVALID_CHALLENGED); // allow open challenge
+            assert(address_b != address_a, Errors::INVALID_CHALLENGED_SELF);
+
+            // assert duelist is not in a challenge
+            store.enter_challenge(address_a, duel_id);
+
+            // calc expiration
+            let timestamp: u64 = starknet::get_block_timestamp();
+            let timestamps = Period {
+                start: timestamp,
+                end: timestamp + 
+                    if (expire_hours == 0) {TIMESTAMP::ONE_DAY}
+                    else {TimestampTrait::from_hours(expire_hours)},
+            };
+
+            // create challenge
+            let challenge = Challenge {
+                duel_id,
+                duel_type: DuelType::Regular,
+                // duelists
+                address_a,
+                address_b,
+                // progress
+                state: ChallengeState::Awaiting,
+                winner: 0,
+                // timestamps
+                timestamps,
+            };
+
+            let snapshot: Snapshot = store.get_snapshot(snapshot_id);
+            let old_board_id = snapshot.board_id;
+            let move_number = snapshot.move_number;
+
+            create_board_from_snapshot(
+                ref store, 
+                old_board_id, 
+                address_a, 
+                address_b,
+                move_number,
+                duel_id,
+            );
+
+            // save!
+            store.set_challenge(@challenge);
+            // store.set_round(@round);
+
+            // set the pact + assert it does not exist
+            if (address_b.is_non_zero()) {
+                challenge.set_pact(ref store);
+            }
+
+
+            //TODO emit events
+            // // Duelist 1 is ready to commit
+            // store.emit_challenge_action(@challenge, 1, true);
+            // // Duelist 2 has to reply
+            // store.emit_challenge_reply_action(@challenge, true);
+
+            // events
+            // PlayerTrait::check_in(ref store, Activity::ChallengeCreated, address_a, duel_id.into());
+            store.emit_game_created(
+                duel_id.into(),
+                address_a.into(),
+                address_b.into(),
+            );
+            (duel_id)
+
         }
         
         fn reply_duel(ref self: ContractState,
-            duel_id: u128,
+            duel_id: felt252,
             accepted: bool,
         ) -> ChallengeState {
             let mut store: Store = StoreTrait::new(self.world_default());
@@ -280,10 +402,24 @@ pub mod duel {
                     challenge.timestamps.start = timestamp;
                     challenge.timestamps.end = 0;
 
-                    // // set reply timeouts
-                    // let mut round: Round = store.get_round(duel_id);
-                    // round.set_commit_timeout(store.get_current_season_rules(), timestamp);
-                    // store.set_round(@round);
+                    let board: Board = store.get_board(duel_id);
+                    //creating board
+                    if board.initial_edge_state.is_empty() {
+                        create_board(
+                            ref store, challenge.address_a, address_b, duel_id,
+                        );
+                    } // When game is created from snapshot
+                    else {
+                        let mut board: Board = store.get_board(duel_id);
+                        let (_, player1_side, joker_number1) = board.player2;
+                        board.player2 = (address_b, player1_side, joker_number1);
+                        
+                        store.set_board_player2(
+                            board.id,
+                            board.player2
+                        );
+                    };  
+
                 } else {
                     // Challenged is Refusing
                     challenge.state = ChallengeState::Refused;
@@ -319,7 +455,7 @@ pub mod duel {
     #[abi(embed_v0)]
     impl DuelProtectedImpl of super::IDuelProtected<ContractState> {
         // fn transfer_to_winner(ref self: ContractState,
-        //     duel_id: u128,
+        //     duel_id: felt252,
         // ) {
         //     let mut store: Store = StoreTrait::new(self.world_default());
         //     assert(store.world.caller_is_world_contract(), Errors::INVALID_CALLER);
@@ -342,7 +478,7 @@ pub mod duel {
             opponent_entry_number: u8,
             rules: TournamentRules,
             timestamp_end: u64,
-        ) -> u128 {
+        ) -> felt252 {
             let mut store: Store = StoreTrait::new(self.world_default());
             assert(store.world.caller_is_tournament_contract(), Errors::INVALID_CALLER);
 
@@ -353,7 +489,7 @@ pub mod duel {
                 entry_number,
                 opponent_entry_number,
             );
-            let mut duel_id: u128 = store.get_tournament_duel_id(keys);
+            let mut duel_id: felt252 = store.get_tournament_duel_id(keys);
             let duelist_number: u8 = if (entry_number == *keys.entry_number_a) {1} else {2};
             
             //-----------------------------------
@@ -478,10 +614,10 @@ pub mod duel {
     //
     #[generate_trait]
     impl InternalImpl of InternalTrait {
-        fn _next_duel_id(ref self: ContractState) -> u128 {
-            let mut id_generator: u128 = self.id_generator.read();
-            let duel_id: u128 = id_generator;
+        fn _next_duel_id(ref self: ContractState) -> felt252 {
+            let mut id_generator: felt252 = self.id_generator.read();
             id_generator += 1;
+            let duel_id: felt252 = id_generator;
             self.id_generator.write(id_generator);
             (duel_id)
         }

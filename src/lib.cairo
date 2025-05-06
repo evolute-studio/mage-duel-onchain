@@ -28,6 +28,8 @@ pub mod models {
     pub mod tournament;
     pub mod config;
     pub mod pact;
+    pub mod scoreboard;
+    pub mod registration;
 }
 
 pub mod events;

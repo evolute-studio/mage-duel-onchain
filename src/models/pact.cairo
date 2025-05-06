@@ -9,7 +9,7 @@ pub struct Pact {
     #[key]
     pub pair: u128,     // xor'd duelists as u256(address).low
     //------------
-    pub duel_id: u128,  // current Challenge, or 0x0
+    pub duel_id: felt252,  // current Challenge, or 0x0
 }
 
 

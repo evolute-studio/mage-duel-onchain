@@ -1,29 +1,30 @@
 use dojo::model::ModelStorage;
 use evolute_duel::models::scoring::{CityNode};
+use evolute_duel::libs::store::{Store, StoreTrait};
 use dojo::world::{WorldStorage};
 //Union find on CityNode
-pub fn find(ref world: WorldStorage, board_id: felt252, position: u8) -> CityNode {
-    let node: CityNode = world.read_model((board_id, position));
+pub fn find(ref store: Store, board_id: felt252, position: u8) -> CityNode {
+    let node: CityNode = store.get_city_node(board_id, position);
     let mut current = node;
     if current.parent != current.position {
-        current.parent = find(ref world, board_id, current.parent).position;
+        current.parent = find(ref store, board_id, current.parent).position;
     }
-    world.write_model(@current);
+    store.set_city_node(@current);
 
-    world.read_model((board_id, current.parent))
+    store.get_city_node(board_id, current.parent)
 }
 
 pub fn union(
-    ref world: WorldStorage, board_id: felt252, position1: u8, position2: u8, in_tile: bool,
+    ref store: Store, board_id: felt252, position1: u8, position2: u8, in_tile: bool,
 ) -> CityNode {
-    let mut root1 = find(ref world, board_id, position1);
-    let mut root2 = find(ref world, board_id, position2);
+    let mut root1 = find(ref store, board_id, position1);
+    let mut root2 = find(ref store, board_id, position2);
 
     if root1.position == root2.position {
         if !in_tile {
             root1.open_edges -= 2;
         }
-        world.write_model(@root1);
+        store.set_city_node(@root1);
         return root1;
     }
     if root1.rank > root2.rank {
@@ -34,8 +35,8 @@ pub fn union(
         if !in_tile {
             root1.open_edges -= 2;
         }
-        world.write_model(@root2);
-        world.write_model(@root1);
+        store.set_city_node(@root2);
+        store.set_city_node(@root1);
         return root1;
     } else if root1.rank < root2.rank {
         root1.parent = root2.position;
@@ -45,8 +46,8 @@ pub fn union(
         if !in_tile {
             root2.open_edges -= 2;
         }
-        world.write_model(@root1);
-        world.write_model(@root2);
+        store.set_city_node(@root2);
+        store.set_city_node(@root1);
         return root2;
     } else {
         root2.parent = root1.position;
@@ -57,15 +58,15 @@ pub fn union(
         if !in_tile {
             root1.open_edges -= 2;
         }
-        world.write_model(@root2);
-        world.write_model(@root1);
+        store.set_city_node(@root2);
+        store.set_city_node(@root1);
         return root1;
     }
 }
 
-pub fn connected(ref world: WorldStorage, board_id: felt252, position1: u8, position2: u8) -> bool {
-    let root1 = find(ref world, board_id, position1);
-    let root2 = find(ref world, board_id, position2);
+pub fn connected(ref store: Store, board_id: felt252, position1: u8, position2: u8) -> bool {
+    let root1 = find(ref store, board_id, position1);
+    let root2 = find(ref store, board_id, position2);
     return root1.position == root2.position;
 }
 

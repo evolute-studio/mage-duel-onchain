@@ -72,14 +72,14 @@ pub struct TournamentToChallenge {
     #[key]
     pub keys: TournamentDuelKeys,
     //-------------------------
-    pub duel_id: u128,
+    pub duel_id: felt252,
 }
 // ChallengeToTournament: required to settle results of a duel in the tournament
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ChallengeToTournament {
     #[key]
-    pub duel_id: u128,
+    pub duel_id: felt252,
     //-------------------------
     pub keys: TournamentDuelKeys,
 }
@@ -224,7 +224,7 @@ pub impl TournamentRoundImpl of TournamentRoundTrait {
             entry_number,
             opponent_entry_number,
         );
-        let mut duel_id: u128 = store.get_tournament_duel_id(keys);
+        let mut duel_id: felt252 = store.get_tournament_duel_id(keys);
         let mut challenge: Challenge = store.get_challenge(duel_id);
         (challenge)
     }

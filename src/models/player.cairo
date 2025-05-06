@@ -25,7 +25,7 @@ pub struct PlayerAssignment {
     #[key]
     pub player_address: ContractAddress,
     //-----------------------
-    pub duel_id: u128,      // current Challenge a Duelist is in
+    pub duel_id: felt252,      // current Challenge a Duelist is in
     pub pass_id: u64,       // current Tournament a Duelist is in
 }
 
@@ -45,7 +45,7 @@ use evolute_duel::types::errors::{
 
 #[generate_trait]
 pub impl PlayerImpl of PlayerTrait {
-    fn enter_challenge(ref self: Store, player_address: ContractAddress, duel_id: u128) {
+    fn enter_challenge(ref self: Store, player_address: ContractAddress, duel_id: felt252) {
         let mut assignment: PlayerAssignment = self.get_player_challenge(player_address);
         assert(assignment.duel_id == 0, DuelErrors::DUELIST_IN_CHALLENGE);
         assignment.duel_id = duel_id;

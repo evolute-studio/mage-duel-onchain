@@ -1,29 +1,29 @@
 use dojo::model::ModelStorage;
 use evolute_duel::models::scoring::{RoadNode};
-use dojo::world::{WorldStorage};
+use evolute_duel::libs::store::{Store, StoreTrait};
 //Union find on RoadNode
-pub fn find(ref world: WorldStorage, board_id: felt252, position: u8) -> RoadNode {
-    let node: RoadNode = world.read_model((board_id, position));
+pub fn find(ref store: Store, board_id: felt252, position: u8) -> RoadNode {
+    let node: RoadNode = store.get_road_node(board_id, position);
     let mut current = node;
     if current.parent != current.position {
-        current.parent = find(ref world, board_id, current.parent).position;
+        current.parent = find(ref store, board_id, current.parent).position;
     }
-    world.write_model(@current);
+    store.set_road_node(@current);
 
-    world.read_model((board_id, current.parent))
+    store.get_road_node(board_id, current.parent)
 }
 
 pub fn union(
-    ref world: WorldStorage, board_id: felt252, position1: u8, position2: u8, in_tile: bool,
+    ref store: Store, board_id: felt252, position1: u8, position2: u8, in_tile: bool,
 ) -> RoadNode {
-    let mut root1 = find(ref world, board_id, position1);
-    let mut root2 = find(ref world, board_id, position2);
+    let mut root1 = find(ref store, board_id, position1);
+    let mut root2 = find(ref store, board_id, position2);
 
     if root1.position == root2.position {
         if !in_tile {
             root1.open_edges -= 2;
         }
-        world.write_model(@root1);
+        store.set_road_node(@root1);
         return root1;
     }
     if root1.rank > root2.rank {
@@ -34,8 +34,8 @@ pub fn union(
         if !in_tile {
             root1.open_edges -= 2;
         }
-        world.write_model(@root2);
-        world.write_model(@root1);
+        store.set_road_node(@root2);
+        store.set_road_node(@root1);
         return root1;
     } else if root1.rank < root2.rank {
         root1.parent = root2.position;
@@ -45,8 +45,8 @@ pub fn union(
         if !in_tile {
             root2.open_edges -= 2;
         }
-        world.write_model(@root1);
-        world.write_model(@root2);
+        store.set_road_node(@root1);
+        store.set_road_node(@root2);
         return root2;
     } else {
         root2.parent = root1.position;
@@ -57,26 +57,26 @@ pub fn union(
         if !in_tile {
             root1.open_edges -= 2;
         }
-        world.write_model(@root2);
-        world.write_model(@root1);
+        store.set_road_node(@root2);
+        store.set_road_node(@root1);
         return root1;
     }
 }
 
-pub fn connected(ref world: WorldStorage, board_id: felt252, position1: u8, position2: u8) -> bool {
-    let root1 = find(ref world, board_id, position1);
-    let root2 = find(ref world, board_id, position2);
+pub fn connected(ref store: Store, board_id: felt252, position1: u8, position2: u8) -> bool {
+    let root1 = find(ref store, board_id, position1);
+    let root2 = find(ref store, board_id, position2);
     return root1.position == root2.position;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dojo_cairo_test::WorldStorageTestTrait;
+    use dojo_cairo_test::StoreTestTrait;
     use dojo::model::{ModelStorage, ModelStorageTest};
-    use dojo::world::WorldStorageTrait;
+    use dojo::store::StoreTrait;
     use dojo_cairo_test::{
-        spawn_test_world, NamespaceDef, TestResource, ContractDefTrait, ContractDef,
+        spawn_test_store, NamespaceDef, TestResource, ContractDefTrait, ContractDef,
     };
 
     use evolute_duel::{
@@ -114,14 +114,14 @@ mod tests {
         let ndef = namespace_def();
 
         // Register the resources.
-        let mut world = spawn_test_world([ndef].span());
+        let mut store = spawn_test_store([ndef].span());
 
         // Ensures permissions and initializations are synced.
-        world.sync_perms_and_inits(contract_defs());
+        store.sync_perms_and_inits(contract_defs());
 
         let board_id = 1;
         let position = 0;
-        world
+        store
             .write_model(
                 @RoadNode {
                     board_id,
@@ -134,7 +134,7 @@ mod tests {
                     contested: false,
                 },
             );
-        let node = find(ref world, board_id, position);
+        let node = find(ref store, board_id, position);
         assert!(node.position == position, "Position should be the same");
     }
 
@@ -145,12 +145,12 @@ mod tests {
         let ndef = namespace_def();
 
         // Register the resources.
-        let mut world = spawn_test_world([ndef].span());
+        let mut store = spawn_test_store([ndef].span());
 
         // Ensures permissions and initializations are synced.
-        world.sync_perms_and_inits(contract_defs());
+        store.sync_perms_and_inits(contract_defs());
         let board_id = 1;
-        world
+        store
             .write_model(
                 @RoadNode {
                     board_id,
@@ -163,7 +163,7 @@ mod tests {
                     contested: false,
                 },
             );
-        world
+        store
             .write_model(
                 @RoadNode {
                     board_id,
@@ -177,11 +177,11 @@ mod tests {
                 },
             );
 
-        let root = union(ref world, board_id, 0, 1, false);
-        let root1 = find(ref world, board_id, 0);
-        let root2 = find(ref world, board_id, 1);
+        let root = union(ref store, board_id, 0, 1, false);
+        let root1 = find(ref store, board_id, 0);
+        let root2 = find(ref store, board_id, 1);
         assert!(
-            find(ref world, board_id, 0).position == find(ref world, board_id, 1).position,
+            find(ref store, board_id, 0).position == find(ref store, board_id, 1).position,
             "Position should be the same",
         );
     }
@@ -193,12 +193,12 @@ mod tests {
         let ndef = namespace_def();
 
         // Register the resources.
-        let mut world = spawn_test_world([ndef].span());
+        let mut store = spawn_test_store([ndef].span());
 
         // Ensures permissions and initializations are synced.
-        world.sync_perms_and_inits(contract_defs());
+        store.sync_perms_and_inits(contract_defs());
         let board_id = 1;
-        world
+        store
             .write_model(
                 @RoadNode {
                     board_id,
@@ -211,7 +211,7 @@ mod tests {
                     contested: false,
                 },
             );
-        world
+        store
             .write_model(
                 @RoadNode {
                     board_id,
@@ -225,8 +225,8 @@ mod tests {
                 },
             );
 
-        let root = union(ref world, board_id, 0, 1, false);
-        let connected = connected(ref world, board_id, 0, 1);
+        let root = union(ref store, board_id, 0, 1, false);
+        let connected = connected(ref store, board_id, 0, 1);
         assert!(connected, "Nodes should be connected");
     }
 }

@@ -17,23 +17,20 @@ use evolute_duel::{
     },
 };
 
+use evolute_duel::libs::store::{Store, StoreTrait};
+
 use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
 use core::starknet::get_block_timestamp;
 
 
 pub fn create_board(
-    ref world: WorldStorage,
+    ref store: Store,
     player1: ContractAddress,
     player2: ContractAddress,
-    mut board_id_generator: core::starknet::storage::StorageBase::<
-        core::starknet::storage::Mutable<core::felt252>,
-    >,
+    duel_id: felt252,
 ) -> Board {
-    let board_id = board_id_generator.read();
-    board_id_generator.write(board_id + 1);
-
-    let rules: Rules = world.read_model(0);
+    let rules: Rules = store.get_rules();
     let mut deck_rules_flat = flatten_deck_rules(@rules.deck);
 
     // Create an empty board.
@@ -44,7 +41,7 @@ pub fn create_board(
     let game_state = GameState::InProgress;
 
     let mut board = Board {
-        id: board_id,
+        id: duel_id,
         initial_edge_state: array![],
         available_tiles_in_deck: deck_rules_flat.clone(),
         top_tile: Option::None,
@@ -59,52 +56,32 @@ pub fn create_board(
 
     let top_tile = draw_tile_from_board_deck(ref board);
 
-    world.write_model(@board);
+    store.set_board(@board);
 
     // Initialize edges
     let (cities_on_edges, roads_on_edges) = rules.edges;
     let initial_edge_state = generate_initial_board_state(
-        cities_on_edges, roads_on_edges, board_id,
+        cities_on_edges, roads_on_edges, duel_id,
     );
-    world
-        .write_member(
-            Model::<Board>::ptr_from_keys(board_id),
-            selector!("initial_edge_state"),
-            initial_edge_state.clone(),
-        );
+    store.set_board_initial_state(duel_id, initial_edge_state);
 
-    world
-        .emit_event(
-            @BoardCreated {
-                board_id,
-                initial_edge_state,
-                top_tile,
-                state: tiles,
-                player1: board.player1,
-                player2: board.player2,
-                blue_score: board.blue_score,
-                red_score: board.red_score,
-                last_move_id,
-                game_state,
-            },
-        );
+    store.emit_board_created(board.clone());
 
     return board;
 }
 
 pub fn create_board_from_snapshot(
-    ref world: WorldStorage,
+    ref store: Store,
     old_board_id: felt252,
     player1: ContractAddress,
+    player2: ContractAddress,
     move_number: u8,
-    board_id_generator: core::starknet::storage::StorageBase::<
-        core::starknet::storage::Mutable<core::felt252>,
-    >,
-) -> felt252 {
-    let mut old_board: Board = world.read_model(old_board_id);
-    let new_board_id = board_id_generator.read();
+    duel_id: felt252,
+) {
+    let mut old_board: Board = store.get_board(old_board_id);
+    let new_board_id = duel_id;
 
-    let rules: Rules = world.read_model(0);
+    let rules: Rules = store.get_rules();
     let mut deck_rules_flat = flatten_deck_rules(@rules.deck);
 
     let mut tiles: Array<(u8, u8, u8)> = ArrayTrait::new();
@@ -117,7 +94,7 @@ pub fn create_board_from_snapshot(
         top_tile: Option::None,
         state: tiles.clone(),
         player1: (player1, PlayerSide::Blue, rules.joker_number),
-        player2: (player1, PlayerSide::Red, rules.joker_number),
+        player2: (player2, PlayerSide::Red, rules.joker_number),
         blue_score: (0, 0),
         red_score: (0, 0),
         last_move_id: Option::None,
@@ -131,7 +108,7 @@ pub fn create_board_from_snapshot(
     while current_move_id.is_some() {
         let move_id = current_move_id.unwrap();
         move_ids.append(move_id);
-        let move: Move = world.read_model(move_id);
+        let move: Move = store.get_move(move_id);
         current_move_id = move.prev_move_id;
     };
 
@@ -140,7 +117,7 @@ pub fn create_board_from_snapshot(
 
     for _ in 0..move_number {
         let move_id = *current_move_id.unwrap();
-        let move: Move = world.read_model(move_id);
+        let move: Move = store.get_move(move_id);
 
         let tile = move.tile;
         let rotation = move.rotation;
@@ -167,10 +144,10 @@ pub fn create_board_from_snapshot(
 
             let tile_position = (col * 8 + row).into();
             connect_city_edges_in_tile(
-                ref world, new_board_id, tile_position, tile.into(), rotation, player_side.into(),
+                ref store, new_board_id, tile_position, tile.into(), rotation, player_side.into(),
             );
             let city_contest_scoring_result = connect_adjacent_city_edges(
-                ref world,
+                ref store,
                 new_board_id,
                 new_board.state.clone(),
                 new_board.initial_edge_state.clone(),
@@ -195,10 +172,10 @@ pub fn create_board_from_snapshot(
             }
 
             connect_road_edges_in_tile(
-                ref world, new_board_id, tile_position, tile.into(), rotation, player_side.into(),
+                ref store, new_board_id, tile_position, tile.into(), rotation, player_side.into(),
             );
             let road_contest_scoring_results = connect_adjacent_road_edges(
-                ref world,
+                ref store,
                 new_board_id,
                 new_board.state.clone(),
                 new_board.initial_edge_state.clone(),
@@ -250,35 +227,11 @@ pub fn create_board_from_snapshot(
     new_board.top_tile = draw_tile_from_board_deck(ref new_board);
 
     new_board.initial_edge_state = array![];
-    world.write_model(@new_board);
-    world
-        .write_member(
-            Model::<Board>::ptr_from_keys(new_board_id),
-            selector!("initial_edge_state"),
-            old_board.initial_edge_state.clone(),
-        );
+    store.set_board(@new_board);
+    store.set_board_initial_state(new_board_id, new_board.initial_edge_state.clone());
 
-    world
-        .emit_event(
-            @BoardCreatedFromSnapshot {
-                board_id: new_board_id,
-                old_board_id,
-                move_number,
-                initial_edge_state: new_board.initial_edge_state,
-                available_tiles_in_deck: new_board.available_tiles_in_deck,
-                top_tile: new_board.top_tile,
-                state: new_board.state,
-                player1: new_board.player1,
-                player2: new_board.player2,
-                blue_score: new_board.blue_score,
-                red_score: new_board.red_score,
-                last_move_id: new_board.last_move_id,
-                game_state: new_board.game_state,
-            },
-        );
 
-    board_id_generator.write(new_board_id + 1);
-    new_board_id
+    store.emit_board_created_from_snapshot(new_board, old_board_id, move_number);
 }
 
 pub fn update_board_state(

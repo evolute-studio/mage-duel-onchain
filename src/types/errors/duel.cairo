@@ -8,6 +8,8 @@ pub mod Errors {
     pub const INVALID_REPLY_SELF: felt252       = 'DUEL: Reply self';
     pub const INVALID_CHALLENGE: felt252        = 'DUEL: Invalid challenge';
     pub const NOT_YOUR_CHALLENGE: felt252       = 'DUEL: Not your challenge';
+    pub const NO_CALLENGE: felt252              = 'DUEL: No challenge';
+    pub const NOT_REGISTERED: felt252           = 'DUEL: Not registered';
     pub const NOT_YOUR_DUELIST: felt252         = 'DUEL: Not your duelist';
     pub const DUELIST_IS_DEAD_A: felt252        = 'DUEL: Duelist A is dead!';
     pub const DUELIST_IS_DEAD_B: felt252        = 'DUEL: Duelist B is dead!';

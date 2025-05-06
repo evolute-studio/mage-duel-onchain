@@ -10,10 +10,10 @@ use evolute_duel::{
     },
     packing::{TEdge, PlayerSide},
 };
-use dojo::world::{WorldStorage};
+use evolute_duel::libs::store::{Store, StoreTrait};
 
 pub fn connect_city_edges_in_tile(
-    ref world: WorldStorage, board_id: felt252, tile_position: u8, tile: u8, rotation: u8, side: u8,
+    ref store: Store, board_id: felt252, tile_position: u8, tile: u8, rotation: u8, side: u8,
 ) {
     let extended_tile = create_extended_tile(tile.into(), rotation);
 
@@ -44,19 +44,19 @@ pub fn connect_city_edges_in_tile(
                 open_edges,
                 contested: false,
             };
-            world.write_model(@city_node);
+            store.set_city_node(@city_node);
         }
     };
 
     if cities.len() > 1 {
         for i in 1..cities.len() {
-            union(ref world, board_id, *cities.at(0), *cities.at(i), true);
+            union(ref store, board_id, *cities.at(0), *cities.at(i), true);
         }
     }
 }
 
 pub fn connect_adjacent_city_edges(
-    ref world: WorldStorage,
+    ref store: Store,
     board_id: felt252,
     state: Array<(u8, u8, u8)>,
     initial_edge_state: Array<u8>,
@@ -82,24 +82,24 @@ pub fn connect_adjacent_city_edges(
             let (tile, rotation, _) = *state.at((tile_position - 1).into());
             let extended_down_tile = create_extended_tile(tile.into(), rotation);
             if *extended_down_tile.edges.at(0) == (TEdge::C).into() {
-                union(ref world, board_id, down_edge_pos, edge_pos, false);
+                union(ref store, board_id, down_edge_pos, edge_pos, false);
                 cities_connected.append(edge_pos);
             }
         } // tile is connected to bottom edge
         else if *initial_edge_state.at(col.into()) == TEdge::C.into() {
-            let mut edge = find(ref world, board_id, edge_pos);
+            let mut edge = find(ref store, board_id, edge_pos);
             edge.open_edges -= 1;
             if side == (PlayerSide::Blue).into() {
                 edge.blue_points += 2;
             } else {
                 edge.red_points += 2;
             }
-            world.write_model(@edge);
+            store.set_city_node(@edge);
             cities_connected.append(edge_pos);
         } else if *initial_edge_state.at(col.into()) == TEdge::M.into() {
-            let mut edge = find(ref world, board_id, edge_pos);
+            let mut edge = find(ref store, board_id, edge_pos);
             edge.open_edges -= 1;
-            world.write_model(@edge);
+            store.set_city_node(@edge);
             cities_connected.append(edge_pos);
         }
     }
@@ -113,24 +113,24 @@ pub fn connect_adjacent_city_edges(
             let (tile, rotation, _) = *state.at((tile_position + 1).into());
             let extended_up_tile = create_extended_tile(tile.into(), rotation);
             if *extended_up_tile.edges.at(2) == (TEdge::C).into() {
-                union(ref world, board_id, up_edge_pos, edge_pos, false);
+                union(ref store, board_id, up_edge_pos, edge_pos, false);
                 cities_connected.append(edge_pos);
             }
         } // tile is connected to top edge
         else if *initial_edge_state.at((23 - col).into()) == TEdge::C.into() {
-            let mut edge = find(ref world, board_id, edge_pos);
+            let mut edge = find(ref store, board_id, edge_pos);
             edge.open_edges -= 1;
             if side == (PlayerSide::Blue).into() {
                 edge.blue_points += 2;
             } else {
                 edge.red_points += 2;
             }
-            world.write_model(@edge);
+            store.set_city_node(@edge);
             cities_connected.append(edge_pos);
         } else if *initial_edge_state.at((23 - col).into()) == TEdge::M.into() {
-            let mut edge = find(ref world, board_id, edge_pos);
+            let mut edge = find(ref store, board_id, edge_pos);
             edge.open_edges -= 1;
-            world.write_model(@edge);
+            store.set_city_node(@edge);
             cities_connected.append(edge_pos);
         }
     }
@@ -144,24 +144,24 @@ pub fn connect_adjacent_city_edges(
             let (tile, rotation, _) = *state.at((tile_position - 8).into());
             let extended_left_tile = create_extended_tile(tile.into(), rotation);
             if *extended_left_tile.edges.at(1) == (TEdge::C).into() {
-                union(ref world, board_id, left_edge_pos, edge_pos, false);
+                union(ref store, board_id, left_edge_pos, edge_pos, false);
                 cities_connected.append(edge_pos);
             }
         } // tile is connected to left edge
         else if *initial_edge_state.at((31 - row).into()) == TEdge::C.into() {
-            let mut edge = find(ref world, board_id, edge_pos);
+            let mut edge = find(ref store, board_id, edge_pos);
             edge.open_edges -= 1;
             if side == (PlayerSide::Blue).into() {
                 edge.blue_points += 2;
             } else {
                 edge.red_points += 2;
             }
-            world.write_model(@edge);
+            store.set_city_node(@edge);
             cities_connected.append(edge_pos);
         } else if *initial_edge_state.at((31 - row).into()) == TEdge::M.into() {
-            let mut edge = find(ref world, board_id, edge_pos);
+            let mut edge = find(ref store, board_id, edge_pos);
             edge.open_edges -= 1;
-            world.write_model(@edge);
+            store.set_city_node(@edge);
             cities_connected.append(edge_pos);
         }
     }
@@ -175,45 +175,45 @@ pub fn connect_adjacent_city_edges(
             let (tile, rotation, _) = *state.at((tile_position + 8).into());
             let extended_right_tile = create_extended_tile(tile.into(), rotation);
             if *extended_right_tile.edges.at(3) == (TEdge::C).into() {
-                union(ref world, board_id, right_edge_pos, edge_pos, false);
+                union(ref store, board_id, right_edge_pos, edge_pos, false);
                 cities_connected.append(edge_pos);
             }
         } // tile is connected to right edge
         else if *initial_edge_state.at((8 + row).into()) == TEdge::C.into() {
-            let mut edge = find(ref world, board_id, edge_pos);
+            let mut edge = find(ref store, board_id, edge_pos);
             edge.open_edges -= 1;
             if side == (PlayerSide::Blue).into() {
                 edge.blue_points += 2;
             } else {
                 edge.red_points += 2;
             }
-            world.write_model(@edge);
+            store.set_city_node(@edge);
             cities_connected.append(edge_pos);
         } else if *initial_edge_state.at((8 + row).into()) == TEdge::M.into() {
-            let mut edge = find(ref world, board_id, edge_pos);
+            let mut edge = find(ref store, board_id, edge_pos);
             edge.open_edges -= 1;
-            world.write_model(@edge);
+            store.set_city_node(@edge);
             cities_connected.append(edge_pos);
         }
     }
 
     let mut contest_result = Option::None;
     if cities_connected.len() > 0 {
-        let mut city_root = find(ref world, board_id, *cities_connected.at(0));
+        let mut city_root = find(ref store, board_id, *cities_connected.at(0));
         if city_root.open_edges == 0 {
-            contest_result = handle_city_contest(ref world, city_root);
+            contest_result = handle_city_contest(ref store, city_root);
         }
     }
 
     // Update potential city contests
     let city_number = tile_city_number(tile.into());
     if city_number.into() > cities_connected.len() {
-        let mut potential_cities: PotentialCityContests = world.read_model(board_id);
+        let mut potential_cities: PotentialCityContests = store.get_potential_city_contests(board_id);
         let mut roots = potential_cities.roots;
         for i in 0..4_u8 {
             if *extended_tile.edges.at(i.into()) == (TEdge::C).into() {
                 let node_pos = find(
-                    ref world, board_id, convert_board_position_to_node_position(tile_position, i),
+                    ref store, board_id, convert_board_position_to_node_position(tile_position, i),
                 )
                     .position;
                 let mut found = false;
@@ -229,27 +229,27 @@ pub fn connect_adjacent_city_edges(
             }
         };
         potential_cities.roots = roots;
-        world.write_model(@potential_cities);
+        store.set_potential_city_contests(@potential_cities);
     }
 
     return contest_result;
 }
 
 pub fn handle_city_contest(
-    ref world: WorldStorage, mut city_root: CityNode,
+    ref store: Store, mut city_root: CityNode,
 ) -> Option<(PlayerSide, u16)> {
     city_root.contested = true;
     let mut result: Option<(PlayerSide, u16)> = Option::None;
     if city_root.blue_points > city_root.red_points {
-        world
-            .emit_event(
+        store
+            .emit_city_contest_won(
                 @CityContestWon {
                     board_id: city_root.board_id,
                     root: city_root.position,
                     winner: PlayerSide::Blue,
                     red_points: city_root.red_points,
                     blue_points: city_root.blue_points,
-                },
+                }
             );
         let winner = PlayerSide::Blue;
         let points_delta = city_root.red_points;
@@ -257,15 +257,15 @@ pub fn handle_city_contest(
         city_root.red_points = 0;
         result = Option::Some((winner, points_delta));
     } else if city_root.blue_points < city_root.red_points {
-        world
-            .emit_event(
+        store
+            .emit_city_contest_won(
                 @CityContestWon {
                     board_id: city_root.board_id,
                     root: city_root.position,
                     winner: PlayerSide::Red,
                     red_points: city_root.red_points,
                     blue_points: city_root.blue_points,
-                },
+                }
             );
         let winner = PlayerSide::Red;
         let points_delta = city_root.blue_points;
@@ -273,8 +273,8 @@ pub fn handle_city_contest(
         city_root.blue_points = 0;
         result = Option::Some((winner, points_delta));
     } else {
-        world
-            .emit_event(
+        store
+            .emit_city_contest_draw(
                 @CityContestDraw {
                     board_id: city_root.board_id,
                     root: city_root.position,
@@ -284,20 +284,20 @@ pub fn handle_city_contest(
             );
         result = Option::None;
     }
-    world.write_model(@city_root);
+    store.set_city_node(@city_root);
     return result;
 }
 
 pub fn close_all_cities(
-    ref world: WorldStorage, board_id: felt252,
+    ref store: Store, board_id: felt252,
 ) -> Span<Option<(PlayerSide, u16)>> {
-    let potential_cities: PotentialCityContests = world.read_model(board_id);
+    let potential_cities: PotentialCityContests = store.get_potential_city_contests(board_id);
     let roots = potential_cities.roots;
     let mut contest_results: Array<Option<(PlayerSide, u16)>> = ArrayTrait::new();
     for i in 0..roots.len() {
-        let root = find(ref world, board_id, *roots.at(i));
+        let root = find(ref store, board_id, *roots.at(i));
         if !root.contested {
-            let contest_result = handle_city_contest(ref world, root);
+            let contest_result = handle_city_contest(ref store, root);
             contest_results.append(contest_result);
         }
     };
@@ -310,8 +310,8 @@ mod tests {
     use super::*;
     use dojo_cairo_test::WorldStorageTestTrait;
     use dojo::model::{ModelStorage};
-    use dojo::world::WorldStorageTrait;
-    use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource, ContractDef};
+    use dojo::store::WorldStorageTrait;
+    use dojo_cairo_test::{spawn_test_store, NamespaceDef, TestResource, ContractDef};
 
     use evolute_duel::{
         models::{CityNode, m_CityNode, PotentialCityContests, m_PotentialCityContests},
@@ -373,10 +373,10 @@ mod tests {
         let ndef = namespace_def();
 
         // Register the resources.
-        let mut world = spawn_test_world([ndef].span());
+        let mut store = spawn_test_store([ndef].span());
 
         // Ensures permissions and initializations are synced.
-        world.sync_perms_and_inits(contract_defs());
+        store.sync_perms_and_inits(contract_defs());
 
         let board_id = 1;
         let tile_position = 2; // Arbitrary tile position
@@ -390,15 +390,15 @@ mod tests {
 
         // Call function to connect city edges
         connect_city_edges_in_tile(
-            ref world, board_id, tile_position, tile.into(), rotation, side.into(),
+            ref store, board_id, tile_position, tile.into(), rotation, side.into(),
         );
 
         // Verify all city edges are connected
         let base_pos = convert_board_position_to_node_position(tile_position, 0);
-        let root = find(ref world, board_id, base_pos).position;
-        let city_node: CityNode = world.read_model((board_id, base_pos + 2));
+        let root = find(ref store, board_id, base_pos).position;
+        let city_node: CityNode = store.read_model((board_id, base_pos + 2));
 
-        //println!("Root1: {:?}", find(ref world, board_id, base_pos));
+        //println!("Root1: {:?}", find(ref store, board_id, base_pos));
         //println!("Root2: {:?}", city_node);
 
         for i in 0..4_u8 {
@@ -407,7 +407,7 @@ mod tests {
             }
             let edge_pos = convert_board_position_to_node_position(tile_position, i);
             assert_eq!(
-                find(ref world, board_id, edge_pos).position,
+                find(ref store, board_id, edge_pos).position,
                 root,
                 "City edge {} is not connected correctly",
                 edge_pos,
@@ -420,8 +420,8 @@ mod tests {
         let caller = starknet::contract_address_const::<0x0>();
         let ndef = namespace_def();
 
-        let mut world = spawn_test_world([ndef].span());
-        world.sync_perms_and_inits(contract_defs());
+        let mut store = spawn_test_store([ndef].span());
+        store.sync_perms_and_inits(contract_defs());
 
         let board_id = 1;
 
@@ -436,10 +436,10 @@ mod tests {
         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
 
         connect_city_edges_in_tile(
-            ref world, board_id, tile_position_1, tile_1.into(), rotation, side.into(),
+            ref store, board_id, tile_position_1, tile_1.into(), rotation, side.into(),
         );
         connect_city_edges_in_tile(
-            ref world, board_id, tile_position_2, tile_2.into(), rotation, side.into(),
+            ref store, board_id, tile_position_2, tile_2.into(), rotation, side.into(),
         );
 
         let mut state = ArrayTrait::new();
@@ -454,7 +454,7 @@ mod tests {
         };
 
         connect_adjacent_city_edges(
-            ref world,
+            ref store,
             board_id,
             state.clone(),
             initial_edge_state.clone(),
@@ -465,7 +465,7 @@ mod tests {
         );
 
         connect_adjacent_city_edges(
-            ref world,
+            ref store,
             board_id,
             state,
             initial_edge_state.clone(),
@@ -479,7 +479,7 @@ mod tests {
         let edge_pos_2 = convert_board_position_to_node_position(tile_position_2, 3);
 
         assert!(
-            connected(ref world, board_id, edge_pos_1, edge_pos_2),
+            connected(ref store, board_id, edge_pos_1, edge_pos_2),
             "Adjacent edges {} and {} are not connected correctly",
             edge_pos_1,
             edge_pos_2,
@@ -491,8 +491,8 @@ mod tests {
         let caller = starknet::contract_address_const::<0x0>();
         let ndef = namespace_def();
 
-        let mut world = spawn_test_world([ndef].span());
-        world.sync_perms_and_inits(contract_defs());
+        let mut store = spawn_test_store([ndef].span());
+        store.sync_perms_and_inits(contract_defs());
 
         let board_id = 1;
 
@@ -517,41 +517,41 @@ mod tests {
         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
 
         connect_city_edges_in_tile(
-            ref world, board_id, tile_position_1, tile_1.into(), rotation1, side1.into(),
+            ref store, board_id, tile_position_1, tile_1.into(), rotation1, side1.into(),
         );
 
         let root1 = find(
-            ref world, board_id, convert_board_position_to_node_position(tile_position_1, 0),
+            ref store, board_id, convert_board_position_to_node_position(tile_position_1, 0),
         );
         assert_eq!(root1.open_edges, 2, "City contest is not conducted correctly");
         //println!("Root1: {:?}", root1);
 
         connect_city_edges_in_tile(
-            ref world, board_id, tile_position_2, tile_2.into(), rotation2, side2.into(),
+            ref store, board_id, tile_position_2, tile_2.into(), rotation2, side2.into(),
         );
 
         let root2 = find(
-            ref world, board_id, convert_board_position_to_node_position(tile_position_2, 1),
+            ref store, board_id, convert_board_position_to_node_position(tile_position_2, 1),
         );
         assert_eq!(root2.open_edges, 2, "City contest is not conducted correctly");
         //println!("Root2: {:?}", root2);
 
         connect_city_edges_in_tile(
-            ref world, board_id, tile_position_3, tile_3.into(), rotation3, side3.into(),
+            ref store, board_id, tile_position_3, tile_3.into(), rotation3, side3.into(),
         );
 
         let root3 = find(
-            ref world, board_id, convert_board_position_to_node_position(tile_position_3, 2),
+            ref store, board_id, convert_board_position_to_node_position(tile_position_3, 2),
         );
         assert_eq!(root3.open_edges, 2, "City contest is not conducted correctly");
         //println!("Root3: {:?}", root3);
 
         connect_city_edges_in_tile(
-            ref world, board_id, tile_position_4, tile_4.into(), rotation4, side4.into(),
+            ref store, board_id, tile_position_4, tile_4.into(), rotation4, side4.into(),
         );
 
         let root4 = find(
-            ref world, board_id, convert_board_position_to_node_position(tile_position_4, 3),
+            ref store, board_id, convert_board_position_to_node_position(tile_position_4, 3),
         );
         assert_eq!(root4.open_edges, 2, "City contest is not conducted correctly");
         //println!("Root4: {:?}", root4);
@@ -566,7 +566,7 @@ mod tests {
         };
 
         connect_adjacent_city_edges(
-            ref world,
+            ref store,
             board_id,
             state,
             initial_edge_state.clone(),
@@ -577,7 +577,7 @@ mod tests {
         );
 
         let rot1 = find(
-            ref world, board_id, convert_board_position_to_node_position(tile_position_1, 0),
+            ref store, board_id, convert_board_position_to_node_position(tile_position_1, 0),
         );
         //println!("Rot1: {:?}", rot1);
         assert_eq!(rot1.open_edges, 2, "City contest is not conducted correctly");
@@ -594,7 +594,7 @@ mod tests {
         };
 
         connect_adjacent_city_edges(
-            ref world,
+            ref store,
             board_id,
             state.clone(),
             initial_edge_state.clone(),
@@ -605,7 +605,7 @@ mod tests {
         );
 
         let rot2 = find(
-            ref world, board_id, convert_board_position_to_node_position(tile_position_2, 1),
+            ref store, board_id, convert_board_position_to_node_position(tile_position_2, 1),
         );
         //println!("Rot2: {:?}", rot2);
         assert_eq!(rot2.open_edges, 2, "City contest is not conducted correctly");
@@ -624,7 +624,7 @@ mod tests {
         };
 
         connect_adjacent_city_edges(
-            ref world,
+            ref store,
             board_id,
             state.clone(),
             initial_edge_state.clone(),
@@ -635,7 +635,7 @@ mod tests {
         );
 
         let rot3 = find(
-            ref world, board_id, convert_board_position_to_node_position(tile_position_3, 2),
+            ref store, board_id, convert_board_position_to_node_position(tile_position_3, 2),
         );
         //println!("Rot3: {:?}", rot3);
         assert_eq!(rot3.open_edges, 2, "City contest is not conducted correctly");
@@ -656,7 +656,7 @@ mod tests {
         };
 
         connect_adjacent_city_edges(
-            ref world,
+            ref store,
             board_id,
             state,
             initial_edge_state.clone(),
@@ -667,7 +667,7 @@ mod tests {
         );
 
         let rot4 = find(
-            ref world, board_id, convert_board_position_to_node_position(tile_position_4, 3),
+            ref store, board_id, convert_board_position_to_node_position(tile_position_4, 3),
         );
         //println!("Rot4: {:?}", rot4);
         assert_eq!(rot4.open_edges, 0, "City contest is not conducted correctly");
@@ -677,7 +677,7 @@ mod tests {
         let edge_pos_2 = convert_board_position_to_node_position(tile_position_2, 2);
 
         assert!(
-            connected(ref world, board_id, edge_pos_1, edge_pos_2),
+            connected(ref store, board_id, edge_pos_1, edge_pos_2),
             "Adjacent edges {} and {} are not connected correctly",
             edge_pos_1,
             edge_pos_2,
@@ -688,7 +688,7 @@ mod tests {
         let edge_pos_3 = convert_board_position_to_node_position(tile_position_3, 3);
 
         assert!(
-            connected(ref world, board_id, edge_pos_2, edge_pos_3),
+            connected(ref store, board_id, edge_pos_2, edge_pos_3),
             "Adjacent edges {} and {} are not connected correctly",
             edge_pos_2,
             edge_pos_3,
@@ -699,7 +699,7 @@ mod tests {
         let edge_pos_4 = convert_board_position_to_node_position(tile_position_4, 0);
 
         assert!(
-            connected(ref world, board_id, edge_pos_3, edge_pos_4),
+            connected(ref store, board_id, edge_pos_3, edge_pos_4),
             "Adjacent edges {} and {} are not connected correctly",
             edge_pos_3,
             edge_pos_4,
@@ -710,13 +710,13 @@ mod tests {
         let edge_pos_1 = convert_board_position_to_node_position(tile_position_1, 1);
 
         assert!(
-            connected(ref world, board_id, edge_pos_4, edge_pos_1),
+            connected(ref store, board_id, edge_pos_4, edge_pos_1),
             "Adjacent edges {} and {} are not connected correctly",
             edge_pos_4,
             edge_pos_1,
         );
 
-        let city_root = find(ref world, board_id, edge_pos_1);
+        let city_root = find(ref store, board_id, edge_pos_1);
         assert_eq!(city_root.open_edges, 0, "City contest is not conducted correctly");
     }
 
@@ -725,8 +725,8 @@ mod tests {
         let caller = starknet::contract_address_const::<0x0>();
         let ndef = namespace_def();
 
-        let mut world = spawn_test_world([ndef].span());
-        world.sync_perms_and_inits(contract_defs());
+        let mut store = spawn_test_store([ndef].span());
+        store.sync_perms_and_inits(contract_defs());
 
         let board_id = 1;
 
@@ -774,11 +774,11 @@ mod tests {
         let side1 = PlayerSide::Blue;
 
         connect_city_edges_in_tile(
-            ref world, board_id, tile_position_1, tile_1.into(), rotation1, side1.into(),
+            ref store, board_id, tile_position_1, tile_1.into(), rotation1, side1.into(),
         );
 
         let root1 = find(
-            ref world, board_id, convert_board_position_to_node_position(tile_position_1, 2),
+            ref store, board_id, convert_board_position_to_node_position(tile_position_1, 2),
         );
 
         assert_eq!(root1.open_edges, 1, "City contest is not conducted correctly");
@@ -787,7 +787,7 @@ mod tests {
         state.append_span([((Tile::Empty).into(), 0, 0); 64].span());
 
         let scoring_result = connect_adjacent_city_edges(
-            ref world,
+            ref store,
             board_id,
             state.clone(),
             initial_edge_state.clone(),
@@ -800,7 +800,7 @@ mod tests {
         println!("{:?}", scoring_result);
 
         let root2 = find(
-            ref world, board_id, convert_board_position_to_node_position(tile_position_1, 2),
+            ref store, board_id, convert_board_position_to_node_position(tile_position_1, 2),
         );
 
         println!("{:?}", root2);

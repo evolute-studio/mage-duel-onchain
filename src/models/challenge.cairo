@@ -9,7 +9,7 @@ use evolute_duel::types::timestamp::{Period};
 #[dojo::model]
 pub struct Challenge {
     #[key]
-    pub duel_id: u128,
+    pub duel_id: felt252,
     //-------------------------
     // settings
     pub duel_type: DuelType,        // duel type

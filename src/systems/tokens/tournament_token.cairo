@@ -44,7 +44,7 @@ pub trait ITournamentToken<TState> {
     //-----------------------------------
     // IERC2981RoyaltyInfo
     fn royalty_info(self: @TState, token_id: u256, sale_price: u256) -> (ContractAddress, u256);
-    fn default_royalty(self: @TState) -> (ContractAddress, u128, u128);
+    fn default_royalty(self: @TState) -> (ContractAddress, felt252, felt252);
     fn token_royalty(self: @TState, token_id: u256) -> (ContractAddress, u128, u128);
     // IERC721ComboABI end
     //-----------------------------------
@@ -71,7 +71,7 @@ pub trait ITournamentToken<TState> {
     fn can_mint(self: @TState, recipient: ContractAddress) -> bool;
     fn update_contract_metadata(ref self: TState);
     fn update_token_metadata(ref self: TState, token_id: u128);
-    // fn update_tokens_metadata(ref self: TState, from_token_id: u128, to_token_id: u128);
+    // fn update_tokens_metadata(ref self: TState, from_token_id: felt252, to_token_id: felt252);
 
     // ITournamentTokenPublic
     fn get_tournament_id(self: @TState, pass_id: u64) -> u64;
@@ -80,7 +80,7 @@ pub trait ITournamentToken<TState> {
     fn can_enlist_duelist(self: @TState, pass_id: u64) -> bool;
     fn enlist_duelist(ref self: TState, pass_id: u64);
     fn can_join_duel(self: @TState, pass_id: u64) -> bool;
-    fn join_duel(ref self: TState, pass_id: u64) -> u128;
+    fn join_duel(ref self: TState, pass_id: u64) -> felt252;
     fn can_end_round(self: @TState, pass_id: u64) -> bool;
     fn end_round(ref self: TState, pass_id: u64) -> Option<u8>;
 }
@@ -106,14 +106,14 @@ pub trait ITournamentTokenPublic<TState> {
 
     // // Phase 3 -- Join tournament (per player)
     fn can_join_duel(self: @TState, pass_id: u64) -> bool;
-    fn join_duel(ref self: TState, pass_id: u64) -> u128; // returns duel_id
+    fn join_duel(ref self: TState, pass_id: u64) -> felt252; // returns duel_id
 
     // // Phase 4 -- End round (any contestant can end)
     // // - will shuffle next bracket
     // // - or close tournament
     // // - requires VRF!
-    // fn can_end_round(self: @TState, pass_id: u64) -> bool;
-    // fn end_round(ref self: TState, pass_id: u64) -> Option<u8>; // returns next round number
+    fn can_end_round(self: @TState, pass_id: u64) -> bool;
+    fn end_round(ref self: TState, pass_id: u64) -> Option<u8>; // returns next round number
 }
 
 // Exposed to world and admins
@@ -468,7 +468,7 @@ pub mod tournament_token {
                 (!challenge.state.exists() || (challenge.address_a != entry.player_address && challenge.address_b != entry.player_address))
             )
         }
-        fn join_duel(ref self: ContractState, pass_id: u64) -> u128 {
+        fn join_duel(ref self: ContractState, pass_id: u64) -> felt252 {
             let mut store: Store = StoreTrait::new(self.world_default());
             // validate ownership
             let caller: ContractAddress = starknet::get_caller_address();
@@ -503,7 +503,7 @@ pub mod tournament_token {
             // Create duel
             let rules: TournamentRules = store.get_tournament_settings_rules(token_metadata.settings_id);
             //TODO: create duel
-            let duel_id: u128 = store.world.duel_protected_dispatcher().join_tournament_duel(
+            let duel_id: felt252 = store.world.duel_protected_dispatcher().join_tournament_duel(
                 caller,
                 entry.tournament_id,
                 tournament.round_number,
@@ -515,95 +515,95 @@ pub mod tournament_token {
             (duel_id)
         }
 
-        // //-----------------------------------
-        // // Phase 4 -- End round
-        // //
-        // fn can_end_round(self: @ContractState, pass_id: u64) -> bool {
-        //     if (!self.erc721_combo.token_exists(pass_id.into())) {
-        //         return false;
-        //     }
-        //     let store: Store = StoreTrait::new(self.world_default());
-        //     let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
-        //     let entry: TournamentPassValue = store.get_tournament_pass_value(pass_id);
-        //     let tournament: TournamentValue = store.get_tournament_value(entry.tournament_id);
-        //     let round: TournamentRoundValue = store.get_tournament_round_value(entry.tournament_id, tournament.round_number);
-        //     (
-        //         // owns entry
-        //         self.is_owner_of(starknet::get_caller_address(), pass_id.into()) &&
-        //         // tournament is active
-        //         tournament.state == TournamentState::InProgress &&
-        //         // is valid round
-        //         round.entry_count > 0 &&
-        //         // end conditions
-        //         (
-        //             // tournament has ended
-        //             !token_metadata.lifecycle.is_playable(starknet::get_block_timestamp()) ||
-        //             // round lifecycle has ended
-        //             round.timestamps.has_expired() ||
-        //             // all duels have finished
-        //             round.results.have_all_duels_finished()
-        //         )
-        //     )
-        // }
-        // fn end_round(ref self: ContractState, pass_id: u64) -> Option<u8> {
-        //     assert(self.erc721_combo.token_exists(pass_id.into()), Errors::INVALID_ENTRY);
-        //     let mut store: Store = StoreTrait::new(self.world_default());
-        //     // validate ownership
-        //     let caller: ContractAddress = starknet::get_caller_address();
-        //     assert(self.is_owner_of(caller, pass_id.into()) == true, Errors::NOT_YOUR_ENTRY);
-        //     // verify lifecycle
-        //     let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
-        //     let entry: TournamentPassValue = store.get_tournament_pass_value(pass_id);
-        //     let mut tournament: Tournament = store.get_tournament(entry.tournament_id);
-        //     assert(tournament.state != TournamentState::Finished, Errors::HAS_ENDED);
-        //     assert(tournament.state == TournamentState::InProgress, Errors::NOT_STARTED);
-        //     // end conditions
-        //     let mut round: TournamentRound = store.get_tournament_round(entry.tournament_id, tournament.round_number);
-        //     assert(round.entry_count > 0, Errors::INVALID_ROUND);
-        //     assert(
-        //         (
-        //             !token_metadata.lifecycle.is_playable(starknet::get_block_timestamp()) ||
-        //             round.timestamps.has_expired() ||
-        //             round.results.have_all_duels_finished()
-        //         ), Errors::STILL_PLAYABLE
-        //     );
+        //-----------------------------------
+        // Phase 4 -- End round
+        //
+        fn can_end_round(self: @ContractState, pass_id: u64) -> bool {
+            if (!self.erc721_combo.token_exists(pass_id.into())) {
+                return false;
+            }
+            let store: Store = StoreTrait::new(self.world_default());
+            let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
+            let entry: TournamentPassValue = store.get_tournament_pass_value(pass_id);
+            let tournament: TournamentValue = store.get_tournament_value(entry.tournament_id);
+            let round: TournamentRoundValue = store.get_tournament_round_value(entry.tournament_id, tournament.round_number);
+            (
+                // owns entry
+                self.is_owner_of(starknet::get_caller_address(), pass_id.into()) &&
+                // tournament is active
+                tournament.state == TournamentState::InProgress &&
+                // is valid round
+                round.entry_count > 0 &&
+                // end conditions
+                (
+                    // tournament has ended
+                    !token_metadata.lifecycle.is_playable(starknet::get_block_timestamp()) ||
+                    // round lifecycle has ended
+                    round.timestamps.has_expired() ||
+                    // all duels have finished
+                    round.results.have_all_duels_finished()
+                )
+            )
+        }
+        fn end_round(ref self: ContractState, pass_id: u64) -> Option<u8> {
+            assert(self.erc721_combo.token_exists(pass_id.into()), Errors::INVALID_ENTRY);
+            let mut store: Store = StoreTrait::new(self.world_default());
+            // validate ownership
+            let caller: ContractAddress = starknet::get_caller_address();
+            assert(self.is_owner_of(caller, pass_id.into()) == true, Errors::NOT_YOUR_ENTRY);
+            // verify lifecycle
+            let token_metadata: TokenMetadataValue = store.get_budokan_token_metadata_value(pass_id);
+            let entry: TournamentPassValue = store.get_tournament_pass_value(pass_id);
+            let mut tournament: Tournament = store.get_tournament(entry.tournament_id);
+            assert(tournament.state != TournamentState::Finished, Errors::HAS_ENDED);
+            assert(tournament.state == TournamentState::InProgress, Errors::NOT_STARTED);
+            // end conditions
+            let mut round: TournamentRound = store.get_tournament_round(entry.tournament_id, tournament.round_number);
+            assert(round.entry_count > 0, Errors::INVALID_ROUND);
+            assert(
+                (
+                    !token_metadata.lifecycle.is_playable(starknet::get_block_timestamp()) ||
+                    round.timestamps.has_expired() ||
+                    round.results.have_all_duels_finished()
+                ), Errors::STILL_PLAYABLE
+            );
 
-        //     // end round
-        //     round.ended_round();
-        //     store.set_tournament_round(@round);
+            // end round
+            round.ended_round();
+            store.set_tournament_round(@round);
 
-        //     // can go to next round?
-        //     let mut result: Option<u8> = Option::None;
-        //     let rules: TournamentRules = store.get_tournament_settings_rules(token_metadata.settings_id);
-        //     if (rules.max_rounds == 0 || tournament.round_number < rules.max_rounds) {
-        //         // get survivors...
-        //         let survivors: Span<u8> = round.results.get_surviving_entries();
-        //         if (survivors.len() >= 2) {
-        //             // shuffle next round
-        //             tournament.round_number += 1;
-        //             let seed: felt252 = store.vrf_dispatcher().consume_random(Source::Nonce(caller));
-        //             let next_round: TournamentRound = self._initialize_round(ref store,
-        //                 tournament.tournament_id, tournament.round_number,
-        //                 token_metadata.lifecycle,
-        //                 survivors.len(),
-        //                 Option::Some(survivors),
-        //                 seed,
-        //             );
-        //             store.set_tournament_round(@next_round);
-        //             // return next round number
-        //             result = Option::Some(tournament.round_number);
-        //         }
-        //     }
+            // can go to next round?
+            let mut result: Option<u8> = Option::None;
+            let rules: TournamentRules = store.get_tournament_settings_rules(token_metadata.settings_id);
+            if (rules.max_rounds == 0 || tournament.round_number < rules.max_rounds) {
+                // get survivors...
+                let survivors: Span<u8> = round.results.get_surviving_entries();
+                if (survivors.len() >= 2) {
+                    // shuffle next round
+                    tournament.round_number += 1;
+                    let seed: felt252 = store.vrf_dispatcher().consume_random(Source::Nonce(caller));
+                    let next_round: TournamentRound = self._initialize_round(ref store,
+                        tournament.tournament_id, tournament.round_number,
+                        token_metadata.lifecycle,
+                        survivors.len(),
+                        Option::Some(survivors),
+                        seed,
+                    );
+                    store.set_tournament_round(@next_round);
+                    // return next round number
+                    result = Option::Some(tournament.round_number);
+                }
+            }
             
-        //     // end tournament!
-        //     if (result.is_none()) {
-        //         tournament.state = TournamentState::Finished;
-        //     };
+            // end tournament!
+            if (result.is_none()) {
+                tournament.state = TournamentState::Finished;
+            };
 
-        //     store.set_tournament(@tournament);
+            store.set_tournament(@tournament);
 
-        //     (result)
-        // }
+            (result)
+        }
     }
 
 
