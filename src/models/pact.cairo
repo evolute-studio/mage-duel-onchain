@@ -1,7 +1,7 @@
 use evolute_duel::models::challenge::{DuelType};
 
 // Current challenge between two Duelists
-#[derive(Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct Pact {
     #[key]

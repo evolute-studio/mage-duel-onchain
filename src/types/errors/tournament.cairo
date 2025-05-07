@@ -22,4 +22,6 @@ pub mod Errors {
     pub const STILL_PLAYABLE: felt252           = 'TOURNAMENT: Still playable';
     pub const CALLER_NOT_OWNER: felt252         = 'TOURNAMENT: Caller not owner';
     pub const IMPOSSIBLE_ERROR: felt252         = 'TOURNAMENT: Impossible error';
+    pub const ALREADY_REGISTERED: felt252     = 'TOURNAMENT: Already registered';
+    pub const INVALID_PASSWORD: felt252         = 'TOURNAMENT: Invalid password';
 }

@@ -1,14 +1,10 @@
-use dojo::event::EventStorage;
-use dojo::model::{Model};
-use dojo::world::{WorldStorage};
 use starknet::{ContractAddress};
-use dojo::model::{ModelStorage};
 use origami_random::deck::{DeckTrait};
 use origami_random::dice::{DiceTrait};
 use core::dict::Felt252Dict;
 
 use evolute_duel::{
-    events::{BoardCreated, BoardCreatedFromSnapshot}, models::game::{Board, Rules, Move},
+    models::game::{Board, Rules, Move},
     packing::{GameState, TEdge, Tile, PlayerSide},
     systems::helpers::{
         city_scoring::{connect_adjacent_city_edges, connect_city_edges_in_tile},
@@ -18,8 +14,6 @@ use evolute_duel::{
 };
 
 use evolute_duel::libs::store::{Store, StoreTrait};
-
-use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
 use core::starknet::get_block_timestamp;
 
@@ -54,7 +48,7 @@ pub fn create_board(
         game_state,
     };
 
-    let top_tile = draw_tile_from_board_deck(ref board);
+    let _top_tile = draw_tile_from_board_deck(ref board);
 
     store.set_board(@board);
 

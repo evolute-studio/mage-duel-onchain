@@ -1,7 +1,5 @@
-use dojo::model::ModelStorage;
 use evolute_duel::models::scoring::{CityNode};
 use evolute_duel::libs::store::{Store, StoreTrait};
-use dojo::world::{WorldStorage};
 //Union find on CityNode
 pub fn find(ref store: Store, board_id: felt252, position: u8) -> CityNode {
     let node: CityNode = store.get_city_node(board_id, position);

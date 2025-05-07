@@ -5,7 +5,7 @@ use evolute_duel::types::timestamp::{Period};
 //-------------------------
 // Challenge lifecycle
 //
-#[derive(Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct Challenge {
     #[key]
@@ -34,16 +34,9 @@ pub enum DuelType {
 //------------------------------------
 // Traits
 //
-use core::num::traits::Zero;
-use evolute_duel::types::{
-    // rules::{Rules, RulesTrait},
-    timestamp::{TimestampTrait},
-    constants::{CONST},
-};
 // use evolute_duel::utils::arrays::{SpanUtilsTrait};
-use evolute_duel::utils::hash::{hash_values};
 use evolute_duel::utils::misc::{FeltToLossy, ZERO};
-use evolute_duel::utils::math::{MathTrait};
+
 
 #[generate_trait]
 pub impl ChallengeImpl of ChallengeTrait {

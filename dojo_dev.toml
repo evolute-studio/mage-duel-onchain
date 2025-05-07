@@ -23,7 +23,7 @@ rpc_url = "http://localhost:5050/"
 # world_address = "0x06a4d87ac4a224fbc633b46ec896545f8783cfc6d87ce8a4ef8c5630a3c17711"
 
 [writers]
-"evolute_duel" = ["evolute_duel-game", "evolute_duel-player_profile_actions"]
+"evolute_duel" = ["evolute_duel-game", "evolute_duel-duel", "evolute_duel-tournament", "evolute_duel-player_profile_actions"]
 
 [init_call_args]
 "evolute_duel-player_profile_actions" = ["0x64ca22e94267b4ce3107fba4f4d42c8046d191ed03fbf09dc9f9d06eb7c0f2"]

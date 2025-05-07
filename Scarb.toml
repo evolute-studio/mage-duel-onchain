@@ -1,5 +1,5 @@
 [package]
-cairo-version = "=2.9.4"
+cairo-version = "=2.9.2"
 name = "evolute_duel"
 version = "1.2.2"
 edition = "2024_07"
@@ -9,8 +9,11 @@ sierra-replace-ids = true
 
 [scripts]
 migrate = "sozo build && sozo migrate"
-create_game = "sozo execute evolute_duel-game create_game --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
-join_game = "sozo execute evolute_duel-game join_game 0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --account-address=0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7 --private-key=0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b --wait"
+enter_tournament1 = "sozo execute evolute_duel-tournament enter_tournament 1 sstr:'ohayo_dojo' --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+create_duel = "sozo execute evolute_duel-duel create_duel 0x0 0x1 0x1 --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+reply_duel = "sozo execute evolute_duel-duel reply_duel 0x2 1 --account-address=0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7 --private-key=0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b --wait"
+cancel_duel = "sozo execute evolute_duel-duel cancel_duel --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+
 make_move1 = "sozo execute evolute_duel-game make_move 1 0 1 7 --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
 make_move2 = "sozo execute evolute_duel-game make_move 1 0 2 7 --account-address=0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7 --private-key=0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b --wait"
 make_move3 = "sozo execute evolute_duel-game make_move 1 1 2 6 --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
@@ -40,22 +43,17 @@ cancel_game1 = "sozo --release execute evolute_duel-game cancel_game --account-a
 
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.4.0" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.2" }
 origami_random = { git = "https://github.com/dojoengine/origami" }
-openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v1.0.0" }
-tournaments = { git = "https://github.com/underware-gg/tournaments", branch = "pistols" }
-openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
-openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
-nft_combo = { git = "https://github.com/underware-gg/cairo-nft-combo", tag = "v1.0.0"}
-
+openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.20.0" }
 
 [[target.starknet-contract]]
 build-external-contracts = ["dojo::world::world_contract::world"]
 
 [dev-dependencies]
-cairo_test = "=2.9.4"
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.4.0" }
-assert_macros = "2.9.4"
+cairo_test = "=2.9.2"
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.2" }
+assert_macros = "2.9.2"
 
 [profile.provable]
 

@@ -1,5 +1,3 @@
-use starknet::ContractAddress;
-
 /// Interface defining core game actions and player interactions.
 #[starknet::interface]
 pub trait IGame<T> {
@@ -30,22 +28,22 @@ pub mod game {
     use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
     use evolute_duel::{
         models::{
-            game::{Board, Rules, Move, Game, Snapshot},
+            game::{Board, Rules, Move, Snapshot},
             player::{Player, PlayerTrait},
-            challenge::{Challenge, DuelType, ChallengeTrait},
-            pact::{Pact, PactTrait},
+            challenge::{Challenge, DuelType},
             scoreboard::{Scoreboard, ScoreboardTrait},
+            pact::PactTrait,
         },
         events::{
-            GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
-            PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
-            Skiped, Moved, SnapshotCreated, SnapshotCreateFailed, CurrentPlayerBalance, InvalidMove,
+            BoardUpdated,
+            PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished,
+            Skiped, Moved, CurrentPlayerBalance, InvalidMove,
             CantFinishGame,
         },
         systems::helpers::{
             board::{
-                create_board, draw_tile_from_board_deck, update_board_state,
-                update_board_joker_number, create_board_from_snapshot, redraw_tile_from_board_deck,
+                draw_tile_from_board_deck, update_board_state,
+                update_board_joker_number, redraw_tile_from_board_deck,
             },
             city_scoring::{
                 connect_city_edges_in_tile, connect_adjacent_city_edges, close_all_cities,
@@ -56,13 +54,11 @@ pub mod game {
             tile_helpers::{calcucate_tile_points, calculate_adjacent_edge_points},
             validation::{is_valid_move},
         },
-        packing::{GameStatus, Tile, GameState, PlayerSide},
+        packing::{Tile, GameState, PlayerSide},
         types::challenge_state::{ChallengeState, ChallengeStateTrait},
     };
     use evolute_duel::libs::store::{Store, StoreTrait};
 
-    use dojo::event::EventStorage;
-    use dojo::model::{ModelStorage, Model};
 
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 

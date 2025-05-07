@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-#[derive(Copy, Drop, Serde)]
+#[derive(Copy, Drop, Introspect, Serde)]
 #[dojo::model]
 pub struct Scoreboard {
     #[key]

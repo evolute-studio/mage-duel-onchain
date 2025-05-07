@@ -36,6 +36,7 @@ pub mod tournament {
 
     use evolute_duel::models::{
         registration::{Registration, RegistrationTrait},
+        player::{PlayerAssignment},
     };
     use evolute_duel::libs::store::{StoreTrait};
     use evolute_duel::utils::misc::{ContractAddressIntoU256};
@@ -79,6 +80,12 @@ pub mod tournament {
             println!("Password hash: {}", hash_values(array![secret_code].span()));
             // Register the player
             registration.register();
+            store.set_registration(@registration);
+
+            // Update the player's assignment
+            let mut assignment: PlayerAssignment = store.get_player_challenge(player_address);
+            assignment.tournament_id = tournament_id;
+            store.set_player_challenge(@assignment);
         }
     }
 

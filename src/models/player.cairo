@@ -19,14 +19,14 @@ pub struct Player {
     pub is_bot: bool,
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct PlayerAssignment {
     #[key]
     pub player_address: ContractAddress,
     //-----------------------
     pub duel_id: felt252,      // current Challenge a Duelist is in
-    pub pass_id: u64,       // current Tournament a Duelist is in
+    pub tournament_id: u64,       // current Tournament a Duelist is in
 }
 
 use core::num::traits::Zero;
@@ -58,16 +58,16 @@ pub impl PlayerImpl of PlayerTrait {
             self.set_player_challenge(@assignment);
         }
     }
-    fn enter_tournament(ref self: Store, player_address: ContractAddress, pass_id: u64) {
-        let mut assignment: PlayerAssignment = self.get_player_challenge(player_address);
-        assert(assignment.duel_id.is_zero(), TournamentErrors::DUELIST_IN_CHALLENGE);
-        assert(assignment.pass_id.is_zero(), TournamentErrors::DUELIST_IN_TOURNAMENT);
-        assignment.pass_id = pass_id;
-        self.set_player_challenge(@assignment);
-    }
-    fn exit_tournament(ref self: Store, player_address: ContractAddress) {
-        let mut assignment: PlayerAssignment = self.get_player_challenge(player_address);
-        assignment.pass_id = 0;
-        self.set_player_challenge(@assignment);
-    }
+    // fn enter_tournament(ref self: Store, player_address: ContractAddress, pass_id: u64) {
+    //     let mut assignment: PlayerAssignment = self.get_player_challenge(player_address);
+    //     assert(assignment.duel_id.is_zero(), TournamentErrors::DUELIST_IN_CHALLENGE);
+    //     assert(assignment.pass_id.is_zero(), TournamentErrors::DUELIST_IN_TOURNAMENT);
+    //     assignment.pass_id = pass_id;
+    //     self.set_player_challenge(@assignment);
+    // }
+    // fn exit_tournament(ref self: Store, player_address: ContractAddress) {
+    //     let mut assignment: PlayerAssignment = self.get_player_challenge(player_address);
+    //     assignment.pass_id = 0;
+    //     self.set_player_challenge(@assignment);
+    // }
 }

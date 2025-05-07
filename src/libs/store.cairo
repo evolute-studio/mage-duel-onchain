@@ -1,7 +1,6 @@
-use core::num::traits::Zero;
 use starknet::{ContractAddress};
 use dojo::world::{WorldStorage};
-use dojo::model::{Model, ModelPtr, ModelStorage, ModelValueStorage};
+use dojo::model::{Model, ModelStorage, ModelValueStorage};
 use dojo::event::{EventStorage};
 
 pub use evolute_duel::models::{
@@ -35,20 +34,11 @@ pub use evolute_duel::models::{
     tournament::{
         Tournament, TournamentValue,
         TournamentPass, TournamentPassValue,
-        TournamentSettings, TournamentSettingsValue,
         TournamentRound, TournamentRoundValue,
-        TournamentType,
         TournamentDuelKeys,
-        TournamentRules,
         TournamentState,
         TournamentToChallenge,
         ChallengeToTournament,
-        TournamentTypeTrait
-    },
-    config::{
-        CONFIG,
-        Config, ConfigValue,
-        TokenConfig, TokenConfigValue,
     },
     challenge::{
         Challenge, ChallengeValue, DuelType,
@@ -76,9 +66,6 @@ pub use evolute_duel::packing::{
 // use pistols::types::{
 //     rules::{RewardValues},
 // };
-use tournaments::components::models::game::{TokenMetadata, TokenMetadataValue};
-use evolute_duel::interfaces::dns::{ITournamentDispatcher};
-
 #[derive(Copy, Drop)]
 pub struct Store {
     pub world: WorldStorage,
@@ -125,15 +112,6 @@ pub impl StoreImpl of StoreTrait {
     }
 
     #[inline(always)]
-    fn get_tournament_settings(self: @Store, settings_id: u32) -> TournamentSettings {
-        (self.world.read_model(settings_id))
-    }
-    #[inline(always)]
-    fn get_tournament_settings_value(self: @Store, settings_id: u32) -> TournamentSettingsValue {
-        (self.world.read_value(settings_id))
-    }
-
-    #[inline(always)]
     fn get_tournament(self: @Store, tournament_id: u64) -> Tournament {
         (self.world.read_model(tournament_id))
     }
@@ -149,15 +127,6 @@ pub impl StoreImpl of StoreTrait {
     #[inline(always)]
     fn get_tournament_round_value(self: @Store, tournament_id: u64, round_number: u8) -> TournamentRoundValue {
         (self.world.read_value((tournament_id, round_number),))
-    }
-
-    #[inline(always)]
-    fn get_budokan_token_metadata(self: @Store, pass_id: u64) -> TokenMetadata {
-        (self.world.read_model(pass_id))
-    }
-    #[inline(always)]
-    fn get_budokan_token_metadata_value(self: @Store, pass_id: u64) -> TokenMetadataValue {
-        (self.world.read_value(pass_id))
     }
 
     #[inline(always)]
@@ -320,6 +289,10 @@ pub impl StoreImpl of StoreTrait {
         self.world.write_model(model);
     }
 
+    #[inline(always)]
+    fn set_registration(ref self: Store, model: @Registration) {
+        self.world.write_model(model);
+    }
     // #[inline(always)]
     // fn set_scoreboard(ref self: Store, model: @SeasonScoreboard) {
     //     self.world.write_model(model);
@@ -366,11 +339,6 @@ pub impl StoreImpl of StoreTrait {
     }
     
     #[inline(always)]
-    fn set_tournament_settings(ref self: Store, model: @TournamentSettings) {
-        self.world.write_model(model);
-    }
-
-    #[inline(always)]
     fn set_tournament(ref self: Store, model: @Tournament) {
         self.world.write_model(model);
     }
@@ -408,10 +376,6 @@ pub impl StoreImpl of StoreTrait {
     // fn get_config_lords_address(self: @Store) -> ContractAddress {
     //     (self.world.read_member(Model::<Config>::ptr_from_keys(CONFIG::CONFIG_KEY), selector!("lords_address")))
     // }
-    #[inline(always)]
-    fn get_config_vrf_address(self: @Store) -> ContractAddress {
-        (self.world.read_member(Model::<Config>::ptr_from_keys(CONFIG::CONFIG_KEY), selector!("vrf_address")))
-    }
     // #[inline(always)]
     // fn get_config_treasury_address(self: @Store) -> ContractAddress {
     //     (self.world.read_member(Model::<Config>::ptr_from_keys(CONFIG::CONFIG_KEY), selector!("treasury_address")))
@@ -426,15 +390,6 @@ pub impl StoreImpl of StoreTrait {
     //     (self.world.read_member(Model::<SeasonConfig>::ptr_from_keys(season_id), selector!("rules")))
     // }
 
-    #[inline(always)]
-    fn get_tournament_settings_rules(self: @Store, settings_id: u32) -> TournamentRules {
-        let tournament_type: TournamentType = self.world.read_member(Model::<TournamentSettings>::ptr_from_keys(settings_id), selector!("tournament_type"));
-        (tournament_type.rules())
-    }
-    #[inline(always)]
-    fn get_tournament_pass_minter_address(self: @Store, pass_id: u64) -> ContractAddress {
-        (self.world.read_member(Model::<TokenMetadata>::ptr_from_keys(pass_id), selector!("minted_by")))
-    }
     #[inline(always)]
     fn get_tournament_duel_id(self: @Store, keys: @TournamentDuelKeys) -> felt252 {
         (self.world.read_member(Model::<TournamentToChallenge>::ptr_from_keys(*keys), selector!("duel_id")))

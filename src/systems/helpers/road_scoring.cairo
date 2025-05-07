@@ -1,5 +1,3 @@
-use dojo::event::EventStorage;
-use dojo::model::ModelStorage;
 use evolute_duel::{
     models::{
         scoring::{RoadNode, PotentialRoadContests}

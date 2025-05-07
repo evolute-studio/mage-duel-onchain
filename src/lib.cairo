@@ -2,8 +2,7 @@ pub mod systems {
     pub mod game;
     pub mod duel;
     pub mod player_profile_actions;
-    pub mod rng;
-    pub mod rng_mock;
+    pub mod tournament;
     pub mod helpers {
         pub mod board;
         pub mod city_union_find;
@@ -12,10 +11,6 @@ pub mod systems {
         pub mod road_union_find;
         pub mod road_scoring;
         pub mod validation;
-    }
-    pub mod tokens {
-        //ERC721
-        pub mod tournament_token;
     }
 }
 
@@ -26,7 +21,6 @@ pub mod models {
     pub mod game;
     pub mod scoring;
     pub mod tournament;
-    pub mod config;
     pub mod pact;
     pub mod scoreboard;
     pub mod registration;
@@ -45,11 +39,6 @@ pub mod types {
     pub mod constants;
     pub mod challenge_state;
     pub mod shuffler;
-}
-
-pub mod interfaces {
-    pub mod dns;
-    pub mod vrf;
 }
 
 pub mod utils {
