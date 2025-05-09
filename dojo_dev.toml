@@ -26,7 +26,4 @@ rpc_url = "http://localhost:5050/"
 "evolute_duel" = ["evolute_duel-game", "evolute_duel-duel", "evolute_duel-tournament", "evolute_duel-player_profile_actions"]
 
 [init_call_args]
-"evolute_duel-player_profile_actions" = ["0x64ca22e94267b4ce3107fba4f4d42c8046d191ed03fbf09dc9f9d06eb7c0f2"]
-"evolute_duel-tournament_token" = [
-    "sstr:http://localhost:3000", # base_uri
-]
+"evolute_duel-player_profile_actions" = ["0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"]
