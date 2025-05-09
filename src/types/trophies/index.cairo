@@ -8,7 +8,7 @@ use starknet::ContractAddress;
 use dojo::world::{WorldStorage};
 
 
-pub const TROPHY_COUNT: u8 = 10;
+pub const TROPHY_COUNT: u8 = 11;
 
 #[derive(Copy, Drop)]
 pub enum Trophy {
@@ -23,6 +23,7 @@ pub enum Trophy {
     CityBuilder,
     Bandi,
     Golem,
+    Test,
 }
 
 #[generate_trait]
@@ -41,6 +42,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::identifier(0),
             Trophy::Bandi => trophies::Bandi::Bandi::identifier(0),
             Trophy::Golem => trophies::Golem::Golem::identifier(0),
+            Trophy::Test => trophies::Test::Test::identifier(0),
         }
     }
 
@@ -58,6 +60,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::CityBuilder => false,
             Trophy::Bandi => false,
             Trophy::Golem => false,
+            Trophy::Test => false,
         }
     }
 
@@ -75,6 +78,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::index(0),
             Trophy::Bandi => trophies::Bandi::Bandi::index(0),
             Trophy::Golem => trophies::Golem::Golem::index(0),
+            Trophy::Test => trophies::Test::Test::index(0),
         }
     }
 
@@ -92,6 +96,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::points(0),
             Trophy::Bandi => trophies::Bandi::Bandi::points(0),
             Trophy::Golem => trophies::Golem::Golem::points(0),
+            Trophy::Test => trophies::Test::Test::points(0),
         }
     }
 
@@ -109,6 +114,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::group(),
             Trophy::Bandi => trophies::Bandi::Bandi::group(),
             Trophy::Golem => trophies::Golem::Golem::group(),
+            Trophy::Test => trophies::Test::Test::group(),
         }
     }
 
@@ -126,6 +132,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::icon(0),
             Trophy::Bandi => trophies::Bandi::Bandi::icon(0),
             Trophy::Golem => trophies::Golem::Golem::icon(0),
+            Trophy::Test => trophies::Test::Test::icon(0),
         }
     }
 
@@ -143,6 +150,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::title(0),
             Trophy::Bandi => trophies::Bandi::Bandi::title(0),
             Trophy::Golem => trophies::Golem::Golem::title(0),
+            Trophy::Test => trophies::Test::Test::title(0),
         }
     }
 
@@ -160,6 +168,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::description(0),
             Trophy::Bandi => trophies::Bandi::Bandi::description(0),
             Trophy::Golem => trophies::Golem::Golem::description(0),
+            Trophy::Test => trophies::Test::Test::description(0),
         }
     }
 
@@ -177,6 +186,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::tasks(0),
             Trophy::Bandi => trophies::Bandi::Bandi::tasks(0),
             Trophy::Golem => trophies::Golem::Golem::tasks(0),
+            Trophy::Test => trophies::Test::Test::tasks(0),
         }
     }
 
@@ -201,6 +211,7 @@ impl IntoTrophyU8 of Into<Trophy, u8> {
             Trophy::CityBuilder => 8,
             Trophy::Bandi => 9,
             Trophy::Golem => 10,
+            Trophy::Test => 11,
         }
     }
 }
@@ -221,6 +232,7 @@ impl IntoU8Trophy of Into<u8, Trophy> {
             8 => Trophy::CityBuilder,
             9 => Trophy::Bandi,
             10 => Trophy::Golem,
+            11 => Trophy::Test,
             _ => Trophy::None,
         }
     }

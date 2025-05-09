@@ -64,4 +64,13 @@ pub impl AchievementsImpl of AchievementsTrait {
         let task_id: felt252 = Task::Golem.identifier();
         store.progress(player_id, task_id, count: 1, time: time);
     }
+
+    fn create_game(ref world: WorldStorage, player_address: ContractAddress) {
+        let store = StoreTrait::new(world);
+        let player_id: felt252 = player_address.into();
+        let time = get_block_timestamp();
+
+        let task_id: felt252 = Task::Test.identifier();
+        store.progress(player_id, task_id, count: 1, time: time);
+    }
 }

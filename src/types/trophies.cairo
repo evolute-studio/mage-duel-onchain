@@ -6,3 +6,4 @@ mod RoadBuilder;
 mod CityBuilder;
 mod Golem;
 mod Bandi;
+mod Test;
