@@ -1,4 +1,4 @@
-use starknet::{ContractAddress};
+use starknet::{ContractAddress, contract_address_const};
 use origami_random::deck::{DeckTrait};
 use origami_random::dice::{DiceTrait};
 use core::dict::Felt252Dict;
@@ -149,6 +149,7 @@ pub fn create_board_from_snapshot(
                 tile.into(),
                 rotation,
                 player_side.into(),
+                contract_address_const::<0>(),
             );
             if city_contest_scoring_result.is_some() {
                 let (winner, points_delta) = city_contest_scoring_result.unwrap();
@@ -177,6 +178,7 @@ pub fn create_board_from_snapshot(
                 tile.into(),
                 rotation,
                 player_side.into(),
+                contract_address_const::<0>(),
             );
 
             for i in 0..road_contest_scoring_results.len() {

@@ -47,6 +47,7 @@ pub mod player_profile_actions {
             skins::{Shop}
         }, packing::{},
     };
+    use evolute_duel::libs::achievements::AchievementsTrait;
     use openzeppelin_access::ownable::OwnableComponent;
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -155,6 +156,16 @@ pub mod player_profile_actions {
                 .emit_event(
                     @CurrentPlayerActiveSkin { player_id, active_skin: player.active_skin },
                 );
+
+            //[Achievements] Bandi skin
+            if skin_id == 2 {
+                AchievementsTrait::unlock_bandi(ref world, player_id);
+            }
+
+            //[Achievements] Golem skin
+            if skin_id == 3 {
+                AchievementsTrait::unlock_golem(ref world, player_id);
+            }
         }
 
         fn become_bot(ref self: ContractState) {

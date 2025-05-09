@@ -37,9 +37,6 @@ use evolute_duel::types::errors::{
     duel::{
         Errors as DuelErrors
     },
-    tournament::{
-        Errors as TournamentErrors
-    }
 };
 
 

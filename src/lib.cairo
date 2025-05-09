@@ -39,6 +39,8 @@ pub mod types {
     pub mod constants;
     pub mod challenge_state;
     pub mod shuffler;
+    pub mod trophies;
+    pub mod tasks;
 }
 
 pub mod utils {
@@ -54,6 +56,7 @@ pub mod utils {
 
 pub mod libs {
     pub mod store;
+    pub mod achievements;
 }
 
 pub mod tests {

@@ -57,14 +57,34 @@ pub mod game {
         packing::{Tile, GameState, PlayerSide},
         types::challenge_state::{ChallengeState, ChallengeStateTrait},
     };
-    use evolute_duel::libs::store::{Store, StoreTrait};
+    use evolute_duel::libs::{
+        store::{Store, StoreTrait},
+        achievements::{AchievementsTrait},
+    };
+    use evolute_duel::types::tasks::index::{Task, TaskTrait};
+    use evolute_duel::types::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
 
 
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
+    use achievement::store::{
+        StoreTrait as AchievementStoreTrait,
+    };
+    use achievement::components::achievable::AchievableComponent;
+    component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
+    impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
+    
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        AchievableEvent: AchievableComponent::Event,
+    }
+
     #[storage]
     struct Storage {
-        duel_id_generator: felt252,
+        #[substorage(v0)]
+        achievable: AchievableComponent::Storage,
         move_id_generator: felt252,
         snapshot_id_generator: felt252,
     }
@@ -73,7 +93,8 @@ pub mod game {
 
 
     fn dojo_init(self: @ContractState) {
-        let mut store = StoreTrait::new(self.world_default());
+        let world = self.world_default();
+        let mut store = StoreTrait::new(world);
         let id = 0;
         let deck: Array<u8> = array![
             2, // CCCC
@@ -107,6 +128,31 @@ pub mod game {
 
         let rules = Rules { id, deck, edges, joker_number, joker_price };
         store.set_rules(@rules);
+
+
+        let mut trophy_id: u8 = TROPHY_COUNT;
+        while trophy_id > 0 {
+            let trophy: Trophy = trophy_id.into();
+            self
+                .achievable
+                .create(
+                    world,
+                    id: trophy.identifier(),
+                    hidden: trophy.hidden(),
+                    index: trophy.index(),
+                    points: trophy.points(),
+                    start: 0,
+                    end: 0,
+                    group: trophy.group(),
+                    icon: trophy.icon(),
+                    title: trophy.title(),
+                    description: trophy.description(),
+                    tasks: trophy.tasks(),
+                    data: trophy.data(),
+                );
+
+            trophy_id -= 1;
+        };
     }
 
     #[abi(embed_v0)]
@@ -311,6 +357,7 @@ pub mod game {
                 tile.into(),
                 rotation,
                 player_side.into(),
+                player,
             );
 
             if city_contest_scoring_result.is_some() {
@@ -341,6 +388,7 @@ pub mod game {
                 tile.into(),
                 rotation,
                 player_side.into(),
+                player,
             );
 
             for i in 0..road_contest_scoring_results.len() {
@@ -720,6 +768,9 @@ pub mod game {
                 player2.balance += blue_points;
             }
 
+            player1.games_played += 1;
+            player2.games_played += 1;
+
             //Finish challenge
 
             let winner = if blue_points > red_points {
@@ -773,6 +824,18 @@ pub mod game {
                         game_state: board.game_state,
                     },
                 );
+
+            // [Achivement] Seasoned
+            let mut world = self.world_default();
+            AchievementsTrait::play_game(ref world, player1_address);
+            AchievementsTrait::play_game(ref world, player2_address);
+
+            // [Achivement] Winner
+            if winner == Option::Some(1) {
+                AchievementsTrait::win_game(ref world, player1_address);
+            } else if winner == Option::Some(2) {
+                AchievementsTrait::win_game(ref world, player2_address);
+            }
         }
         fn _finish_challenge(ref self: ContractState, ref store: Store, ref challenge: Challenge, winner: Option<u8>) {
             match winner {
