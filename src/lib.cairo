@@ -12,9 +12,24 @@ pub mod systems {
     }
 }
 
-pub mod models;
+pub mod models {
+    pub mod player;
+    pub mod game;
+    pub mod scoring;
+    pub mod skins;
+}
+     
 pub mod events;
 pub mod packing;
+
+pub mod types {
+    pub mod trophies;
+    pub mod tasks;
+}
+
+pub mod libs {
+    pub mod achievements;
+}
 
 pub mod tests {
     mod test_world;
