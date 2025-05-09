@@ -8,6 +8,6 @@ pub impl RoadBuilder of TaskTrait {
 
     #[inline]
     fn description(count: u32) -> ByteArray {
-        format!("Build a road of {}+ edges", count)
+        format!("Build a road of 7+ edges")
     }
 }

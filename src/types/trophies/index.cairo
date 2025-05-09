@@ -8,7 +8,7 @@ use starknet::ContractAddress;
 use dojo::world::{WorldStorage};
 
 
-pub const TROPHY_COUNT: u8 = 3;
+pub const TROPHY_COUNT: u8 = 10;
 
 #[derive(Copy, Drop)]
 pub enum Trophy {
@@ -21,6 +21,8 @@ pub enum Trophy {
     WinnerIII,
     RoadBuilder,
     CityBuilder,
+    Bandi,
+    Golem,
 }
 
 #[generate_trait]
@@ -37,6 +39,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::WinnerIII => trophies::Winner::Winner::identifier(2),
             Trophy::RoadBuilder => trophies::RoadBuilder::RoadBuilder::identifier(0),
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::identifier(0),
+            Trophy::Bandi => trophies::Bandi::Bandi::identifier(0),
+            Trophy::Golem => trophies::Golem::Golem::identifier(0),
         }
     }
 
@@ -52,6 +56,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::WinnerIII => false,
             Trophy::RoadBuilder => false,
             Trophy::CityBuilder => false,
+            Trophy::Bandi => false,
+            Trophy::Golem => false,
         }
     }
 
@@ -67,6 +73,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::WinnerIII => trophies::Winner::Winner::index(2),
             Trophy::RoadBuilder => trophies::RoadBuilder::RoadBuilder::index(0),
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::index(0),
+            Trophy::Bandi => trophies::Bandi::Bandi::index(0),
+            Trophy::Golem => trophies::Golem::Golem::index(0),
         }
     }
 
@@ -82,6 +90,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::WinnerIII => trophies::Winner::Winner::points(2),
             Trophy::RoadBuilder => trophies::RoadBuilder::RoadBuilder::points(0),
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::points(0),
+            Trophy::Bandi => trophies::Bandi::Bandi::points(0),
+            Trophy::Golem => trophies::Golem::Golem::points(0),
         }
     }
 
@@ -97,6 +107,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::WinnerIII => trophies::Winner::Winner::group(),
             Trophy::RoadBuilder => trophies::RoadBuilder::RoadBuilder::group(),
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::group(),
+            Trophy::Bandi => trophies::Bandi::Bandi::group(),
+            Trophy::Golem => trophies::Golem::Golem::group(),
         }
     }
 
@@ -112,6 +124,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::WinnerIII => trophies::Winner::Winner::icon(2),
             Trophy::RoadBuilder => trophies::RoadBuilder::RoadBuilder::icon(0),
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::icon(0),
+            Trophy::Bandi => trophies::Bandi::Bandi::icon(0),
+            Trophy::Golem => trophies::Golem::Golem::icon(0),
         }
     }
 
@@ -127,6 +141,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::WinnerIII => trophies::Winner::Winner::title(2),
             Trophy::RoadBuilder => trophies::RoadBuilder::RoadBuilder::title(0),
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::title(0),
+            Trophy::Bandi => trophies::Bandi::Bandi::title(0),
+            Trophy::Golem => trophies::Golem::Golem::title(0),
         }
     }
 
@@ -142,6 +158,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::WinnerIII => trophies::Winner::Winner::description(2),
             Trophy::RoadBuilder => trophies::RoadBuilder::RoadBuilder::description(0),
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::description(0),
+            Trophy::Bandi => trophies::Bandi::Bandi::description(0),
+            Trophy::Golem => trophies::Golem::Golem::description(0),
         }
     }
 
@@ -157,6 +175,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::WinnerIII => trophies::Winner::Winner::tasks(2),
             Trophy::RoadBuilder => trophies::RoadBuilder::RoadBuilder::tasks(0),
             Trophy::CityBuilder => trophies::CityBuilder::CityBuilder::tasks(0),
+            Trophy::Bandi => trophies::Bandi::Bandi::tasks(0),
+            Trophy::Golem => trophies::Golem::Golem::tasks(0),
         }
     }
 
@@ -179,6 +199,8 @@ impl IntoTrophyU8 of Into<Trophy, u8> {
             Trophy::WinnerIII => 6, 
             Trophy::RoadBuilder => 7,
             Trophy::CityBuilder => 8,
+            Trophy::Bandi => 9,
+            Trophy::Golem => 10,
         }
     }
 }
@@ -197,6 +219,8 @@ impl IntoU8Trophy of Into<u8, Trophy> {
             6 => Trophy::WinnerIII,
             7 => Trophy::RoadBuilder,
             8 => Trophy::CityBuilder,
+            9 => Trophy::Bandi,
+            10 => Trophy::Golem,
             _ => Trophy::None,
         }
     }
