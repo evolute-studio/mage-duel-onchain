@@ -1,7 +1,7 @@
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use evolute_duel::{
-    models::{CityNode, PotentialCityContests}, events::{CityContestWon, CityContestDraw},
+    models::scoring::{CityNode, PotentialCityContests}, events::{CityContestWon, CityContestDraw},
     systems::helpers::{
         city_union_find::{find, union}, board::{},
         tile_helpers::{
@@ -12,8 +12,13 @@ use evolute_duel::{
 };
 use dojo::world::{WorldStorage};
 
+use evolute_duel::libs::{
+    achievements::{AchievementsTrait},
+};
+use starknet::ContractAddress;
+
 pub fn connect_city_edges_in_tile(
-    ref world: WorldStorage, board_id: felt252, tile_position: u8, tile: u8, rotation: u8, side: u8,
+    ref world: WorldStorage, board_id: felt252, tile_position: u8, tile: u8, rotation: u8, side: u8
 ) {
     let extended_tile = create_extended_tile(tile.into(), rotation);
 
@@ -64,6 +69,7 @@ pub fn connect_adjacent_city_edges(
     tile: u8,
     rotation: u8,
     side: u8,
+    player_address: ContractAddress,
 ) //None - if no contest or draw, Some(u8, u16) -> (who_wins, points_delta) - if contest
 -> Option<
     (PlayerSide, u16),
@@ -201,7 +207,9 @@ pub fn connect_adjacent_city_edges(
     if cities_connected.len() > 0 {
         let mut city_root = find(ref world, board_id, *cities_connected.at(0));
         if city_root.open_edges == 0 {
-            contest_result = handle_city_contest(ref world, city_root);
+            contest_result = handle_city_contest(ref world, ref city_root);
+            //[Achivement] CityBuilder
+            AchievementsTrait::build_city(ref world, player_address, ((city_root.red_points + city_root.blue_points) / 2).into());
         }
     }
 
@@ -236,7 +244,7 @@ pub fn connect_adjacent_city_edges(
 }
 
 pub fn handle_city_contest(
-    ref world: WorldStorage, mut city_root: CityNode,
+    ref world: WorldStorage, ref city_root: CityNode,
 ) -> Option<(PlayerSide, u16)> {
     city_root.contested = true;
     let mut result: Option<(PlayerSide, u16)> = Option::None;
@@ -295,9 +303,10 @@ pub fn close_all_cities(
     let roots = potential_cities.roots;
     let mut contest_results: Array<Option<(PlayerSide, u16)>> = ArrayTrait::new();
     for i in 0..roots.len() {
-        let root = find(ref world, board_id, *roots.at(i));
+
+        let mut root = find(ref world, board_id, *roots.at(i));
         if !root.contested {
-            let contest_result = handle_city_contest(ref world, root);
+            let contest_result = handle_city_contest(ref world, ref root);
             contest_results.append(contest_result);
         }
     };

@@ -1,7 +1,7 @@
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use evolute_duel::{
-    models::{RoadNode, PotentialRoadContests}, events::{RoadContestWon, RoadContestDraw},
+    models::scoring::{RoadNode, PotentialRoadContests}, events::{RoadContestWon, RoadContestDraw},
     systems::helpers::{
         road_union_find::{find, union}, board::{},
         tile_helpers::{
@@ -11,6 +11,10 @@ use evolute_duel::{
     packing::{TEdge, PlayerSide, Tile},
 };
 use dojo::world::{WorldStorage};
+use evolute_duel::libs::{
+    achievements::AchievementsTrait,
+};
+use starknet::ContractAddress;
 
 pub fn connect_road_edges_in_tile(
     ref world: WorldStorage, board_id: felt252, tile_position: u8, tile: u8, rotation: u8, side: u8,
@@ -62,6 +66,7 @@ pub fn connect_adjacent_road_edges(
     tile: u8,
     rotation: u8,
     side: u8,
+    player_address: ContractAddress,
 ) //None - if no contest or draw, Some(u8, u16) -> (who_wins, points_delta) - if contest
 -> Span<
     Option<(PlayerSide, u16)>,
@@ -203,19 +208,25 @@ pub fn connect_adjacent_road_edges(
         for i in 0..roads_connected.len() {
             let mut road_root = find(ref world, board_id, *roads_connected.at(i));
             if road_root.open_edges == 0 {
-                let contest_result = handle_contest(ref world, road_root);
+                let contest_result = handle_contest(ref world, ref road_root);
                 if contest_result.is_some() {
                     contest_results.append(contest_result);
                 }
+                
+                //[Achievement] RoadBuilder
+                AchievementsTrait::build_road(ref world, player_address, (road_root.blue_points + road_root.red_points).into());
             }
         }
     } else if roads_connected.len() > 0 {
         let mut road_root = find(ref world, board_id, *roads_connected.at(0));
         if road_root.open_edges == 0 {
-            let contest_result: Option<(PlayerSide, u16)> = handle_contest(ref world, road_root);
+            let contest_result: Option<(PlayerSide, u16)> = handle_contest(ref world, ref road_root);
             if contest_result.is_some() {
                 contest_results.append(contest_result);
             }
+
+            //[Achievement] RoadBuilder
+            AchievementsTrait::build_road(ref world, player_address, (road_root.blue_points + road_root.red_points).into());
         }
     }
 
@@ -249,7 +260,7 @@ pub fn connect_adjacent_road_edges(
 }
 
 pub fn handle_contest(
-    ref world: WorldStorage, mut road_root: RoadNode,
+    ref world: WorldStorage, ref road_root: RoadNode,
 ) -> Option<(PlayerSide, u16)> {
     road_root.contested = true;
     let mut result = Option::None;
@@ -310,9 +321,9 @@ pub fn close_all_roads(
     let roots = potential_roads.roots;
     let mut contest_results = ArrayTrait::new();
     for i in 0..roots.len() {
-        let root = find(ref world, board_id, *roots.at(i));
+        let mut root = find(ref world, board_id, *roots.at(i));
         if !root.contested {
-            let contest_result = handle_contest(ref world, root);
+            let contest_result = handle_contest(ref world, ref root);
             contest_results.append(contest_result);
         }
     };

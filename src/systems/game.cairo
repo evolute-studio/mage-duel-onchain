@@ -42,7 +42,10 @@ pub mod game {
     use super::{IGame};
     use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
     use evolute_duel::{
-        models::{Board, Rules, Move, Game, Snapshot, Player},
+        models::{
+            game::{Board, Rules, Move, Game, Snapshot},
+            player::{Player}
+        },
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
             PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
@@ -66,23 +69,43 @@ pub mod game {
         packing::{GameStatus, Tile, GameState, PlayerSide},
     };
 
+    use evolute_duel::libs::{
+        // store::{Store, StoreTrait},
+        achievements::{AchievementsTrait},
+    };
+    use evolute_duel::types::tasks::index::{Task, TaskTrait};
+    use evolute_duel::types::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
+
     use dojo::event::EventStorage;
     use dojo::model::{ModelStorage, Model};
 
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+
+    use achievement::components::achievable::AchievableComponent;
+    component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
+    impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
+    
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        AchievableEvent: AchievableComponent::Event,
+    }
 
     #[storage]
     struct Storage {
         board_id_generator: felt252,
         move_id_generator: felt252,
         snapshot_id_generator: felt252,
+        #[substorage(v0)]
+        achievable: AchievableComponent::Storage,
     }
 
     const MOVE_TIME : u64 = 60; // 1 min
 
 
     fn dojo_init(self: @ContractState) {
-        let mut world = self.world(@"evolute_duel");
+        let mut world = self.world_default();
         let id = 0;
         let deck: Array<u8> = array![
             2, // CCCC
@@ -115,7 +138,33 @@ pub mod game {
         let joker_price = 5;
 
         let rules = Rules { id, deck, edges, joker_number, joker_price };
+
         world.write_model(@rules);
+
+
+        let mut trophy_id: u8 = TROPHY_COUNT;
+        while trophy_id > 0 {
+            let trophy: Trophy = trophy_id.into();
+            self
+                .achievable
+                .create(
+                    world,
+                    id: trophy.identifier(),
+                    hidden: trophy.hidden(),
+                    index: trophy.index(),
+                    points: trophy.points(),
+                    start: 0,
+                    end: 0,
+                    group: trophy.group(),
+                    icon: trophy.icon(),
+                    title: trophy.title(),
+                    description: trophy.description(),
+                    tasks: trophy.tasks(),
+                    data: trophy.data(),
+                );
+
+            trophy_id -= 1;
+        };
     }
 
     #[abi(embed_v0)]
@@ -477,6 +526,7 @@ pub mod game {
                 tile.into(),
                 rotation,
                 player_side.into(),
+                player,
             );
 
             if city_contest_scoring_result.is_some() {
@@ -507,6 +557,7 @@ pub mod game {
                 tile.into(),
                 rotation,
                 player_side.into(),
+                player,
             );
 
             for i in 0..road_contest_scoring_results.len() {
@@ -906,30 +957,41 @@ pub mod game {
             let joker_price = rules.joker_price;
             let blue_joker_points = joker_number1.into() * joker_price;
             let red_joker_points = joker_number2.into() * joker_price;
-
+            let (blue_city_points, blue_road_points) = board.blue_score;
+            let blue_points = blue_city_points + blue_road_points + blue_joker_points;
+            let (red_city_points, red_road_points) = board.red_score;
+            let red_points = red_city_points + red_road_points + red_joker_points;
             if player1_side == PlayerSide::Blue {
-                let (city_points, road_points) = board.blue_score;
-                player1.balance += city_points + road_points;
-                let (city_points, road_points) = board.red_score;
-                player2.balance += city_points + road_points;
-                player1.balance += blue_joker_points;
-                player2.balance += red_joker_points;
-            } else {
-                let (city_points, road_points) = board.red_score;
-                player1.balance += city_points + road_points;
-                let (city_points, road_points) = board.blue_score;
-                player2.balance += city_points + road_points;
-                player1.balance += red_joker_points;
-                player2.balance += blue_joker_points;
+                player1.balance += blue_points;
+                player2.balance += red_points;
+    
+            } else if player1_side == PlayerSide::Red {
+                player1.balance += red_points;
+                player2.balance += blue_points;
             }
 
+            player1.games_played += 1;
+            player2.games_played += 1;
+
+            //Finish challenge
+
+            let winner = if blue_points > red_points {
+                Option::Some(1)
+            } else if blue_points < red_points {
+                Option::Some(2)
+            } else {
+                Option::Some(0)
+            };
+
             world.write_model(@player1);
+            world.write_model(@player2);
+
+
             world
                 .emit_event(
                     @CurrentPlayerBalance { player_id: player1_address, balance: player1.balance },
                 );
 
-            world.write_model(@player2);
             world
                 .emit_event(
                     @CurrentPlayerBalance { player_id: player2_address, balance: player2.balance },
@@ -970,6 +1032,18 @@ pub mod game {
                         game_state: board.game_state,
                     },
                 );
+
+            // [Achivement] Seasoned
+            let mut world = self.world_default();
+            AchievementsTrait::play_game(ref world, player1_address);
+            AchievementsTrait::play_game(ref world, player2_address);
+
+            // [Achivement] Winner
+            if winner == Option::Some(1) {
+                AchievementsTrait::win_game(ref world, player1_address);
+            } else if winner == Option::Some(2) {
+                AchievementsTrait::win_game(ref world, player2_address);
+            }
         }
     }
 }

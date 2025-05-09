@@ -43,6 +43,7 @@ cancel_game1 = "sozo --release execute evolute_duel-game cancel_game --account-a
 dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.2" }
 origami_random = { git = "https://github.com/dojoengine/origami" }
 openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.20.0" }
+achievement = { git = "https://github.com/cartridge-gg/arcade", rev = "824b8139f11e637ae91863c5f282e48f76bfba1f" }
 
 
 [[target.starknet-contract]]
