@@ -192,7 +192,7 @@ pub mod game {
             world.emit_event(@GameCreated { host_player, status });
 
             //[Achievements] Create game
-            AchievementsTrait::create_game(ref world, host_player);
+            AchievementsTrait::create_game(world, host_player);
         }
 
         fn create_snapshot(ref self: ContractState, board_id: felt252, move_number: u8) {
@@ -1038,14 +1038,14 @@ pub mod game {
 
             // [Achivement] Seasoned
             let mut world = self.world_default();
-            AchievementsTrait::play_game(ref world, player1_address);
-            AchievementsTrait::play_game(ref world, player2_address);
+            AchievementsTrait::play_game(world, player1_address);
+            AchievementsTrait::play_game(world, player2_address);
 
             // [Achivement] Winner
             if winner == Option::Some(1) {
-                AchievementsTrait::win_game(ref world, player1_address);
+                AchievementsTrait::win_game(world, player1_address);
             } else if winner == Option::Some(2) {
-                AchievementsTrait::win_game(ref world, player2_address);
+                AchievementsTrait::win_game(world, player2_address);
             }
         }
     }

@@ -54,7 +54,7 @@ pub impl Test of TrophyTrait {
         match level {
             0 => 'Creator',
             1 => 'Mega Creator',
-            2 => 'Supr Mega Creator',
+            2 => 'Super Mega Creator',
             _ => '',
         }
     }

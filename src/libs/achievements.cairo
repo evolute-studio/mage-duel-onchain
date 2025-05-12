@@ -7,7 +7,7 @@ use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
 
 #[generate_trait]
 pub impl AchievementsImpl of AchievementsTrait {
-    fn play_game(ref world: WorldStorage, player_address: ContractAddress) {
+    fn play_game(world: WorldStorage, player_address: ContractAddress) {
         let store = StoreTrait::new(world);
         let player_id: felt252 = player_address.into();
         let time = get_block_timestamp();
@@ -16,7 +16,7 @@ pub impl AchievementsImpl of AchievementsTrait {
         store.progress(player_id, task_id, count: 1, time: time);
     }
 
-    fn win_game(ref world: WorldStorage, player_address: ContractAddress) {
+    fn win_game(world: WorldStorage, player_address: ContractAddress) {
         let store = StoreTrait::new(world);
         let player_id: felt252 = player_address.into();
         let time = get_block_timestamp();
@@ -25,7 +25,7 @@ pub impl AchievementsImpl of AchievementsTrait {
         store.progress(player_id, task_id, count: 1, time: time);
     }
 
-    fn build_road(ref world: WorldStorage, player_address: ContractAddress, edges_count: u32) {
+    fn build_road(world: WorldStorage, player_address: ContractAddress, edges_count: u32) {
         if edges_count >= 7  && player_address.is_non_zero() {
             let store = StoreTrait::new(world);
             let player_id: felt252 = player_address.into();
@@ -36,7 +36,7 @@ pub impl AchievementsImpl of AchievementsTrait {
         }
     }
 
-    fn build_city(ref world: WorldStorage, player_address: ContractAddress, edges_count: u32) {
+    fn build_city(world: WorldStorage, player_address: ContractAddress, edges_count: u32) {
         if edges_count >= 10 && player_address.is_non_zero() {
             let store = StoreTrait::new(world);
             let player_id: felt252 = player_address.into();
@@ -47,7 +47,7 @@ pub impl AchievementsImpl of AchievementsTrait {
         }
     }
 
-    fn unlock_bandi(ref world: WorldStorage, player_address: ContractAddress) {
+    fn unlock_bandi(world: WorldStorage, player_address: ContractAddress) {
         let store = StoreTrait::new(world);
         let player_id: felt252 = player_address.into();
         let time = get_block_timestamp();
@@ -56,7 +56,7 @@ pub impl AchievementsImpl of AchievementsTrait {
         store.progress(player_id, task_id, count: 1, time: time);
     }
 
-    fn unlock_golem(ref world: WorldStorage, player_address: ContractAddress) {
+    fn unlock_golem(world: WorldStorage, player_address: ContractAddress) {
         let store = StoreTrait::new(world);
         let player_id: felt252 = player_address.into();
         let time = get_block_timestamp();
@@ -65,7 +65,7 @@ pub impl AchievementsImpl of AchievementsTrait {
         store.progress(player_id, task_id, count: 1, time: time);
     }
 
-    fn create_game(ref world: WorldStorage, player_address: ContractAddress) {
+    fn create_game(world: WorldStorage, player_address: ContractAddress) {
         let store = StoreTrait::new(world);
         let player_id: felt252 = player_address.into();
         let time = get_block_timestamp();

@@ -5,4 +5,4 @@ rpc="https://api.cartridge.gg/x/prxgr4mmer-evolute-duel/katana"
 raw = true 
 
 [sql] 
-historical = ["evolute_duel-TrophyCreation", "evolute_duel-TrophyProgression"]
+historical = ["evolute_duel-TrophyCreation"]

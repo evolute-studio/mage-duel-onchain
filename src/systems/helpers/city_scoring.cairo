@@ -209,7 +209,7 @@ pub fn connect_adjacent_city_edges(
         if city_root.open_edges == 0 {
             contest_result = handle_city_contest(ref world, ref city_root);
             //[Achivement] CityBuilder
-            AchievementsTrait::build_city(ref world, player_address, ((city_root.red_points + city_root.blue_points) / 2).into());
+            AchievementsTrait::build_city(world, player_address, ((city_root.red_points + city_root.blue_points) / 2).into());
         }
     }
 

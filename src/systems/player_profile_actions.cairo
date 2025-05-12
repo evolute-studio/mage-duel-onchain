@@ -159,12 +159,12 @@ pub mod player_profile_actions {
 
             //[Achievements] Bandi skin
             if skin_id == 2 {
-                AchievementsTrait::unlock_bandi(ref world, player_id);
+                AchievementsTrait::unlock_bandi(world, player_id);
             }
 
             //[Achievements] Golem skin
             if skin_id == 3 {
-                AchievementsTrait::unlock_golem(ref world, player_id);
+                AchievementsTrait::unlock_golem(world, player_id);
             }
         }
 
