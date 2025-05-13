@@ -24,3 +24,5 @@ private_key = "0x33003003001800009900180300d206308b0070db00121318d17b5e6262150b"
 
 [writers]
 "evolute_duel" = ["evolute_duel-game", "evolute_duel-player_profile_actions"]
+"evolute_duel-TrophyCreation" = ["evolute_duel-game", "evolute_duel-player_profile_actions"]
+"evolute_duel-TrophyProgression" = ["evolute_duel-game", "evolute_duel-player_profile_actions"]

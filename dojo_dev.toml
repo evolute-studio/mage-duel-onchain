@@ -18,12 +18,14 @@ default = "evolute_duel"
 [env]
 rpc_url = "http://localhost:5050/"
 # Default account for katana with seed = 0
-# account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
-# private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
+account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 # world_address = "0x06a4d87ac4a224fbc633b46ec896545f8783cfc6d87ce8a4ef8c5630a3c17711"
 
 [writers]
 "evolute_duel" = ["evolute_duel-game", "evolute_duel-player_profile_actions"]
+"evolute_duel-TrophyCreation" = ["evolute_duel-game", "evolute_duel-player_profile_actions"]
+"evolute_duel-TrophyProgression" = ["evolute_duel-game", "evolute_duel-player_profile_actions"]
 
 [init_call_args]
-"evolute_duel-player_profile_actions" = ["0x64ca22e94267b4ce3107fba4f4d42c8046d191ed03fbf09dc9f9d06eb7c0f2"]
+"evolute_duel-player_profile_actions" = ["0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"]

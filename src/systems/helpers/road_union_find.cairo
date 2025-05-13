@@ -1,5 +1,5 @@
 use dojo::model::ModelStorage;
-use evolute_duel::models::{RoadNode};
+use evolute_duel::models::scoring::{RoadNode};
 use dojo::world::{WorldStorage};
 //Union find on RoadNode
 pub fn find(ref world: WorldStorage, board_id: felt252, position: u8) -> RoadNode {
