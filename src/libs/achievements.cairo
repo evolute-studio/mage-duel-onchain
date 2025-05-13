@@ -105,18 +105,6 @@ pub impl AchievementsImpl of AchievementsTrait {
         store.progress(player_id, task_id, count: 1, time: time);
     }
 
-    fn create_game(world: WorldStorage, player_address: ContractAddress) {
-        if !Self::can_recieve_achievement(world, player_address) {
-            return;
-        }
-        let store = StoreTrait::new(world);
-        let player_id: felt252 = player_address.into();
-        let time = get_block_timestamp();
-
-        let task_id: felt252 = Task::Test.identifier();
-        store.progress(player_id, task_id, count: 1, time: time);
-    }
-
     fn can_recieve_achievement(world: WorldStorage, player_address: ContractAddress) -> bool {
         let player: Player = world.read_model(player_address);
         player.is_controller()
