@@ -24,7 +24,7 @@ pub struct PotentialCityContests {
 /// - `red_points`: Points earned by the red player.
 /// - `open_edges`: Number of open edges in this city.
 /// - `contested`: Boolean flag indicating if the city is contested.
-#[derive(Drop, Serde, IntrospectPacked, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::model]
 pub struct CityNode {
     #[key]
@@ -69,7 +69,7 @@ pub struct PotentialRoadContests {
 /// - `red_points`: Points earned by the red player.
 /// - `open_edges`: Number of open edges in this road.
 /// - `contested`: Boolean flag indicating if the road is contested.
-#[derive(Drop, Serde, IntrospectPacked, Debug)]
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::model]
 pub struct RoadNode {
     #[key]
