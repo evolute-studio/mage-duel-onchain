@@ -8,7 +8,7 @@ use origami_random::dice::{DiceTrait};
 use core::dict::Felt252Dict;
 
 use evolute_duel::{
-    models::UnionFind,
+    models::{UnionFind, UnionFindTrait},
     events::{BoardCreated, BoardCreatedFromSnapshot, BoardCreateFromSnapshotFalied}, models::{Board, Rules, Move},
     packing::{GameState, TEdge, Tile, PlayerSide, UnionNode},
     systems::helpers::{
@@ -233,18 +233,14 @@ pub fn create_board_from_snapshot(
         city_nodes_arr.append(city_nodes.at(i.into()));
     };
 
-    let union_find = UnionFind {
-        board_id,
-        road_nodes: road_nodes_arr.span(),
-        city_nodes: city_nodes_arr.span(),
+    let mut union_find = UnionFindTrait::from_union_nodes(
+        road_nodes_arr,
+        city_nodes_arr,
         potential_road_contests,
         potential_city_contests,
-    };
+    );
 
-    world.write_model(@union_find);
-
-
-
+    union_find.write(world);
     // //println!("Final board created from snapshot: {:?}", board);
 
     world
@@ -586,7 +582,7 @@ pub fn draw_tile_from_board_deck(ref board: Board) -> Option<u8> {
     }
     let mut dice = DiceTrait::new(
         avaliable_tiles.len().try_into().unwrap(), 'SEED' 
-        + get_block_timestamp().into(),
+        // + get_block_timestamp().into(),
     );
 
     let mut next_tile = dice.roll() - 1;
@@ -624,8 +620,9 @@ pub fn generate_initial_board_state(
 
     for side in 0..4_u8 {
         let mut deck = DeckTrait::new(
-            ('SEED'
-            + side.into() + get_block_timestamp().into() + board_id).into(),
+            // (
+                'SEED',
+            // + side.into() + get_block_timestamp().into() + board_id).into(),
              8,
         );
         let mut edge: Felt252Dict<u8> = Default::default();
