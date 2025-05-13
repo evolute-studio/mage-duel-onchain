@@ -1,14 +1,7 @@
 use achievement::types::task::Task as BushidoTask;
-use achievement::store::{
-    // Store as ArcadeStore,
-    StoreTrait as ArcadeStoreTrait
-};
 use evolute_duel::types::trophies;
-use starknet::ContractAddress;
-use dojo::world::{WorldStorage};
 
-
-pub const TROPHY_COUNT: u8 = 13;
+pub const TROPHY_COUNT: u8 = 15;
 
 #[derive(Copy, Drop)]
 pub enum Trophy {
@@ -26,6 +19,8 @@ pub enum Trophy {
     TestI,
     TestII,
     TestIII,
+    FirstCity,
+    FristRoad,
 }
 
 #[generate_trait]
@@ -47,6 +42,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::TestI => trophies::Test::Test::identifier(0),
             Trophy::TestII => trophies::Test::Test::identifier(1),
             Trophy::TestIII => trophies::Test::Test::identifier(2),
+            Trophy::FirstCity => trophies::FirstCity::FirstCity::identifier(0),
+            Trophy::FristRoad => trophies::FirstRoad::FirstRoad::identifier(0),
         }
     }
 
@@ -67,6 +64,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::TestI => false,
             Trophy::TestII => false,
             Trophy::TestIII => false,
+            Trophy::FirstCity => false,
+            Trophy::FristRoad => false,
         }
     }
 
@@ -87,6 +86,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::TestI => trophies::Test::Test::index(0),
             Trophy::TestII => trophies::Test::Test::index(1),
             Trophy::TestIII => trophies::Test::Test::index(2),
+            Trophy::FirstCity => trophies::FirstCity::FirstCity::index(0),
+            Trophy::FristRoad => trophies::FirstRoad::FirstRoad::index(0),
         }
     }
 
@@ -107,6 +108,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::TestI => trophies::Test::Test::points(0),
             Trophy::TestII => trophies::Test::Test::points(1),
             Trophy::TestIII => trophies::Test::Test::points(2),
+            Trophy::FirstCity => trophies::FirstCity::FirstCity::points(0),
+            Trophy::FristRoad => trophies::FirstRoad::FirstRoad::points(0),
         }
     }
 
@@ -127,6 +130,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::TestI => trophies::Test::Test::group(),
             Trophy::TestII => trophies::Test::Test::group(),
             Trophy::TestIII => trophies::Test::Test::group(),
+            Trophy::FirstCity => trophies::FirstCity::FirstCity::group(),
+            Trophy::FristRoad => trophies::FirstRoad::FirstRoad::group(),
         }
     }
 
@@ -147,6 +152,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::TestI => trophies::Test::Test::icon(0),
             Trophy::TestII => trophies::Test::Test::icon(1),
             Trophy::TestIII => trophies::Test::Test::icon(2),
+            Trophy::FirstCity => trophies::FirstCity::FirstCity::icon(0),
+            Trophy::FristRoad => trophies::FirstRoad::FirstRoad::icon(0),
         }
     }
 
@@ -167,6 +174,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::TestI => trophies::Test::Test::title(0),
             Trophy::TestII => trophies::Test::Test::title(1),
             Trophy::TestIII => trophies::Test::Test::title(2),
+            Trophy::FirstCity => trophies::FirstCity::FirstCity::title(0),
+            Trophy::FristRoad => trophies::FirstRoad::FirstRoad::title(0),
         }
     }
 
@@ -187,6 +196,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::TestI => trophies::Test::Test::description(0),
             Trophy::TestII => trophies::Test::Test::description(1),
             Trophy::TestIII => trophies::Test::Test::description(2),
+            Trophy::FirstCity => trophies::FirstCity::FirstCity::description(0),
+            Trophy::FristRoad => trophies::FirstRoad::FirstRoad::description(0),
         }
     }
 
@@ -207,6 +218,8 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::TestI => trophies::Test::Test::tasks(0),
             Trophy::TestII => trophies::Test::Test::tasks(1),
             Trophy::TestIII => trophies::Test::Test::tasks(2),
+            Trophy::FirstCity => trophies::FirstCity::FirstCity::tasks(0),
+            Trophy::FristRoad => trophies::FirstRoad::FirstRoad::tasks(0),
         }
     }
 
@@ -234,6 +247,8 @@ impl IntoTrophyU8 of Into<Trophy, u8> {
             Trophy::TestI => 11,
             Trophy::TestII => 12,
             Trophy::TestIII => 13,
+            Trophy::FirstCity => 14,
+            Trophy::FristRoad => 15,
         }
     }
 }
@@ -257,6 +272,8 @@ impl IntoU8Trophy of Into<u8, Trophy> {
             11 => Trophy::TestI,
             12 => Trophy::TestII,
             13 => Trophy::TestIII,
+            14 => Trophy::FirstCity,
+            15 => Trophy::FristRoad,
             _ => Trophy::None,
         }
     }

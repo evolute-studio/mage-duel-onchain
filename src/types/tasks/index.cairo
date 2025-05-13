@@ -18,6 +18,8 @@ pub enum Task {
     Bandi,
     Golem,
     Test,
+    FirstCity,
+    FirstRoad,
 }
 
 // Implementations
@@ -35,6 +37,8 @@ pub impl TaskImpl of TaskTrait {
             Task::Bandi => tasks::Bandi::Bandi::identifier(),
             Task::Golem => tasks::Golem::Golem::identifier(),
             Task::Test => tasks::Test::Test::identifier(),
+            Task::FirstCity => tasks::FirstCity::FirstCity::identifier(),
+            Task::FirstRoad => tasks::FirstRoad::FirstRoad::identifier(),
         }
     }
 
@@ -49,6 +53,8 @@ pub impl TaskImpl of TaskTrait {
             Task::Bandi => tasks::Bandi::Bandi::description(count),
             Task::Golem => tasks::Golem::Golem::description(count),
             Task::Test => tasks::Test::Test::description(count),
+            Task::FirstCity => tasks::FirstCity::FirstCity::description(count),
+            Task::FirstRoad => tasks::FirstRoad::FirstRoad::description(count),
         }
     }
 
@@ -72,6 +78,8 @@ impl IntoTaskU8 of Into<Task, u8> {
             Task::Bandi => 5,
             Task::Golem => 6,
             Task::Test => 7,
+            Task::FirstCity => 8,
+            Task::FirstRoad => 9,
         }
     }
 }
@@ -89,6 +97,8 @@ impl IntoU8Task of Into<u8, Task> {
             5 => Task::Bandi,
             6 => Task::Golem,
             7 => Task::Test,
+            8 => Task::FirstCity,
+            9 => Task::FirstRoad,
             _ => Task::None,
         }
     }

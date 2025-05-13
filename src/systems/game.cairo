@@ -73,7 +73,6 @@ pub mod game {
         // store::{Store, StoreTrait},
         achievements::{AchievementsTrait},
     };
-    use evolute_duel::types::tasks::index::{Task, TaskTrait};
     use evolute_duel::types::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
 
     use dojo::event::EventStorage;

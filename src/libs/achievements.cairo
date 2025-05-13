@@ -1,9 +1,8 @@
 use core::num::traits::Zero;
-use achievement::store::{Store, StoreTrait};
+use achievement::store::{StoreTrait};
 use evolute_duel::types::tasks::index::{Task, TaskTrait};
-use dojo::model::ModelStorage;
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage};
-use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
+use dojo::world::{WorldStorage};
+use starknet::{ContractAddress, get_block_timestamp};
 
 #[generate_trait]
 pub impl AchievementsImpl of AchievementsTrait {
@@ -26,23 +25,32 @@ pub impl AchievementsImpl of AchievementsTrait {
     }
 
     fn build_road(world: WorldStorage, player_address: ContractAddress, edges_count: u32) {
-        if edges_count >= 7  && player_address.is_non_zero() {
+        if player_address.is_non_zero() {
             let store = StoreTrait::new(world);
             let player_id: felt252 = player_address.into();
             let time = get_block_timestamp();
-    
-            let task_id: felt252 = Task::RoadBuilder.identifier();
+            
+            if edges_count >= 7   {
+                let task_id: felt252 = Task::RoadBuilder.identifier();
+                store.progress(player_id, task_id, count: 1, time: time);
+            }
+            
+            let task_id: felt252 = Task::FirstRoad.identifier();
             store.progress(player_id, task_id, count: 1, time: time);
         }
     }
 
     fn build_city(world: WorldStorage, player_address: ContractAddress, edges_count: u32) {
-        if edges_count >= 10 && player_address.is_non_zero() {
+        if player_address.is_non_zero() {
             let store = StoreTrait::new(world);
             let player_id: felt252 = player_address.into();
             let time = get_block_timestamp();
-    
-            let task_id: felt252 = Task::CityBuilder.identifier();
+            if edges_count >= 10  {
+                let task_id: felt252 = Task::CityBuilder.identifier();
+                store.progress(player_id, task_id, count: 1, time: time);
+            }
+            
+            let task_id: felt252 = Task::FirstCity.identifier();
             store.progress(player_id, task_id, count: 1, time: time);
         }
     }
