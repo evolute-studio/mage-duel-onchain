@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x4f3e21c7dcaffd228f9daba3a7d480536c2eea4c0e09b00abb54362864de5c8",
-      "class_hash": "0x549ca0106d47e8ee802cea284293e10f4b10414738fe7a15d2646ec0c6ef189",
+      "address": "0x3034b0f809d90ff776d1e8385cb9f8492523a5546bbe864ec4ca7bcefc28215",
+      "class_hash": "0x68e8595628bef27df98f853770dde725b0ceee2909afa2e9d8b279e2cfb526d",
       "abi": [
         {
           "type": "impl",
@@ -1479,6 +1479,18 @@
               ],
               "outputs": [],
               "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "finish_game",
+              "inputs": [
+                {
+                  "name": "board_id",
+                  "type": "core::felt252"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
             }
           ]
         },
@@ -1574,6 +1586,12 @@
         },
         {
           "type": "event",
+          "name": "achievement::components::achievable::AchievableComponent::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
           "name": "evolute_duel::systems::game::game::Event",
           "kind": "enum",
           "variants": [
@@ -1586,6 +1604,11 @@
               "name": "WorldProviderEvent",
               "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
               "kind": "nested"
+            },
+            {
+              "name": "AchievableEvent",
+              "type": "achievement::components::achievable::AchievableComponent::Event",
+              "kind": "flat"
             }
           ]
         }
@@ -1601,12 +1624,13 @@
         "skip_move",
         "create_snapshot",
         "create_game_from_snapshot",
+        "finish_game",
         "upgrade"
       ]
     },
     {
-      "address": "0x693f1a1bba2704e2694b2402dbc5de4e4dcaf03aabbf4d2bad3e47c6a3de4dd",
-      "class_hash": "0x24cdd7452e6c59124ca813fabd3cf91db43e9fdc91c9e52c48d3e6e32bd40d6",
+      "address": "0xc655b1fd77773111efc9113dc825127504c054187a7efa36c8605f36206195",
+      "class_hash": "0x737a6b4cd601c639326b1acece701d18c816b4005eddbaaad4688d56bf57f0f",
       "abi": [
         {
           "type": "impl",
@@ -1661,9 +1685,14 @@
         {
           "type": "function",
           "name": "dojo_init",
-          "inputs": [],
+          "inputs": [
+            {
+              "name": "creator_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
           "outputs": [],
-          "state_mutability": "view"
+          "state_mutability": "external"
         },
         {
           "type": "impl",
@@ -1678,6 +1707,22 @@
               "type": "function",
               "name": "balance",
               "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "set_balance",
+              "inputs": [
+                {
+                  "name": "balance",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "player_id",
+                  "type": "core::felt252"
+                }
+              ],
               "outputs": [],
               "state_mutability": "external"
             },
@@ -1784,6 +1829,66 @@
           ]
         },
         {
+          "type": "impl",
+          "name": "OwnableMixinImpl",
+          "interface_name": "openzeppelin_access::ownable::interface::OwnableABI"
+        },
+        {
+          "type": "interface",
+          "name": "openzeppelin_access::ownable::interface::OwnableABI",
+          "items": [
+            {
+              "type": "function",
+              "name": "owner",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "transfer_ownership",
+              "inputs": [
+                {
+                  "name": "new_owner",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "renounce_ownership",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "transferOwnership",
+              "inputs": [
+                {
+                  "name": "newOwner",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "renounceOwnership",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
           "type": "constructor",
           "name": "constructor",
           "inputs": []
@@ -1820,6 +1925,57 @@
         },
         {
           "type": "event",
+          "name": "openzeppelin_access::ownable::ownable::OwnableComponent::OwnershipTransferred",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "previous_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "key"
+            },
+            {
+              "name": "new_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "key"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "openzeppelin_access::ownable::ownable::OwnableComponent::OwnershipTransferStarted",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "previous_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "key"
+            },
+            {
+              "name": "new_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "key"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "openzeppelin_access::ownable::ownable::OwnableComponent::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "OwnershipTransferred",
+              "type": "openzeppelin_access::ownable::ownable::OwnableComponent::OwnershipTransferred",
+              "kind": "nested"
+            },
+            {
+              "name": "OwnershipTransferStarted",
+              "type": "openzeppelin_access::ownable::ownable::OwnableComponent::OwnershipTransferStarted",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
           "name": "evolute_duel::systems::player_profile_actions::player_profile_actions::Event",
           "kind": "enum",
           "variants": [
@@ -1832,21 +1988,34 @@
               "name": "WorldProviderEvent",
               "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
               "kind": "nested"
+            },
+            {
+              "name": "OwnableEvent",
+              "type": "openzeppelin_access::ownable::ownable::OwnableComponent::Event",
+              "kind": "flat"
             }
           ]
         }
       ],
-      "init_calldata": [],
+      "init_calldata": [
+        "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+      ],
       "tag": "evolute_duel-player_profile_actions",
       "selector": "0x2fe51480cb4bcea87b911f6a9be5f5a1a39ee57c9aabb0617792aa4e03370e0",
       "systems": [
+        "dojo_init",
         "balance",
+        "set_balance",
         "username",
         "active_skin",
         "change_username",
         "change_skin",
         "become_bot",
-        "upgrade"
+        "upgrade",
+        "transfer_ownership",
+        "renounce_ownership",
+        "transferOwnership",
+        "renounceOwnership"
       ]
     }
   ],
@@ -1854,67 +2023,67 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0xe4886bb58d94d0aba5667c31a49c6bc824ab6f071fcd166f17e0081d1d7cb2",
+      "class_hash": "0x88e712927c9329d34ec5bae3ad688065f67efe08de6cb72bae3040a2825c00",
       "tag": "evolute_duel-Board",
       "selector": "0x836ef99f75ec03877951d491db5b9730a3f3552e3fc7d1c38a9f1abc320947"
     },
     {
       "members": [],
-      "class_hash": "0x79e4604f050d3f6948ce48116c33e8e7d37b48f3ac1d32c77315dd1f0b41e27",
+      "class_hash": "0x41ae00cd298da19b9378bb706ade4b20ce6a302ff9d2fcc99b08c9a43fc787b",
       "tag": "evolute_duel-CityNode",
       "selector": "0x6ab68288a0f477f152c65fcdec09f42b462e956559aa1948d3a2c6e162440da"
     },
     {
       "members": [],
-      "class_hash": "0x1471b9f611dc950526ffa5c5b48b65637074cab24764b3dc8dac27d97251eae",
+      "class_hash": "0x6ac60b7f07bcd60fb2ea4ce818d3e472f33f508d3ef71f28cf34d76f4d5f67a",
       "tag": "evolute_duel-Game",
       "selector": "0x50eb71734a5acf3d804e250ff9e59bb3566e8bf9d30d0587d38cc2cc032e232"
     },
     {
       "members": [],
-      "class_hash": "0x7e55e84e78781751c8b3b14e622699c3f5c8f6426467a3773fa3a3c102e85f5",
+      "class_hash": "0x75d2753cc5b1e8e4928884c1c352d8a779012f835eff2073f4ab7d110ef01e2",
       "tag": "evolute_duel-Move",
       "selector": "0x6d7481ce108a8fbf6a107f7561809083890ccdb89931116448283bf99a278d5"
     },
     {
       "members": [],
-      "class_hash": "0x62182f97e6194bbc6c05138fcf97b43b07f2559ec58ec555059a2f6b6e79706",
+      "class_hash": "0x673e833efa34c3efbfb650d71ba0a056726c0907e01100fc0691e849bbd802c",
       "tag": "evolute_duel-Player",
       "selector": "0xd206bfcaacb44471c314c767d8bdf5b2c84b204fd362b85989b096baef7683"
     },
     {
       "members": [],
-      "class_hash": "0x12c605b2e8a932ec6ae58a1dc0d9a1cda69592817d37c63e9191e20fabb82e4",
+      "class_hash": "0x17bec070510bb3e65bf98771945fc585014ddabfa71c701b5af829741477ee3",
       "tag": "evolute_duel-PotentialCityContests",
       "selector": "0x37fdccc08144f587a9edda5fd1703cad4c6608cb56b723357d8d24da4eebc14"
     },
     {
       "members": [],
-      "class_hash": "0x15edfa5fd4e8436cec03eab6196516eb5ff859ab2f0d56ba0632f91f49d7f79",
+      "class_hash": "0x583723e698e909144690c5ddcf0aa25682572124a71738857d37c0ad1eaef83",
       "tag": "evolute_duel-PotentialRoadContests",
       "selector": "0x287da2ec89b5404676520f5a7a7ac9876dbd7b9b367b4b5a5285f57b390a181"
     },
     {
       "members": [],
-      "class_hash": "0x2243ecbe8b8e0dcf2d62e6b227c90e5c8b5a55e80ef89813900e200d6fc663",
+      "class_hash": "0x263dd454ffbdf1e3a67002d955be05855ce8c45e3d80c01c0e605bc0ba033ab",
       "tag": "evolute_duel-RoadNode",
       "selector": "0x706dbe9534131fd41eff4cb9c9a9ebc6d20a4d5d5c93f1990a9405b72bbd90d"
     },
     {
       "members": [],
-      "class_hash": "0x240b3fa7a8c30f41d6bd4ec0c837ef3f4f5968c4f3ab75278a6a1242e86def6",
+      "class_hash": "0x41513263110fd97740ebb90aaeb5c7664e00d7c554393e5a021b79212632f51",
       "tag": "evolute_duel-Rules",
       "selector": "0x30d5405d0bc6c63a7d0adbc0ac48016a5d787662670e4d25bf12985431d032c"
     },
     {
       "members": [],
-      "class_hash": "0x1ea3902ce15d795b1bb2b1b4c1c025c04b8116fe1df2a1da8667a5484c92b7f",
+      "class_hash": "0xa03c22c9d5a6e40cc8d9cc70c9fa6dbbfbcf25ee309735cec5ec34796856d",
       "tag": "evolute_duel-Shop",
       "selector": "0x222f976f10d5f7bc6ff181000844ce4341a875fc25c8c6302525df530bbc802"
     },
     {
       "members": [],
-      "class_hash": "0x4142e2cbfd3697f6758b3f773fd28e10d5ed68c23c3d8c6ac92f915811c42bf",
+      "class_hash": "0x6baee667986deb0b62433d59a70caefea6d167ee2126bad20ef9a6509f27e6a",
       "tag": "evolute_duel-Snapshot",
       "selector": "0x2c92cb39c9ed138ad9b28192aa094237e8dfdcab174d76a821749f5097bb776"
     }
@@ -1943,6 +2112,12 @@
       "class_hash": "0x4c2570c7f798b2cad9149aaec06eac9bc87a5683d33e36a826d770a5532e390",
       "tag": "evolute_duel-BoardUpdated",
       "selector": "0x1352659f5307c3478b85ed999c391ac8768670156647c54e3d0edfd3acd61de"
+    },
+    {
+      "members": [],
+      "class_hash": "0x6499a268759f0960f18abb9b23f35410203ff9243860e2c8283ba9621e10a60",
+      "tag": "evolute_duel-CantFinishGame",
+      "selector": "0x14f1a8ea9c149031ed92e29d428b5c1a01d55284c6ce102488150ddc292c1fa"
     },
     {
       "members": [],
@@ -2105,6 +2280,18 @@
       "class_hash": "0x32b8be6b3d4ca930854eb1a53cb42d4c952a0ee1c0a128cbdb5a9f13fde5c57",
       "tag": "evolute_duel-SnapshotCreated",
       "selector": "0x6fed26327ca07777dd3893593d37519821930f0f8b06c54db12989ba6b20703"
+    },
+    {
+      "members": [],
+      "class_hash": "0x19a5c06b3a8417ff3f9883be3acb0e33c835795bd81fb87a5a47e6ed7d2d3af",
+      "tag": "evolute_duel-TrophyCreation",
+      "selector": "0x62464d1b1e16fb532116fa08f25e545c8a8089d16473d61256e8b3ea8f132bf"
+    },
+    {
+      "members": [],
+      "class_hash": "0x1922d2cd8b63eccf66321673234a52126cd9f0ab1bf6298c5abee6ee80c8990",
+      "tag": "evolute_duel-TrophyProgression",
+      "selector": "0x5d087bb1cc662181d9fd66fe2145fcaafdadcb57f350bbad05a2d1e206e6e17"
     }
   ],
   "external_contracts": []
