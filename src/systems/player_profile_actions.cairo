@@ -25,6 +25,10 @@ pub trait IPlayerProfileActions<T> {
 
     /// Player becomes a bot
     fn become_bot(ref self: T);
+
+    /// Player becomes a controller
+    /// - `player_id`: The ID of the player to be set as a controller.
+    fn become_controller(ref self: T);
 }
 
 // dojo decorator
@@ -172,7 +176,15 @@ pub mod player_profile_actions {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let mut player: Player = world.read_model(player_id);
-            player.is_bot = true;
+            player.role = 2;
+            world.write_model(@player);
+        }
+
+        fn become_controller(ref self: ContractState) {
+            let mut world = self.world_default();
+            let player_id = get_caller_address();
+            let mut player: Player = world.read_model(player_id);
+            player.role = 1;
             world.write_model(@player);
         }
     }

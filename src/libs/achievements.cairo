@@ -1,12 +1,17 @@
 use core::num::traits::Zero;
 use achievement::store::{StoreTrait};
 use evolute_duel::types::tasks::index::{Task, TaskTrait};
+use evolute_duel::models::player::{Player, PlayerTrait};
 use dojo::world::{WorldStorage};
+use dojo::model::{ModelStorage};
 use starknet::{ContractAddress, get_block_timestamp};
 
 #[generate_trait]
 pub impl AchievementsImpl of AchievementsTrait {
     fn play_game(world: WorldStorage, player_address: ContractAddress) {
+        if !Self::can_recieve_achievement(world, player_address) {
+            return;
+        }
         let store = StoreTrait::new(world);
         let player_id: felt252 = player_address.into();
         let time = get_block_timestamp();
@@ -16,6 +21,9 @@ pub impl AchievementsImpl of AchievementsTrait {
     }
 
     fn win_game(world: WorldStorage, player_address: ContractAddress) {
+        if !Self::can_recieve_achievement(world, player_address) {
+            return;
+        }
         let store = StoreTrait::new(world);
         let player_id: felt252 = player_address.into();
         let time = get_block_timestamp();
@@ -25,6 +33,9 @@ pub impl AchievementsImpl of AchievementsTrait {
     }
 
     fn build_road(world: WorldStorage, player_address: ContractAddress, edges_count: u32) {
+        if !Self::can_recieve_achievement(world, player_address) {
+            return;
+        }
         if player_address.is_non_zero() {
             let store = StoreTrait::new(world);
             let player_id: felt252 = player_address.into();
@@ -41,6 +52,9 @@ pub impl AchievementsImpl of AchievementsTrait {
     }
 
     fn build_city(world: WorldStorage, player_address: ContractAddress, edges_count: u32) {
+        if !Self::can_recieve_achievement(world, player_address) {
+            return;
+        }
         if player_address.is_non_zero() {
             let store = StoreTrait::new(world);
             let player_id: felt252 = player_address.into();
@@ -56,6 +70,9 @@ pub impl AchievementsImpl of AchievementsTrait {
     }
 
     fn unlock_bandi(world: WorldStorage, player_address: ContractAddress) {
+        if !Self::can_recieve_achievement(world, player_address) {
+            return;
+        }
         let store = StoreTrait::new(world);
         let player_id: felt252 = player_address.into();
         let time = get_block_timestamp();
@@ -65,11 +82,19 @@ pub impl AchievementsImpl of AchievementsTrait {
     }
 
     fn unlock_golem(world: WorldStorage, player_address: ContractAddress) {
+        if !Self::can_recieve_achievement(world, player_address) {
+            return;
+        }
         let store = StoreTrait::new(world);
         let player_id: felt252 = player_address.into();
         let time = get_block_timestamp();
 
         let task_id: felt252 = Task::Golem.identifier();
         store.progress(player_id, task_id, count: 1, time: time);
+    }
+
+    fn can_recieve_achievement(world: WorldStorage, player_address: ContractAddress) -> bool {
+        let player: Player = world.read_model(player_address);
+        player.is_controller()
     }
 }

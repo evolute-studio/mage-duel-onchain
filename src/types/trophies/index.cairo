@@ -1,7 +1,7 @@
 use achievement::types::task::Task as BushidoTask;
 use evolute_duel::types::trophies;
 
-pub const TROPHY_COUNT: u8 = 15;
+pub const TROPHY_COUNT: u8 = 12;
 
 #[derive(Copy, Drop)]
 pub enum Trophy {
