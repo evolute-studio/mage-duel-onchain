@@ -1,7 +1,6 @@
 /// Interface defining actions for player profile management.
 #[starknet::interface]
 pub trait IPlayerProfileActions<T> {
-    fn update_shop(ref self: T);
     /// Retrieves the player's balance.
     fn balance(ref self: T);
 
@@ -91,15 +90,6 @@ pub mod player_profile_actions {
 
     #[abi(embed_v0)]
     impl PlayerProfileActionsImpl of IPlayerProfileActions<ContractState> {
-        fn update_shop(ref self: ContractState) {
-            let mut world = self.world(@"evolute_duel");
-            let id = 0;
-
-            let skin_prices = array![0, 0, 100, 500, 2000];
-
-            let shop = Shop { shop_id: id, skin_prices };
-            world.write_model(@shop);
-        }
         fn balance(ref self: ContractState) {
             let mut world = self.world_default();
             let player_id = get_caller_address();

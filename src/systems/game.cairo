@@ -3,7 +3,6 @@ use starknet::ContractAddress;
 /// Interface defining core game actions and player interactions.
 #[starknet::interface]
 pub trait IGame<T> {
-    fn upadate_achievements(ref self: T);
     /// Creates a new game session.
     fn create_game(ref self: T);
 
@@ -169,28 +168,6 @@ pub mod game {
 
     #[abi(embed_v0)]
     impl GameImpl of IGame<ContractState> {
-        fn upadate_achievements(ref self: ContractState) {
-            let mut world = self.world_default();
-            let trophy: Trophy = Trophy::Mammoth;
-            self
-                .achievable
-                .create(
-                    world,
-                    id: trophy.identifier(),
-                    hidden: trophy.hidden(),
-                    index: trophy.index(),
-                    points: trophy.points(),
-                    start: 0,
-                    end: 0,
-                    group: trophy.group(),
-                    icon: trophy.icon(),
-                    title: trophy.title(),
-                    description: trophy.description(),
-                    tasks: trophy.tasks(),
-                    data: trophy.data(),
-                );
-        }
-
         fn create_game(ref self: ContractState) {
             let mut world = self.world_default();
 
