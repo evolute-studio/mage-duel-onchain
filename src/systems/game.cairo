@@ -434,15 +434,15 @@ pub mod game {
                             )
                     }
 
-                    if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
-                        world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        return;
-                    }
+                    // if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
+                    //     world.emit_event(@NotYourTurn { player_id: player, board_id });
+                    //     return;
+                    // }
                 } else {
-                    if time_delta > MOVE_TIME {
-                        world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        return;
-                    }
+                    // if time_delta > MOVE_TIME {
+                    //     world.emit_event(@NotYourTurn { player_id: player, board_id });
+                    //     return;
+                    // }
                 }
             };
 
@@ -749,15 +749,15 @@ pub mod game {
                             )
                     }
 
-                    if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
-                        world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        return;
-                    }
+                    // if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
+                    //     world.emit_event(@NotYourTurn { player_id: player, board_id });
+                    //     return;
+                    // }
                 } else {
-                    if time_delta > MOVE_TIME {
-                        world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        return;
-                    }
+                    // if time_delta > MOVE_TIME {
+                    //     world.emit_event(@NotYourTurn { player_id: player, board_id });
+                    //     return;
+                    // }
                 }
 
                 let prev_move_id = board.last_move_id.unwrap();
