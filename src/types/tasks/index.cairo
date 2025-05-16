@@ -20,6 +20,7 @@ pub enum Task {
     Test,
     FirstCity,
     FirstRoad,
+    Mammoth,
 }
 
 // Implementations
@@ -39,6 +40,7 @@ pub impl TaskImpl of TaskTrait {
             Task::Test => tasks::Test::Test::identifier(),
             Task::FirstCity => tasks::FirstCity::FirstCity::identifier(),
             Task::FirstRoad => tasks::FirstRoad::FirstRoad::identifier(),
+            Task::Mammoth => tasks::Mammoth::Mammoth::identifier(),
         }
     }
 
@@ -55,6 +57,7 @@ pub impl TaskImpl of TaskTrait {
             Task::Test => tasks::Test::Test::description(count),
             Task::FirstCity => tasks::FirstCity::FirstCity::description(count),
             Task::FirstRoad => tasks::FirstRoad::FirstRoad::description(count),
+            Task::Mammoth => tasks::Mammoth::Mammoth::description(count),
         }
     }
 
@@ -80,6 +83,7 @@ impl IntoTaskU8 of Into<Task, u8> {
             Task::Test => 7,
             Task::FirstCity => 8,
             Task::FirstRoad => 9,
+            Task::Mammoth => 10,
         }
     }
 }
@@ -99,6 +103,7 @@ impl IntoU8Task of Into<u8, Task> {
             7 => Task::Test,
             8 => Task::FirstCity,
             9 => Task::FirstRoad,
+            10 => Task::Mammoth,
             _ => Task::None,
         }
     }

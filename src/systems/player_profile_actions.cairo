@@ -79,7 +79,7 @@ pub mod player_profile_actions {
         let mut world = self.world(@"evolute_duel");
         let id = 0;
 
-        let skin_prices = array![0, 0, 100, 500];
+        let skin_prices = array![0, 0, 100, 500, 1500];
 
         let shop = Shop { shop_id: id, skin_prices };
         world.write_model(@shop);
@@ -169,6 +169,11 @@ pub mod player_profile_actions {
             //[Achievements] Golem skin
             if skin_id == 3 {
                 AchievementsTrait::unlock_golem(world, player_id);
+            }
+
+            //[Achievements] Mammoth skin
+            if skin_id == 4 {
+                AchievementsTrait::unlock_mammoth(world, player_id);
             }
         }
 
