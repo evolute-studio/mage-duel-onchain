@@ -413,7 +413,7 @@ pub mod game {
                 let time_delta = time - prev_move_time;
 
                 if player_side == prev_player_side {
-                    if time_delta > MOVE_TIME {
+                    if time_delta > MOVE_TIME && time_delta <= 2 * MOVE_TIME {
                         //Skip the move of the previous player
                         let another_player = if player == player1_address {
                             player2_address
@@ -728,7 +728,7 @@ pub mod game {
                 let time_delta = time - prev_move_time;
 
                 if player_side == prev_player_side {
-                    if time_delta > MOVE_TIME {
+                    if time_delta > MOVE_TIME && time_delta <= 2 * MOVE_TIME {
                         //Skip the move of the previous player
                         let another_player = if player == player1_address {
                             player2_address
