@@ -19,6 +19,7 @@ pub enum Task {
     Golem,
     FirstCity,
     FirstRoad,
+    Mammoth,
 }
 
 // Implementations
@@ -37,6 +38,7 @@ pub impl TaskImpl of TaskTrait {
             Task::Golem => tasks::Golem::Golem::identifier(),
             Task::FirstCity => tasks::FirstCity::FirstCity::identifier(),
             Task::FirstRoad => tasks::FirstRoad::FirstRoad::identifier(),
+            Task::Mammoth => tasks::Mammoth::Mammoth::identifier(),
         }
     }
 
@@ -52,6 +54,7 @@ pub impl TaskImpl of TaskTrait {
             Task::Golem => tasks::Golem::Golem::description(count),
             Task::FirstCity => tasks::FirstCity::FirstCity::description(count),
             Task::FirstRoad => tasks::FirstRoad::FirstRoad::description(count),
+            Task::Mammoth => tasks::Mammoth::Mammoth::description(count),
         }
     }
 
@@ -76,6 +79,7 @@ impl IntoTaskU8 of Into<Task, u8> {
             Task::Golem => 6,
             Task::FirstCity => 7,
             Task::FirstRoad => 8,
+            Task::Mammoth => 9,
         }
     }
 }
@@ -94,6 +98,7 @@ impl IntoU8Task of Into<u8, Task> {
             6 => Task::Golem,
             7 => Task::FirstCity,
             8 => Task::FirstRoad,
+            9 => Task::Mammoth,
             _ => Task::None,
         }
     }

@@ -1,7 +1,7 @@
 use achievement::types::task::Task as BushidoTask;
 use evolute_duel::types::trophies;
 
-pub const TROPHY_COUNT: u8 = 12;
+pub const TROPHY_COUNT: u8 = 13;
 
 #[derive(Copy, Drop)]
 pub enum Trophy {
@@ -18,6 +18,7 @@ pub enum Trophy {
     Golem,
     FirstCity,
     FristRoad,
+    Mammoth
 }
 
 #[generate_trait]
@@ -38,6 +39,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::Golem => trophies::Golem::Golem::identifier(0),
             Trophy::FirstCity => trophies::FirstCity::FirstCity::identifier(0),
             Trophy::FristRoad => trophies::FirstRoad::FirstRoad::identifier(0),
+            Trophy::Mammoth => trophies::Mammoth::Mammoth::identifier(0),
         }
     }
 
@@ -57,6 +59,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::Golem => false,
             Trophy::FirstCity => false,
             Trophy::FristRoad => false,
+            Trophy::Mammoth => false,
         }
     }
 
@@ -76,6 +79,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::Golem => trophies::Golem::Golem::index(0),
             Trophy::FirstCity => trophies::FirstCity::FirstCity::index(0),
             Trophy::FristRoad => trophies::FirstRoad::FirstRoad::index(0),
+            Trophy::Mammoth => trophies::Mammoth::Mammoth::index(0),
         }
     }
 
@@ -95,6 +99,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::Golem => trophies::Golem::Golem::points(0),
             Trophy::FirstCity => trophies::FirstCity::FirstCity::points(0),
             Trophy::FristRoad => trophies::FirstRoad::FirstRoad::points(0),
+            Trophy::Mammoth => trophies::Mammoth::Mammoth::points(0),
         }
     }
 
@@ -114,6 +119,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::Golem => trophies::Golem::Golem::group(),
             Trophy::FirstCity => trophies::FirstCity::FirstCity::group(),
             Trophy::FristRoad => trophies::FirstRoad::FirstRoad::group(),
+            Trophy::Mammoth => trophies::Mammoth::Mammoth::group(),
         }
     }
 
@@ -133,6 +139,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::Golem => trophies::Golem::Golem::icon(0),
             Trophy::FirstCity => trophies::FirstCity::FirstCity::icon(0),
             Trophy::FristRoad => trophies::FirstRoad::FirstRoad::icon(0),
+            Trophy::Mammoth => trophies::Mammoth::Mammoth::icon(0),
         }
     }
 
@@ -152,6 +159,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::Golem => trophies::Golem::Golem::title(0),
             Trophy::FirstCity => trophies::FirstCity::FirstCity::title(0),
             Trophy::FristRoad => trophies::FirstRoad::FirstRoad::title(0),
+            Trophy::Mammoth => trophies::Mammoth::Mammoth::title(0),
         }
     }
 
@@ -171,6 +179,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::Golem => trophies::Golem::Golem::description(0),
             Trophy::FirstCity => trophies::FirstCity::FirstCity::description(0),
             Trophy::FristRoad => trophies::FirstRoad::FirstRoad::description(0),
+            Trophy::Mammoth => trophies::Mammoth::Mammoth::description(0),
         }
     }
 
@@ -190,6 +199,7 @@ pub impl TrophyImpl of TrophyTrait {
             Trophy::Golem => trophies::Golem::Golem::tasks(0),
             Trophy::FirstCity => trophies::FirstCity::FirstCity::tasks(0),
             Trophy::FristRoad => trophies::FirstRoad::FirstRoad::tasks(0),
+            Trophy::Mammoth => trophies::Mammoth::Mammoth::tasks(0),
         }
     }
 
@@ -216,6 +226,7 @@ impl IntoTrophyU8 of Into<Trophy, u8> {
             Trophy::Golem => 10,
             Trophy::FirstCity => 11,
             Trophy::FristRoad => 12,
+            Trophy::Mammoth => 13,
         }
     }
 }
@@ -238,6 +249,7 @@ impl IntoU8Trophy of Into<u8, Trophy> {
             10 => Trophy::Golem,
             11 => Trophy::FirstCity,
             12 => Trophy::FristRoad,
+            13 => Trophy::Mammoth,
             _ => Trophy::None,
         }
     }

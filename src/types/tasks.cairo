@@ -8,3 +8,4 @@ mod Golem;
 mod Bandi;
 mod FirstCity;
 mod FirstRoad;
+mod Mammoth;
