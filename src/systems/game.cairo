@@ -100,7 +100,7 @@ pub mod game {
         achievable: AchievableComponent::Storage,
     }
 
-    const MOVE_TIME : u64 = 45; // 45 seconds
+    const MOVE_TIME : u64 = 60; // 60 seconds
 
 
     fn dojo_init(self: @ContractState) {
