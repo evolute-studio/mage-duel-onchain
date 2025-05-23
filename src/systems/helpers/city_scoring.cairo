@@ -42,6 +42,7 @@ pub fn connect_city_edges_in_tile(
                 red_points,
                 open_edges,
                 contested: false,
+                node_type: 1, // 0 - None, 1 - City, 2 - Road
             };
 
             city_nodes.set(position.into(), city_node);

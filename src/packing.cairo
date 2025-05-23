@@ -169,4 +169,5 @@ pub struct UnionNode {
     pub red_points: u16,
     pub open_edges: u8,
     pub contested: bool,
+    pub node_type: u8, // 0: None, 1: City, 2: Road
 }

@@ -458,26 +458,29 @@ pub mod game {
             let mut union_find: UnionFind = world.read_model(board_id);
 
             let mut city_nodes = VecTrait::<NullableVec, UnionNode>::new();
-            for i in 0..union_find.city_nodes_parents.len() {
-                let mut city_node: UnionNode = Default::default();
-                city_node.parent = *union_find.city_nodes_parents.at(i.into());
-                city_node.rank = *union_find.city_nodes_ranks.at(i.into());
-                city_node.blue_points = *union_find.city_nodes_blue_points.at(i.into());
-                city_node.red_points = *union_find.city_nodes_red_points.at(i.into());
-                city_node.open_edges = *union_find.city_nodes_open_edges.at(i.into());
-                city_node.contested = *union_find.city_nodes_contested.at(i.into());
-                city_nodes.push(city_node);
-            };
             let mut road_nodes = VecTrait::<NullableVec, UnionNode>::new();
-            for i in 0..union_find.road_nodes_parents.len() {
-                let mut road_node: UnionNode = Default::default();
-                road_node.parent = *union_find.road_nodes_parents.at(i.into());
-                road_node.rank = *union_find.road_nodes_ranks.at(i.into());
-                road_node.blue_points = *union_find.road_nodes_blue_points.at(i.into());
-                road_node.red_points = *union_find.road_nodes_red_points.at(i.into());
-                road_node.open_edges = *union_find.road_nodes_open_edges.at(i.into());
-                road_node.contested = *union_find.road_nodes_contested.at(i.into());
-                road_nodes.push(road_node);
+            // println!("Union find: {:?}", union_find);
+            // println!("Union find sizes. node_parents: {:?}, node_types: {:?}, node_ranks: {:?}, node_blue_points: {:?}, node_red_points: {:?}, node_open_edges: {:?}, node_contested: {:?}, node_types: {:?}", union_find.nodes_parents.len(), union_find.nodes_types.len(), union_find.nodes_ranks.len(), union_find.nodes_blue_points.len(), union_find.nodes_red_points.len(), union_find.nodes_open_edges.len(), union_find.nodes_contested.len(), union_find.nodes_types.len());
+            for i in 0..union_find.nodes_parents.len() {
+                // println!("i: {}", i);
+                let mut node: UnionNode = Default::default();
+                node.node_type = *union_find.nodes_types.at(i.into());
+                node.parent = *union_find.nodes_parents.at(i.into());
+                node.rank = *union_find.nodes_ranks.at(i.into());
+                node.blue_points = *union_find.nodes_blue_points.at(i.into());
+                node.red_points = *union_find.nodes_red_points.at(i.into());
+                node.open_edges = *union_find.nodes_open_edges.at(i.into());
+                node.contested = *union_find.nodes_contested.at(i.into());
+                if node.node_type == 1 {
+                    road_nodes.push(Default::default());
+                    city_nodes.push(node);
+                } else if node.node_type == 2 {
+                    road_nodes.push(node);
+                    city_nodes.push(Default::default());
+                } else {
+                    road_nodes.push(Default::default());
+                    city_nodes.push(Default::default());
+                }
             };
 
             // print!("0");
@@ -598,49 +601,51 @@ pub mod game {
                     );
             }
 
-            let mut new_road_nodes_parents = array![];
-            let mut new_road_nodes_ranks = array![];
-            let mut new_road_nodes_blue_points = array![];
-            let mut new_road_nodes_red_points = array![];
-            let mut new_road_nodes_open_edges = array![];
-            let mut new_road_nodes_contested = array![];
-            for i in 0..road_nodes.len() {
+            let mut new_nodes_parents = array![];
+            let mut new_nodes_ranks = array![];
+            let mut new_nodes_blue_points = array![];
+            let mut new_nodes_red_points = array![];
+            let mut new_nodes_open_edges = array![];
+            let mut new_nodes_contested = array![];
+            let mut new_nodes_types = array![];
+            println!("Road nodes length: {:?}", road_nodes.len());
+            println!("City nodes length: {:?}", city_nodes.len());
+            for i in 0..256_usize {
                 let road_node = road_nodes.at(i.into());
-                new_road_nodes_parents.append(road_node.parent);
-                new_road_nodes_ranks.append(road_node.rank);
-                new_road_nodes_blue_points.append(road_node.blue_points);
-                new_road_nodes_red_points.append(road_node.red_points);
-                new_road_nodes_open_edges.append(road_node.open_edges);
-                new_road_nodes_contested.append(road_node.contested);
-            };
-            union_find.road_nodes_parents = new_road_nodes_parents.span();
-            union_find.road_nodes_ranks = new_road_nodes_ranks.span();
-            union_find.road_nodes_blue_points = new_road_nodes_blue_points.span();
-            union_find.road_nodes_red_points = new_road_nodes_red_points.span();
-            union_find.road_nodes_open_edges = new_road_nodes_open_edges.span();
-            union_find.road_nodes_contested = new_road_nodes_contested.span();
-
-            let mut new_city_nodes_parents = array![];
-            let mut new_city_nodes_ranks = array![];
-            let mut new_city_nodes_blue_points = array![];
-            let mut new_city_nodes_red_points = array![];
-            let mut new_city_nodes_open_edges = array![];
-            let mut new_city_nodes_contested = array![];
-            for i in 0..city_nodes.len() {
                 let city_node = city_nodes.at(i.into());
-                new_city_nodes_parents.append(city_node.parent);
-                new_city_nodes_ranks.append(city_node.rank);
-                new_city_nodes_blue_points.append(city_node.blue_points);
-                new_city_nodes_red_points.append(city_node.red_points);
-                new_city_nodes_open_edges.append(city_node.open_edges);
-                new_city_nodes_contested.append(city_node.contested);
+                if road_node.node_type == 2 {
+                    new_nodes_types.append(road_node.node_type);
+                    new_nodes_parents.append(road_node.parent);
+                    new_nodes_ranks.append(road_node.rank);
+                    new_nodes_blue_points.append(road_node.blue_points);
+                    new_nodes_red_points.append(road_node.red_points);
+                    new_nodes_open_edges.append(road_node.open_edges);
+                    new_nodes_contested.append(road_node.contested);
+                } else if city_node.node_type == 1 {
+                    new_nodes_types.append(city_node.node_type);
+                    new_nodes_parents.append(city_node.parent);
+                    new_nodes_ranks.append(city_node.rank);
+                    new_nodes_blue_points.append(city_node.blue_points);
+                    new_nodes_red_points.append(city_node.red_points);
+                    new_nodes_open_edges.append(city_node.open_edges);
+                    new_nodes_contested.append(city_node.contested);
+                } else {
+                    new_nodes_types.append(0);
+                    new_nodes_parents.append(0);
+                    new_nodes_ranks.append(0);
+                    new_nodes_blue_points.append(0);
+                    new_nodes_red_points.append(0);
+                    new_nodes_open_edges.append(0);
+                    new_nodes_contested.append(false);
+                }
             };
-            union_find.city_nodes_parents = new_city_nodes_parents.span();
-            union_find.city_nodes_ranks = new_city_nodes_ranks.span();
-            union_find.city_nodes_blue_points = new_city_nodes_blue_points.span();
-            union_find.city_nodes_red_points = new_city_nodes_red_points.span();
-            union_find.city_nodes_open_edges = new_city_nodes_open_edges.span();
-            union_find.city_nodes_contested = new_city_nodes_contested.span();
+            union_find.nodes_parents = new_nodes_parents.span();
+            union_find.nodes_ranks = new_nodes_ranks.span();
+            union_find.nodes_blue_points = new_nodes_blue_points.span();
+            union_find.nodes_red_points = new_nodes_red_points.span();
+            union_find.nodes_open_edges = new_nodes_open_edges.span();
+            union_find.nodes_contested = new_nodes_contested.span();
+            union_find.nodes_types = new_nodes_types.span();
         
             union_find.write(world); 
 
@@ -783,26 +788,27 @@ pub mod game {
 
             let mut union_find: UnionFind = world.read_model(board_id);
             let mut city_nodes = VecTrait::<NullableVec, UnionNode>::new();
-            for i in 0..union_find.city_nodes_parents.len() {
-                let mut city_node: UnionNode = Default::default();
-                city_node.parent = *union_find.city_nodes_parents.at(i.into());
-                city_node.rank = *union_find.city_nodes_ranks.at(i.into());
-                city_node.blue_points = *union_find.city_nodes_blue_points.at(i.into());
-                city_node.red_points = *union_find.city_nodes_red_points.at(i.into());
-                city_node.open_edges = *union_find.city_nodes_open_edges.at(i.into());
-                city_node.contested = *union_find.city_nodes_contested.at(i.into());
-                city_nodes.push(city_node);
-            };
             let mut road_nodes = VecTrait::<NullableVec, UnionNode>::new();
-            for i in 0..union_find.road_nodes_parents.len() {
-                let mut road_node: UnionNode = Default::default();
-                road_node.parent = *union_find.road_nodes_parents.at(i.into());
-                road_node.rank = *union_find.road_nodes_ranks.at(i.into());
-                road_node.blue_points = *union_find.road_nodes_blue_points.at(i.into());
-                road_node.red_points = *union_find.road_nodes_red_points.at(i.into());
-                road_node.open_edges = *union_find.road_nodes_open_edges.at(i.into());
-                road_node.contested = *union_find.road_nodes_contested.at(i.into());
-                road_nodes.push(road_node);
+            for i in 0..union_find.nodes_parents.len() {
+                let mut node: UnionNode = Default::default();
+                node.node_type = *union_find.nodes_types.at(i.into());
+                node.parent = *union_find.nodes_parents.at(i.into());
+                node.rank = *union_find.nodes_ranks.at(i.into());
+                node.blue_points = *union_find.nodes_blue_points.at(i.into());
+                node.red_points = *union_find.nodes_red_points.at(i.into());
+                node.open_edges = *union_find.nodes_open_edges.at(i.into());
+                node.contested = *union_find.nodes_contested.at(i.into());
+                if node.node_type == 1 {
+                    road_nodes.push(Default::default());
+                    city_nodes.push(node);
+                } else if node.node_type == 2 {
+                    road_nodes.push(node);
+                    city_nodes.push(Default::default());
+                }
+                else {
+                    road_nodes.push(Default::default());
+                    city_nodes.push(Default::default());
+                }
             };
 
             let prev_move_id = board.last_move_id;
@@ -861,49 +867,49 @@ pub mod game {
                             ref city_nodes,
                             ref road_nodes,
                         );
-                    let mut new_road_nodes_parents = array![];
-                    let mut new_road_nodes_ranks = array![];
-                    let mut new_road_nodes_blue_points = array![];
-                    let mut new_road_nodes_red_points = array![];
-                    let mut new_road_nodes_open_edges = array![];
-                    let mut new_road_nodes_contested = array![];
-                    for i in 0..road_nodes.len() {
+                    let mut new_nodes_parents = array![];
+                    let mut new_nodes_ranks = array![];
+                    let mut new_nodes_blue_points = array![];
+                    let mut new_nodes_red_points = array![];
+                    let mut new_nodes_open_edges = array![];
+                    let mut new_nodes_contested = array![];
+                    let mut new_nodes_types = array![];
+                    for i in 0..256_usize {
                         let road_node = road_nodes.at(i.into());
-                        new_road_nodes_parents.append(road_node.parent);
-                        new_road_nodes_ranks.append(road_node.rank);
-                        new_road_nodes_blue_points.append(road_node.blue_points);
-                        new_road_nodes_red_points.append(road_node.red_points);
-                        new_road_nodes_open_edges.append(road_node.open_edges);
-                        new_road_nodes_contested.append(road_node.contested);
-                    };
-                    union_find.road_nodes_parents = new_road_nodes_parents.span();
-                    union_find.road_nodes_ranks = new_road_nodes_ranks.span();
-                    union_find.road_nodes_blue_points = new_road_nodes_blue_points.span();
-                    union_find.road_nodes_red_points = new_road_nodes_red_points.span();
-                    union_find.road_nodes_open_edges = new_road_nodes_open_edges.span();
-                    union_find.road_nodes_contested = new_road_nodes_contested.span();
-
-                    let mut new_city_nodes_parents = array![];
-                    let mut new_city_nodes_ranks = array![];
-                    let mut new_city_nodes_blue_points = array![];
-                    let mut new_city_nodes_red_points = array![];
-                    let mut new_city_nodes_open_edges = array![];
-                    let mut new_city_nodes_contested = array![];
-                    for i in 0..city_nodes.len() {
                         let city_node = city_nodes.at(i.into());
-                        new_city_nodes_parents.append(city_node.parent);
-                        new_city_nodes_ranks.append(city_node.rank);
-                        new_city_nodes_blue_points.append(city_node.blue_points);
-                        new_city_nodes_red_points.append(city_node.red_points);
-                        new_city_nodes_open_edges.append(city_node.open_edges);
-                        new_city_nodes_contested.append(city_node.contested);
+                        if road_node.node_type == 1 {
+                            new_nodes_types.append(road_node.node_type);
+                            new_nodes_parents.append(road_node.parent);
+                            new_nodes_ranks.append(road_node.rank);
+                            new_nodes_blue_points.append(road_node.blue_points);
+                            new_nodes_red_points.append(road_node.red_points);
+                            new_nodes_open_edges.append(road_node.open_edges);
+                            new_nodes_contested.append(road_node.contested);
+                        } else if city_node.node_type == 2 {
+                            new_nodes_types.append(city_node.node_type);
+                            new_nodes_parents.append(city_node.parent);
+                            new_nodes_ranks.append(city_node.rank);
+                            new_nodes_blue_points.append(city_node.blue_points);
+                            new_nodes_red_points.append(city_node.red_points);
+                            new_nodes_open_edges.append(city_node.open_edges);
+                            new_nodes_contested.append(city_node.contested);
+                        } else {
+                            new_nodes_types.append(0);
+                            new_nodes_parents.append(0);
+                            new_nodes_ranks.append(0);
+                            new_nodes_blue_points.append(0);
+                            new_nodes_red_points.append(0);
+                            new_nodes_open_edges.append(0);
+                            new_nodes_contested.append(false);
+                        }
                     };
-                    union_find.city_nodes_parents = new_city_nodes_parents.span();
-                    union_find.city_nodes_ranks = new_city_nodes_ranks.span();
-                    union_find.city_nodes_blue_points = new_city_nodes_blue_points.span();
-                    union_find.city_nodes_red_points = new_city_nodes_red_points.span();
-                    union_find.city_nodes_open_edges = new_city_nodes_open_edges.span();
-                    union_find.city_nodes_contested = new_city_nodes_contested.span();
+                    union_find.nodes_parents = new_nodes_parents.span();
+                    union_find.nodes_ranks = new_nodes_ranks.span();
+                    union_find.nodes_blue_points = new_nodes_blue_points.span();
+                    union_find.nodes_red_points = new_nodes_red_points.span();
+                    union_find.nodes_open_edges = new_nodes_open_edges.span();
+                    union_find.nodes_contested = new_nodes_contested.span();
+                    union_find.nodes_types = new_nodes_types.span();
                 
                     union_find.write(world); 
                 }
@@ -948,26 +954,27 @@ pub mod game {
                 //FINISH THE GAME
                 let mut union_find: UnionFind = world.read_model(board_id);
                 let mut city_nodes = VecTrait::<NullableVec, UnionNode>::new();
-                for i in 0..union_find.city_nodes_parents.len() {
-                    let mut city_node: UnionNode = Default::default();
-                    city_node.parent = *union_find.city_nodes_parents.at(i.into());
-                    city_node.rank = *union_find.city_nodes_ranks.at(i.into());
-                    city_node.blue_points = *union_find.city_nodes_blue_points.at(i.into());
-                    city_node.red_points = *union_find.city_nodes_red_points.at(i.into());
-                    city_node.open_edges = *union_find.city_nodes_open_edges.at(i.into());
-                    city_node.contested = *union_find.city_nodes_contested.at(i.into());
-                    city_nodes.push(city_node);
-                };
                 let mut road_nodes = VecTrait::<NullableVec, UnionNode>::new();
-                for i in 0..union_find.road_nodes_parents.len() {
-                    let mut road_node: UnionNode = Default::default();
-                    road_node.parent = *union_find.road_nodes_parents.at(i.into());
-                    road_node.rank = *union_find.road_nodes_ranks.at(i.into());
-                    road_node.blue_points = *union_find.road_nodes_blue_points.at(i.into());
-                    road_node.red_points = *union_find.road_nodes_red_points.at(i.into());
-                    road_node.open_edges = *union_find.road_nodes_open_edges.at(i.into());
-                    road_node.contested = *union_find.road_nodes_contested.at(i.into());
-                    road_nodes.push(road_node);
+                for i in 0..union_find.nodes_parents.len() {
+                    let mut node: UnionNode = Default::default();
+                    node.node_type = *union_find.nodes_types.at(i.into());
+                    node.parent = *union_find.nodes_parents.at(i.into());
+                    node.rank = *union_find.nodes_ranks.at(i.into());
+                    node.blue_points = *union_find.nodes_blue_points.at(i.into());
+                    node.red_points = *union_find.nodes_red_points.at(i.into());
+                    node.open_edges = *union_find.nodes_open_edges.at(i.into());
+                    node.contested = *union_find.nodes_contested.at(i.into());
+                    if node.node_type == 1 {
+                        road_nodes.push(Default::default());
+                        city_nodes.push(node);
+                    } else if node.node_type == 2 {
+                        road_nodes.push(node);
+                        city_nodes.push(Default::default());
+                    }
+                    else {
+                        road_nodes.push(Default::default());
+                        city_nodes.push(Default::default());
+                    }
                 };
                 self
                     ._finish_game(

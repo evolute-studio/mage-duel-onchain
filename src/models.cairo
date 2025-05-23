@@ -132,19 +132,13 @@ pub struct UnionFind {
     #[key]
     pub board_id: felt252,
 
-    pub city_nodes_parents: Span<u8>,
-    pub city_nodes_ranks: Span<u8>,
-    pub city_nodes_blue_points: Span<u16>,
-    pub city_nodes_red_points: Span<u16>,
-    pub city_nodes_open_edges: Span<u8>,
-    pub city_nodes_contested: Span<bool>,
-
-    pub road_nodes_parents: Span<u8>,
-    pub road_nodes_ranks: Span<u8>,
-    pub road_nodes_blue_points: Span<u16>,
-    pub road_nodes_red_points: Span<u16>,
-    pub road_nodes_open_edges: Span<u8>,
-    pub road_nodes_contested: Span<bool>,
+    pub nodes_parents: Span<u8>,
+    pub nodes_ranks: Span<u8>,
+    pub nodes_blue_points: Span<u16>,
+    pub nodes_red_points: Span<u16>,
+    pub nodes_open_edges: Span<u8>,
+    pub nodes_contested: Span<bool>,
+    pub nodes_types: Span<u8>, // 0 - None, 1 - City, 2 - Road
 
     pub potential_city_contests: Array<u8>,
     pub potential_road_contests: Array<u8>,
@@ -153,49 +147,33 @@ pub struct UnionFind {
 #[generate_trait]
 pub impl UnionFindImpl of UnionFindTrait {
     fn new(board_id: felt252) -> UnionFind {
-        let mut road_nodes_parents = array![];
-        let mut road_nodes_ranks = array![];
-        let mut road_nodes_blue_points = array![];
-        let mut road_nodes_red_points = array![];
-        let mut road_nodes_open_edges = array![];
-        let mut road_nodes_contested = array![];
-        let mut city_nodes_parents = array![];
-        let mut city_nodes_ranks = array![];
-        let mut city_nodes_blue_points = array![];
-        let mut city_nodes_red_points = array![];
-        let mut city_nodes_open_edges = array![];
-        let mut city_nodes_contested = array![];
+        let mut nodes_parents = array![];
+        let mut nodes_ranks = array![];
+        let mut nodes_blue_points = array![];
+        let mut nodes_red_points = array![];
+        let mut nodes_open_edges = array![];
+        let mut nodes_contested = array![];
+        let mut nodes_types = array![];
         for _ in 0..256_u16 {
-            road_nodes_parents.append(0);
-            road_nodes_ranks.append(0);
-            road_nodes_blue_points.append(0);
-            road_nodes_red_points.append(0);
-            road_nodes_open_edges.append(0);
-            road_nodes_contested.append(false);
-
-            city_nodes_parents.append(0);
-            city_nodes_ranks.append(0);
-            city_nodes_blue_points.append(0);
-            city_nodes_red_points.append(0);
-            city_nodes_open_edges.append(0);
-            city_nodes_contested.append(false);
+            nodes_parents.append(0);
+            nodes_ranks.append(0);
+            nodes_blue_points.append(0);
+            nodes_red_points.append(0);
+            nodes_open_edges.append(0);
+            nodes_contested.append(false);
+            nodes_types.append(0); // 0 - None, 1 - City, 2 - Road
         };
         let mut potential_city_contests = array![];
         let potential_road_contests = array![];
         let union_find = UnionFind {
             board_id: board_id,
-            city_nodes_parents: city_nodes_parents.span(),
-            city_nodes_ranks: city_nodes_ranks.span(),
-            city_nodes_blue_points: city_nodes_blue_points.span(),
-            city_nodes_red_points: city_nodes_red_points.span(),
-            city_nodes_open_edges: city_nodes_open_edges.span(),
-            city_nodes_contested: city_nodes_contested.span(),
-            road_nodes_parents: road_nodes_parents.span(),
-            road_nodes_ranks: road_nodes_ranks.span(),
-            road_nodes_blue_points: road_nodes_blue_points.span(),
-            road_nodes_red_points: road_nodes_red_points.span(),
-            road_nodes_open_edges: road_nodes_open_edges.span(),
-            road_nodes_contested: road_nodes_contested.span(),
+            nodes_parents: nodes_parents.span(),
+            nodes_ranks: nodes_ranks.span(),
+            nodes_blue_points: nodes_blue_points.span(),
+            nodes_red_points: nodes_red_points.span(),
+            nodes_open_edges: nodes_open_edges.span(),
+            nodes_contested: nodes_contested.span(),
+            nodes_types: nodes_types.span(),
             potential_city_contests: potential_city_contests,
             potential_road_contests: potential_road_contests,
         };
@@ -207,77 +185,53 @@ pub impl UnionFindImpl of UnionFindTrait {
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
-                selector!("city_nodes_parents"),
-                self.city_nodes_parents.clone()
+                selector!("nodes_types"),
+                self.nodes_types.clone()
             );
 
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
-                selector!("road_nodes_parents"),
-                self.road_nodes_parents.clone()
-            );
-        world
-            .write_member(
-                Model::<UnionFind>::ptr_from_keys(self.board_id),
-                selector!("city_nodes_ranks"),
-                self.city_nodes_ranks.clone()
-            );
-        world
-            .write_member(
-                Model::<UnionFind>::ptr_from_keys(self.board_id),
-                selector!("road_nodes_ranks"),
-                self.road_nodes_ranks.clone()
-            );
-        world
-            .write_member(
-                Model::<UnionFind>::ptr_from_keys(self.board_id),
-                selector!("city_nodes_blue_points"),
-                self.city_nodes_blue_points.clone()
-            );
-        world
-            .write_member(
-                Model::<UnionFind>::ptr_from_keys(self.board_id),
-                selector!("road_nodes_blue_points"),
-                self.road_nodes_blue_points.clone()
-            );
-        world
-            .write_member(
-                Model::<UnionFind>::ptr_from_keys(self.board_id),
-                selector!("city_nodes_red_points"),
-                self.city_nodes_red_points.clone()
-            );
-        world
-            .write_member(
-                Model::<UnionFind>::ptr_from_keys(self.board_id),
-                selector!("road_nodes_red_points"),
-                self.road_nodes_red_points.clone()
-            );
-        world
-            .write_member(
-                Model::<UnionFind>::ptr_from_keys(self.board_id),
-                selector!("city_nodes_open_edges"),
-                self.city_nodes_open_edges.clone()
-            );
-        world
-            .write_member(
-                Model::<UnionFind>::ptr_from_keys(self.board_id),
-                selector!("road_nodes_open_edges"),
-                self.road_nodes_open_edges.clone()
-            );
-        world
-            .write_member(
-                Model::<UnionFind>::ptr_from_keys(self.board_id),
-                selector!("city_nodes_contested"),
-                self.city_nodes_contested.clone()
-            );
-        world
-            .write_member(
-                Model::<UnionFind>::ptr_from_keys(self.board_id),
-                selector!("road_nodes_contested"),
-                self.road_nodes_contested.clone()
+                selector!("nodes_parents"),
+                self.nodes_parents.clone()
             );
 
+        world
+            .write_member(
+                Model::<UnionFind>::ptr_from_keys(self.board_id),
+                selector!("nodes_ranks"),
+                self.nodes_ranks.clone()
+            );
+        world
+            .write_member(
+                Model::<UnionFind>::ptr_from_keys(self.board_id),
+                selector!("nodes_ranks"),
+                self.nodes_ranks.clone()
+            );
+        world
+            .write_member(
+                Model::<UnionFind>::ptr_from_keys(self.board_id),
+                selector!("nodes_blue_points"),
+                self.nodes_blue_points.clone()
+            );
+        world
+            .write_member(
+                Model::<UnionFind>::ptr_from_keys(self.board_id),
+                selector!("nodes_red_points"),
+                self.nodes_red_points.clone()
+            );
+        world
+            .write_member(
+                Model::<UnionFind>::ptr_from_keys(self.board_id),
+                selector!("nodes_open_edges"),
+                self.nodes_open_edges.clone()
+            );
+        world
+            .write_member(
+                Model::<UnionFind>::ptr_from_keys(self.board_id),
+                selector!("nodes_contested"),
+                self.nodes_contested.clone()
+            );
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
@@ -298,51 +252,53 @@ pub impl UnionFindImpl of UnionFindTrait {
         potential_city_contests: Array<u8>,
         potential_road_contests: Array<u8>
     ) -> UnionFind {
-        let mut road_nodes_parents = array![];
-        let mut road_nodes_ranks = array![];
-        let mut road_nodes_blue_points = array![];
-        let mut road_nodes_red_points = array![];
-        let mut road_nodes_open_edges = array![];
-        let mut road_nodes_contested = array![];
-        let mut city_nodes_parents = array![];
-        let mut city_nodes_ranks = array![];
-        let mut city_nodes_blue_points = array![];
-        let mut city_nodes_red_points = array![];
-        let mut city_nodes_open_edges = array![];
-        let mut city_nodes_contested = array![];
+        let mut nodes_parents = array![];
+        let mut nodes_ranks = array![];
+        let mut nodes_blue_points = array![];
+        let mut nodes_red_points = array![];
+        let mut nodes_open_edges = array![];
+        let mut nodes_contested = array![];
+        let mut nodes_types = array![];
 
         for i in 0..road_nodes_arr.len() {
             let road_node = *road_nodes_arr[i];
-            road_nodes_parents.append(road_node.parent);
-            road_nodes_ranks.append(road_node.rank);
-            road_nodes_blue_points.append(road_node.blue_points);
-            road_nodes_red_points.append(road_node.red_points);
-            road_nodes_open_edges.append(road_node.open_edges);
-            road_nodes_contested.append(road_node.contested);
-        };
-        for i in 0..city_nodes_arr.len() {
             let city_node = *city_nodes_arr[i];
-            city_nodes_parents.append(city_node.parent);
-            city_nodes_ranks.append(city_node.rank);
-            city_nodes_blue_points.append(city_node.blue_points);
-            city_nodes_red_points.append(city_node.red_points);
-            city_nodes_open_edges.append(city_node.open_edges);
-            city_nodes_contested.append(city_node.contested);
+            if road_node.node_type == 2 {
+                nodes_parents.append(road_node.parent);
+                nodes_ranks.append(road_node.rank);
+                nodes_blue_points.append(road_node.blue_points);
+                nodes_red_points.append(road_node.red_points);
+                nodes_open_edges.append(road_node.open_edges);
+                nodes_contested.append(road_node.contested);
+                nodes_types.append(2); // 0 - None, 1 - City, 2 - Road
+            } else if city_node.node_type == 1 {
+                nodes_parents.append(city_node.parent);
+                nodes_ranks.append(city_node.rank);
+                nodes_blue_points.append(city_node.blue_points);
+                nodes_red_points.append(city_node.red_points);
+                nodes_open_edges.append(city_node.open_edges);
+                nodes_contested.append(city_node.contested);
+                nodes_types.append(1); // 0 - None, 1 - City, 2 - Road
+            } else {
+                nodes_parents.append(0);
+                nodes_ranks.append(0);
+                nodes_blue_points.append(0);
+                nodes_red_points.append(0);
+                nodes_open_edges.append(0);
+                nodes_contested.append(false);
+                nodes_types.append(0); // 0 - None, 1 - City, 2 - Road
+            }
         };
+        
         let union_find = UnionFind {
             board_id: 0,
-            city_nodes_parents: city_nodes_parents.span(),
-            city_nodes_ranks: city_nodes_ranks.span(),
-            city_nodes_blue_points: city_nodes_blue_points.span(),
-            city_nodes_red_points: city_nodes_red_points.span(),
-            city_nodes_open_edges: city_nodes_open_edges.span(),
-            city_nodes_contested: city_nodes_contested.span(),
-            road_nodes_parents: road_nodes_parents.span(),
-            road_nodes_ranks: road_nodes_ranks.span(),
-            road_nodes_blue_points: road_nodes_blue_points.span(),
-            road_nodes_red_points: road_nodes_red_points.span(),
-            road_nodes_open_edges: road_nodes_open_edges.span(),
-            road_nodes_contested: road_nodes_contested.span(),
+            nodes_parents: nodes_parents.span(),
+            nodes_ranks: nodes_ranks.span(),
+            nodes_blue_points: nodes_blue_points.span(),
+            nodes_red_points: nodes_red_points.span(),
+            nodes_open_edges: nodes_open_edges.span(),
+            nodes_contested: nodes_contested.span(),
+            nodes_types: nodes_types.span(),
             potential_city_contests: potential_city_contests,
             potential_road_contests: potential_road_contests,
         };
