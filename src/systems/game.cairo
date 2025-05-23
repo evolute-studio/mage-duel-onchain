@@ -100,7 +100,7 @@ pub mod game {
         achievable: AchievableComponent::Storage,
     }
 
-    const MOVE_TIME : u64 = 60; // 60 seconds
+    const MOVE_TIME : u64 = 65; // 60 seconds on turn and 5 seconds for latency fix
 
 
     fn dojo_init(self: @ContractState) {
