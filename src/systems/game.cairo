@@ -961,12 +961,12 @@ pub mod game {
             let (red_city_points, red_road_points) = board.red_score;
             let red_points = red_city_points + red_road_points + red_joker_points;
             if player1_side == PlayerSide::Blue {
-                player1.balance += blue_points;
-                player2.balance += red_points;
+                player1.balance += blue_points.into();
+                player2.balance += red_points.into();
     
             } else if player1_side == PlayerSide::Red {
-                player1.balance += red_points;
-                player2.balance += blue_points;
+                player1.balance += red_points.into();
+                player2.balance += blue_points.into();
             }
 
             player1.games_played += 1;

@@ -7,7 +7,7 @@ pub trait IPlayerProfileActions<T> {
     /// Lets admin set the player's balance.
     /// - `balance`: The new balance to be set.
     /// - `player_id`: The ID of the player whose balance is to be set.
-    fn set_balance(ref self: T, balance: u16, player_id: felt252);
+    fn set_balance(ref self: T, balance: u32, player_id: felt252);
 
     /// Retrieves the player's username.
     fn username(ref self: T);
@@ -97,7 +97,7 @@ pub mod player_profile_actions {
             world.emit_event(@CurrentPlayerBalance { player_id, balance: player.balance });
         }
 
-        fn set_balance(ref self: ContractState, balance: u16, player_id: felt252) {
+        fn set_balance(ref self: ContractState, balance: u32, player_id: felt252) {
             self.ownable.assert_only_owner();
             let mut world = self.world_default();
             let mut player: Player = world.read_model(player_id);

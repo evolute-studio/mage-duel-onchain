@@ -7,5 +7,5 @@
 pub struct Shop {
     #[key]
     pub shop_id: felt252,
-    pub skin_prices: Array<u16>,
+    pub skin_prices: Array<u32>,
 }

@@ -16,7 +16,7 @@ pub struct Player {
     #[key]
     pub player_id: ContractAddress,
     pub username: felt252,
-    pub balance: u16,
+    pub balance: u32,
     pub games_played: felt252,
     pub active_skin: u8,
     pub role: u8, // 0: Guest, 1: Controller, 2: Bot

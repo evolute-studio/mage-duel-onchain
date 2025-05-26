@@ -306,7 +306,7 @@ pub struct RoadContestDraw {
 pub struct CurrentPlayerBalance {
     #[key]
     pub player_id: ContractAddress,
-    pub balance: u16,
+    pub balance: u32,
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Debug)]
@@ -348,6 +348,6 @@ pub struct PlayerSkinChangeFailed {
     #[key]
     pub player_id: ContractAddress,
     pub new_skin: u8,
-    pub skin_price: u16,
-    pub balance: u16,
+    pub skin_price: u32,
+    pub balance: u32,
 }
