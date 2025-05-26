@@ -784,6 +784,21 @@ pub mod game {
                 );
 
             self._skip_move(player, player_side, ref board, self.move_id_generator);
+            world
+                .emit_event(
+                    @BoardUpdated {
+                        board_id: board.id,
+                        available_tiles_in_deck: board.available_tiles_in_deck.clone(),
+                        top_tile: board.top_tile,
+                        state: board.state.clone(),
+                        player1: board.player1,
+                        player2: board.player2,
+                        blue_score: board.blue_score,
+                        red_score: board.red_score,
+                        last_move_id: board.last_move_id,
+                        game_state: board.game_state,
+                    },
+                );
         }
 
         fn finish_game(ref self: ContractState, board_id: felt252) {
@@ -869,21 +884,6 @@ pub mod game {
                 .emit_event(
                     @Skiped {
                         move_id, player, prev_move_id: move.prev_move_id, board_id, timestamp,
-                    },
-                );
-            world
-                .emit_event(
-                    @BoardUpdated {
-                        board_id: board.id,
-                        available_tiles_in_deck: board.available_tiles_in_deck.clone(),
-                        top_tile: board.top_tile,
-                        state: board.state.clone(),
-                        player1: board.player1,
-                        player2: board.player2,
-                        blue_score: board.blue_score,
-                        red_score: board.red_score,
-                        last_move_id: board.last_move_id,
-                        game_state: board.game_state,
                     },
                 );
         }
