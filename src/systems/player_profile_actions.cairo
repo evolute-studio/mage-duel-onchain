@@ -79,12 +79,12 @@ pub mod player_profile_actions {
         let mut world = self.world(@"evolute_duel");
         let id = 0;
 
-        let skin_prices = array![0, 0, 100, 500, 1500];
+        let skin_prices = array![0, 0, 100, 500, 2000];
 
         let shop = Shop { shop_id: id, skin_prices };
         world.write_model(@shop);
 
-        println!("Owner: {creator_address:?}");
+        //println!("Owner: {creator_address:?}");
         self.ownable.initializer(creator_address);
     }
 

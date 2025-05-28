@@ -157,10 +157,10 @@ mod tests {
             1,
         ];
 
-        println!(
-            "is valid: {:?}",
-            is_valid_move(tile, rotation, col, row, state.span(), initial_edge_state.span()),
-        );
+        // println!(
+        //     "is valid: {:?}",
+        //     is_valid_move(tile, rotation, col, row, state.span(), initial_edge_state.span()),
+        // );
 
         assert_eq!(
             is_valid_move(tile, rotation, col, row, state.span(), initial_edge_state.span()), true,

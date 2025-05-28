@@ -149,7 +149,7 @@ pub fn tile_city_number(tile: Tile) -> u8 {
 }
 
 pub fn calculate_adjacent_edge_points(
-    initial_edge_state: Array<u8>, col: u8, row: u8, tile: Tile, rotation: u8,
+    ref initial_edge_state: Span<u8>, col: u8, row: u8, tile: Tile, rotation: u8,
 ) -> (u16, u16) {
     let mut city_points = 0;
     let mut road_points = 0;
