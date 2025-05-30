@@ -31,6 +31,10 @@ pub mod libs {
     pub mod achievements;
 }
 
+pub mod utils {
+    pub mod hash;
+}
+
 pub mod tests {
     mod test_world;
     mod test_scoring;
