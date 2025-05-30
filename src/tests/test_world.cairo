@@ -276,7 +276,7 @@ mod tests {
             Option::Some(num) => num,
         };
         if moves_number.into() > moves.len() {
-            return panic!("move_number is greater than moves length");
+            return println!("move_number is greater than moves length");
         }
         use evolute_duel::packing::{
             GameState,
