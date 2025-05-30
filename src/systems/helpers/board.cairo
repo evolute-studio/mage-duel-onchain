@@ -200,8 +200,6 @@ pub fn create_board_from_snapshot(
         last_update_timestamp: get_block_timestamp(),
     };
 
-    world.write_model(@board);
-
     board.initial_edge_state = old_board.initial_edge_state.clone();
     
     // //println!("new_board: {:?}", board);
@@ -244,8 +242,8 @@ pub fn create_board_from_snapshot(
         potential_road_contests,
         potential_city_contests,
     );
-
     union_find.write(world);
+
     // //println!("Final board created from snapshot: {:?}", board);
 
     world
@@ -254,26 +252,22 @@ pub fn create_board_from_snapshot(
             selector!("initial_edge_state"),
             board.initial_edge_state.clone(),
         );
-    
     world
     .write_member(
         Model::<Board>::ptr_from_keys(board_id),
         selector!("available_tiles_in_deck"),
         board.available_tiles_in_deck.clone(),
     );
-
     world
         .write_member(
             Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), top_tile,
         );
-
     world
         .write_member(
             Model::<Board>::ptr_from_keys(board_id),
             selector!("state"),
             board.state.clone(),
         );
-
     world
         .write_member(
             Model::<Board>::ptr_from_keys(board_id), selector!("player1"), board.player1,
@@ -313,25 +307,25 @@ pub fn create_board_from_snapshot(
         );    
     board_id_generator.write(board_id + 1);
 
-    world
-        .emit_event(
-            @BoardCreatedFromSnapshot {
-                board_id: board_id,
-                old_board_id,
-                move_number,
-                initial_edge_state: board.initial_edge_state,
-                available_tiles_in_deck: board.available_tiles_in_deck.span(),
-                top_tile: board.top_tile,
-                state: board.state,
-                player1: board.player1,
-                player2: board.player2,
-                blue_score: board.blue_score,
-                red_score: board.red_score,
-                last_move_id: board.last_move_id,
-                game_state: board.game_state,
-            },
-        );
-
+    // world
+    //     .emit_event(
+    //         @BoardCreatedFromSnapshot {
+    //             board_id: board_id,
+    //             old_board_id,
+    //             move_number,
+    //             initial_edge_state: board.initial_edge_state,
+    //             available_tiles_in_deck: board.available_tiles_in_deck.span(),
+    //             top_tile: board.top_tile,
+    //             state: board.state,
+    //             player1: board.player1,
+    //             player2: board.player2,
+    //             blue_score: board.blue_score,
+    //             red_score: board.red_score,
+    //             last_move_id: board.last_move_id,
+    //             game_state: board.game_state,
+    //         },
+    //     );
+        
     board_id
 }
 

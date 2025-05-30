@@ -182,7 +182,7 @@ pub mod game {
 
             if status == GameStatus::InProgress || status == GameStatus::Created {
                 world.emit_event(@GameCreateFailed { host_player, status });
-                return panic!("Game already created or in progress");
+                return println!("Game already created or in progress");
             }
 
             status = GameStatus::Created;
@@ -212,7 +212,7 @@ pub mod game {
                             player, board_id, board_game_state: board.game_state, move_number,
                         },
                     );
-                return panic!("Snapshot create failed, move number is greater than max move number");
+                return println!("Snapshot create failed, move number is greater than max move number");
             }
 
             let snapshot_id = self.snapshot_id_generator.read();
@@ -242,7 +242,7 @@ pub mod game {
 
             if status == GameStatus::InProgress || status == GameStatus::Created {
                 world.emit_event(@GameCreateFailed { host_player, status });
-                return panic!("Game already created or in progress");
+                return println!("Game already created or in progress");
             }
 
             status = GameStatus::Created;
@@ -327,7 +327,7 @@ pub mod game {
                             host_player, guest_player, host_game_status, guest_game_status,
                         },
                     );
-                return panic!("Game join failed");
+                return println!("Game join failed");
             }
             host_game.status = GameStatus::InProgress;
             guest_game.status = GameStatus::InProgress;
@@ -383,7 +383,7 @@ pub mod game {
 
             if game.board_id.is_none() {
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
-                return panic!("Player is not in game");
+                return println!("Player is not in game");
             }
 
             let board_id = game.board_id.unwrap();
@@ -391,7 +391,7 @@ pub mod game {
 
             if game.status == GameStatus::Finished {
                 world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
-                return panic!("Game is already finished");
+                return println!("Game is already finished");
             }
 
             let (player1_address, player1_side, joker_number1) = board.player1;
@@ -403,14 +403,14 @@ pub mod game {
                 (player2_side, joker_number2)
             } else {
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id });
-                return panic!("Player is not in game");
+                return println!("Player is not in game");
             };
 
             let is_joker = joker_tile.is_some();
 
             if is_joker && joker_number == 0 {
                 world.emit_event(@NotEnoughJokers { player_id: player, board_id });
-                return panic!("Not enough jokers");
+                return println!("Not enough jokers");
             }
 
             let prev_move_id = board.last_move_id;
@@ -446,12 +446,12 @@ pub mod game {
 
                     if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
                         world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        return panic!("[Not your turn]");
+                        return println!("[Not your turn]");
                     }
                 } else {
                     if time_delta > MOVE_TIME {
                         world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        return panic!("[Not your turn] Move time is over");
+                        return println!("[Not your turn] Move time is over");
                     }
                 }
             };
@@ -461,7 +461,7 @@ pub mod game {
                 Option::None => {
                     match @board.top_tile {
                         Option::Some(top_tile) => { *top_tile },
-                        Option::None => { return panic!("No tiles in the deck"); },
+                        Option::None => { return println!("No tiles in the deck"); },
                     }
                 },
             };
@@ -498,7 +498,7 @@ pub mod game {
                             board_id,
                         },
                     );
-                return panic!("[Invalid move] \nBoard: {:?} \nMove: {:?}", board, move);
+                return println!("[Invalid move] \nBoard: {:?} \nMove: {:?}", board, move);
             }
 
             let top_tile = if !is_joker {
@@ -817,7 +817,7 @@ pub mod game {
 
             if game.board_id.is_none() {
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
-                return panic!("Player is not in game");
+                return println!("Player is not in game");
             }
 
             let board_id = game.board_id.unwrap();
@@ -825,7 +825,7 @@ pub mod game {
 
             if game.status == GameStatus::Finished {
                 world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
-                return panic!("Game is already finished");
+                return println!("Game is already finished");
             }
 
             let (player1_address, player1_side, _) = board.player1;
@@ -837,7 +837,7 @@ pub mod game {
                 player2_side
             } else {
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id });
-                return panic!("Player is not in game");
+                return println!("Player is not in game");
             };
 
             let mut union_find: UnionFind = world.read_model(board_id);
@@ -899,12 +899,12 @@ pub mod game {
 
                     if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
                         world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        return panic!("[Not your turn]");
+                        return println!("[Not your turn]");
                     }
                 } else {
                     if time_delta > MOVE_TIME {
                         world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        return panic!("[Not your turn] Move time is over");
+                        return println!("[Not your turn] Move time is over");
                     }
                 }
 
@@ -1007,14 +1007,14 @@ pub mod game {
 
             if game.board_id.is_none() || game.board_id.unwrap() != board_id {
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
-                return panic!("Player is not in game");
+                return println!("Player is not in game");
             }
 
             let mut board: Board = world.read_model(board_id);
 
             if game.status == GameStatus::Finished {
                 world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
-                return panic!("Game is already finished");
+                return println!("Game is already finished");
             }
 
             let last_update_timestamp = board.last_update_timestamp;
@@ -1057,7 +1057,7 @@ pub mod game {
                 return;
             } else {
                 world.emit_event(@CantFinishGame { player_id: player, board_id });
-                return panic!("Cant finish game, time delta is less than 2 * MOVE_TIME");
+                return println!("Cant finish game, time delta is less than 2 * MOVE_TIME");
             }
         }
     }

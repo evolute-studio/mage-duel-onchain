@@ -1,3 +1,4 @@
 .DS_Store
 target
 manifest_*.json
+Scarb.lock
