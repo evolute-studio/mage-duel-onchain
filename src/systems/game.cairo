@@ -441,6 +441,7 @@ pub mod game {
                                 another_player_side,
                                 ref board,
                                 self.move_id_generator,
+                                false,
                             )
                     }
 
@@ -894,6 +895,7 @@ pub mod game {
                                 another_player_side,
                                 ref board,
                                 self.move_id_generator,
+                                false,  
                             )
                     }
 
@@ -980,7 +982,7 @@ pub mod game {
                     Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
                 );
 
-            self._skip_move(player, player_side, ref board, self.move_id_generator);
+            self._skip_move(player, player_side, ref board, self.move_id_generator, true);
             world
                 .emit_event(
                     @BoardUpdated {
@@ -1077,6 +1079,7 @@ pub mod game {
             move_id_generator: core::starknet::storage::StorageBase::<
                 core::starknet::storage::Mutable<core::felt252>,
             >,
+            emit_event: bool
         ) {
             let mut world = self.world_default();
             let move_id = self.move_id_generator.read();
@@ -1100,7 +1103,7 @@ pub mod game {
             board.last_move_id = Option::Some(move_id);
             board.moves_done = board.moves_done + 1;
             move_id_generator.write(move_id + 1);
-
+            
             world.write_model(@move);
 
             world
@@ -1123,13 +1126,14 @@ pub mod game {
                     selector!("moves_done"),
                     board.moves_done,
                 );
-
+            if emit_event {
             world
                 .emit_event(
                     @Skiped {
                         move_id, player, prev_move_id: move.prev_move_id, board_id, timestamp,
                     },
                 );
+            }
         }
 
         fn _finish_game(
