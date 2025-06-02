@@ -124,9 +124,11 @@ impl TileToU8 of Into<Tile, u8> {
     }
 }
 
-#[derive(Copy, Drop, Serde, Debug, IntrospectPacked, PartialEq)]
+#[derive(Copy, Drop, Serde, Debug, Introspect, PartialEq)]
 pub enum GameState {
-    InProgress,
+    Creating,
+    Reveal,
+    Move,
     Finished,
 }
 

@@ -34,6 +34,7 @@ pub struct Board {
     pub red_score: (u16, u16),
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
+    pub commited_tile: Option<u8>,
 }
 
 /// Represents a player's move, tracking tile placement and game progression.
@@ -114,4 +115,25 @@ pub struct Snapshot {
     pub player: ContractAddress,
     pub board_id: felt252,
     pub move_number: u8,
+}
+
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct TileCommitments {
+    #[key]
+    pub board_id: felt252,
+    #[key]
+    pub player: ContractAddress,
+    pub tile_commitments: Span<felt252>,
+}
+
+
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct AvaliableTiles {
+    #[key]
+    pub board_id: felt252,
+    #[key]
+    pub player: ContractAddress,
+    pub available_tiles: Span<u8>,
 }

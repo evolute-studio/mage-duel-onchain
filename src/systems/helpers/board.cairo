@@ -43,7 +43,13 @@ pub fn create_board(
     tiles.append_span([((Tile::Empty).into(), 0, 0); 64].span());
 
     let last_move_id = Option::None;
-    let game_state = GameState::InProgress;
+    let game_state = GameState::Creating;
+
+    let mut dice = DiceTrait::new(
+        64, 'SEED' + get_block_timestamp().into() + board_id.into(),
+    );
+
+    let commited_tile = Option::Some(dice.roll() - 1);
 
     let mut board = Board {
         id: board_id,
@@ -57,9 +63,8 @@ pub fn create_board(
         red_score: (0, 0),
         last_move_id,
         game_state,
+        commited_tile,
     };
-
-    let top_tile = draw_tile_from_board_deck(ref board);
 
     world.write_model(@board);
 
@@ -80,7 +85,6 @@ pub fn create_board(
             @BoardCreated {
                 board_id,
                 initial_edge_state,
-                top_tile,
                 state: tiles,
                 player1: board.player1,
                 player2: board.player2,
@@ -123,7 +127,8 @@ pub fn create_board_from_snapshot(
         blue_score: (0, 0),
         red_score: (0, 0),
         last_move_id: Option::None,
-        game_state: GameState::InProgress,
+        game_state: GameState::Creating,
+        commited_tile: Option::None,
     };
 
     let mut drawn_tiles: Felt252Dict<u8> = Default::default();
