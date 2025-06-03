@@ -342,7 +342,7 @@ pub mod game {
                 );
                 let mut union_find = UnionFindTrait::new(board.id);
                 // println!("Union find: {:?}", union_find);
-
+                UnionFindTrait::write_empty(board.id, world);
                 union_find.write(world); 
 
                 board.id

@@ -59,14 +59,24 @@ pub impl UnionFindImpl of UnionFindTrait {
 
         union_find
     }
-
+    fn write_empty(board_id: felt252, mut world: WorldStorage) {
+        let union_find = UnionFind {
+            board_id: board_id,
+            nodes_parents: array![].span(),
+            nodes_ranks: array![].span(),
+            nodes_blue_points: array![].span(),
+            nodes_red_points: array![].span(),
+            nodes_open_edges: array![].span(),
+            nodes_contested: array![].span(),
+            nodes_types: array![].span(),
+            potential_city_contests: array![],
+            potential_road_contests: array![],
+        };
+        world.write_model(
+            @union_find
+        );
+    }
     fn write(ref self: UnionFind, mut world: WorldStorage) {
-        world
-            .write_member(
-                Model::<UnionFind>::ptr_from_keys(self.board_id),
-                selector!("board_id"),
-                self.board_id
-            );
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
