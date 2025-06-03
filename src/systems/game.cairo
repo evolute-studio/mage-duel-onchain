@@ -819,6 +819,11 @@ pub mod game {
                         game_state: board.game_state,
                     },
                 );
+
+            println!(
+                "Move made: {:?} \nBoard: {:?} \nUnion find: {:?}",
+                move, board, union_find,
+            );
         }
 
         fn skip_move(ref self: ContractState) {

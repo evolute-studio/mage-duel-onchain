@@ -64,6 +64,12 @@ pub impl UnionFindImpl of UnionFindTrait {
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
+                selector!("board_id"),
+                self.board_id
+            );
+        world
+            .write_member(
+                Model::<UnionFind>::ptr_from_keys(self.board_id),
                 selector!("nodes_types"),
                 self.nodes_types.clone()
             );
