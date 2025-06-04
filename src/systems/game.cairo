@@ -535,7 +535,7 @@ pub mod game {
                 node.red_points = *union_find.nodes_red_points.at(i.into());
                 node.open_edges = *union_find.nodes_open_edges.at(i.into());
                 node.contested = *union_find.nodes_contested.at(i.into());
-                if node.node_type == 1 {
+                if node.node_type == 0 {
                     road_nodes.push(UnionNode {
                         parent: i.try_into().unwrap(),
                         rank: 0,
@@ -546,7 +546,7 @@ pub mod game {
                         node_type: 2, // 0 - City, 1 - Road, 2 - None
                     });
                     city_nodes.push(node);
-                } else if node.node_type == 2 {
+                } else if node.node_type == 1 {
                     road_nodes.push(node);
                     city_nodes.push(UnionNode {
                         parent: i.try_into().unwrap(),
@@ -708,6 +708,21 @@ pub mod game {
             let mut new_nodes_types = array![];
             println!("Road nodes length: {:?}", road_nodes.len());
             println!("City nodes length: {:?}", city_nodes.len());
+            print!("[Road nodes types]: [");
+            for i in 0..256_usize {
+                let road_node = road_nodes.at(i.into());
+                print!("{}, ", road_node.node_type);
+            };
+            println!("]");
+
+            print!("[City nodes types]: [");
+            for i in 0..256_usize {
+                let city_node = city_nodes.at(i.into());
+                print!("{}, ", city_node.node_type);
+            };
+            println!("]");
+
+
             for i in 0..256_usize {
                 let road_node = road_nodes.at(i.into());
                 let city_node = city_nodes.at(i.into());
