@@ -112,6 +112,8 @@ pub mod game {
         achievable: AchievableComponent::Storage,
     }
 
+    const CREATING_TIME : u64 = 60; // 1 min
+    const REVEAL_TIME : u64 = 60; // 1 min
     const MOVE_TIME : u64 = 60; // 1 min
 
 
@@ -414,6 +416,17 @@ pub mod game {
                 return panic!("[Commit Error] Game state is {:?}", board.game_state);
             }
 
+            let timestamp = get_block_timestamp();
+
+            if timestamp > board.phase_started_at + CREATING_TIME {
+                world.emit_event(@GameCreateFailed { host_player: player, status: game.status });
+                println!(
+                    "[ERROR] Commit timeout: {:?} > {:?} + {:?}",
+                    timestamp, board.phase_started_at, CREATING_TIME
+                );
+                return;
+            }
+
             world.write_model(@TileCommitments { board_id, player, tile_commitments: commitments });
 
             let (player1_address, player1_side, joker_number1) = board.player1;
@@ -442,6 +455,13 @@ pub mod game {
                     Model::<Board>::ptr_from_keys(board_id),
                     selector!("game_state"),
                     board.game_state,
+                );
+
+                board.phase_started_at = timestamp;
+                world.write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("phase_started_at"),
+                    board.phase_started_at,
                 );
 
                 world.emit_event(@PhaseStarted {
@@ -474,10 +494,46 @@ pub mod game {
                 "[ERROR] Game state is not Reveal: {:?}", board.game_state
             );
 
+            if get_block_timestamp() > board.phase_started_at + REVEAL_TIME {
+                println!(
+                    "[ERROR] Reveal timeout: {:?} > {:?} + {:?}",
+                    get_block_timestamp(),
+                    board.phase_started_at,
+                    REVEAL_TIME
+                );
+                return;
+            }
+
             assert!(
                 board.commited_tile.unwrap() == c, 
                 "[ERROR] Committed tile mismatch: expected {}, got {}", board.commited_tile.unwrap(), c
             );
+
+            let prev_move_id = board.last_move_id;
+            if prev_move_id.is_some() {
+                let prev_move_id = prev_move_id.unwrap();
+                let prev_move: Move = world.read_model(prev_move_id);
+                let prev_player_side = prev_move.player_side;
+                let time = get_block_timestamp();
+                let prev_move_time = prev_move.timestamp;
+                let time_delta = time - prev_move_time;
+                let (player1_address, player1_side, joker_number1) = board.player1;
+                let (player2_address, player2_side, joker_number2) = board.player2;
+
+                let (player_side, joker_number) = if player == player1_address {
+                    (player1_side, joker_number1)
+                } else if player == player2_address {
+                    (player2_side, joker_number2)
+                } else {
+                    world.emit_event(@PlayerNotInGame { player_id: player, board_id });
+                    return;
+                };
+
+                if player_side == prev_player_side {
+                    world.emit_event(@NotYourTurn { player_id: player, board_id });
+                    return;
+                }
+            };
 
             let tile_commitments_entry: TileCommitments = world.read_model((board_id, player));
             let tile_commitments = tile_commitments_entry.tile_commitments;
@@ -556,6 +612,16 @@ pub mod game {
                 board.game_state
             );
 
+            if get_block_timestamp() > board.phase_started_at + REVEAL_TIME {
+                println!(
+                    "[ERROR] Reveal timeout: {:?} > {:?} + {:?}",
+                    get_block_timestamp(),
+                    board.phase_started_at,
+                    REVEAL_TIME
+                );
+                return Option::None;
+            }
+
             let tile = *board.available_tiles_in_deck.at(tile_index.into());
 
             assert!(
@@ -622,6 +688,12 @@ pub mod game {
                 selector!("game_state"),
                 board.game_state,
             );
+            board.phase_started_at = get_block_timestamp();
+            world.write_member(
+                Model::<Board>::ptr_from_keys(board_id),
+                selector!("phase_started_at"),
+                board.phase_started_at,
+            );
             world.emit_event(@PhaseStarted {
                 board_id,
                 phase: 2, // GameState::Move
@@ -656,6 +728,16 @@ pub mod game {
                 board.game_state
             );
 
+            if get_block_timestamp() > board.phase_started_at + MOVE_TIME {
+                println!(
+                    "[ERROR] Move timeout: {:?} > {:?} + {:?}",
+                    get_block_timestamp(),
+                    board.phase_started_at,
+                    MOVE_TIME
+                );
+                return;
+            }
+
             let (player1_address, player1_side, joker_number1) = board.player1;
             let (player2_address, player2_side, joker_number2) = board.player2;
 
@@ -685,36 +767,8 @@ pub mod game {
                 let time_delta = time - prev_move_time;
 
                 if player_side == prev_player_side {
-                    if time_delta > MOVE_TIME && time_delta <= 2 * MOVE_TIME {
-                        //Skip the move of the previous player
-                        let another_player = if player == player1_address {
-                            player2_address
-                        } else {
-                            player1_address
-                        };
-                        let another_player_side = if player == player1_address {
-                            player2_side
-                        } else {
-                            player1_side
-                        };
-                        self
-                            ._skip_move(
-                                another_player,
-                                another_player_side,
-                                ref board,
-                                self.move_id_generator,
-                            )
-                    }
-
-                    if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
-                        world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        return;
-                    }
-                } else {
-                    if time_delta > MOVE_TIME {
-                        world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        return;
-                    }
+                    world.emit_event(@NotYourTurn { player_id: player, board_id });
+                    return;
                 }
             };
 

@@ -64,6 +64,7 @@ pub fn create_board(
         last_move_id,
         game_state,
         commited_tile,
+        phase_started_at: get_block_timestamp(),
     };
 
     world.write_model(@board);
@@ -147,6 +148,7 @@ pub fn create_board_from_snapshot(
         last_move_id: Option::None,
         game_state: GameState::Creating,
         commited_tile: Option::None,
+        phase_started_at: get_block_timestamp(),
     };
 
     let mut drawn_tiles: Felt252Dict<u8> = Default::default();
