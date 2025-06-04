@@ -33,14 +33,14 @@ pub impl UnionFindImpl of UnionFindTrait {
         let mut nodes_open_edges = array![];
         let mut nodes_contested = array![];
         let mut nodes_types = array![];
-        for _ in 0..256_u16 {
-            nodes_parents.append(0);
+        for i in 0..256_u16 {
+            nodes_parents.append(i.try_into().unwrap());
             nodes_ranks.append(0);
             nodes_blue_points.append(0);
             nodes_red_points.append(0);
             nodes_open_edges.append(0);
             nodes_contested.append(false);
-            nodes_types.append(0); // 0 - None, 1 - City, 2 - Road
+            nodes_types.append(2); // 0 - Сity, 1 - Road, 2 - None
         };
         let mut potential_city_contests = array![];
         let potential_road_contests = array![];
@@ -158,22 +158,22 @@ pub impl UnionFindImpl of UnionFindTrait {
         for i in 0..road_nodes_arr.len() {
             let road_node = *road_nodes_arr[i];
             let city_node = *city_nodes_arr[i];
-            if road_node.node_type == 2 {
+            if road_node.node_type == 1 {
                 nodes_parents.append(road_node.parent);
                 nodes_ranks.append(road_node.rank);
                 nodes_blue_points.append(road_node.blue_points);
                 nodes_red_points.append(road_node.red_points);
                 nodes_open_edges.append(road_node.open_edges);
                 nodes_contested.append(road_node.contested);
-                nodes_types.append(2); // 0 - None, 1 - City, 2 - Road
-            } else if city_node.node_type == 1 {
+                nodes_types.append(1); // 0 - Сity, 1 - Road, 2 - None
+            } else if city_node.node_type == 0 {
                 nodes_parents.append(city_node.parent);
                 nodes_ranks.append(city_node.rank);
                 nodes_blue_points.append(city_node.blue_points);
                 nodes_red_points.append(city_node.red_points);
                 nodes_open_edges.append(city_node.open_edges);
                 nodes_contested.append(city_node.contested);
-                nodes_types.append(1); // 0 - None, 1 - City, 2 - Road
+                nodes_types.append(0); // 0 - Сity, 1 - Road, 2 - None
             } else {
                 nodes_parents.append(0);
                 nodes_ranks.append(0);
@@ -181,7 +181,7 @@ pub impl UnionFindImpl of UnionFindTrait {
                 nodes_red_points.append(0);
                 nodes_open_edges.append(0);
                 nodes_contested.append(false);
-                nodes_types.append(0); // 0 - None, 1 - City, 2 - Road
+                nodes_types.append(2); // 0 - Сity, 1 - Road, 2 - None
             }
         };
         

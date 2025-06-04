@@ -679,7 +679,7 @@ pub mod game {
             for i in 0..256_usize {
                 let road_node = road_nodes.at(i.into());
                 let city_node = city_nodes.at(i.into());
-                if road_node.node_type == 2 {
+                if road_node.node_type == 1 {
                     new_nodes_types.append(road_node.node_type);
                     new_nodes_parents.append(road_node.parent);
                     new_nodes_ranks.append(road_node.rank);
@@ -687,7 +687,7 @@ pub mod game {
                     new_nodes_red_points.append(road_node.red_points);
                     new_nodes_open_edges.append(road_node.open_edges);
                     new_nodes_contested.append(road_node.contested);
-                } else if city_node.node_type == 1 {
+                } else if city_node.node_type == 0 {
                     new_nodes_types.append(city_node.node_type);
                     new_nodes_parents.append(city_node.parent);
                     new_nodes_ranks.append(city_node.rank);
@@ -696,7 +696,7 @@ pub mod game {
                     new_nodes_open_edges.append(city_node.open_edges);
                     new_nodes_contested.append(city_node.contested);
                 } else {
-                    new_nodes_types.append(0);
+                    new_nodes_types.append(2); // 0 - City, 1 - Road, 2 - None
                     new_nodes_parents.append(0);
                     new_nodes_ranks.append(0);
                     new_nodes_blue_points.append(0);
@@ -962,7 +962,7 @@ pub mod game {
                             new_nodes_red_points.append(road_node.red_points);
                             new_nodes_open_edges.append(road_node.open_edges);
                             new_nodes_contested.append(road_node.contested);
-                        } else if city_node.node_type == 2 {
+                        } else if city_node.node_type == 0 {
                             new_nodes_types.append(city_node.node_type);
                             new_nodes_parents.append(city_node.parent);
                             new_nodes_ranks.append(city_node.rank);
@@ -971,7 +971,7 @@ pub mod game {
                             new_nodes_open_edges.append(city_node.open_edges);
                             new_nodes_contested.append(city_node.contested);
                         } else {
-                            new_nodes_types.append(0);
+                            new_nodes_types.append(2); // 0 - City, 1 - Road, 2 - None
                             new_nodes_parents.append(0);
                             new_nodes_ranks.append(0);
                             new_nodes_blue_points.append(0);
@@ -1059,10 +1059,10 @@ pub mod game {
                     node.red_points = *union_find.nodes_red_points.at(i.into());
                     node.open_edges = *union_find.nodes_open_edges.at(i.into());
                     node.contested = *union_find.nodes_contested.at(i.into());
-                    if node.node_type == 1 {
+                    if node.node_type == 0 {
                         road_nodes.push(Default::default());
                         city_nodes.push(node);
-                    } else if node.node_type == 2 {
+                    } else if node.node_type == 1 {
                         road_nodes.push(node);
                         city_nodes.push(Default::default());
                     }
