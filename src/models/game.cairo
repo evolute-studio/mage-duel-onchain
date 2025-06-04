@@ -19,7 +19,7 @@ use evolute_duel::packing::{GameState, GameStatus, PlayerSide};
 pub struct Board {
     #[key]
     pub id: felt252,
-    pub initial_edge_state: Array<u8>,
+    pub initial_edge_state: Span<u8>,
     pub available_tiles_in_deck: Array<u8>,
     pub top_tile: Option<u8>,
     // (u8, u8, u8) => (tile_number, rotation, side)
@@ -34,6 +34,9 @@ pub struct Board {
     pub red_score: (u16, u16),
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
+
+    pub moves_done: u8,
+    pub last_update_timestamp: u64,
     pub commited_tile: Option<u8>,
     pub phase_started_at: u64,
 }
@@ -80,7 +83,7 @@ pub struct Move {
 pub struct Rules {
     #[key]
     pub id: felt252,
-    pub deck: Array<u8>,
+    pub deck: Span<u8>,
     pub edges: (u8, u8),
     pub joker_number: u8,
     pub joker_price: u16,
@@ -138,3 +141,4 @@ pub struct AvailableTiles {
     pub player: ContractAddress,
     pub available_tiles: Span<u8>,
 }
+

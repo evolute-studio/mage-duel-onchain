@@ -154,3 +154,22 @@ impl PlayerSideToU8 of Into<PlayerSide, u8> {
         }
     }
 }
+
+/// Represents a node involved in a potential contest.
+///
+/// - `parent`: Parent node reference for union-find structure.
+/// - `rank`: Rank in the disjoint set for contest resolution.
+/// - `blue_points`: Points earned by the blue player.
+/// - `red_points`: Points earned by the red player.
+/// - `open_edges`: Number of open edges in this city.
+/// - `contested`: Boolean flag indicating if the city is contested.
+#[derive(Drop, Destruct, Serde, Copy, IntrospectPacked, PartialEq, Debug, Default)]
+pub struct UnionNode {
+    pub parent: u8,
+    pub rank: u8,
+    pub blue_points: u16,
+    pub red_points: u16,
+    pub open_edges: u8,
+    pub contested: bool,
+    pub node_type: u8, // 0: None, 1: City, 2: Road
+}
