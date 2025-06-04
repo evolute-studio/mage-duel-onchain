@@ -53,7 +53,7 @@ pub mod game {
     use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
     use evolute_duel::{
         models::{
-            game::{Board, Rules, Move, Game, Snapshot, TileCommitments, AvaliableTiles},
+            game::{Board, Rules, Move, Game, Snapshot, TileCommitments, AvailableTiles},
             player::{Player}
         },
         events::{
@@ -371,6 +371,7 @@ pub mod game {
             host_game.board_id = Option::Some(board_id);
             guest_game.board_id = Option::Some(board_id);
             guest_game.snapshot_id = host_game.snapshot_id;
+            guest_game.status = GameStatus::Created;
 
             world.write_model(@host_game);
             world.write_model(@guest_game);
@@ -485,15 +486,8 @@ pub mod game {
             let tile_commitment = hash_values([tile_index.into(), nonce, c.into()].span());
 
             // Check if the tile commitment matches the saved one
-            if saved_tile_commitment != tile_commitment {
-                return panic!(
-                    "[ERROR] Tile commitment mismatch: expected {}, got {}",
-                    saved_tile_commitment, tile_commitment
-                );
-            }
-
             assert!(
-                saved_tile_commitment != tile_commitment,
+                saved_tile_commitment == tile_commitment,
                 "[ERROR] Tile commitment mismatch: expected {}, got {}",
                 saved_tile_commitment, tile_commitment
             );
@@ -518,7 +512,7 @@ pub mod game {
                 );
 
             // Remove the tile from the available tiles in deck
-            let player_available_tiles_entry: AvaliableTiles =
+            let player_available_tiles_entry: AvailableTiles =
                 world.read_model((board_id, player));
 
             let mut player_available_tiles = player_available_tiles_entry.available_tiles;
@@ -528,7 +522,7 @@ pub mod game {
                     new_available_tiles.append(*player_available_tiles.at(i.into()));
                 }
             };
-            world.write_model(@AvaliableTiles {
+            world.write_model(@AvailableTiles {
                 board_id,
                 player,
                 available_tiles: new_available_tiles.span(),
@@ -552,8 +546,8 @@ pub mod game {
             assert!(board.top_tile.is_some(), "[ERROR] Tile is not revealed yet");
 
             assert!(
-                board.commited_tile.is_some(),
-                "[ERROR] No tile committed"
+                board.commited_tile.is_none(),
+                "[ERROR] Tile still committed, can't request next tile"
             );
 
             assert!(
@@ -586,31 +580,35 @@ pub mod game {
                 saved_tile_commitment, tile_commitment
             );
 
-            let player_available_tiles_entry: AvaliableTiles = world.read_model((board_id, player));
+
+            let player_available_tiles_entry: AvailableTiles = world.read_model((board_id, player));
 
             let mut player_available_tiles = player_available_tiles_entry.available_tiles;
+            println!("player_available_tiles: {:?}", player_available_tiles);
             let mut new_available_tiles: Array<u8> = array![];
             for i in 0..player_available_tiles.len() {
                 if i != tile_index.into() {
                     new_available_tiles.append(*player_available_tiles.at(i.into()));
                 }
             };
-            world.write_model(@AvaliableTiles {
+            println!("new_available_tiles: {:?}", new_available_tiles);
+            world.write_model(@AvailableTiles {
                 board_id,
                 player,
                 available_tiles: new_available_tiles.span(),
             });
 
 
+
             // Redraw the tile from the deck
             let mut dice = DiceTrait::new(new_available_tiles.len().try_into().unwrap(), 
-                'SEED' + board_id + player.into() + tile_index.into() + nonce.into() + c.into()
+                'SEED',
+                // nonce
             );
 
+            // Roll the dice to get a new tile index
             let new_tile_index = dice.roll() - 1;
-
             let commited_tile = *new_available_tiles.at(new_tile_index.into());
-
             // Update the board with the new tile
             board.commited_tile = Option::Some(commited_tile);
             world.write_member(
@@ -618,14 +616,12 @@ pub mod game {
                 selector!("commited_tile"),
                 board.commited_tile,
             );
-
             board.game_state = GameState::Move;
             world.write_member(
                 Model::<Board>::ptr_from_keys(board_id),
                 selector!("game_state"),
                 board.game_state,
             );
-
             world.emit_event(@PhaseStarted {
                 board_id,
                 phase: 2, // GameState::Move
@@ -737,8 +733,6 @@ pub mod game {
                     }
                 },
             };
-
-            board.top_tile = Option::None;
 
             let move_id = self.move_id_generator.read();
 
@@ -868,9 +862,9 @@ pub mod game {
             board.last_move_id = Option::Some(move_id);
             self.move_id_generator.write(move_id + 1);
 
-            let available_tiles_player1: AvaliableTiles =
+            let available_tiles_player1: AvailableTiles =
                 world.read_model((board_id, player1_address));
-            let available_tiles_player2: AvaliableTiles =
+            let available_tiles_player2: AvailableTiles =
                 world.read_model((board_id, player2_address));
 
             if available_tiles_player1.available_tiles.len() == 0 && available_tiles_player2.available_tiles.len() == 0 && joker_number1 == 0 && joker_number2 == 0 {
@@ -880,6 +874,8 @@ pub mod game {
 
             world.write_model(@move);
 
+            board.top_tile = Option::None;
+            println!("top_tile: {:?}", board.top_tile);
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
@@ -923,6 +919,7 @@ pub mod game {
                     board.last_move_id,
                 );
 
+            board.game_state = GameState::Reveal;
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),

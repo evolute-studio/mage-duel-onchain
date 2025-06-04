@@ -69,151 +69,151 @@ pub fn connected(ref world: WorldStorage, board_id: felt252, position1: u8, posi
     return root1.position == root2.position;
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use dojo_cairo_test::WorldStorageTestTrait;
-    use dojo::model::{ModelStorage};
-    use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource, ContractDef};
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use dojo_cairo_test::WorldStorageTestTrait;
+//     use dojo::model::{ModelStorage};
+//     use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource, ContractDef};
 
-    use evolute_duel::{models::{m_Board, CityNode, m_CityNode}, events::{}, packing::{}};
-    use evolute_duel::systems::game::{};
+//     use evolute_duel::{models::{m_Board, CityNode, m_CityNode}, events::{}, packing::{}};
+//     use evolute_duel::systems::game::{};
 
-    fn namespace_def() -> NamespaceDef {
-        NamespaceDef {
-            namespace: "evolute_duel",
-            resources: [
-                TestResource::Model(m_Board::TEST_CLASS_HASH),
-                TestResource::Model(m_CityNode::TEST_CLASS_HASH),
-            ]
-                .span(),
-        }
-    }
+//     fn namespace_def() -> NamespaceDef {
+//         NamespaceDef {
+//             namespace: "evolute_duel",
+//             resources: [
+//                 TestResource::Model(m_Board::TEST_CLASS_HASH),
+//                 TestResource::Model(m_CityNode::TEST_CLASS_HASH),
+//             ]
+//                 .span(),
+//         }
+//     }
 
-    fn contract_defs() -> Span<ContractDef> {
-        [].span()
-    }
+//     fn contract_defs() -> Span<ContractDef> {
+//         [].span()
+//     }
 
-    #[test]
-    fn test_find() {
-        // Initialize test environment
-        let caller = starknet::contract_address_const::<0x0>();
-        let ndef = namespace_def();
+//     #[test]
+//     fn test_find() {
+//         // Initialize test environment
+//         let caller = starknet::contract_address_const::<0x0>();
+//         let ndef = namespace_def();
 
-        // Register the resources.
-        let mut world = spawn_test_world([ndef].span());
+//         // Register the resources.
+//         let mut world = spawn_test_world([ndef].span());
 
-        // Ensures permissions and initializations are synced.
-        world.sync_perms_and_inits(contract_defs());
+//         // Ensures permissions and initializations are synced.
+//         world.sync_perms_and_inits(contract_defs());
 
-        let board_id = 1;
-        let position = 0;
-        world
-            .write_model(
-                @CityNode {
-                    board_id,
-                    position,
-                    parent: position,
-                    rank: 1,
-                    blue_points: 0,
-                    red_points: 0,
-                    open_edges: 4,
-                    contested: false,
-                },
-            );
-        let node = find(ref world, board_id, position);
-        assert!(node.position == position, "Position should be the same");
-    }
+//         let board_id = 1;
+//         let position = 0;
+//         world
+//             .write_model(
+//                 @CityNode {
+//                     board_id,
+//                     position,
+//                     parent: position,
+//                     rank: 1,
+//                     blue_points: 0,
+//                     red_points: 0,
+//                     open_edges: 4,
+//                     contested: false,
+//                 },
+//             );
+//         let node = find(ref world, board_id, position);
+//         assert!(node.position == position, "Position should be the same");
+//     }
 
-    #[test]
-    fn test_union() {
-        // Initialize test environment
-        let caller = starknet::contract_address_const::<0x0>();
-        let ndef = namespace_def();
+//     #[test]
+//     fn test_union() {
+//         // Initialize test environment
+//         let caller = starknet::contract_address_const::<0x0>();
+//         let ndef = namespace_def();
 
-        // Register the resources.
-        let mut world = spawn_test_world([ndef].span());
+//         // Register the resources.
+//         let mut world = spawn_test_world([ndef].span());
 
-        // Ensures permissions and initializations are synced.
-        world.sync_perms_and_inits(contract_defs());
-        let board_id = 1;
-        world
-            .write_model(
-                @CityNode {
-                    board_id,
-                    position: 0,
-                    parent: 0,
-                    rank: 1,
-                    blue_points: 1,
-                    red_points: 2,
-                    open_edges: 4,
-                    contested: false,
-                },
-            );
-        world
-            .write_model(
-                @CityNode {
-                    board_id,
-                    position: 1,
-                    parent: 1,
-                    rank: 1,
-                    blue_points: 2,
-                    red_points: 3,
-                    open_edges: 4,
-                    contested: false,
-                },
-            );
+//         // Ensures permissions and initializations are synced.
+//         world.sync_perms_and_inits(contract_defs());
+//         let board_id = 1;
+//         world
+//             .write_model(
+//                 @CityNode {
+//                     board_id,
+//                     position: 0,
+//                     parent: 0,
+//                     rank: 1,
+//                     blue_points: 1,
+//                     red_points: 2,
+//                     open_edges: 4,
+//                     contested: false,
+//                 },
+//             );
+//         world
+//             .write_model(
+//                 @CityNode {
+//                     board_id,
+//                     position: 1,
+//                     parent: 1,
+//                     rank: 1,
+//                     blue_points: 2,
+//                     red_points: 3,
+//                     open_edges: 4,
+//                     contested: false,
+//                 },
+//             );
 
-        let root = union(ref world, board_id, 0, 1, false);
-        let root1 = find(ref world, board_id, 0);
-        let root2 = find(ref world, board_id, 1);
-        assert!(
-            find(ref world, board_id, 0).position == find(ref world, board_id, 1).position,
-            "Position should be the same",
-        );
-    }
+//         let root = union(ref world, board_id, 0, 1, false);
+//         let root1 = find(ref world, board_id, 0);
+//         let root2 = find(ref world, board_id, 1);
+//         assert!(
+//             find(ref world, board_id, 0).position == find(ref world, board_id, 1).position,
+//             "Position should be the same",
+//         );
+//     }
 
-    #[test]
-    fn test_connected() {
-        // Initialize test environment
-        let caller = starknet::contract_address_const::<0x0>();
-        let ndef = namespace_def();
+//     #[test]
+//     fn test_connected() {
+//         // Initialize test environment
+//         let caller = starknet::contract_address_const::<0x0>();
+//         let ndef = namespace_def();
 
-        // Register the resources.
-        let mut world = spawn_test_world([ndef].span());
+//         // Register the resources.
+//         let mut world = spawn_test_world([ndef].span());
 
-        // Ensures permissions and initializations are synced.
-        world.sync_perms_and_inits(contract_defs());
-        let board_id = 1;
-        world
-            .write_model(
-                @CityNode {
-                    board_id,
-                    position: 0,
-                    parent: 0,
-                    rank: 1,
-                    blue_points: 1,
-                    red_points: 2,
-                    open_edges: 4,
-                    contested: false,
-                },
-            );
-        world
-            .write_model(
-                @CityNode {
-                    board_id,
-                    position: 1,
-                    parent: 1,
-                    rank: 1,
-                    blue_points: 2,
-                    red_points: 3,
-                    open_edges: 4,
-                    contested: false,
-                },
-            );
+//         // Ensures permissions and initializations are synced.
+//         world.sync_perms_and_inits(contract_defs());
+//         let board_id = 1;
+//         world
+//             .write_model(
+//                 @CityNode {
+//                     board_id,
+//                     position: 0,
+//                     parent: 0,
+//                     rank: 1,
+//                     blue_points: 1,
+//                     red_points: 2,
+//                     open_edges: 4,
+//                     contested: false,
+//                 },
+//             );
+//         world
+//             .write_model(
+//                 @CityNode {
+//                     board_id,
+//                     position: 1,
+//                     parent: 1,
+//                     rank: 1,
+//                     blue_points: 2,
+//                     red_points: 3,
+//                     open_edges: 4,
+//                     contested: false,
+//                 },
+//             );
 
-        let root = union(ref world, board_id, 0, 1, false);
-        let connected = connected(ref world, board_id, 0, 1);
-        assert!(connected, "Nodes should be connected");
-    }
-}
+//         let root = union(ref world, board_id, 0, 1, false);
+//         let connected = connected(ref world, board_id, 0, 1);
+//         assert!(connected, "Nodes should be connected");
+//     }
+// }

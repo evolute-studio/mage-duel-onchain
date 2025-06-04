@@ -10,10 +10,11 @@ mod tests {
 
     use evolute_duel::{
         models::{
-            Game, m_Game, Board, m_Board, Move, m_Move, Rules, m_Rules, Snapshot, m_Snapshot,
-            PotentialCityContests, m_PotentialCityContests, CityNode, m_CityNode,
-            PotentialRoadContests, m_PotentialRoadContests, RoadNode, m_RoadNode, Player, m_Player,
-            Shop, m_Shop,
+            game::{Game, m_Game, Board, m_Board, Move, m_Move, Rules, m_Rules, Snapshot, m_Snapshot, TileCommitments, m_TileCommitments, AvailableTiles, m_AvailableTiles,},
+            scoring::{PotentialCityContests, m_PotentialCityContests, CityNode, m_CityNode,
+            PotentialRoadContests, m_PotentialRoadContests, RoadNode, m_RoadNode,},
+            player::{ Player, m_Player,},
+            skins::{Shop, m_Shop,},
         },
         events::{
             BoardCreated, e_BoardCreated, BoardCreatedFromSnapshot, e_BoardCreatedFromSnapshot,
@@ -30,7 +31,7 @@ mod tests {
             CurrentPlayerBalance, e_CurrentPlayerBalance, CurrentPlayerUsername,
             e_CurrentPlayerUsername, CurrentPlayerActiveSkin, e_CurrentPlayerActiveSkin,
             PlayerUsernameChanged, e_PlayerUsernameChanged, PlayerSkinChanged, e_PlayerSkinChanged,
-            PlayerSkinChangeFailed, e_PlayerSkinChangeFailed,
+            PlayerSkinChangeFailed, e_PlayerSkinChangeFailed, PhaseStarted, e_PhaseStarted,
         },
         packing::{GameStatus},
         systems::{
@@ -56,6 +57,8 @@ mod tests {
                 TestResource::Model(m_CityNode::TEST_CLASS_HASH),
                 TestResource::Model(m_PotentialRoadContests::TEST_CLASS_HASH),
                 TestResource::Model(m_RoadNode::TEST_CLASS_HASH),
+                TestResource::Model(m_TileCommitments::TEST_CLASS_HASH),
+                TestResource::Model(m_AvailableTiles::TEST_CLASS_HASH),
                 TestResource::Model(m_Player::TEST_CLASS_HASH),
                 TestResource::Model(m_Shop::TEST_CLASS_HASH),
                 TestResource::Event(e_BoardCreated::TEST_CLASS_HASH),
@@ -90,6 +93,9 @@ mod tests {
                 TestResource::Event(e_PlayerUsernameChanged::TEST_CLASS_HASH),
                 TestResource::Event(e_PlayerSkinChanged::TEST_CLASS_HASH),
                 TestResource::Event(e_PlayerSkinChangeFailed::TEST_CLASS_HASH),
+                TestResource::Event(e_PhaseStarted::TEST_CLASS_HASH),
+                TestResource::Event(achievement::events::index::e_TrophyCreation::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(achievement::events::index::e_TrophyProgression::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Contract(game::TEST_CLASS_HASH),
                 TestResource::Contract(player_profile_actions::TEST_CLASS_HASH),
             ]
@@ -469,4 +475,270 @@ mod tests {
                 );
         }
     }
+
+    use origami_random::deck::{Deck, DeckTrait};
+    use evolute_duel::utils::hash::hash_values;
+    use evolute_duel::packing::{GameState};
+    use evolute_duel::systems::helpers::tile_helpers::{create_extended_tile};
+    fn generate_permutation(
+        n: u8, player_address: ContractAddress,
+    ) -> Array<u8> {
+       let mut deck = DeckTrait::new(player_address.into(), n.into());
+        let mut permutation = array![];
+        for _ in 0..n {
+            let tile = deck.draw() - 1; // Convert to 0-based index
+            permutation.append(tile);
+        };
+        permutation
+    }
+
+    fn generate_nonces(
+        n: u8, player_address: ContractAddress,
+    ) -> Array<felt252> {
+        let mut deck = DeckTrait::new(player_address.into() + n.into(), n.into());
+        let mut nonces = array![];
+        for _ in 0..n {
+            let nonce = deck.draw() - 1; // Convert to 0-based index
+            nonces.append(hash_values(array![nonce.into()].span()));
+        };
+        nonces
+    }
+
+    fn generate_commitments(
+        n: u8, nonces: Array<felt252>, permutation: Array<u8>
+    ) -> Array<felt252> {
+        let mut commitments = array![];
+        for i in 0..n {
+            let commitment = hash_values(array![i.into(), (*nonces.at(i.into())).into(), (*permutation.at(i.into())).into()].span());
+            commitments.append(commitment);
+        };
+        commitments
+    }
+
+    fn find_tile_to_reveal(c: u8, permutation: Array<u8>, nonces: Array<felt252>) -> u8{
+        let mut result = 65;
+        for i in 0..permutation.len() {
+            if *permutation.at(i) == c {
+                result = i;
+            }
+        };
+        assert(result < 65, 'Tile not found in permutation');
+        result.try_into().unwrap()
+    }
+
+    #[test]
+    #[available_gas(429465835234324)]
+    fn test_reveal_commit() {
+        let host_player = starknet::contract_address_const::<0x0>();
+        let guest_player = starknet::contract_address_const::<0x1>();
+
+        starknet::testing::set_contract_address(host_player);
+
+        let ndef = namespace_def();
+        let mut world = spawn_test_world([ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+
+        let (contract_address, _) = world.dns(@"game").unwrap();
+        let game_system = IGameDispatcher { contract_address };
+
+        let initial_game: Game = world.read_model(host_player);
+        assert(initial_game.status == GameStatus::Finished, 'initial game status is wrong');
+
+        println!("Initial Game: {:?}", initial_game);
+        // Create a new game
+        game_system.create_game();
+
+        let mut new_game: Game = world.read_model(host_player);
+        assert(new_game.status == GameStatus::Created, 'game status is wrong');
+        println!("New Game: {:?}", new_game);
+        // Make geust_player the caller
+        starknet::testing::set_contract_address(guest_player);
+        assert(guest_player != host_player, 'same player');
+
+        // Join the game
+        game_system.join_game(host_player);
+
+        let game1: Game = world.read_model(host_player);
+        let game2: Game = world.read_model(guest_player);
+        assert!(game1.status == GameStatus::Created, "game status is wrong: {:?}", game1.status);
+        assert!(game2.status == GameStatus::Created, "game status is wrong: {:?}", game2.status);
+
+        let board_id = game1.board_id.unwrap();
+
+        let board: Board = world.read_model(board_id);
+
+        println!("Board: {:?}", board);
+
+        starknet::testing::set_contract_address(host_player);
+
+        let first_player_permutation = generate_permutation(64, host_player);
+        let first_player_nonces = generate_nonces(64, host_player);
+        let first_player_commitments = generate_commitments(
+            64, first_player_nonces.clone(), first_player_permutation.clone()
+        );
+
+        // println!("First Player Permutation: {:?}", first_player_permutation);
+        // println!("First Player Nonces: {:?}", first_player_nonces);
+        game_system.commit_tiles(
+            first_player_commitments.span()
+        );
+
+        let first_player_commitments_model: TileCommitments = world.read_model((board_id, host_player));
+        // println!("First Player Commitments: {:?}", first_player_commitments_model);
+
+        starknet::testing::set_contract_address(guest_player);
+        let second_player_permutation = generate_permutation(64, guest_player);
+        let second_player_nonces = generate_nonces(64, guest_player);
+        let second_player_commitments = generate_commitments(
+            64, second_player_nonces.clone(), second_player_permutation.clone()
+        );
+        // println!("Second Player Permutation: {:?}", second_player_permutation);
+        // println!("Second Player Nonces: {:?}", second_player_nonces);
+        game_system.commit_tiles(
+            second_player_commitments.span()
+        );
+        let second_player_commitments_model: TileCommitments = world.read_model((board_id, guest_player));
+        // println!("Second Player Commitments: {:?}", second_player_commitments_model);
+
+        let game1: Game = world.read_model(host_player);
+        let game2: Game = world.read_model(guest_player);
+        assert!(game1.status == GameStatus::InProgress, "game status is wrong: {:?}", game1.status);
+        assert!(game2.status == GameStatus::InProgress, "game status is wrong: {:?}", game2.status);
+
+
+        // Reveal the first player's tile
+        starknet::testing::set_contract_address(host_player);
+        let board: Board = world.read_model(board_id);
+        let commited_tile = board.commited_tile.unwrap();
+        println!("Committed Tile on the board: {:?}", commited_tile);
+        let tile_to_reveal = find_tile_to_reveal(commited_tile, first_player_permutation.clone(), first_player_nonces.clone());
+        
+        let tile = tile_to_reveal;
+        let nonce = *first_player_nonces.at(tile_to_reveal.into());
+        let c = *first_player_permutation.at(tile_to_reveal.into());
+        println!("Revealing tile: {:?}, nonce: {:?}, c: {:?}", tile, nonce, c);
+        assert!(hash_values(array![tile.into(), nonce.into(), c.into()].span()) == *first_player_commitments.at(tile.into()), "Commitment does not match");
+        game_system.reveal_tile(
+            tile.into(), nonce, c
+        );
+
+        let board: Board = world.read_model(board_id);
+        let top_tile = board.top_tile.unwrap();
+        let commited_tile = board.commited_tile;
+        assert!(top_tile == *board.available_tiles_in_deck.at(tile.into()), "Top tile is not the same as commited tile");
+        assert!(commited_tile.is_none(), "Committed tile should be None after reveal");
+
+        // Reveal the second player's tile
+        starknet::testing::set_contract_address(guest_player);
+        let nonce = *second_player_nonces.at(tile_to_reveal.into());
+        let c = *second_player_permutation.at(tile_to_reveal.into());
+        println!("Revealing tile: {:?}, nonce: {:?}, c: {:?}", tile, nonce, c);
+        assert!(hash_values(array![tile.into(), nonce.into(), c.into()].span()) == *second_player_commitments.at(tile.into()), "Commitment does not match");
+        let next_commitment = game_system.request_next_tile(
+            tile.into(), nonce, c
+        );
+        println!("Next commitment: {:?}", next_commitment);
+
+        let board: Board = world.read_model(board_id);
+        let game_state = board.game_state;
+        assert!(game_state == GameState::Move, "Game state is not 1 after reveal");
+
+        // Check the top tile
+        let top_tile = board.top_tile.unwrap();
+        let expected_top_tile = *board.available_tiles_in_deck.at(tile.into());
+        assert!(top_tile == expected_top_tile, "Top tile is not the same as expected");
+        println!("Top tile after reveal: {:?}", top_tile);
+
+        //Extended tile
+        let extended_tile = create_extended_tile(top_tile.into(), 0);
+        println!("Extended Tile: {:?}", extended_tile);
+        println!("Board state: {:?}", board.state);
+        println!("Board initial edge state: {:?}", board.initial_edge_state);
+
+        let moves = array![
+            (Option::None, 1, 0, 7),
+            (Option::None, 1, 0, 0),
+            (Option::None, 3, 0, 1),
+            (Option::None, 1, 1, 1),
+            (Option::None, 1, 6, 0),
+            (Option::None, 3, 1, 2),
+            (Option::None, 1, 2, 2),
+            (Option::None, 2, 1, 3),
+            (Option::None, 1, 0, 6),
+            (Option::None, 1, 0, 5),
+            (Option::None, 1, 2, 3),
+            (Option::None, 3, 0, 4),
+            (Option::None, 2, 0, 3),
+            (Option::None, 3, 1, 6),
+            (Option::Some(10), 2, 0, 2),
+            (Option::None, 2, 1, 5),
+        ];
+
+        // Move by the host player
+        starknet::testing::set_contract_address(host_player);
+        let rotation = 0;
+        let col = 7;
+        let row = 0;
+        game_system.make_move(
+            Option::None, rotation, col, row,
+        );
+
+        let tile_to_reveal = find_tile_to_reveal(next_commitment.unwrap(), second_player_permutation.clone(), second_player_nonces.clone());
+        let tile = tile_to_reveal;
+        let nonce = *second_player_nonces.at(tile_to_reveal.into());
+        let c = *second_player_permutation.at(tile_to_reveal.into());
+        println!("Revealing tile: {:?}, nonce: {:?}, c: {:?}", tile, nonce, c);
+        assert!(hash_values(array![tile.into(), nonce.into(), c.into()].span()) == *second_player_commitments.at(tile.into()), "Commitment does not match");
+        
+        starknet::testing::set_contract_address(guest_player);
+        game_system.reveal_tile(
+            tile.into(), nonce, c
+        );
+
+
+        let board: Board = world.read_model(board_id);
+        let top_tile = board.top_tile.unwrap();
+        println!("Top tile after second reveal: {:?}", top_tile);
+        let expected_top_tile = *board.available_tiles_in_deck.at(tile.into());
+        assert!(top_tile == expected_top_tile, "Top tile is not the same as expected after second reveal");
+
+        let extended_tile = create_extended_tile(top_tile.into(), 0);
+        println!("Extended Top Tile: {:?}", extended_tile);
+
+        starknet::testing::set_contract_address(host_player);
+        let nonce = *first_player_nonces.at(tile_to_reveal.into());
+        let c = *first_player_permutation.at(tile_to_reveal.into());
+        println!("Revealing tile: {:?}, nonce: {:?}, c: {:?}", tile, nonce, c);
+        assert!(hash_values(array![tile.into(), nonce.into(), c.into()].span()) == *first_player_commitments.at(tile.into()), "Commitment does not match");
+        let next_commitment = game_system.request_next_tile(
+            tile.into(), nonce, c
+        );
+        println!("Next commitment: {:?}", next_commitment);
+
+        let board: Board = world.read_model(board_id);
+        let game_state = board.game_state;
+        assert!(game_state == GameState::Move, "Game state is not 1 after second reveal");
+
+        // Check the top tile
+        let top_tile = board.top_tile.unwrap();
+        let expected_top_tile = *board.available_tiles_in_deck.at(tile.into());
+        assert!(top_tile == expected_top_tile, "Top tile is not the same as expected after second reveal");
+        println!("Top tile after second reveal: {:?}", top_tile);
+        let extended_tile = create_extended_tile(top_tile.into(), 0);
+        println!("Extended Tile after second reveal: {:?}", extended_tile);
+
+        // Move by the guest player
+        starknet::testing::set_contract_address(guest_player);
+        let rotation = 1;
+        let col = 0;
+        let row = 1;
+        game_system.make_move(
+            Option::None, rotation, col, row,
+        );
+
+        let board: Board = world.read_model(board_id);
+        println!("Board after second move: {:?}", board);
+    }
 }
+
+

@@ -10,7 +10,7 @@ use origami_random::dice::{DiceTrait};
 use core::dict::Felt252Dict;
 
 use evolute_duel::{
-    events::{BoardCreated, BoardCreatedFromSnapshot}, models::game::{Board, Rules, Move},
+    events::{BoardCreated, BoardCreatedFromSnapshot}, models::game::{Board, Rules, Move, AvailableTiles},
     packing::{GameState, TEdge, Tile, PlayerSide},
     systems::helpers::{
         city_scoring::{connect_adjacent_city_edges, connect_city_edges_in_tile},
@@ -94,6 +94,24 @@ pub fn create_board(
                 game_state,
             },
         );
+
+    // Create player available tiles.
+    let mut available_tiles: Array<u8> = array![];
+    for i in 0..deck_rules_flat.len() {
+        available_tiles.append(i.try_into().unwrap());
+    };
+
+    world.write_model(@AvailableTiles {
+        board_id,
+        player: player1,
+        available_tiles: available_tiles.span(),
+    });
+
+    world.write_model(@AvailableTiles {
+        board_id,
+        player: player2,
+        available_tiles: available_tiles.span(),
+    });
 
     return board;
 }
@@ -245,17 +263,17 @@ pub fn create_board_from_snapshot(
         current_move_id = next_move_id;
     };
 
-    let mut updated_avaliable_tiles: Array<u8> = ArrayTrait::new();
+    let mut updated_available_tiles: Array<u8> = ArrayTrait::new();
     for i in 0..deck_rules_flat.len() {
         let tile = *deck_rules_flat.at(i.into());
         let drawn_tiles_number = drawn_tiles.get(tile.into());
         if drawn_tiles_number == 0 {
-            updated_avaliable_tiles.append(tile);
+            updated_available_tiles.append(tile);
         } else {
             drawn_tiles.insert(tile.into(), drawn_tiles_number - 1);
         }
     };
-    new_board.available_tiles_in_deck = updated_avaliable_tiles.clone();
+    new_board.available_tiles_in_deck = updated_available_tiles.clone();
     new_board.top_tile = draw_tile_from_board_deck(ref new_board);
 
     new_board.initial_edge_state = array![];
@@ -325,24 +343,24 @@ pub fn update_board_joker_number(ref board: Board, side: PlayerSide, is_joker: b
 
 /// Draws random tile from the board deck and updates the deck without the drawn tile.
 pub fn draw_tile_from_board_deck(ref board: Board) -> Option<u8> {
-    let avaliable_tiles: Array<u8> = board.available_tiles_in_deck.clone();
-    if avaliable_tiles.len() == 0 {
+    let available_tiles: Array<u8> = board.available_tiles_in_deck.clone();
+    if available_tiles.len() == 0 {
         board.top_tile = Option::None;
         return Option::None;
     }
     let mut dice = DiceTrait::new(
-        avaliable_tiles.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into(),
+        available_tiles.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into(),
     );
 
     let mut next_tile = dice.roll() - 1;
 
-    let tile: u8 = *avaliable_tiles.at(next_tile.into());
+    let tile: u8 = *available_tiles.at(next_tile.into());
 
     // Remove the drawn tile from the deck.
     let mut updated_available_tiles: Array<u8> = ArrayTrait::new();
-    for i in 0..avaliable_tiles.len() {
+    for i in 0..available_tiles.len() {
         if i != next_tile.into() {
-            updated_available_tiles.append(*avaliable_tiles.at(i.into()));
+            updated_available_tiles.append(*available_tiles.at(i.into()));
         }
     };
 

@@ -130,7 +130,7 @@ pub struct TileCommitments {
 
 #[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::model]
-pub struct AvaliableTiles {
+pub struct AvailableTiles {
     #[key]
     pub board_id: felt252,
     #[key]

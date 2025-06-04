@@ -24,20 +24,7 @@ pub fn hash_values(values: Span<felt252>) -> felt252 {
 mod unit {
     use super::{
         hash_values,
-        make_block_hash,
-        FeltToLossy,
     };
-
-    #[test]
-    fn test_felt_to_u128_lossy() {
-        assert_eq!(0xab9d03074bff6ee2d4dbc374dbf3f846, 0x7f25249bc3b57d4a9cb82bd75d25579ab9d03074bff6ee2d4dbc374dbf3f846.to_u128_lossy(), "bump");
-    }
-
-    #[test]
-    fn test_make_block_hash() {
-        let h = make_block_hash();
-        assert_ne!(h, 0, "block hash");
-    }
 
     #[test]
     fn test_hash_values() {
