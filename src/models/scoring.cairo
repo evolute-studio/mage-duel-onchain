@@ -175,7 +175,7 @@ pub impl UnionFindImpl of UnionFindTrait {
                 nodes_contested.append(city_node.contested);
                 nodes_types.append(0); // 0 - Сity, 1 - Road, 2 - None
             } else {
-                nodes_parents.append(0);
+                nodes_parents.append(i.try_into().unwrap());
                 nodes_ranks.append(0);
                 nodes_blue_points.append(0);
                 nodes_red_points.append(0);

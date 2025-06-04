@@ -972,7 +972,7 @@ pub mod game {
                             new_nodes_contested.append(city_node.contested);
                         } else {
                             new_nodes_types.append(2); // 0 - City, 1 - Road, 2 - None
-                            new_nodes_parents.append(0);
+                            new_nodes_parents.append(i.try_into().unwrap());
                             new_nodes_ranks.append(0);
                             new_nodes_blue_points.append(0);
                             new_nodes_red_points.append(0);
