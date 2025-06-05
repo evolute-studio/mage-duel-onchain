@@ -610,22 +610,22 @@ pub mod game {
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
-            assert!(board.top_tile.is_some(), "[ERROR] Tile is not revealed yet");
+            assert!(board.top_tile.is_some(), "[REQUEST ERROR] Tile is not revealed yet");
 
             assert!(
                 board.commited_tile.is_none(),
-                "[ERROR] Tile still committed, can't request next tile"
+                "[REQUEST ERROR] Tile still committed, can't request next tile"
             );
 
             assert!(
                 board.game_state == GameState::Reveal,
-                "[ERROR] Game state is not Reveal: {:?}",
+                "[REQUEST ERROR] Game state is not Reveal: {:?}",
                 board.game_state
             );
 
             if get_block_timestamp() > board.phase_started_at + REVEAL_TIME {
                 println!(
-                    "[ERROR] Reveal timeout: {:?} > {:?} + {:?}",
+                    "[REQUEST ERROR] Reveal timeout: {:?} > {:?} + {:?}",
                     get_block_timestamp(),
                     board.phase_started_at,
                     REVEAL_TIME
@@ -637,7 +637,7 @@ pub mod game {
 
             assert!(
                 board.top_tile.unwrap() == tile,
-                "[ERROR] Tile mismatch: expected {}, got {}",
+                "[REQUEST ERROR] Tile mismatch: expected {}, got {}",
                 board.top_tile.unwrap(),
                 tile
             );
