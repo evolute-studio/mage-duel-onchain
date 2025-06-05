@@ -46,7 +46,7 @@ pub fn connect_road_edges_in_tile(
                 red_points,
                 open_edges,
                 contested: false,
-                node_type: 2, // 0: None, 1: City, 2: Road
+                node_type: 1, // 0: City, 1: Road, 2: None
             };
             //println!("4");
             //println!("Position: {:?}", position);

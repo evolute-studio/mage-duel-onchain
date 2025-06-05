@@ -163,7 +163,7 @@ impl PlayerSideToU8 of Into<PlayerSide, u8> {
 /// - `red_points`: Points earned by the red player.
 /// - `open_edges`: Number of open edges in this city.
 /// - `contested`: Boolean flag indicating if the city is contested.
-#[derive(Drop, Destruct, Serde, Copy, IntrospectPacked, PartialEq, Debug, Default)]
+#[derive(Drop, Destruct, Serde, Copy, Introspect, PartialEq, Debug)]
 pub struct UnionNode {
     pub parent: u8,
     pub rank: u8,
@@ -171,5 +171,19 @@ pub struct UnionNode {
     pub red_points: u16,
     pub open_edges: u8,
     pub contested: bool,
-    pub node_type: u8, // 0: None, 1: City, 2: Road
+    pub node_type: u8, // 0: City, 1: Road, 2: None
+}
+
+impl UnionNodeDefault of  Default<UnionNode> {
+    fn default() -> UnionNode {
+        UnionNode {
+            parent: 0,
+            rank: 0,
+            blue_points: 0,
+            red_points: 0,
+            open_edges: 0,
+            contested: false,
+            node_type: 2, // Default to None
+        }
+    }
 }
