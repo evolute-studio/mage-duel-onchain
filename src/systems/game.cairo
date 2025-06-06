@@ -35,7 +35,7 @@ pub trait IGame<T> {
     /// Creates a snapshot of the current game state.
     /// - `board_id`: ID of the board being saved.
     /// - `move_number`: Move number at the time of snapshot.
-    fn create_snapshot(ref self: T, board_id: felt252, move_number: u8);
+    fn create_snapshot(ref self: T, board_id: felt252, move_number: u8) -> Option<felt252>;
 
     /// Restores a game session from a snapshot.
     /// - `snapshot_id`: ID of the snapshot to restore from.
@@ -213,7 +213,7 @@ pub mod game {
             AchievementsTrait::create_game(world, host_player);
         }
 
-        fn create_snapshot(ref self: ContractState, board_id: felt252, move_number: u8) {
+        fn create_snapshot(ref self: ContractState, board_id: felt252, move_number: u8) -> Option<felt252> {
             let mut world = self.world_default();
             let player = get_caller_address();
 
@@ -228,7 +228,7 @@ pub mod game {
                         },
                     );
                 println!("Snapshot create failed, move number is greater than max move number");
-                return;
+                return Option::None;
             }
 
             let snapshot_id = self.snapshot_id_generator.read();
@@ -240,6 +240,8 @@ pub mod game {
             world.write_model(@snapshot);
 
             world.emit_event(@SnapshotCreated { snapshot_id, player, board_id, move_number });
+
+            Option::Some(snapshot_id)
         }
 
         fn create_game_from_snapshot(ref self: ContractState, snapshot_id: felt252) {
@@ -661,14 +663,14 @@ pub mod game {
             let player_available_tiles_entry: AvailableTiles = world.read_model((board_id, player));
 
             let mut player_available_tiles = player_available_tiles_entry.available_tiles;
-            println!("player_available_tiles: {:?}", player_available_tiles);
+            // println!("player_available_tiles: {:?}", player_available_tiles);
             let mut new_available_tiles: Array<u8> = array![];
             for i in 0..player_available_tiles.len() {
                 if i != tile_index.into() {
                     new_available_tiles.append(*player_available_tiles.at(i.into()));
                 }
             };
-            println!("new_available_tiles: {:?}", new_available_tiles);
+            // println!("new_available_tiles: {:?}", new_available_tiles);
             world.write_model(@AvailableTiles {
                 board_id,
                 player,
@@ -1038,21 +1040,21 @@ pub mod game {
             let mut new_nodes_open_edges = array![];
             let mut new_nodes_contested = array![];
             let mut new_nodes_types = array![];
-            println!("Road nodes length: {:?}", road_nodes.len());
-            println!("City nodes length: {:?}", city_nodes.len());
-            print!("[Road nodes types]: [");
-            for i in 0..256_usize {
-                let road_node = road_nodes.at(i.into());
-                print!("{}, ", road_node.node_type);
-            };
-            println!("]");
+            // println!("Road nodes length: {:?}", road_nodes.len());
+            // println!("City nodes length: {:?}", city_nodes.len());
+            // print!("[Road nodes types]: [");
+            // for i in 0..256_usize {
+            //     let road_node = road_nodes.at(i.into());
+            //     print!("{}, ", road_node.node_type);
+            // };
+            // println!("]");
 
-            print!("[City nodes types]: [");
-            for i in 0..256_usize {
-                let city_node = city_nodes.at(i.into());
-                print!("{}, ", city_node.node_type);
-            };
-            println!("]");
+            // print!("[City nodes types]: [");
+            // for i in 0..256_usize {
+            //     let city_node = city_nodes.at(i.into());
+            //     print!("{}, ", city_node.node_type);
+            // };
+            // println!("]");
 
 
             for i in 0..256_usize {
@@ -1097,7 +1099,7 @@ pub mod game {
             world.write_model(@move);
 
             board.top_tile = Option::None;
-            println!("top_tile: {:?}", board.top_tile);
+            // println!("top_tile: {:?}", board.top_tile);
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
@@ -1200,10 +1202,10 @@ pub mod game {
                 phase: 1, // GameState::Reveal
             });
 
-            println!(
-                "Move made: {:?} \nBoard: {:?} \nUnion find: {:?}",
-                move, board, union_find,
-            );
+            // println!(
+            //     "Move made: {:?} \nBoard: {:?} \nUnion find: {:?}",
+            //     move, board, union_find,
+            // );
         }
 
         fn skip_move(ref self: ContractState) {

@@ -109,7 +109,7 @@ impl PlayerDataImpl of PlayerDataTrait {
 
     fn get_reveal_data(ref self: PlayerData, c: u8) -> (u8, felt252, u8) // Returns (tile_index, nonce, c)
     {
-        println!("Purmutation: {:?}", self.permutation);
+        // println!("Purmutation: {:?}", self.permutation);
     
         let mut tile_index = 65;
         for i in 0..self.permutation.len() {
@@ -178,6 +178,29 @@ pub impl GameCallerImpl of GameCallerTrait {
         self.game_system.create_game();
     }
 
+    fn create_game_from_snapshot(ref self: GameCaller, board_id: felt252) {
+        let host_player_address = self.host_player_data.address;
+        testing::set_contract_address(host_player_address);
+
+        let move_number = match self.game_type {
+            GameType::Standard => {panic!("Cannot create game from snapshot in Standard mode")},
+            GameType::Snapshot(move_number) => move_number,
+        };
+
+        let snapshot_id = match self.game_system.create_snapshot(board_id, move_number) {
+            Option::Some(snapshot_id) => {
+                println!("Snapshot created with ID: {}", snapshot_id);
+                snapshot_id
+            },
+            Option::None => {
+                println!("Failed to create snapshot");
+                return panic!("Failed to create snapshot");
+            },
+        };
+
+        self.game_system.create_game_from_snapshot(snapshot_id);
+    }
+
     fn join_game(ref self: GameCaller) {
         testing::set_contract_address(self.guest_player_data.address);
         self.game_system.join_game(self.host_player_data.address);
@@ -202,11 +225,11 @@ pub impl GameCallerImpl of GameCallerTrait {
         // Commit tiles for both players
         testing::set_contract_address(self.host_player_data.address);
         self.game_system.commit_tiles(self.host_player_data.tile_commitments.span());
-        println!("Host player committed tiles: {:?}", self.host_player_data.tile_commitments);
+        // println!("Host player committed tiles: {:?}", self.host_player_data.tile_commitments);
 
         testing::set_contract_address(self.guest_player_data.address);
         self.game_system.commit_tiles(self.guest_player_data.tile_commitments.span());
-        println!("Guest player committed tiles: {:?}", self.guest_player_data.tile_commitments);
+        // println!("Guest player committed tiles: {:?}", self.guest_player_data.tile_commitments);
 
         self.turn = Turn::Host;
     }
@@ -282,6 +305,36 @@ pub impl GameCallerImpl of GameCallerTrait {
         }
     }
 
+    fn process_auto_multiple_moves(ref self: GameCaller, moves: u8, snapshot_move_number: u8) -> Array<(u8, u8, u8)> {
+        let mut snapshot_state = array![];
+        self.update_commited_tile();
+        for i in 0..moves {
+            println!("{}", i);
+            self.commited_tile = self.process_reveal_phase(self.commited_tile).unwrap();
+            let board_id: Option<felt252> = self.world.read_member(
+                Model::<Game>::ptr_from_keys(self.host_player_data.address), selector!("board_id")
+            );
+            let mut board: Board = self.world.read_model(board_id.unwrap());
+            let (joker_tile, rotation, col, row) = MoveFinderTrait::find_move(ref board);
+            self.process_move(joker_tile, rotation, col, row);
+            if i + 1 == snapshot_move_number {
+                snapshot_state = board.state.clone();
+                println!("Snapshot state at move {}: {:?}", i + 1, snapshot_state)
+            }
+        };
+        snapshot_state
+    }
+
+    fn process_auto_move(ref self: GameCaller) {
+        let board_id: Option<felt252> = self.world.read_member(
+            Model::<Game>::ptr_from_keys(self.host_player_data.address), selector!("board_id")
+        );
+        let mut board: Board = self.world.read_model(board_id.unwrap());
+        let (joker_tile, rotation, col, row) = MoveFinderTrait::find_move(ref board);
+        println!("Auto move found: joker_tile: {:?}, rotation: {}, col: {}, row: {}", joker_tile, rotation, col, row);
+        self.process_move(joker_tile, rotation, col, row);
+    }
+
     fn update_commited_tile(ref self: GameCaller) {
         let board_id: Option<felt252> = self.world.read_member(
             Model::<Game>::ptr_from_keys(self.host_player_data.address), selector!("board_id")
@@ -290,5 +343,57 @@ pub impl GameCallerImpl of GameCallerTrait {
         let board: Board = self.world.read_model(board_id.unwrap());
         println!("Updated commited tile: {:?}", board.commited_tile);
         self.commited_tile = board.commited_tile.unwrap();
+    }
+}
+
+
+use evolute_duel::systems::helpers::validation::is_valid_move;
+#[generate_trait]
+pub impl MoveFinderImpl of MoveFinderTrait {
+    fn find_move(ref board: Board) -> (Option<u8>, u8, u8, u8) { // Returns (joker_tile, rotation, col, row)
+        let mut joker_tile: Option<u8> = Option::None;
+        let mut rotation: u8 = 0;
+        let mut col: u8 = 0;
+        let mut row: u8 = 0;
+
+        // Implement your logic to find the move here
+        // For example, you can iterate over the board and find a valid move
+        let tile = match board.top_tile {
+            Option::Some(tile) => tile,
+            Option::None => {
+                return panic!("No top tile found on the board");
+            },
+        };
+
+        let mut found = false;
+
+        for c in 0..7_u8 {
+            if found {
+                break; // Exit the loop if a valid move is found
+            }
+            for r in 0..7_u8 {
+                if found {
+                    break; // Exit the loop if a valid move is found
+                }
+                // Check if the tile can be placed at (c, r) with any rotation
+                for rot in 0..4_u8 {
+                    // Check if the move is valid
+                    if is_valid_move(tile.into(), rot, c, r, board.state.span(), board.initial_edge_state) {
+                        let extended_tile = create_extended_tile(tile.into(), rotation);
+                        joker_tile = Option::None; // No joker tile used
+                        rotation = rot;
+                        col = c;
+                        row = r;
+                        println!("Found valid move: extended_tile {:?}, rotation {}, col {}, row {}", extended_tile, rotation, col, row);
+                        found = true; // Set found to true to exit the loops
+                        break;
+                    }
+                }
+            }
+        };
+
+        // Return the found move
+        (joker_tile, rotation, col, row)
+    
     }
 }

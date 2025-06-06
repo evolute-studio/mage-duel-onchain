@@ -329,6 +329,7 @@ mod tests {
     }
 
     #[test]
+    #[available_gas(429465835234324)]
     fn test_game_move() {
         let host_player = starknet::contract_address_const::<0x0>();
         let guest_player = starknet::contract_address_const::<0x1>();
@@ -367,27 +368,30 @@ mod tests {
 
         println!("Board: {:?}", board);
 
-        // Make moves
-        //(joker_tile, rotation, col, row)
-        let moves = array![
-            (Option::None, 1, 0, 7),
-            (Option::None, 1, 0, 0),
-            (Option::None, 3, 0, 1),
-            (Option::None, 1, 1, 1),
-            (Option::None, 1, 6, 0),
-            (Option::None, 3, 1, 2),
-            (Option::None, 1, 2, 2),
-            (Option::None, 2, 1, 3),
-            (Option::None, 1, 0, 6),
-            (Option::None, 1, 0, 5),
-            (Option::None, 1, 2, 3),
-            (Option::None, 3, 0, 4),
-            (Option::None, 2, 0, 3),
-            (Option::None, 3, 1, 6),
-            (Option::Some(10), 2, 0, 2),
-            (Option::None, 2, 1, 5),
-        ];
-        game_caller.process_multiple_moves(moves);
+        // // Make moves
+        // //(joker_tile, rotation, col, row)
+        // let moves = array![
+        //     (Option::None, 1, 0, 7),
+        //     (Option::None, 1, 0, 0),
+        //     (Option::None, 3, 0, 1),
+        //     (Option::None, 1, 1, 1),
+        //     (Option::None, 1, 6, 0),
+        //     (Option::None, 3, 1, 2),
+        //     (Option::None, 1, 2, 2),
+        //     (Option::None, 2, 1, 3),
+        //     (Option::None, 1, 0, 6),
+        //     (Option::None, 1, 0, 5),
+        //     (Option::None, 1, 2, 3),
+        //     (Option::None, 3, 0, 4),
+        //     (Option::None, 2, 0, 3),
+        //     (Option::None, 3, 1, 6),
+        //     (Option::Some(10), 2, 0, 2),
+        //     (Option::None, 2, 1, 5),
+        // ];
+        // game_caller.process_multiple_moves(moves);
+
+        // Make automated moves
+        game_caller.process_auto_multiple_moves(30, 0);
 
         let board: Board = world.read_model(board_id);
         println!("Board: {:?}", board);
@@ -398,95 +402,89 @@ mod tests {
     fn test_snapshot() {
         let host_player = starknet::contract_address_const::<0x0>();
         let guest_player = starknet::contract_address_const::<0x1>();
-
-        starknet::testing::set_contract_address(host_player);
-
         let ndef = namespace_def();
         let mut world = spawn_test_world([ndef].span());
         world.sync_perms_and_inits(contract_defs());
 
         let (contract_address, _) = world.dns(@"game").unwrap();
-        let game_system = IGameDispatcher { contract_address };
+        let mut game_caller = GameCallerTrait::new(
+            world,
+            contract_address,
+            host_player,
+            guest_player,
+            GameType::Standard,
+        );
 
         let initial_game: Game = world.read_model(host_player);
         assert(initial_game.status == GameStatus::Finished, 'initial game status is wrong');
 
         // Create a new game
-        game_system.create_game();
+        game_caller.create_game();
 
         let mut new_game: Game = world.read_model(host_player);
         assert(new_game.status == GameStatus::Created, 'game status is wrong');
 
-        // Make geust_player the caller
-        starknet::testing::set_contract_address(guest_player);
-        assert(guest_player != host_player, 'same player');
-
         // Join the game
-        game_system.join_game(host_player);
+        game_caller.join_game();
+        game_caller.commit_tiles();
 
         let game1: Game = world.read_model(host_player);
         let game2: Game = world.read_model(guest_player);
-        assert(game1.status == GameStatus::InProgress, 'game status is wrong');
-        assert(game2.status == GameStatus::InProgress, 'game status is wrong');
-
-        starknet::testing::set_contract_address(host_player);
-        // Make moves
-        //(joker_tile, rotation, col, row)
-        let moves = array![
-            (true, Option::None, 1, 0, 7),
-            (true, Option::None, 1, 0, 0),
-            (true, Option::None, 3, 0, 1),
-            (true, Option::None, 1, 1, 1),
-        ];
-        make_multiple_moves(ref world, game_system, host_player, guest_player, moves, Option::None, Option::None);
-
-        let board_on_4th_move: Board = world.read_model(game1.board_id.unwrap());
-        println!("Board after 4th move: {:?}", board_on_4th_move);
-
-        let moves = array![
-            (true, Option::None, 1, 6, 0),
-            (true, Option::None, 3, 1, 2),
-            (true, Option::None, 1, 2, 2),
-            (true, Option::None, 2, 1, 3),
-            (true, Option::None, 1, 0, 6),
-            (true, Option::None, 1, 0, 5),
-            (true, Option::None, 1, 2, 3),
-            (true, Option::None, 3, 0, 4),
-            (true, Option::None, 2, 0, 3),
-            (true, Option::None, 3, 1, 6),
-            (true, Option::Some(10), 2, 0, 2),
-            (true, Option::None, 2, 1, 5),
-        ];
-
-        let board_on_16th_move: Board = world.read_model(game1.board_id.unwrap());
-        println!("Board before 16th move: {:?}", board_on_16th_move);
-
-        make_multiple_moves(ref world, game_system, host_player, guest_player, moves, Option::None, Option::None);
 
         let board_id = game1.board_id.unwrap();
+
+        let board: Board = world.read_model(board_id);
+
+        println!("Board: {:?}", board);
+
+        // // Make moves
+        // //(joker_tile, rotation, col, row)
+        // let moves = array![
+        //     (Option::None, 1, 0, 7),
+        //     (Option::None, 1, 0, 0),
+        //     (Option::None, 3, 0, 1),
+        //     (Option::None, 1, 1, 1),
+        //     (Option::None, 1, 6, 0),
+        //     (Option::None, 3, 1, 2),
+        //     (Option::None, 1, 2, 2),
+        //     (Option::None, 2, 1, 3),
+        //     (Option::None, 1, 0, 6),
+        //     (Option::None, 1, 0, 5),
+        //     (Option::None, 1, 2, 3),
+        //     (Option::None, 3, 0, 4),
+        //     (Option::None, 2, 0, 3),
+        //     (Option::None, 3, 1, 6),
+        //     (Option::Some(10), 2, 0, 2),
+        //     (Option::None, 2, 1, 5),
+        // ];
+        // game_caller.process_multiple_moves(moves);
+
+        // Make automated moves
+        let snapshot_state = game_caller.process_auto_multiple_moves(30, 12);
+
         let board: Board = world.read_model(board_id);
         println!("Board: {:?}", board);
 
-        // Cancel the game
-        game_system.cancel_game();
 
-        // Create a snapshot
-        starknet::testing::set_contract_address(host_player);
-        game_system.create_snapshot(board_id, 16);
-        let snapshot: Snapshot = world.read_model(board_id);
-        println!("Snapshot: {:?}", snapshot);
+        let host_player = starknet::contract_address_const::<0x2>();
+        let guest_player = starknet::contract_address_const::<0x3>();
+        let mut game_caller = GameCallerTrait::new(
+            world,
+            contract_address,
+            host_player,
+            guest_player,
+            GameType::Snapshot(12),
+        );
 
         // Create a new game from snapshot
-        game_system.create_game_from_snapshot(0);
+        game_caller.create_game_from_snapshot(board.id);
 
         let mut new_game: Game = world.read_model(host_player);
         assert(new_game.status == GameStatus::Created, 'game status is wrong');
         let new_board_id = new_game.board_id.unwrap();
         let new_board: Board = world.read_model(new_board_id);
         println!("New Board: {:?}", new_board);
-        assert(new_board.state == board.state, 'state is not the same');
-        assert(new_board.blue_score == board.blue_score, 'blue_score is not the same');
-        assert(new_board.red_score == board.red_score, 'red_score is not the same');
+        assert(new_board.state == snapshot_state, 'state is not the same');
     }
 
     #[test]

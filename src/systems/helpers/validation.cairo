@@ -11,7 +11,6 @@ pub fn is_valid_move(
     initial_edge_state: Span<u8>,
 ) -> bool {
     let extended_tile = create_extended_tile(tile, rotation);
-    println!("extended tile: {:?}", extended_tile);
     let tile_position = col * 8 + row;
 
     //check if the tile is empty
