@@ -4,15 +4,20 @@ version = 1
 [[package]]
 name = "achievement"
 version = "0.0.0"
-source = "git+https://github.com/cartridge-gg/arcade#3c53f660eec40edd1b708a0935b3832d3bc0eb3e"
+source = "git+https://github.com/evolute-studio/arcade#f3ba9022ca2ef8a27ce54e790be7a2e279a2b1a0"
 dependencies = [
  "dojo",
 ]
 
 [[package]]
+name = "alexandria_data_structures"
+version = "0.4.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.4.0#ae3d960589a2f0c9af5fbd9236f6f3eb39fea8ed"
+
+[[package]]
 name = "dojo"
-version = "1.5.0"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.5.0#812f17c9c57fd057d0bf1e648a591ea0ca9ea718"
+version = "1.5.1"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.5.1#986c3b0c6d647b23847c70ddceb1d33ddac86ead"
 dependencies = [
  "dojo_plugin",
 ]
@@ -20,7 +25,7 @@ dependencies = [
 [[package]]
 name = "dojo_cairo_test"
 version = "1.0.12"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.5.0#812f17c9c57fd057d0bf1e648a591ea0ca9ea718"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.5.1#986c3b0c6d647b23847c70ddceb1d33ddac86ead"
 dependencies = [
  "dojo",
 ]
@@ -28,13 +33,14 @@ dependencies = [
 [[package]]
 name = "dojo_plugin"
 version = "2.10.1"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.5.0#812f17c9c57fd057d0bf1e648a591ea0ca9ea718"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.5.1#986c3b0c6d647b23847c70ddceb1d33ddac86ead"
 
 [[package]]
 name = "evolute_duel"
-version = "1.5.0"
+version = "1.5.1"
 dependencies = [
  "achievement",
+ "alexandria_data_structures",
  "dojo",
  "dojo_cairo_test",
  "openzeppelin_access",

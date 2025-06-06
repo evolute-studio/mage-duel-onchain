@@ -28,8 +28,8 @@ pub struct BoardCreatedFromSnapshot {
     pub board_id: felt252,
     pub old_board_id: felt252,
     pub move_number: u8,
-    pub initial_edge_state: Array<u8>,
-    pub available_tiles_in_deck: Array<u8>,
+    pub initial_edge_state: Span<u8>,
+    pub available_tiles_in_deck: Span<u8>,
     pub top_tile: Option<u8>,
     pub state: Array<(u8, u8, u8)>,
     //(address, side, joker_number)
@@ -78,9 +78,9 @@ pub struct SnapshotCreateFailed {
 pub struct BoardUpdated {
     #[key]
     pub board_id: felt252,
-    pub available_tiles_in_deck: Array<u8>,
+    pub available_tiles_in_deck: Span<u8>,
     pub top_tile: Option<u8>,
-    pub state: Array<(u8, u8, u8)>,
+    pub state: Span<(u8, u8, u8)>,
     //(address, side, joker_number)
     pub player1: (ContractAddress, PlayerSide, u8),
     //(address, side, joker_number)
@@ -90,6 +90,7 @@ pub struct BoardUpdated {
     // (u16, u16) => (city_score, road_score)
     pub red_score: (u16, u16),
     pub last_move_id: Option<felt252>,
+    pub moves_done: u8,
     pub game_state: GameState,
 }
 
