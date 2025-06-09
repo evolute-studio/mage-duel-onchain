@@ -317,9 +317,9 @@ pub impl GameCallerImpl of GameCallerTrait {
             let mut board: Board = self.world.read_model(board_id.unwrap());
             let (joker_tile, rotation, col, row) = MoveFinderTrait::find_move(ref board);
             self.process_move(joker_tile, rotation, col, row);
-            if i + 1 == snapshot_move_number {
+            if i == snapshot_move_number {
                 snapshot_state = board.state.clone();
-                println!("Snapshot state at move {}: {:?}", i + 1, snapshot_state)
+                println!("Snapshot state at move {}: {:?}", i, snapshot_state)
             }
         };
         snapshot_state
