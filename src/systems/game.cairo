@@ -403,9 +403,19 @@ pub mod game {
                 board.game_state,
             );
 
+            board.phase_started_at = get_block_timestamp();
+            world.write_member(
+                Model::<Board>::ptr_from_keys(board_id),
+                selector!("phase_started_at"),
+                board.phase_started_at,
+            );
+
             world.emit_event(@PhaseStarted {
                 board_id,
                 phase: 0, // GameState::Creating
+                top_tile: board.top_tile,
+                commited_tile: board.commited_tile,
+                started_at: board.phase_started_at,
             });
         }
 
@@ -489,6 +499,9 @@ pub mod game {
                 world.emit_event(@PhaseStarted {
                     board_id,
                     phase: 1, // Reveal phase
+                    top_tile: Option::None,
+                    commited_tile: Option::None,
+                    started_at: board.phase_started_at,
                 });
             }
         }
@@ -588,6 +601,27 @@ pub mod game {
                     selector!("commited_tile"),
                     board.commited_tile,
                 );
+            board.game_state = GameState::Request;
+            world.write_member(
+                Model::<Board>::ptr_from_keys(board_id),
+                selector!("game_state"),
+                board.game_state,
+            );
+
+            board.phase_started_at = get_block_timestamp();
+            world.write_member(
+                Model::<Board>::ptr_from_keys(board_id),
+                selector!("phase_started_at"),
+                board.phase_started_at,
+            );
+
+            world.emit_event(@PhaseStarted {
+                board_id,
+                phase: 2, // GameState::Request
+                top_tile: board.top_tile,
+                commited_tile: board.commited_tile,
+                started_at: board.phase_started_at,
+            });
 
             // Remove the tile from the available tiles in deck
             let player_available_tiles_entry: AvailableTiles =
@@ -605,6 +639,8 @@ pub mod game {
                 player,
                 available_tiles: new_available_tiles.span(),
             });
+
+
         }
 
         fn request_next_tile(ref self: ContractState, tile_index: u8, nonce: felt252, c: u8) -> Option<u8> {
@@ -718,7 +754,10 @@ pub mod game {
             );
             world.emit_event(@PhaseStarted {
                 board_id,
-                phase: 2, // GameState::Move
+                phase: 3, // GameState::Move
+                top_tile: board.top_tile,
+                commited_tile: board.commited_tile,
+                started_at: board.phase_started_at,
             });
 
             return Option::Some(commited_tile);
@@ -1152,7 +1191,6 @@ pub mod game {
                     board.last_move_id,
                 );
 
-            board.game_state = GameState::Reveal;
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
@@ -1160,11 +1198,20 @@ pub mod game {
                     board.moves_done,
                 );
 
+            board.game_state = GameState::Reveal;
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
                     selector!("game_state"),
                     board.game_state,
+                );
+
+            board.phase_started_at = get_block_timestamp();
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("phase_started_at"),
+                    board.phase_started_at,
                 );
 
             world
@@ -1209,6 +1256,9 @@ pub mod game {
             world.emit_event(@PhaseStarted {
                 board_id,
                 phase: 1, // GameState::Reveal
+                top_tile: board.top_tile,
+                commited_tile: board.commited_tile,
+                started_at: board.phase_started_at,
             });
 
             // println!(
@@ -1325,39 +1375,8 @@ pub mod game {
                 let time_delta = time - last_update_timestamp;
 
                 if player_side == prev_player_side {
-                    if time_delta > MOVE_TIME && time_delta <= 2 * MOVE_TIME {
-                        //Skip the move of the previous player
-                        let another_player = if player == player1_address {
-                            player2_address
-                        } else {
-                            player1_address
-                        };
-                        let another_player_side = if player == player1_address {
-                            player2_side
-                        } else {
-                            player1_side
-                        };
-                        self
-                            ._skip_move(
-                                another_player,
-                                another_player_side,
-                                ref board,
-                                self.move_id_generator,
-                                false,  
-                            )
-                    }
-
-                    if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
-                        world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        println!("[Not your turn]");
-                        return ;
-                    }
-                } else {
-                    if time_delta > MOVE_TIME {
-                        world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        println!("[Not your turn] Move time is over");
-                        return;
-                    }
+                    world.emit_event(@NotYourTurn { player_id: player, board_id });
+                    return;
                 }
 
                 let prev_move_id = board.last_move_id.unwrap();
@@ -1421,9 +1440,24 @@ pub mod game {
                 }
             };
 
+            board.top_tile = Option::None;
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
+                );
+            board.game_state = GameState::Reveal;
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("game_state"),
+                    board.game_state,
+                );
+            board.phase_started_at = get_block_timestamp();
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("phase_started_at"),
+                    board.phase_started_at,
                 );
 
             self._skip_move(player, player_side, ref board, self.move_id_generator, true);
@@ -1446,6 +1480,9 @@ pub mod game {
             world.emit_event(@PhaseStarted {
                 board_id,
                 phase: 1, // GameState::Reveal
+                top_tile: board.top_tile,
+                commited_tile: board.commited_tile,
+                started_at: board.phase_started_at,
             });
         }
 

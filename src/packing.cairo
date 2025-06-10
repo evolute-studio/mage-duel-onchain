@@ -128,6 +128,7 @@ impl TileToU8 of Into<Tile, u8> {
 pub enum GameState {
     Creating,
     Reveal,
+    Request,
     Move,
     Finished,
 }

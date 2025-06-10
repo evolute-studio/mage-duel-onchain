@@ -358,5 +358,8 @@ pub struct PlayerSkinChangeFailed {
 pub struct PhaseStarted {
     #[key]
     pub board_id: felt252,
-    pub phase: u8, // 0 - creating, 1 - reveal, 2 - move
+    pub phase: u8, // 0 - creating, 1 - reveal, 2 -request, 3 - move
+    pub top_tile: Option<u8>,
+    pub commited_tile: Option<u8>,
+    pub started_at: u64,
 }
