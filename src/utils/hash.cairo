@@ -1,20 +1,28 @@
-use core::poseidon::{PoseidonTrait, HashState};
+use core::poseidon::{PoseidonTrait};
 use core::hash::HashStateTrait;
+use core::sha256::compute_sha256_byte_array;
 
 pub fn hash_values(values: Span<felt252>) -> felt252 {
     assert(values.len() > 0, 'hash_values() has no values!');
-    let mut state: HashState = PoseidonTrait::new();
-    state = state.update(*values[0]);
-    if (values.len() == 1) {
-        state = state.update(*values[0]);
-    } else {
-        let mut index: usize = 1;
-        while (index < values.len()) {
-            state = state.update(*values[index]);
-            index += 1;
-        };
-    }
-    (state.finalize())
+    let mut bytes_input: ByteArray = "";
+    for value in values {
+        let as_byte_array: ByteArray = format!("{}", *value);
+        bytes_input.append(@as_byte_array);
+    };
+
+    let hash = compute_sha256_byte_array(@bytes_input);
+
+    hash_sha256_to_felt252(hash)
+}
+
+pub fn hash_sha256_to_felt252(hash: [u32; 8]) -> felt252 {
+    let mut state = PoseidonTrait::new();
+    for element in hash.span() {
+        state = state.update((*element).into());
+    };
+    let result = state.finalize();
+    assert(result != 0, 'hash_values() returned zero!');
+    result
 }
 
 //----------------------------------------

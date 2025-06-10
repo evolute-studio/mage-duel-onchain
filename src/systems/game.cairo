@@ -14,7 +14,7 @@ pub trait IGame<T> {
 
     /// Commits tiles to the game state.
     /// - `commitments`: A span of tile commitments to be added to the game state.
-    fn commit_tiles(ref self: T, commitments: Span<felt252>);
+    fn commit_tiles(ref self: T, commitments: Span<[u32; 8]>);
     /// Reveals a tile to all players.
     /// - `tile_index`: Index of the tile to be revealed.
     /// - `nonce`: Nonce used for the tile reveal.
@@ -84,7 +84,9 @@ pub mod game {
         // store::{Store, StoreTrait},
         achievements::{AchievementsTrait},
     };
-    use evolute_duel::utils::hash::{hash_values};
+    use evolute_duel::utils::hash::{
+        hash_values, hash_sha256_to_felt252,
+    };
     use evolute_duel::types::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
 
     use dojo::event::EventStorage;
@@ -407,7 +409,7 @@ pub mod game {
             });
         }
 
-        fn commit_tiles(ref self: ContractState, commitments: Span<felt252>) {
+        fn commit_tiles(ref self: ContractState, commitments: Span<[u32; 8]>) {
             let mut world = self.world_default();
             let player = get_caller_address();
 
@@ -440,7 +442,14 @@ pub mod game {
                 return;
             }
 
-            world.write_model(@TileCommitments { board_id, player, tile_commitments: commitments });
+            let mut tile_commitments = array![];
+            for i in 0..commitments.len() {
+                let tile_commitment = hash_sha256_to_felt252(*commitments.at(i.into()));
+                tile_commitments.append(tile_commitment);
+            };
+            let tile_commitments = tile_commitments.span();
+
+            world.write_model(@TileCommitments { board_id, player, tile_commitments });
 
             let (player1_address, player1_side, joker_number1) = board.player1;
             let (player2_address, player2_side, joker_number2) = board.player2;
