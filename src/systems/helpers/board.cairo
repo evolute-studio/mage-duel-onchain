@@ -612,7 +612,7 @@ pub fn draw_tile_from_board_deck(ref board: Board) -> Option<u8> {
         return Option::None;
     }
     let mut dice = DiceTrait::new(
-        avaliable_tiles.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into(),
+        available_tiles.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into(),
     );
 
     let mut next_tile = dice.roll() - 1;
