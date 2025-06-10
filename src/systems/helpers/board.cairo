@@ -612,9 +612,7 @@ pub fn draw_tile_from_board_deck(ref board: Board) -> Option<u8> {
         return Option::None;
     }
     let mut dice = DiceTrait::new(
-        available_tiles.len().try_into().unwrap(), 'SEED' 
-        // + get_block_timestamp().into()
-        ,
+        avaliable_tiles.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into(),
     );
 
     let mut next_tile = dice.roll() - 1;
@@ -652,7 +650,8 @@ pub fn generate_initial_board_state(
 
     for side in 0..4_u8 {
         let mut deck = DeckTrait::new(
-                'SEED', // + side.into() + get_block_timestamp().into() + board_id).into()
+            (
+                'SEED' + side.into() + get_block_timestamp().into() + board_id).into(),
              8,
         );
         let mut edge: Felt252Dict<u8> = Default::default();
