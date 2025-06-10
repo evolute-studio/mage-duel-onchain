@@ -3,7 +3,12 @@ use core::hash::HashStateTrait;
 use core::sha256::compute_sha256_byte_array;
 
 pub fn hash_values(values: Span<felt252>) -> felt252 {
-    assert(values.len() > 0, 'hash_values() has no values!');
+    let hash = hash_values_with_sha256(values);
+    hash_sha256_to_felt252(hash)
+}
+
+pub fn hash_values_with_sha256(values: Span<felt252>) -> [u32; 8] {
+     assert(values.len() > 0, 'hash_values() has no values!');
     let mut bytes_input: ByteArray = "";
     for value in values {
         let as_byte_array: ByteArray = format!("{}", *value);
@@ -11,8 +16,8 @@ pub fn hash_values(values: Span<felt252>) -> felt252 {
     };
 
     let hash = compute_sha256_byte_array(@bytes_input);
-
-    hash_sha256_to_felt252(hash)
+    
+    hash
 }
 
 pub fn hash_sha256_to_felt252(hash: [u32; 8]) -> felt252 {

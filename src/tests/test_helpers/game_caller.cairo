@@ -41,14 +41,14 @@ use evolute_duel::{
 use starknet::{testing, ContractAddress};
 use core::dict::Felt252Dict;
 use origami_random::deck::{Deck, DeckTrait};
-use evolute_duel::utils::hash::hash_values;
+use evolute_duel::utils::hash::{hash_values, hash_sha256_to_felt252, hash_values_with_sha256};
 use evolute_duel::packing::{GameState};
 use evolute_duel::systems::helpers::tile_helpers::{create_extended_tile};
 
 #[derive(Drop, Debug, Clone)]
 struct PlayerData {
     address: ContractAddress,
-    tile_commitments: Array<felt252>,
+    tile_commitments: Array<[u32; 8]>,
     nonces: Array<felt252>,
     permutation: Array<u8>,
 }
@@ -77,7 +77,7 @@ impl PlayerDataImpl of PlayerDataTrait {
         println!("Nonces generated and saved: {:?}", self.nonces);
         let mut commitments = array![];
         for i in 0..n {
-            let commitment = hash_values(array![i.into(), (*self.nonces.at(i.into())).into(), (*self.permutation.at(i.into())).into()].span());
+            let commitment = hash_values_with_sha256(array![i.into(), (*self.nonces.at(i.into())).into(), (*self.permutation.at(i.into())).into()].span());
             commitments.append(commitment);
         };
         self.tile_commitments = commitments
