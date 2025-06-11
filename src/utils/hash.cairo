@@ -4,7 +4,7 @@ use core::sha256::compute_sha256_byte_array;
 
 pub fn hash_values(values: Span<felt252>) -> felt252 {
     let hash = hash_values_with_sha256(values);
-    hash_sha256_to_felt252(hash)
+    hash_sha256_to_felt252(hash.span())
 }
 
 pub fn hash_values_with_sha256(values: Span<felt252>) -> [u32; 8] {
@@ -20,9 +20,9 @@ pub fn hash_values_with_sha256(values: Span<felt252>) -> [u32; 8] {
     hash
 }
 
-pub fn hash_sha256_to_felt252(hash: [u32; 8]) -> felt252 {
+pub fn hash_sha256_to_felt252(hash: Span<u32>) -> felt252 {
     let mut state = PoseidonTrait::new();
-    for element in hash.span() {
+    for element in hash {
         state = state.update((*element).into());
     };
     let result = state.finalize();

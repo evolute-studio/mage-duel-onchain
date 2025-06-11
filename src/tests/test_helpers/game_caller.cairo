@@ -48,7 +48,7 @@ use evolute_duel::systems::helpers::tile_helpers::{create_extended_tile};
 #[derive(Drop, Debug, Clone)]
 struct PlayerData {
     address: ContractAddress,
-    tile_commitments: Array<[u32; 8]>,
+    tile_commitments: Array<u32>,
     nonces: Array<felt252>,
     permutation: Array<u8>,
 }
@@ -78,7 +78,9 @@ impl PlayerDataImpl of PlayerDataTrait {
         let mut commitments = array![];
         for i in 0..n {
             let commitment = hash_values_with_sha256(array![i.into(), (*self.nonces.at(i.into())).into(), (*self.permutation.at(i.into())).into()].span());
-            commitments.append(commitment);
+            for j in commitment.span() {
+                commitments.append(*j);
+            };
         };
         self.tile_commitments = commitments
     }
@@ -225,11 +227,11 @@ pub impl GameCallerImpl of GameCallerTrait {
         // Commit tiles for both players
         testing::set_contract_address(self.host_player_data.address);
         self.game_system.commit_tiles(self.host_player_data.tile_commitments.span());
-        // println!("Host player committed tiles: {:?}", self.host_player_data.tile_commitments);
+        println!("Host player committed tiles: {:?}", self.host_player_data.tile_commitments);
 
         testing::set_contract_address(self.guest_player_data.address);
         self.game_system.commit_tiles(self.guest_player_data.tile_commitments.span());
-        // println!("Guest player committed tiles: {:?}", self.guest_player_data.tile_commitments);
+        println!("Guest player committed tiles: {:?}", self.guest_player_data.tile_commitments);
 
         self.turn = Turn::Host;
     }

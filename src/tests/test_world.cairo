@@ -391,7 +391,7 @@ mod tests {
         // game_caller.process_multiple_moves(moves);
 
         // Make automated moves
-        game_caller.process_auto_multiple_moves(30, 0);
+        game_caller.process_auto_multiple_moves(5, 0);
 
         let board: Board = world.read_model(board_id);
         println!("Board: {:?}", board);

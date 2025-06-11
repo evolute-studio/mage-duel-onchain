@@ -14,7 +14,7 @@ pub trait IGame<T> {
 
     /// Commits tiles to the game state.
     /// - `commitments`: A span of tile commitments to be added to the game state.
-    fn commit_tiles(ref self: T, commitments: Span<[u32; 8]>);
+    fn commit_tiles(ref self: T, commitments: Span<u32>);
     /// Reveals a tile to all players.
     /// - `tile_index`: Index of the tile to be revealed.
     /// - `nonce`: Nonce used for the tile reveal.
@@ -419,7 +419,7 @@ pub mod game {
             });
         }
 
-        fn commit_tiles(ref self: ContractState, commitments: Span<[u32; 8]>) {
+        fn commit_tiles(ref self: ContractState, commitments: Span<u32>) {
             let mut world = self.world_default();
             let player = get_caller_address();
 
@@ -453,8 +453,14 @@ pub mod game {
             }
 
             let mut tile_commitments = array![];
-            for i in 0..commitments.len() {
-                let tile_commitment = hash_sha256_to_felt252(*commitments.at(i.into()));
+            println!("comitments length: {:?}", commitments.len());
+            if commitments.len() % 8 != 0 {
+                panic!("[ERROR] Commitments length is not a multiple of 8");
+                return;
+            }
+            for i in 0..(commitments.len() / 8) {
+                let commitment: Span<u32> = commitments.slice(i * 8, 8);
+                let tile_commitment = hash_sha256_to_felt252(commitment);
                 tile_commitments.append(tile_commitment);
             };
             let tile_commitments = tile_commitments.span();
@@ -475,7 +481,7 @@ pub mod game {
 
             let another_player_commitments: TileCommitments = world.read_model((board_id, another_player));
 
-            if another_player_commitments.tile_commitments.len() == commitments.len() {
+            if another_player_commitments.tile_commitments.len() == tile_commitments.len() {
                 game.status = GameStatus::InProgress;
                 let mut another_player_game: Game = world.read_model(another_player);
                 another_player_game.status = GameStatus::InProgress;
@@ -665,8 +671,8 @@ pub mod game {
             );
 
             assert!(
-                board.game_state == GameState::Reveal,
-                "[REQUEST ERROR] Game state is not Reveal: {:?}",
+                board.game_state == GameState::Request,
+                "[REQUEST ERROR] Game state is not Request: {:?}",
                 board.game_state
             );
 
