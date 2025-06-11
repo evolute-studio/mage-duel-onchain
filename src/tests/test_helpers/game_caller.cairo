@@ -262,7 +262,12 @@ pub impl GameCallerImpl of GameCallerTrait {
                 println!("Guest player requested tile");
                 testing::set_contract_address(self.guest_player_data.address);
                 let (tile_index, nonce, c) = self.guest_player_data.get_request_data(tile);
-                let commited_tile = self.game_system.request_next_tile(tile_index, nonce, c);
+                self.game_system.request_next_tile(tile_index, nonce, c);
+                let board_id: Option<felt252> = self.world.read_member(
+                    Model::<Game>::ptr_from_keys(self.host_player_data.address), selector!("board_id")
+                );
+                let mut board: Board = self.world.read_model(board_id.unwrap());
+                let commited_tile = board.commited_tile;
                 println!("Guest player received tile: {}", commited_tile.unwrap());
                 self.commited_tile = commited_tile.unwrap();
                 commited_tile
@@ -271,7 +276,12 @@ pub impl GameCallerImpl of GameCallerTrait {
                 println!("Host player requested tile");
                 testing::set_contract_address(self.host_player_data.address);
                 let (tile_index, nonce, c) = self.host_player_data.get_request_data(tile);
-                let commited_tile = self.game_system.request_next_tile(tile_index, nonce, c);
+                self.game_system.request_next_tile(tile_index, nonce, c);
+                let board_id: Option<felt252> = self.world.read_member(
+                    Model::<Game>::ptr_from_keys(self.host_player_data.address), selector!("board_id")
+                );
+                let mut board: Board = self.world.read_model(board_id.unwrap());
+                let commited_tile = board.commited_tile;
                 println!("Host player received tile: {}", commited_tile.unwrap());
                 self.commited_tile = commited_tile.unwrap();
                 commited_tile

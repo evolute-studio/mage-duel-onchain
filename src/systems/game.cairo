@@ -21,7 +21,7 @@ pub trait IGame<T> {
     /// - `c`: A constant value used in the reveal process.
     fn reveal_tile(ref self: T, tile_index: u8, nonce: felt252, c: u8);
 
-    fn request_next_tile(ref self: T, tile_index: u8, nonce: felt252, c: u8) -> Option<u8>;
+    fn request_next_tile(ref self: T, tile_index: u8, nonce: felt252, c: u8);
     /// Makes a move by placing a tile on the board.
     /// - `joker_tile`: Optional joker tile played during the move.
     /// - `rotation`: Rotation applied to the placed tile.
@@ -649,7 +649,7 @@ pub mod game {
 
         }
 
-        fn request_next_tile(ref self: ContractState, tile_index: u8, nonce: felt252, c: u8) -> Option<u8> {
+        fn request_next_tile(ref self: ContractState, tile_index: u8, nonce: felt252, c: u8){
             let mut world = self.world_default();
             let player = get_caller_address();
 
@@ -657,7 +657,7 @@ pub mod game {
 
             if game.board_id.is_none() {
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
-                return Option::None;
+                return;
             }
 
             let board_id = game.board_id.unwrap();
@@ -683,7 +683,7 @@ pub mod game {
                     board.phase_started_at,
                     REVEAL_TIME
                 );
-                return Option::None;
+                return;
             }
 
             let tile = *board.available_tiles_in_deck.at(tile_index.into());
@@ -765,8 +765,6 @@ pub mod game {
                 commited_tile: board.commited_tile,
                 started_at: board.phase_started_at,
             });
-
-            return Option::Some(commited_tile);
         }
 
         fn make_move(
