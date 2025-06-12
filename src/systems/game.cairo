@@ -460,6 +460,7 @@ pub mod game {
             }
             for i in 0..(commitments.len() / 8) {
                 let commitment: Span<u32> = commitments.slice(i * 8, 8);
+                println!("sha256 commitments[{}]: {:?}", i, commitment);
                 let tile_commitment = hash_sha256_to_felt252(commitment);
                 tile_commitments.append(tile_commitment);
             };
