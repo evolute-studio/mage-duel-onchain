@@ -594,7 +594,7 @@ pub mod game {
             let tile = *board.available_tiles_in_deck
                 .at(tile_index.into());
             // If the tile is valid, reveal it
-            board.top_tile = Option::Some(tile);
+            board.top_tile = Option::Some(tile_index);
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
@@ -690,10 +690,10 @@ pub mod game {
             let tile = *board.available_tiles_in_deck.at(tile_index.into());
 
             assert!(
-                board.top_tile.unwrap() == tile,
+                board.top_tile.unwrap() == tile_index,
                 "[REQUEST ERROR] Tile mismatch: expected {}, got {}",
                 board.top_tile.unwrap(),
-                tile
+                tile_index
             );
 
             // Check committed tile
@@ -846,7 +846,7 @@ pub mod game {
                 Option::Some(tile_index) => { tile_index },
                 Option::None => {
                     match @board.top_tile {
-                        Option::Some(top_tile) => { (*top_tile).into() },
+                        Option::Some(tile_index) => { *board.available_tiles_in_deck.at(*tile_index.into()) },
                         Option::None => { 
                             if board.commited_tile.is_none() {
                                 return panic!("No tiles in the deck"); 
@@ -893,12 +893,6 @@ pub mod game {
                 println!("[Invalid move] \nBoard: {:?} \nMove: {:?}", board, move);
                 return ;
             }
-
-            let top_tile = if !is_joker {
-                draw_tile_from_board_deck(ref board)
-            } else {
-                board.top_tile
-            };
 
             let mut union_find: UnionFind = world.read_model(board_id);
 
