@@ -15,7 +15,7 @@ pub fn hash_values_with_sha256(values: Span<felt252>) -> [u32; 8] {
         let as_byte_array: ByteArray = format!("{}", *value);
         bytes_input.append(@as_byte_array);
     };
-
+    println!("Input bytes: {:?}", bytes_input);
     let hash = compute_sha256_byte_array(@bytes_input);
     
     hash
