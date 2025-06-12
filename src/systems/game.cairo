@@ -505,8 +505,8 @@ pub mod game {
                 world.emit_event(@PhaseStarted {
                     board_id,
                     phase: 1, // Reveal phase
-                    top_tile: Option::None,
-                    commited_tile: Option::None,
+                    top_tile: board.top_tile,
+                    commited_tile: board.commited_tile,
                     started_at: board.phase_started_at,
                 });
             }
