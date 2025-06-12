@@ -846,7 +846,7 @@ pub mod game {
                 Option::Some(tile_index) => { tile_index },
                 Option::None => {
                     match @board.top_tile {
-                        Option::Some(tile_index) => { *board.available_tiles_in_deck.at(*tile_index.into()) },
+                        Option::Some(tile_index) => { *board.available_tiles_in_deck.at((*tile_index).into()) },
                         Option::None => { 
                             if board.commited_tile.is_none() {
                                 return panic!("No tiles in the deck"); 
