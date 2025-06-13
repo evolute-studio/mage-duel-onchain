@@ -871,6 +871,10 @@ pub mod game {
                 is_joker, 
                 first_board_id: board_id,
                 timestamp: get_block_timestamp(),
+                top_tile: match board.top_tile {
+                    Option::Some(tile_index) => Option::Some(*board.available_tiles_in_deck.at(tile_index.into())),
+                    Option::None => Option::None,
+                },
             };
 
             // TODO: revert invalid move when it's stable
@@ -1663,6 +1667,10 @@ pub mod game {
                 is_joker: false,
                 first_board_id: board_id,
                 timestamp,
+                top_tile: match board.top_tile {
+                    Option::Some(tile_index) => Option::Some(*board.available_tiles_in_deck.at(tile_index.into())),
+                    Option::None => Option::None,
+                },
             };
 
             board.last_move_id = Option::Some(move_id);

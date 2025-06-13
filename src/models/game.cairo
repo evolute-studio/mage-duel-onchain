@@ -69,6 +69,7 @@ pub struct Move {
     pub is_joker: bool,
     pub first_board_id: felt252,
     pub timestamp: u64,
+    pub top_tile: Option<u8>,
 }
 
 /// Defines the game rules, including deck composition, scoring mechanics, and special tile rules.

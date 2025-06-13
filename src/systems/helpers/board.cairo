@@ -141,6 +141,7 @@ pub fn create_board_from_snapshot(
 
     // ////println!("old_board: {:?}", old_board);
     let mut deleted_tiles_positions: Felt252Dict<bool> = Default::default();
+    let mut deleted_tile_types: Felt252Dict<u8> = Default::default();
     let (_, player1_side, mut joker_number1) = old_board.player1;
     let (_, player2_side, mut joker_number2) = old_board.player2;
 
@@ -151,8 +152,7 @@ pub fn create_board_from_snapshot(
     // //println!("number of reverted moves: {:?}", old_board_move_number - move_number.into());
 
     let mut last_move_id = old_board.last_move_id;
-    let mut top_tile = old_board.top_tile;
-    let mut available_tiles_in_deck = old_board.available_tiles_in_deck.clone();
+    let mut available_tiles_in_deck = array![];
     let mut number_of_reverted_moves = old_board_move_number - move_number.into();
     for _ in  0..number_of_reverted_moves {
         if last_move_id.is_none() {
@@ -185,14 +185,42 @@ pub fn create_board_from_snapshot(
             } else {
                 joker_number2 += 1;
             }
-        } // Update top tile and available tiles in deck
-        else {
-            if top_tile.is_some() {
-                available_tiles_in_deck.append(top_tile.unwrap());
-            }
-            top_tile = move.tile;
+        } 
+    };
+
+    let move: Move = world.read_model(last_move_id.unwrap());
+    let old_board_id = move.first_board_id;
+    let old_board: Board = world.read_model(old_board_id);
+    let old_available_tiles_in_deck: Array<u8> = old_board.available_tiles_in_deck;
+
+    for i in number_of_reverted_moves..old_board_move_number {
+        let move_id = last_move_id.unwrap();
+        let move: Move = world.read_model(move_id);
+        last_move_id = move.prev_move_id;
+        if move.first_board_id != old_board_id {
+            break;
         }
-        // //println!("move REVERTED: {:?}", move);
+        let top_tile = move.top_tile;
+        match top_tile {
+            Option::Some(tile) => {
+                // If the top tile is not empty, add it to the deck.
+                let old = deleted_tile_types.get(tile.into());
+                deleted_tile_types.insert(tile.into(), old + 1);
+            },
+            Option::None => {
+                // If the top tile is empty, do nothing.
+            },
+        }
+    };
+
+    for i in old_available_tiles_in_deck {
+        if deleted_tile_types.get(i.into()) > 0 {
+            available_tiles_in_deck.append(i);
+        } else {
+            // If the tile is deleted, add it to the deck.
+            let old = deleted_tile_types.get(i.into());
+            deleted_tile_types.insert(i.into(), old - 1);
+        }
     };
 
     // Update board state
@@ -208,7 +236,7 @@ pub fn create_board_from_snapshot(
     };
 
     let mut dice = DiceTrait::new(
-        64 - move_number, 'SEED' + get_block_timestamp().into() + board_id.into(),
+        available_tiles_in_deck.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into() + board_id.into(),
     );
 
     let commited_tile = Option::Some(dice.roll() - 1);
@@ -217,7 +245,7 @@ pub fn create_board_from_snapshot(
         id: board_id,
         initial_edge_state: array![].span(),
         available_tiles_in_deck: available_tiles_in_deck,
-        top_tile,
+        top_tile: Option::None,
         state: updated_state,
         player1: (player1, player1_side, joker_number1),
         player2: (player1, player2_side, joker_number2),
@@ -290,7 +318,7 @@ pub fn create_board_from_snapshot(
     );
     world
         .write_member(
-            Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), top_tile,
+            Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
         );
     world
         .write_member(

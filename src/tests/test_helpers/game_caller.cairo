@@ -404,6 +404,8 @@ pub impl MoveFinderImpl of MoveFinderTrait {
             }
         };
 
+        assert!(found, "No valid move found on the board");
+
         // Return the found move
         (joker_tile, rotation, col, row)
     
