@@ -371,7 +371,7 @@ pub impl MoveFinderImpl of MoveFinderTrait {
         // Implement your logic to find the move here
         // For example, you can iterate over the board and find a valid move
         let tile = match board.top_tile {
-            Option::Some(tile) => tile,
+            Option::Some(tile_index) => {*board.available_tiles_in_deck.at(tile_index.into())},
             Option::None => {
                 return panic!("No top tile found on the board");
             },

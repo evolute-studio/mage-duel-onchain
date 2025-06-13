@@ -637,7 +637,7 @@ pub mod game {
             let mut player_available_tiles = player_available_tiles_entry.available_tiles;
             let mut new_available_tiles: Array<u8> = array![];
             for i in 0..player_available_tiles.len() {
-                if i != tile_index.into() {
+                if *player_available_tiles.at(i.into()) != c {
                     new_available_tiles.append(*player_available_tiles.at(i.into()));
                 }
             };
@@ -718,7 +718,7 @@ pub mod game {
             // println!("player_available_tiles: {:?}", player_available_tiles);
             let mut new_available_tiles: Array<u8> = array![];
             for i in 0..player_available_tiles.len() {
-                if i != tile_index.into() {
+                if *player_available_tiles.at(i.into()) != c {
                     new_available_tiles.append(*player_available_tiles.at(i.into()));
                 }
             };
