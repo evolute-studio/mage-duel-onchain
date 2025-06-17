@@ -3,10 +3,9 @@ pub mod systems {
     pub mod player_profile_actions;
     pub mod helpers {
         pub mod board;
-        pub mod city_union_find;
+        pub mod union_find;
         pub mod city_scoring;
         pub mod tile_helpers;
-        pub mod road_union_find;
         pub mod road_scoring;
         pub mod validation;
     }
@@ -20,15 +19,19 @@ pub mod models {
 }
      
 pub mod events;
-pub mod packing;
 
 pub mod types {
     pub mod trophies;
     pub mod tasks;
+    pub mod packing;
 }
 
 pub mod libs {
     pub mod achievements;
+}
+
+pub mod utils {
+    pub mod hash;
 }
 
 pub mod tests {

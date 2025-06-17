@@ -1,5 +1,5 @@
 use starknet::{ContractAddress};
-use evolute_duel::packing::{GameState, GameStatus, PlayerSide};
+use evolute_duel::types::packing::{GameState, GameStatus, PlayerSide};
 
 /// Represents the game board, including tile states, players, scores, and game progression.
 ///
@@ -19,7 +19,7 @@ use evolute_duel::packing::{GameState, GameStatus, PlayerSide};
 pub struct Board {
     #[key]
     pub id: felt252,
-    pub initial_edge_state: Array<u8>,
+    pub initial_edge_state: Span<u8>,
     pub available_tiles_in_deck: Array<u8>,
     pub top_tile: Option<u8>,
     // (u8, u8, u8) => (tile_number, rotation, side)
@@ -34,6 +34,8 @@ pub struct Board {
     pub red_score: (u16, u16),
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
+    pub moves_done: u8,
+    pub last_update_timestamp: u64,
 }
 
 /// Represents a player's move, tracking tile placement and game progression.
@@ -78,7 +80,7 @@ pub struct Move {
 pub struct Rules {
     #[key]
     pub id: felt252,
-    pub deck: Array<u8>,
+    pub deck: Span<u8>,
     pub edges: (u8, u8),
     pub joker_number: u8,
     pub joker_price: u16,
@@ -115,3 +117,4 @@ pub struct Snapshot {
     pub board_id: felt252,
     pub move_number: u8,
 }
+

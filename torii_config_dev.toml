@@ -1,8 +1,14 @@
-world_address="0x06a4d87ac4a224fbc633b46ec896545f8783cfc6d87ce8a4ef8c5630a3c17711"
-rpc="http://localhost:5050/"
+world_address = "0x55a227da2ac221a6311ec2df35df5c6fc25b450696f6c68bb604c8c350d59b7"
+rpc = "http://localhost:5050/"
+
+[runner]
+explorer = true
 
 [events]
-raw = true 
+raw = true
+
+[indexing]
+transactions = true
 
 [sql] 
 historical = ["evolute_duel-TrophyProgression"]

@@ -1,5 +1,5 @@
 use evolute_duel::{
-    packing::{Tile, TEdge}, systems::helpers::{tile_helpers::{create_extended_tile}},
+    types::packing::{Tile, TEdge}, systems::helpers::{tile_helpers::{create_extended_tile}},
 };
 
 pub fn is_valid_move(
@@ -11,6 +11,7 @@ pub fn is_valid_move(
     initial_edge_state: Span<u8>,
 ) -> bool {
     let extended_tile = create_extended_tile(tile, rotation);
+    println!("extended tile: {:?}", extended_tile);
     let tile_position = col * 8 + row;
 
     //check if the tile is empty
@@ -157,10 +158,10 @@ mod tests {
             1,
         ];
 
-        println!(
-            "is valid: {:?}",
-            is_valid_move(tile, rotation, col, row, state.span(), initial_edge_state.span()),
-        );
+        // println!(
+        //     "is valid: {:?}",
+        //     is_valid_move(tile, rotation, col, row, state.span(), initial_edge_state.span()),
+        // );
 
         assert_eq!(
             is_valid_move(tile, rotation, col, row, state.span(), initial_edge_state.span()), true,

@@ -1,7 +1,7 @@
 [package]
-cairo-version = "=2.9.2"
+cairo-version = "=2.10.1"
 name = "evolute_duel"
-version = "1.2.2"
+version = "1.5.1"
 edition = "2024_07"
 
 [cairo]
@@ -17,7 +17,7 @@ update_shop = "sozo execute evolute_duel-player_profile_actions update_shop --ac
 migrate = "sozo build && sozo migrate"
 create_game = "sozo execute evolute_duel-game create_game --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
 join_game = "sozo execute evolute_duel-game join_game 0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --account-address=0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7 --private-key=0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b --wait"
-make_move1 = "sozo execute evolute_duel-game make_move 1 0 1 7 --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+make_move1 = "sozo execute evolute_duel-game make_move 1 1 0 7 --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
 make_move2 = "sozo execute evolute_duel-game make_move 1 0 2 7 --account-address=0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7 --private-key=0x1c9053c053edf324aec366a34c6901b1095b07af69495bffec7d7fe21effb1b --wait"
 make_move3 = "sozo execute evolute_duel-game make_move 1 1 2 6 --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
 
@@ -30,6 +30,7 @@ skip_move2 = "sozo execute evolute_duel-game skip_move --account-address=0x13d9e
 balance = "sozo execute evolute_duel-player_profile_actions balance --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
 username = "sozo execute evolute_duel-player_profile_actions username --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
 active_skin = "sozo execute evolute_duel-player_profile_actions active_skin --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
+set_balance = "sozo execute evolute_duel-player_profile_actions set_balance 10000 0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
 
 change_username = "sozo execute evolute_duel-player_profile_actions change_username sstr:'player1' --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
 change_skin = "sozo execute evolute_duel-player_profile_actions change_skin 1  --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
@@ -46,11 +47,11 @@ cancel_game1 = "sozo --release execute evolute_duel-game cancel_game --account-a
 
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.2" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.5.1" }
 origami_random = { git = "https://github.com/dojoengine/origami" }
-openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.20.0" }
-achievement = { git = "https://github.com/cartridge-gg/arcade", rev = "824b8139f11e637ae91863c5f282e48f76bfba1f" }
-
+openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v1.0.0" }
+achievement = { git = "https://github.com/evolute-studio/arcade" } # fork of arcade https://github.com/cartridge-gg/arcade 
+alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.4.0" }
 
 [[target.starknet-contract]]
 build-external-contracts = [
@@ -60,9 +61,9 @@ build-external-contracts = [
 ]
 
 [dev-dependencies]
-cairo_test = "=2.9.2"
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.2" }
-assert_macros = "2.9.2"
+cairo_test = "=2.10.1"
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.5.1" }
+assert_macros = "2.10.1"
 
 [profile.provable]
 

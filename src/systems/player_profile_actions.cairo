@@ -49,7 +49,7 @@ pub mod player_profile_actions {
         models::{
             player::{Player},
             skins::{Shop},
-        }, packing::{},
+        }, types::packing::{},
     };
     use evolute_duel::libs::achievements::AchievementsTrait;
     use openzeppelin_access::ownable::OwnableComponent;
@@ -84,7 +84,7 @@ pub mod player_profile_actions {
         let shop = Shop { shop_id: id, skin_prices };
         world.write_model(@shop);
 
-        println!("Owner: {creator_address:?}");
+        //println!("Owner: {creator_address:?}");
         self.ownable.initializer(creator_address);
     }
 
@@ -161,14 +161,13 @@ pub mod player_profile_actions {
                     @CurrentPlayerActiveSkin { player_id, active_skin: player.active_skin },
                 );
 
-            //[Achievements] Bandi skin
-            if skin_id == 2 {
-                AchievementsTrait::unlock_bandi(world, player_id);
-            }
-
-            //[Achievements] Golem skin
-            if skin_id == 3 {
-                AchievementsTrait::unlock_golem(world, player_id);
+            match skin_id {
+                0 | 1 => {}, // Default skin, no achievement => {},
+                2 => AchievementsTrait::unlock_bandi(world, player_id), //[Achievements] Bandi skin
+                3 => AchievementsTrait::unlock_golem(world, player_id), //[Achievements] Golem skin
+                4 => AchievementsTrait::unlock_mammoth(world, player_id), //[Achievements] Mammoth skin
+                _ => {},
+                
             }
 
             //[Achievements] Mammoth skin
