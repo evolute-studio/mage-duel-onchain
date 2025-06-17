@@ -169,6 +169,11 @@ pub mod player_profile_actions {
                 _ => {},
                 
             }
+
+            //[Achievements] Mammoth skin
+            if skin_id == 4 {
+                AchievementsTrait::unlock_mammoth(world, player_id);
+            }
         }
 
         fn become_bot(ref self: ContractState) {
