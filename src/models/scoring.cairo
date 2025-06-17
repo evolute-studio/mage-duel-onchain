@@ -1,6 +1,6 @@
 use dojo::world::{WorldStorage};
 use dojo::model::{Model, ModelStorage};
-use evolute_duel::packing::{UnionNode};
+use evolute_duel::types::packing::{UnionNode};
 // --------------------------------------
 // Scoring Models
 // --------------------------------------

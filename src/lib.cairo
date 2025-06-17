@@ -19,11 +19,11 @@ pub mod models {
 }
      
 pub mod events;
-pub mod packing;
 
 pub mod types {
     pub mod trophies;
     pub mod tasks;
+    pub mod packing;
 }
 
 pub mod libs {

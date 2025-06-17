@@ -8,7 +8,7 @@ use evolute_duel::{
             create_extended_tile, convert_board_position_to_node_position, tile_city_number,
         },
     },
-    packing::{TEdge, PlayerSide, UnionNode},
+    types::packing::{TEdge, PlayerSide, UnionNode},
 };
 use dojo::world::{WorldStorage};
 use core::dict::Felt252Dict;

@@ -1,5 +1,5 @@
 use evolute_duel::{
-    packing::UnionNode,
+    types::packing::UnionNode,
 };
 use dojo::world::{WorldStorage};
 use alexandria_data_structures::vec::{VecTrait, NullableVec};

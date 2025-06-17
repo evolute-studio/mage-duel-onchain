@@ -67,7 +67,7 @@ pub mod game {
             tile_helpers::{calcucate_tile_points, calculate_adjacent_edge_points},
             validation::{is_valid_move},
         },
-        packing::{GameStatus, GameState, PlayerSide, UnionNode},
+        types::packing::{GameStatus, GameState, PlayerSide, UnionNode},
     };
 
     use evolute_duel::libs::{

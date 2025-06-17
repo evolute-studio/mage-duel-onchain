@@ -1,5 +1,5 @@
 use evolute_duel::{
-    packing::{Tile, TEdge}, systems::helpers::{tile_helpers::{create_extended_tile}},
+    types::packing::{Tile, TEdge}, systems::helpers::{tile_helpers::{create_extended_tile}},
 };
 
 pub fn is_valid_move(

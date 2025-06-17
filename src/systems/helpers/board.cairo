@@ -15,7 +15,7 @@ use evolute_duel::{
         game::{Board, Rules, Move},
     },
     events::{BoardCreated, BoardCreatedFromSnapshot, BoardCreateFromSnapshotFalied}, 
-    packing::{GameState, TEdge, Tile, PlayerSide, UnionNode},
+    types::packing::{GameState, TEdge, Tile, PlayerSide, UnionNode},
     systems::helpers::{
         city_scoring::{connect_adjacent_city_edges, connect_city_edges_in_tile},
         road_scoring::{connect_adjacent_road_edges, connect_road_edges_in_tile},

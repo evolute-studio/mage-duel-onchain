@@ -7,7 +7,7 @@ use evolute_duel::{
             create_extended_tile, convert_board_position_to_node_position, tile_roads_number,
         },
     },
-    packing::{TEdge, PlayerSide, Tile, UnionNode},
+    types::packing::{TEdge, PlayerSide, Tile, UnionNode},
 };
 use dojo::world::{WorldStorage};
 use evolute_duel::libs::{
