@@ -730,23 +730,25 @@ pub mod game {
             });
 
 
+            if new_available_tiles.len() > 0 {
+                // Redraw the tile from the deck
+                let mut dice = DiceTrait::new(new_available_tiles.len().try_into().unwrap(), 
+                    'SEED',
+                    // nonce
+                );
 
-            // Redraw the tile from the deck
-            let mut dice = DiceTrait::new(new_available_tiles.len().try_into().unwrap(), 
-                'SEED',
-                // nonce
-            );
+                // Roll the dice to get a new tile index
+                let new_tile_index = dice.roll() - 1;
+                let commited_tile = *new_available_tiles.at(new_tile_index.into());
+                // Update the board with the new tile
+                board.commited_tile = Option::Some(commited_tile);
+                world.write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("commited_tile"),
+                    board.commited_tile,
+                );
+            }
 
-            // Roll the dice to get a new tile index
-            let new_tile_index = dice.roll() - 1;
-            let commited_tile = *new_available_tiles.at(new_tile_index.into());
-            // Update the board with the new tile
-            board.commited_tile = Option::Some(commited_tile);
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("commited_tile"),
-                board.commited_tile,
-            );
             board.game_state = GameState::Move;
             world.write_member(
                 Model::<Board>::ptr_from_keys(board_id),
@@ -1200,8 +1202,14 @@ pub mod game {
                     selector!("moves_done"),
                     board.moves_done,
                 );
-
-            board.game_state = GameState::Reveal;
+            board.game_state = match board.commited_tile {
+                Option::Some(_) => {
+                    GameState::Reveal
+                },
+                Option::None => {
+                    GameState::Move
+                }
+            };
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
@@ -1255,10 +1263,10 @@ pub mod game {
                         game_state: board.game_state,
                     },
                 );
-
+            
             world.emit_event(@PhaseStarted {
                 board_id,
-                phase: 1, // GameState::Reveal
+                phase: if board.commited_tile.is_some() {1} else {3}, // GameState::Reveal or GameState::Move
                 top_tile: board.top_tile,
                 commited_tile: board.commited_tile,
                 started_at: board.phase_started_at,
@@ -1448,7 +1456,16 @@ pub mod game {
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
                 );
-            board.game_state = GameState::Reveal;
+            
+            board.game_state = match board.commited_tile {
+                Option::Some(_) => {
+                    GameState::Reveal
+                },
+                Option::None => {
+                    GameState::Move
+                }
+            };            
+            
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
@@ -1482,7 +1499,7 @@ pub mod game {
                 );
             world.emit_event(@PhaseStarted {
                 board_id,
-                phase: 1, // GameState::Reveal
+                phase: if board.commited_tile.is_some() {1} else {3}, // GameState::Reveal or GameState::Move
                 top_tile: board.top_tile,
                 commited_tile: board.commited_tile,
                 started_at: board.phase_started_at,
