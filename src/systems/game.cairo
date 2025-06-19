@@ -503,6 +503,20 @@ pub mod game {
                     board.phase_started_at,
                 );
 
+                let mut dice = DiceTrait::new(
+                    board.available_tiles_in_deck.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into() + board_id.into(),
+                );
+
+                let commited_tile = Option::Some(dice.roll() - 1);
+
+                board.commited_tile = commited_tile;
+
+                world.write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("commited_tile"),
+                    board.commited_tile,
+                );
+
                 world.emit_event(@PhaseStarted {
                     board_id,
                     phase: 1, // Reveal phase
@@ -1074,6 +1088,15 @@ pub mod game {
             let available_tiles_player2: AvailableTiles =
                 world.read_model((board_id, player2_address));
 
+            board.game_state = match board.commited_tile {
+                Option::Some(_) => {
+                    GameState::Reveal
+                },
+                Option::None => {
+                    GameState::Move
+                }
+            };
+
             if available_tiles_player1.available_tiles.len() == 0 && available_tiles_player2.available_tiles.len() == 0 && joker_number1 == 0 && joker_number2 == 0 {
                 //FINISH THE GAME
                 self
@@ -1202,14 +1225,6 @@ pub mod game {
                     selector!("moves_done"),
                     board.moves_done,
                 );
-            board.game_state = match board.commited_tile {
-                Option::Some(_) => {
-                    GameState::Reveal
-                },
-                Option::None => {
-                    GameState::Move
-                }
-            };
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),

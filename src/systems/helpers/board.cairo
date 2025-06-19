@@ -51,12 +51,6 @@ pub fn create_board(
     let last_move_id = Option::None;
     let game_state = GameState::Creating;
 
-    let mut dice = DiceTrait::new(
-        64, 'SEED' + get_block_timestamp().into() + board_id.into(),
-    );
-
-    let commited_tile = Option::Some(dice.roll() - 1);
-
     let mut board = Board {
         id: board_id,
         initial_edge_state: array![].span(),
@@ -71,7 +65,7 @@ pub fn create_board(
         moves_done: 0,
         game_state,
         last_update_timestamp: get_block_timestamp(),
-        commited_tile,
+        commited_tile: Option::None,
         phase_started_at: get_block_timestamp(),
     };
 
