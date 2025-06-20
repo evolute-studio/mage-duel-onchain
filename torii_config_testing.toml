@@ -1,5 +1,5 @@
 world_address = "0x55a227da2ac221a6311ec2df35df5c6fc25b450696f6c68bb604c8c350d59b7"
-rpc = "https://api.cartridge.gg/x/liyard-evolute-duel/katana"
+rpc = "https://api.cartridge.gg/x/dev-evolute-duel/katana"
 
 [runner]
 explorer = true
