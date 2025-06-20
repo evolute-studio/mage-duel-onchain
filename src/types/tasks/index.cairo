@@ -103,11 +103,11 @@ impl IntoU8Task of Into<u8, Task> {
         }
     }
 }
-
 // impl TaskPrint of PrintTrait<Task> {
 //     #[inline]
 //     fn print(self: Task) {
 //         self.identifier().print();
 //     }
 // }
+
 

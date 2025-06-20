@@ -17,7 +17,7 @@ pub mod models {
     pub mod scoring;
     pub mod skins;
 }
-     
+
 pub mod events;
 
 pub mod types {
@@ -28,6 +28,7 @@ pub mod types {
 
 pub mod libs {
     pub mod achievements;
+    pub mod asserts;
 }
 
 pub mod utils {

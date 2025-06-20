@@ -26,7 +26,7 @@ pub struct Player {
 pub impl PlayerImpl of PlayerTrait {
     fn is_bot(self: @Player) -> bool {
         *self.role == 2
-    } 
+    }
 
     fn is_controller(self: @Player) -> bool {
         *self.role == 1

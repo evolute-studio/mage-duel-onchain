@@ -18,7 +18,7 @@ pub enum Trophy {
     Golem,
     FirstCity,
     FristRoad,
-    Mammoth
+    Mammoth,
 }
 
 #[generate_trait]
@@ -68,7 +68,7 @@ pub impl TrophyImpl of TrophyTrait {
         match self {
             Trophy::None => 0,
             Trophy::SeasonedI => trophies::Seasoned::Seasoned::index(0),
-            Trophy::SeasonedII => trophies::Seasoned::Seasoned::index(1),   
+            Trophy::SeasonedII => trophies::Seasoned::Seasoned::index(1),
             Trophy::SeasonedIII => trophies::Seasoned::Seasoned::index(2),
             Trophy::WinnerI => trophies::Winner::Winner::index(0),
             Trophy::WinnerII => trophies::Winner::Winner::index(1),
@@ -219,7 +219,7 @@ impl IntoTrophyU8 of Into<Trophy, u8> {
             Trophy::SeasonedIII => 3,
             Trophy::WinnerI => 4,
             Trophy::WinnerII => 5,
-            Trophy::WinnerIII => 6, 
+            Trophy::WinnerIII => 6,
             Trophy::RoadBuilder => 7,
             Trophy::CityBuilder => 8,
             Trophy::Bandi => 9,
@@ -254,11 +254,11 @@ impl IntoU8Trophy of Into<u8, Trophy> {
         }
     }
 }
-
 // impl TrophyPrint of debug::PrintTrait<Trophy> {
 //     #[inline]
 //     fn print(self: Trophy) {
 //         self.identifier().print();
 //     }
 // }
+
 

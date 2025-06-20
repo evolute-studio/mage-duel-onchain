@@ -33,8 +33,7 @@ mod tests {
         },
         types::packing::{GameStatus},
         systems::{
-            helpers::board::{create_board},
-            game::{game, IGameDispatcher, IGameDispatcherTrait},
+            helpers::board::{create_board}, game::{game, IGameDispatcher, IGameDispatcherTrait},
             player_profile_actions::{
                 player_profile_actions, IPlayerProfileActionsDispatcher,
                 IPlayerProfileActionsDispatcherTrait,
@@ -165,14 +164,13 @@ mod tests {
 
         let mut new_game: Game = world.read_model(caller);
         assert(new_game.status == GameStatus::Created, 'game status is wrong');
-
         // //Try to create a new game after one has already been started
-        // new_game.status = GameStatus::InProgress;
-        // world.write_model_test(@new_game);
-        // game_system.create_game();
+    // new_game.status = GameStatus::InProgress;
+    // world.write_model_test(@new_game);
+    // game_system.create_game();
 
         // let new_game: Game = world.read_model(caller);
-        // assert(new_game.status == GameStatus::InProgress, 'game status is wrong');
+    // assert(new_game.status == GameStatus::InProgress, 'game status is wrong');
     }
 
     #[test]
@@ -254,10 +252,7 @@ mod tests {
         game_system.make_move(joker_tile, rotation, col, row);
     }
 
-    fn skip(
-        game_system: IGameDispatcher,
-        caller: ContractAddress,
-    ) {
+    fn skip(game_system: IGameDispatcher, caller: ContractAddress) {
         starknet::testing::set_contract_address(caller);
         game_system.skip_move();
     }
@@ -278,10 +273,7 @@ mod tests {
         if moves_number.into() > moves.len() {
             return println!("move_number is greater than moves length");
         }
-        use evolute_duel::types::packing::{
-            GameState,
-            PlayerSide,
-        };
+        use evolute_duel::types::packing::{GameState, PlayerSide};
         let mut board_for_snapshot = Board {
             id: 0,
             initial_edge_state: array![].span(),
@@ -297,7 +289,7 @@ mod tests {
             game_state: GameState::InProgress,
             last_update_timestamp: 0,
         };
-            
+
         for i in 0..moves_number {
             let (is_move, joker_tile, rotation, col, row) = *moves.at(i);
             let player = if i % 2 == 0 {
@@ -380,9 +372,10 @@ mod tests {
             (true, Option::None, 3, 1, 6),
             (true, Option::Some(10), 2, 0, 2),
             (true, Option::None, 2, 1, 5),
-            
         ];
-        make_multiple_moves(ref world, game_system, host_player, guest_player, moves, Option::None, Option::None);
+        make_multiple_moves(
+            ref world, game_system, host_player, guest_player, moves, Option::None, Option::None,
+        );
 
         let board: Board = world.read_model(board_id);
         println!("Board: {:?}", board);
@@ -433,7 +426,9 @@ mod tests {
             (true, Option::None, 3, 0, 1),
             (true, Option::None, 1, 1, 1),
         ];
-        make_multiple_moves(ref world, game_system, host_player, guest_player, moves, Option::None, Option::None);
+        make_multiple_moves(
+            ref world, game_system, host_player, guest_player, moves, Option::None, Option::None,
+        );
 
         let board_on_4th_move: Board = world.read_model(game1.board_id.unwrap());
         println!("Board after 4th move: {:?}", board_on_4th_move);
@@ -456,7 +451,9 @@ mod tests {
         let board_on_16th_move: Board = world.read_model(game1.board_id.unwrap());
         println!("Board before 16th move: {:?}", board_on_16th_move);
 
-        make_multiple_moves(ref world, game_system, host_player, guest_player, moves, Option::None, Option::None);
+        make_multiple_moves(
+            ref world, game_system, host_player, guest_player, moves, Option::None, Option::None,
+        );
 
         let board_id = game1.board_id.unwrap();
         let board: Board = world.read_model(board_id);
@@ -598,7 +595,15 @@ mod tests {
             (false, Option::None, 0, 0, 0),
         ];
         let move_for_snapshot = 57;
-        let board = make_multiple_moves(ref world, game_system, host_player, guest_player, moves, Option::None, Option::Some(move_for_snapshot));
+        let board = make_multiple_moves(
+            ref world,
+            game_system,
+            host_player,
+            guest_player,
+            moves,
+            Option::None,
+            Option::Some(move_for_snapshot),
+        );
 
         // Cancel the game
         game_system.cancel_game();
@@ -621,4 +626,4 @@ mod tests {
         assert(new_board.blue_score == board.blue_score, 'blue_score is not the same');
         assert(new_board.red_score == board.red_score, 'red_score is not the same');
     }
-}   
+}

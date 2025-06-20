@@ -43,20 +43,16 @@ pub mod game {
     use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
     use evolute_duel::{
         models::{
-            game::{Board, Rules, Move, Game, Snapshot},
-            player::{Player},
+            game::{Board, Rules, Move, Game, Snapshot}, player::{Player},
             scoring::{UnionFind, UnionFindTrait},
         },
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
-            PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished,
-            Skiped, Moved, SnapshotCreated, SnapshotCreateFailed, InvalidMove,
+            PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, Skiped, Moved,
+            SnapshotCreated, SnapshotCreateFailed, InvalidMove,
         },
         systems::helpers::{
-            board::{
-                create_board, draw_tile_from_board_deck, update_board_state,
-                update_board_joker_number, create_board_from_snapshot, redraw_tile_from_board_deck,
-            },
+            board::{BoardTrait},
             city_scoring::{
                 connect_city_edges_in_tile, connect_adjacent_city_edges, close_all_cities,
             },
@@ -69,9 +65,8 @@ pub mod game {
         types::packing::{GameStatus, GameState, PlayerSide, UnionNode},
     };
 
-    use evolute_duel::libs::{
-        // store::{Store, StoreTrait},
-        achievements::{AchievementsTrait},
+    use evolute_duel::libs::{ // store::{Store, StoreTrait},
+        achievements::{AchievementsTrait}, asserts::{AssertsTrait},
     };
     use evolute_duel::types::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
 
@@ -86,7 +81,7 @@ pub mod game {
     use achievement::components::achievable::AchievableComponent;
     component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
     impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
-    
+
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
@@ -103,7 +98,7 @@ pub mod game {
         achievable: AchievableComponent::Storage,
     }
 
-    const MOVE_TIME : u64 = 65; // 60 seconds on turn and 5 seconds for latency fix
+    const MOVE_TIME: u64 = 65; // 60 seconds on turn and 5 seconds for latency fix
 
 
     fn dojo_init(self: @ContractState) {
@@ -134,7 +129,8 @@ pub mod game {
             3, // CRRF
             4, // CRFR
             4 // CFRR
-        ].span();
+        ]
+            .span();
         let edges = (1, 1);
         let joker_number = 3;
         let joker_price = 5;
@@ -142,7 +138,6 @@ pub mod game {
         let rules = Rules { id, deck, edges, joker_number, joker_price };
 
         world.write_model(@rules);
-
 
         let mut trophy_id: u8 = TROPHY_COUNT;
         while trophy_id > 0 {
@@ -177,22 +172,18 @@ pub mod game {
             let host_player = get_caller_address();
 
             let mut game: Game = world.read_model(host_player);
-            let mut status = game.status;
 
-            if status == GameStatus::InProgress || status == GameStatus::Created {
-                world.emit_event(@GameCreateFailed { host_player, status });
-                println!("Game already created or in progress");
-                return ;
+            if !AssertsTrait::assert_ready_to_create_game(@game, world) {
+                return;
             }
 
-            status = GameStatus::Created;
-            game.status = status;
+            game.status = GameStatus::Created;
             game.board_id = Option::None;
             game.snapshot_id = Option::None;
 
             world.write_model(@game);
 
-            world.emit_event(@GameCreated { host_player, status });
+            world.emit_event(@GameCreated { host_player, status: game.status });
         }
 
         fn create_snapshot(ref self: ContractState, board_id: felt252, move_number: u8) {
@@ -214,10 +205,9 @@ pub mod game {
             }
 
             let snapshot_id = self.snapshot_id_generator.read();
+            self.snapshot_id_generator.write(snapshot_id + 1);
 
             let snapshot = Snapshot { snapshot_id, player, board_id, move_number };
-
-            self.snapshot_id_generator.write(snapshot_id + 1);
 
             world.write_model(@snapshot);
 
@@ -236,20 +226,16 @@ pub mod game {
             // println!("Move number: {:?}", move_number);
 
             let mut game: Game = world.read_model(host_player);
-            let mut status = game.status;
 
-            if status == GameStatus::InProgress || status == GameStatus::Created {
-                world.emit_event(@GameCreateFailed { host_player, status });
-                println!("Game already created or in progress");
-                return ;
+            if !AssertsTrait::assert_ready_to_create_game(@game, world) {
+                return;
             }
 
-            status = GameStatus::Created;
-            game.status = status;
+            game.status = GameStatus::Created;
             game
                 .board_id =
                     Option::Some(
-                        create_board_from_snapshot(
+                        BoardTrait::create_board_from_snapshot(
                             ref world, board_id, host_player, move_number, self.board_id_generator,
                         ),
                     );
@@ -257,7 +243,7 @@ pub mod game {
 
             world.write_model(@game);
 
-            world.emit_event(@GameCreated { host_player, status });
+            world.emit_event(@GameCreated { host_player, status: game.status });
         }
 
         fn cancel_game(ref self: ContractState) {
@@ -316,31 +302,17 @@ pub mod game {
             let mut guest_game: Game = world.read_model(guest_player);
             let guest_game_status = guest_game.status;
 
-            if host_game_status != GameStatus::Created
-                || guest_game_status == GameStatus::Created
-                || guest_game_status == GameStatus::InProgress
-                || host_player == guest_player {
-                world
-                    .emit_event(
-                        @GameJoinFailed {
-                            host_player, guest_player, host_game_status, guest_game_status,
-                        },
-                    );
-                println!("Game join failed");
-                return ;
+            if !AssertsTrait::assert_ready_to_join_game(@guest_game, @host_game, world) {
+                return;
             }
+
             host_game.status = GameStatus::InProgress;
             guest_game.status = GameStatus::InProgress;
 
             let board_id: felt252 = if host_game.board_id.is_none() {
-                let board = create_board(
+                let board = BoardTrait::create_board(
                     ref world, host_player, guest_player, self.board_id_generator,
                 );
-                let mut union_find = UnionFindTrait::new(board.id);
-                // println!("Union find: {:?}", union_find);
-                UnionFindTrait::write_empty(board.id, world);
-                union_find.write(world); 
-
                 board.id
             } // When game is created from snapshot
             else {
@@ -354,7 +326,7 @@ pub mod game {
                         selector!("player2"),
                         board.player2,
                     );
-                
+
                 world
                     .write_member(
                         Model::<Board>::ptr_from_keys(board.id),
@@ -452,13 +424,13 @@ pub mod game {
                     if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
                         world.emit_event(@NotYourTurn { player_id: player, board_id });
                         println!("[Not your turn]");
-                        return ;
+                        return;
                     }
                 } else {
                     if time_delta > MOVE_TIME {
                         world.emit_event(@NotYourTurn { player_id: player, board_id });
                         println!("[Not your turn] Move time is over");
-                        return ;
+                        return;
                     }
                 }
             };
@@ -483,7 +455,7 @@ pub mod game {
                 rotation: rotation,
                 col,
                 row,
-                is_joker, 
+                is_joker,
                 first_board_id: board_id,
                 timestamp: get_block_timestamp(),
             };
@@ -506,11 +478,11 @@ pub mod game {
                         },
                     );
                 println!("[Invalid move] \nBoard: {:?} \nMove: {:?}", board, move);
-                return ;
+                return;
             }
 
             let top_tile = if !is_joker {
-                draw_tile_from_board_deck(ref board)
+                board.draw_tile_from_board_deck()
             } else {
                 board.top_tile
             };
@@ -520,7 +492,13 @@ pub mod game {
             let mut city_nodes = VecTrait::<NullableVec, UnionNode>::new();
             let mut road_nodes = VecTrait::<NullableVec, UnionNode>::new();
             // println!("Union find: {:?}", union_find);
-            // println!("Union find sizes. node_parents: {:?}, node_types: {:?}, node_ranks: {:?}, node_blue_points: {:?}, node_red_points: {:?}, node_open_edges: {:?}, node_contested: {:?}, node_types: {:?}", union_find.nodes_parents.len(), union_find.nodes_types.len(), union_find.nodes_ranks.len(), union_find.nodes_blue_points.len(), union_find.nodes_red_points.len(), union_find.nodes_open_edges.len(), union_find.nodes_contested.len(), union_find.nodes_types.len());
+            // println!("Union find sizes. node_parents: {:?}, node_types: {:?}, node_ranks: {:?},
+            // node_blue_points: {:?}, node_red_points: {:?}, node_open_edges: {:?}, node_contested:
+            // {:?}, node_types: {:?}", union_find.nodes_parents.len(),
+            // union_find.nodes_types.len(), union_find.nodes_ranks.len(),
+            // union_find.nodes_blue_points.len(), union_find.nodes_red_points.len(),
+            // union_find.nodes_open_edges.len(), union_find.nodes_contested.len(),
+            // union_find.nodes_types.len());
             for i in 0..union_find.nodes_parents.len() {
                 // println!("i: {}", i);
                 let mut node: UnionNode = Default::default();
@@ -532,46 +510,58 @@ pub mod game {
                 node.open_edges = *union_find.nodes_open_edges.at(i.into());
                 node.contested = *union_find.nodes_contested.at(i.into());
                 if node.node_type == 0 {
-                    road_nodes.push(UnionNode {
-                        parent: i.try_into().unwrap(),
-                        rank: 0,
-                        blue_points: 0,
-                        red_points: 0,
-                        open_edges: 0,
-                        contested: false,
-                        node_type: 2, // 0 - City, 1 - Road, 2 - None
-                    });
+                    road_nodes
+                        .push(
+                            UnionNode {
+                                parent: i.try_into().unwrap(),
+                                rank: 0,
+                                blue_points: 0,
+                                red_points: 0,
+                                open_edges: 0,
+                                contested: false,
+                                node_type: 2 // 0 - City, 1 - Road, 2 - None
+                            },
+                        );
                     city_nodes.push(node);
                 } else if node.node_type == 1 {
                     road_nodes.push(node);
-                    city_nodes.push(UnionNode {
-                        parent: i.try_into().unwrap(),
-                        rank: 0,
-                        blue_points: 0,
-                        red_points: 0,
-                        open_edges: 0,
-                        contested: false,
-                        node_type: 2, // 0 - City, 1 - Road, 2 - None
-                    });
+                    city_nodes
+                        .push(
+                            UnionNode {
+                                parent: i.try_into().unwrap(),
+                                rank: 0,
+                                blue_points: 0,
+                                red_points: 0,
+                                open_edges: 0,
+                                contested: false,
+                                node_type: 2 // 0 - City, 1 - Road, 2 - None
+                            },
+                        );
                 } else {
-                    road_nodes.push(UnionNode {
-                        parent: i.try_into().unwrap(),
-                        rank: 0,
-                        blue_points: 0,
-                        red_points: 0,
-                        open_edges: 0,
-                        contested: false,
-                        node_type: 2, // 0 - City, 1 - Road, 2 - None
-                    });
-                    city_nodes.push(UnionNode {
-                        parent: i.try_into().unwrap(),
-                        rank: 0,
-                        blue_points: 0,
-                        red_points: 0,
-                        open_edges: 0,
-                        contested: false,
-                        node_type: 2, // 0 - City, 1 - Road, 2 - None
-                    });
+                    road_nodes
+                        .push(
+                            UnionNode {
+                                parent: i.try_into().unwrap(),
+                                rank: 0,
+                                blue_points: 0,
+                                red_points: 0,
+                                open_edges: 0,
+                                contested: false,
+                                node_type: 2 // 0 - City, 1 - Road, 2 - None
+                            },
+                        );
+                    city_nodes
+                        .push(
+                            UnionNode {
+                                parent: i.try_into().unwrap(),
+                                rank: 0,
+                                blue_points: 0,
+                                red_points: 0,
+                                open_edges: 0,
+                                contested: false,
+                                node_type: 2 // 0 - City, 1 - Road, 2 - None
+                            },
+                        );
                 }
             };
 
@@ -673,22 +663,22 @@ pub mod game {
                 }
             };
 
-            update_board_state(ref board, tile.into(), rotation, col, row, is_joker, player_side);
+            board.update_board_state(tile.into(), rotation, col, row, is_joker, player_side);
 
-            let (joker_number1, joker_number2) = update_board_joker_number(
-                ref board, player_side, is_joker,
+            let (joker_number1, joker_number2) = board.update_board_joker_number(
+                player_side, is_joker,
             );
 
             board.last_move_id = Option::Some(move_id);
-            board.moves_done = board.moves_done + 1;    
+            board.moves_done = board.moves_done + 1;
             self.move_id_generator.write(move_id + 1);
 
             if top_tile.is_none() && joker_number1 == 0 && joker_number2 == 0 {
                 //FINISH THE GAME
                 self
                     ._finish_game(
-                        ref board, 
-                        union_find.potential_city_contests.span(), 
+                        ref board,
+                        union_find.potential_city_contests.span(),
                         union_find.potential_road_contests.span(),
                         ref city_nodes,
                         ref road_nodes,
@@ -717,7 +707,6 @@ pub mod game {
                 print!("{}, ", city_node.node_type);
             };
             println!("]");
-
 
             for i in 0..256_usize {
                 let road_node = road_nodes.at(i.into());
@@ -755,8 +744,8 @@ pub mod game {
             union_find.nodes_open_edges = new_nodes_open_edges.span();
             union_find.nodes_contested = new_nodes_contested.span();
             union_find.nodes_types = new_nodes_types.span();
-        
-            union_find.write(world); 
+
+            union_find.write(world);
 
             world.write_model(@move);
 
@@ -863,10 +852,7 @@ pub mod game {
                     },
                 );
 
-            println!(
-                "Move made: {:?} \nBoard: {:?} \nUnion find: {:?}",
-                move, board, union_find,
-            );
+            println!("Move made: {:?} \nBoard: {:?} \nUnion find: {:?}", move, board, union_find);
         }
 
         fn skip_move(ref self: ContractState) {
@@ -916,47 +902,58 @@ pub mod game {
                 node.open_edges = *union_find.nodes_open_edges.at(i.into());
                 node.contested = *union_find.nodes_contested.at(i.into());
                 if node.node_type == 0 {
-                    road_nodes.push(UnionNode {
-                        parent: i.try_into().unwrap(),
-                        rank: 0,
-                        blue_points: 0,
-                        red_points: 0,
-                        open_edges: 0,
-                        contested: false,
-                        node_type: 2, // 0 - City, 1 - Road, 2 - None
-                    });
+                    road_nodes
+                        .push(
+                            UnionNode {
+                                parent: i.try_into().unwrap(),
+                                rank: 0,
+                                blue_points: 0,
+                                red_points: 0,
+                                open_edges: 0,
+                                contested: false,
+                                node_type: 2 // 0 - City, 1 - Road, 2 - None
+                            },
+                        );
                     city_nodes.push(node);
                 } else if node.node_type == 1 {
                     road_nodes.push(node);
-                    city_nodes.push(UnionNode {
-                        parent: i.try_into().unwrap(),
-                        rank: 0,
-                        blue_points: 0,
-                        red_points: 0,
-                        open_edges: 0,
-                        contested: false,
-                        node_type: 2, // 0 - City, 1 - Road, 2 - None
-                    });
-                }
-                else {
-                    road_nodes.push(UnionNode {
-                        parent: i.try_into().unwrap(),
-                        rank: 0,
-                        blue_points: 0,
-                        red_points: 0,
-                        open_edges: 0,
-                        contested: false,
-                        node_type: 2, // 0 - City, 1 - Road, 2 - None
-                    });
-                    city_nodes.push(UnionNode {
-                        parent: i.try_into().unwrap(),
-                        rank: 0,
-                        blue_points: 0,
-                        red_points: 0,
-                        open_edges: 0,
-                        contested: false,
-                        node_type: 2, // 0 - City, 1 - Road, 2 - None
-                    });
+                    city_nodes
+                        .push(
+                            UnionNode {
+                                parent: i.try_into().unwrap(),
+                                rank: 0,
+                                blue_points: 0,
+                                red_points: 0,
+                                open_edges: 0,
+                                contested: false,
+                                node_type: 2 // 0 - City, 1 - Road, 2 - None
+                            },
+                        );
+                } else {
+                    road_nodes
+                        .push(
+                            UnionNode {
+                                parent: i.try_into().unwrap(),
+                                rank: 0,
+                                blue_points: 0,
+                                red_points: 0,
+                                open_edges: 0,
+                                contested: false,
+                                node_type: 2 // 0 - City, 1 - Road, 2 - None
+                            },
+                        );
+                    city_nodes
+                        .push(
+                            UnionNode {
+                                parent: i.try_into().unwrap(),
+                                rank: 0,
+                                blue_points: 0,
+                                red_points: 0,
+                                open_edges: 0,
+                                contested: false,
+                                node_type: 2 // 0 - City, 1 - Road, 2 - None
+                            },
+                        );
                 }
             };
 
@@ -989,14 +986,14 @@ pub mod game {
                                 another_player_side,
                                 ref board,
                                 self.move_id_generator,
-                                false,  
+                                false,
                             )
                     }
 
                     if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
                         world.emit_event(@NotYourTurn { player_id: player, board_id });
                         println!("[Not your turn]");
-                        return ;
+                        return;
                     }
                 } else {
                     if time_delta > MOVE_TIME {
@@ -1013,8 +1010,8 @@ pub mod game {
                     //FINISH THE GAME
                     self
                         ._finish_game(
-                            ref board, 
-                            union_find.potential_city_contests.span(), 
+                            ref board,
+                            union_find.potential_city_contests.span(),
                             union_find.potential_road_contests.span(),
                             ref city_nodes,
                             ref road_nodes,
@@ -1062,11 +1059,11 @@ pub mod game {
                     union_find.nodes_open_edges = new_nodes_open_edges.span();
                     union_find.nodes_contested = new_nodes_contested.span();
                     union_find.nodes_types = new_nodes_types.span();
-                
-                    union_find.write(world); 
+
+                    union_find.write(world);
                 }
             };
-            redraw_tile_from_board_deck(ref board);
+            board.redraw_tile_from_board_deck();
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
@@ -1106,7 +1103,7 @@ pub mod game {
             if game.board_id.is_none() || game.board_id.unwrap() != board_id {
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
                 println!("Player is not in game");
-                return ;
+                return;
             }
 
             let mut board: Board = world.read_model(board_id);
@@ -1135,58 +1132,69 @@ pub mod game {
                     node.open_edges = *union_find.nodes_open_edges.at(i.into());
                     node.contested = *union_find.nodes_contested.at(i.into());
                     if node.node_type == 0 {
-                        road_nodes.push(UnionNode {
-                            parent: i.try_into().unwrap(),
-                            rank: 0,
-                            blue_points: 0,
-                            red_points: 0,
-                            open_edges: 0,
-                            contested: false,
-                            node_type: 2, // 0 - City, 1 - Road, 2 - None
-                        });
+                        road_nodes
+                            .push(
+                                UnionNode {
+                                    parent: i.try_into().unwrap(),
+                                    rank: 0,
+                                    blue_points: 0,
+                                    red_points: 0,
+                                    open_edges: 0,
+                                    contested: false,
+                                    node_type: 2 // 0 - City, 1 - Road, 2 - None
+                                },
+                            );
                         city_nodes.push(node);
                     } else if node.node_type == 1 {
                         road_nodes.push(node);
-                        city_nodes.push(UnionNode {
-                            parent: i.try_into().unwrap(),
-                            rank: 0,
-                            blue_points: 0,
-                            red_points: 0,
-                            open_edges: 0,
-                            contested: false,
-                            node_type: 2, // 0 - City, 1 - Road, 2 - None
-                        });
-                    }
-                    else {
-                        road_nodes.push(UnionNode {
-                            parent: i.try_into().unwrap(),
-                            rank: 0,
-                            blue_points: 0,
-                            red_points: 0,
-                            open_edges: 0,
-                            contested: false,
-                            node_type: 2, // 0 - City, 1 - Road, 2 - None
-                        });
-                        city_nodes.push(UnionNode {
-                            parent: i.try_into().unwrap(),
-                            rank: 0,
-                            blue_points: 0,
-                            red_points: 0,
-                            open_edges: 0,
-                            contested: false,
-                            node_type: 2, // 0 - City, 1 - Road, 2 - None
-                        });
+                        city_nodes
+                            .push(
+                                UnionNode {
+                                    parent: i.try_into().unwrap(),
+                                    rank: 0,
+                                    blue_points: 0,
+                                    red_points: 0,
+                                    open_edges: 0,
+                                    contested: false,
+                                    node_type: 2 // 0 - City, 1 - Road, 2 - None
+                                },
+                            );
+                    } else {
+                        road_nodes
+                            .push(
+                                UnionNode {
+                                    parent: i.try_into().unwrap(),
+                                    rank: 0,
+                                    blue_points: 0,
+                                    red_points: 0,
+                                    open_edges: 0,
+                                    contested: false,
+                                    node_type: 2 // 0 - City, 1 - Road, 2 - None
+                                },
+                            );
+                        city_nodes
+                            .push(
+                                UnionNode {
+                                    parent: i.try_into().unwrap(),
+                                    rank: 0,
+                                    blue_points: 0,
+                                    red_points: 0,
+                                    open_edges: 0,
+                                    contested: false,
+                                    node_type: 2 // 0 - City, 1 - Road, 2 - None
+                                },
+                            );
                     }
                 };
                 self
                     ._finish_game(
-                        ref board, 
-                        union_find.potential_city_contests.span(), 
+                        ref board,
+                        union_find.potential_city_contests.span(),
                         union_find.potential_road_contests.span(),
                         ref city_nodes,
                         ref road_nodes,
                     );
-                
+
                 let mut new_nodes_parents = array![];
                 let mut new_nodes_ranks = array![];
                 let mut new_nodes_blue_points = array![];
@@ -1230,8 +1238,8 @@ pub mod game {
                 union_find.nodes_open_edges = new_nodes_open_edges.span();
                 union_find.nodes_contested = new_nodes_contested.span();
                 union_find.nodes_types = new_nodes_types.span();
-            
-                union_find.write(world); 
+
+                union_find.write(world);
                 return;
             } else {
                 println!("Cant finish game, time delta is less than 2 * MOVE_TIME");
@@ -1255,7 +1263,7 @@ pub mod game {
             move_id_generator: core::starknet::storage::StorageBase::<
                 core::starknet::storage::Mutable<core::felt252>,
             >,
-            emit_event: bool
+            emit_event: bool,
         ) {
             let mut world = self.world_default();
             let move_id = self.move_id_generator.read();
@@ -1279,7 +1287,7 @@ pub mod game {
             board.last_move_id = Option::Some(move_id);
             board.moves_done = board.moves_done + 1;
             move_id_generator.write(move_id + 1);
-            
+
             world.write_model(@move);
 
             world
@@ -1288,7 +1296,7 @@ pub mod game {
                     selector!("last_move_id"),
                     board.last_move_id,
                 );
-            
+
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
@@ -1303,25 +1311,28 @@ pub mod game {
                     board.moves_done,
                 );
             if emit_event {
-            world
-                .emit_event(
-                    @Skiped {
-                        move_id, player, prev_move_id: move.prev_move_id, board_id, timestamp,
-                    },
-                );
+                world
+                    .emit_event(
+                        @Skiped {
+                            move_id, player, prev_move_id: move.prev_move_id, board_id, timestamp,
+                        },
+                    );
             }
         }
 
         fn _finish_game(
-            self: @ContractState, ref board: Board,
+            self: @ContractState,
+            ref board: Board,
             potential_city_contests: Span<u8>,
             potential_road_contests: Span<u8>,
             ref city_nodes: NullableVec<UnionNode>,
-            ref road_nodes: NullableVec<UnionNode>
+            ref road_nodes: NullableVec<UnionNode>,
         ) {
             //FINISH THE GAME
             let mut world = self.world_default();
-            let city_scoring_results = close_all_cities(ref world, potential_city_contests, ref city_nodes, board.id);
+            let city_scoring_results = close_all_cities(
+                ref world, potential_city_contests, ref city_nodes, board.id,
+            );
             for i in 0..city_scoring_results.len() {
                 let city_scoring_result = *city_scoring_results.at(i.into());
                 if city_scoring_result.is_some() {
@@ -1344,7 +1355,9 @@ pub mod game {
                 }
             };
 
-            let road_scoring_results = close_all_roads(ref world, potential_road_contests, ref road_nodes, board.id);
+            let road_scoring_results = close_all_roads(
+                ref world, potential_road_contests, ref road_nodes, board.id,
+            );
             for i in 0..road_scoring_results.len() {
                 let road_scoring_result = *road_scoring_results.at(i.into());
                 if road_scoring_result.is_some() {
@@ -1396,7 +1409,6 @@ pub mod game {
             if player1_side == PlayerSide::Blue {
                 player1.balance += blue_points.into();
                 player2.balance += red_points.into();
-    
             } else if player1_side == PlayerSide::Red {
                 player1.balance += red_points.into();
                 player2.balance += blue_points.into();
@@ -1438,7 +1450,7 @@ pub mod game {
                     selector!("game_state"),
                     board.game_state,
                 );
-            
+
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board.id),
@@ -1476,6 +1488,4 @@ pub mod game {
             }
         }
     }
-
-
 }

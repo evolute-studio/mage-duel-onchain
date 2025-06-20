@@ -14,12 +14,13 @@ pub trait IPlayerProfileActions<T> {
     /// It should be used with caution to ensure that player data integrity is maintained.
     /// Admins should ensure that the provided data is valid and consistent with the game's rules.
     fn set_player(
-        ref self: T, 
-        player_id: ContractAddress, 
-        username: felt252,  balance: u32, 
-        games_played: felt252, 
-        active_skin: u8, 
-        role: u8
+        ref self: T,
+        player_id: ContractAddress,
+        username: felt252,
+        balance: u32,
+        games_played: felt252,
+        active_skin: u8,
+        role: u8,
     );
 
     /// Changes the player's username.
@@ -49,13 +50,8 @@ pub mod player_profile_actions {
 
 
     use evolute_duel::{
-        events::{
-            PlayerUsernameChanged, PlayerSkinChanged, PlayerSkinChangeFailed,
-        },
-        models::{
-            player::{Player},
-            skins::{Shop},
-        }, types::packing::{},
+        events::{PlayerUsernameChanged, PlayerSkinChanged, PlayerSkinChangeFailed},
+        models::{player::{Player}, skins::{Shop}}, types::packing::{},
     };
     use evolute_duel::libs::achievements::AchievementsTrait;
     use openzeppelin_access::ownable::OwnableComponent;
@@ -66,18 +62,18 @@ pub mod player_profile_actions {
     #[abi(embed_v0)]
     impl OwnableMixinImpl = OwnableComponent::OwnableMixinImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
- 
+
     #[storage]
     struct Storage {
         #[substorage(v0)]
-        ownable: OwnableComponent::Storage
+        ownable: OwnableComponent::Storage,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         #[flat]
-        OwnableEvent: OwnableComponent::Event
+        OwnableEvent: OwnableComponent::Event,
     }
 
 
@@ -97,12 +93,13 @@ pub mod player_profile_actions {
     #[abi(embed_v0)]
     impl PlayerProfileActionsImpl of IPlayerProfileActions<ContractState> {
         fn set_player(
-            ref self: ContractState, 
-            player_id: ContractAddress, 
-            username: felt252,  balance: u32, 
-            games_played: felt252, 
-            active_skin: u8, 
-            role: u8
+            ref self: ContractState,
+            player_id: ContractAddress,
+            username: felt252,
+            balance: u32,
+            games_played: felt252,
+            active_skin: u8,
+            role: u8,
         ) {
             self.ownable.assert_only_owner();
             let mut world = self.world_default();
@@ -154,9 +151,10 @@ pub mod player_profile_actions {
                 0 | 1 => {}, // Default skin, no achievement => {},
                 2 => AchievementsTrait::unlock_bandi(world, player_id), //[Achievements] Bandi skin
                 3 => AchievementsTrait::unlock_golem(world, player_id), //[Achievements] Golem skin
-                4 => AchievementsTrait::unlock_mammoth(world, player_id), //[Achievements] Mammoth skin
+                4 => AchievementsTrait::unlock_mammoth(
+                    world, player_id,
+                ), //[Achievements] Mammoth skin
                 _ => {},
-                
             }
         }
 

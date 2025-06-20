@@ -1,12 +1,8 @@
-use evolute_duel::{
-    types::packing::UnionNode,
-};
+use evolute_duel::{types::packing::UnionNode};
 use dojo::world::{WorldStorage};
 use alexandria_data_structures::vec::{VecTrait, NullableVec};
 //Union find
-pub fn find(
-    ref world: WorldStorage, ref nodes: NullableVec<UnionNode>, position: u8
-) -> u8 {
+pub fn find(ref world: WorldStorage, ref nodes: NullableVec<UnionNode>, position: u8) -> u8 {
     println!("[Union find] calles find({}, {})", nodes.len(), position);
     if let Option::Some(node) = nodes.get(position.into()) {
         let mut current = node;
@@ -20,7 +16,11 @@ pub fn find(
 }
 
 pub fn union(
-    ref world: WorldStorage, ref nodes: NullableVec<UnionNode>, position1: u8, position2: u8, in_tile: bool,
+    ref world: WorldStorage,
+    ref nodes: NullableVec<UnionNode>,
+    position1: u8,
+    position2: u8,
+    in_tile: bool,
 ) -> UnionNode {
     let mut root1_pos: u32 = find(ref world, ref nodes, position1).into();
     let mut root1 = nodes.at(root1_pos);
@@ -72,13 +72,12 @@ pub fn union(
 }
 
 pub fn connected(
-    ref world: WorldStorage, ref nodes: NullableVec<UnionNode>, position1: u8, position2: u8
+    ref world: WorldStorage, ref nodes: NullableVec<UnionNode>, position1: u8, position2: u8,
 ) -> bool {
     let root1_pos = find(ref world, ref nodes, position1);
     let root2_pos = find(ref world, ref nodes, position2);
     return root1_pos == root2_pos;
 }
-
 // #[cfg(test)]
 // mod tests {
 //     use super::*;
@@ -221,3 +220,5 @@ pub fn connected(
 //         assert!(connected, "Nodes should be connected");
 //     }
 // }
+
+

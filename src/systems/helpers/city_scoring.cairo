@@ -13,13 +13,16 @@ use dojo::world::{WorldStorage};
 use core::dict::Felt252Dict;
 use alexandria_data_structures::vec::{VecTrait, NullableVec};
 
-use evolute_duel::libs::{
-    achievements::{AchievementsTrait},
-};
+use evolute_duel::libs::{achievements::{AchievementsTrait}};
 use starknet::ContractAddress;
 
 pub fn connect_city_edges_in_tile(
-    ref world: WorldStorage, ref city_nodes: NullableVec<UnionNode>, tile_position: u8, tile: u8, rotation: u8, side: u8,
+    ref world: WorldStorage,
+    ref city_nodes: NullableVec<UnionNode>,
+    tile_position: u8,
+    tile: u8,
+    rotation: u8,
+    side: u8,
 ) {
     let extended_tile = create_extended_tile(tile.into(), rotation);
 
@@ -47,7 +50,7 @@ pub fn connect_city_edges_in_tile(
                 red_points,
                 open_edges,
                 contested: false,
-                node_type: 0, // 0: City, 1: Road, 2: None
+                node_type: 0 // 0: City, 1: Road, 2: None
             };
 
             city_nodes.set(position.into(), city_node);
@@ -100,7 +103,7 @@ pub fn connect_adjacent_city_edges(
                 }
             }
         } // tile is connected to bottom edge
-        else  {
+        else {
             let mut edge = city_nodes.at(edge_pos.into());
             edge.open_edges -= 1;
             if *initial_edge_state.at(col.into()) == TEdge::C.into() {
@@ -120,7 +123,7 @@ pub fn connect_adjacent_city_edges(
         let edge_pos = find(
             ref world, ref city_nodes, convert_board_position_to_node_position(tile_position, 0),
         );
-        if row != 7 { 
+        if row != 7 {
             if !visited.get((tile_position + 1).into()) {
                 let up_edge_pos = convert_board_position_to_node_position(tile_position + 1, 2);
 
@@ -152,7 +155,7 @@ pub fn connect_adjacent_city_edges(
         let edge_pos = find(
             ref world, ref city_nodes, convert_board_position_to_node_position(tile_position, 3),
         );
-        if col != 0 { 
+        if col != 0 {
             if !visited.get((tile_position - 8).into()) {
                 let left_edge_pos = convert_board_position_to_node_position(tile_position - 8, 1);
 
@@ -185,8 +188,8 @@ pub fn connect_adjacent_city_edges(
         let edge_pos = find(
             ref world, ref city_nodes, convert_board_position_to_node_position(tile_position, 1),
         );
-        if col != 7 { 
-            if !visited.get((tile_position + 8).into()){
+        if col != 7 {
+            if !visited.get((tile_position + 8).into()) {
                 let right_edge_pos = convert_board_position_to_node_position(tile_position + 8, 3);
 
                 let (tile, rotation, _) = *state.at((tile_position + 8).into());
@@ -219,7 +222,9 @@ pub fn connect_adjacent_city_edges(
         if city_root.open_edges == 0 {
             contest_result = handle_contest(ref world, ref city_nodes, city_root_pos, board_id);
             //[Achivement] CityBuilder
-            AchievementsTrait::build_city(world, player_address, ((city_root.red_points + city_root.blue_points) / 2).into());
+            AchievementsTrait::build_city(
+                world, player_address, ((city_root.red_points + city_root.blue_points) / 2).into(),
+            );
         }
     }
 
@@ -230,7 +235,9 @@ pub fn connect_adjacent_city_edges(
         for i in 0..4_u8 {
             if *extended_tile.edges.at(i.into()) == (TEdge::C).into() {
                 let node_pos = find(
-                    ref world, ref city_nodes, convert_board_position_to_node_position(tile_position, i),
+                    ref world,
+                    ref city_nodes,
+                    convert_board_position_to_node_position(tile_position, i),
                 );
                 let mut found = false;
                 for j in 0..roots.len() {
@@ -252,8 +259,11 @@ pub fn connect_adjacent_city_edges(
 
 
 pub fn handle_contest(
-    ref world: WorldStorage, ref nodes: NullableVec<UnionNode>, mut city_root_pos: u8, board_id: felt252,
-) -> Option<(PlayerSide, u16)>  {
+    ref world: WorldStorage,
+    ref nodes: NullableVec<UnionNode>,
+    mut city_root_pos: u8,
+    board_id: felt252,
+) -> Option<(PlayerSide, u16)> {
     let mut city_root = nodes.at(city_root_pos.into());
     city_root.contested = true;
     let mut result: Option<(PlayerSide, u16)> = Option::None;
@@ -306,7 +316,10 @@ pub fn handle_contest(
 }
 
 pub fn close_all_cities(
-    ref world: WorldStorage, potential_city_contests: Span<u8>, ref nodes: NullableVec<UnionNode>, board_id: felt252,
+    ref world: WorldStorage,
+    potential_city_contests: Span<u8>,
+    ref nodes: NullableVec<UnionNode>,
+    board_id: felt252,
 ) -> Span<Option<(PlayerSide, u16)>> {
     let roots = potential_city_contests;
     let mut contest_results: Array<Option<(PlayerSide, u16)>> = ArrayTrait::new();
@@ -320,8 +333,6 @@ pub fn close_all_cities(
     };
     return contest_results.span();
 }
-
-
 // #[cfg(test)]
 // #[allow(unused_imports)]
 // mod tests {
@@ -513,7 +524,7 @@ pub fn close_all_cities(
 
 //         let board_id = 1;
 
-//         let tile_position_1 = 10; // CCFF 
+//         let tile_position_1 = 10; // CCFF
 //         let tile_position_2 = 11; // FCCF
 //         let tile_position_3 = 19; // FFCC
 //         let tile_position_4 = 18; // CFFC
@@ -809,7 +820,7 @@ pub fn close_all_cities(
 //         state.append_span([((Tile::Empty).into(), 0, 0); 64].span());
 
 //         let mut visited: Felt252Dict<bool> = Default::default();
-        
+
 //         let scoring_result = connect_adjacent_city_edges(
 //             ref world,
 //             board_id,
@@ -840,3 +851,5 @@ pub fn close_all_cities(
 //         };
 //     }
 // }
+
+

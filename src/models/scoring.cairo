@@ -10,7 +10,6 @@ use evolute_duel::types::packing::{UnionNode};
 pub struct UnionFind {
     #[key]
     pub board_id: felt252,
-
     pub nodes_parents: Span<u8>,
     pub nodes_ranks: Span<u8>,
     pub nodes_blue_points: Span<u16>,
@@ -18,7 +17,6 @@ pub struct UnionFind {
     pub nodes_open_edges: Span<u8>,
     pub nodes_contested: Span<bool>,
     pub nodes_types: Span<u8>, // 0 - None, 1 - City, 2 - Road
-
     pub potential_city_contests: Array<u8>,
     pub potential_road_contests: Array<u8>,
 }
@@ -72,72 +70,70 @@ pub impl UnionFindImpl of UnionFindTrait {
             potential_city_contests: array![],
             potential_road_contests: array![],
         };
-        world.write_model(
-            @union_find
-        );
+        world.write_model(@union_find);
     }
     fn write(ref self: UnionFind, mut world: WorldStorage) {
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
                 selector!("nodes_types"),
-                self.nodes_types.clone()
+                self.nodes_types.clone(),
             );
 
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
                 selector!("nodes_parents"),
-                self.nodes_parents.clone()
+                self.nodes_parents.clone(),
             );
 
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
                 selector!("nodes_ranks"),
-                self.nodes_ranks.clone()
+                self.nodes_ranks.clone(),
             );
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
                 selector!("nodes_ranks"),
-                self.nodes_ranks.clone()
+                self.nodes_ranks.clone(),
             );
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
                 selector!("nodes_blue_points"),
-                self.nodes_blue_points.clone()
+                self.nodes_blue_points.clone(),
             );
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
                 selector!("nodes_red_points"),
-                self.nodes_red_points.clone()
+                self.nodes_red_points.clone(),
             );
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
                 selector!("nodes_open_edges"),
-                self.nodes_open_edges.clone()
+                self.nodes_open_edges.clone(),
             );
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
                 selector!("nodes_contested"),
-                self.nodes_contested.clone()
+                self.nodes_contested.clone(),
             );
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
                 selector!("potential_city_contests"),
-                self.potential_city_contests.clone()
+                self.potential_city_contests.clone(),
             );
         world
             .write_member(
                 Model::<UnionFind>::ptr_from_keys(self.board_id),
                 selector!("potential_road_contests"),
-                self.potential_road_contests.clone()
+                self.potential_road_contests.clone(),
             );
     }
 
@@ -145,7 +141,7 @@ pub impl UnionFindImpl of UnionFindTrait {
         road_nodes_arr: Array<UnionNode>,
         city_nodes_arr: Array<UnionNode>,
         potential_city_contests: Array<u8>,
-        potential_road_contests: Array<u8>
+        potential_road_contests: Array<u8>,
     ) -> UnionFind {
         let mut nodes_parents = array![];
         let mut nodes_ranks = array![];
@@ -184,7 +180,7 @@ pub impl UnionFindImpl of UnionFindTrait {
                 nodes_types.append(2); // 0 - Сity, 1 - Road, 2 - None
             }
         };
-        
+
         let union_find = UnionFind {
             board_id: 0,
             nodes_parents: nodes_parents.span(),

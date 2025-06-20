@@ -23,9 +23,7 @@ pub fn hash_values(values: Span<felt252>) -> felt252 {
 //
 #[cfg(test)]
 mod unit {
-    use super::{
-        hash_values,
-    };
+    use super::{hash_values};
 
     #[test]
     fn test_hash_values() {

@@ -172,7 +172,7 @@ pub struct UnionNode {
     pub node_type: u8, // 0: City, 1: Road, 2: None
 }
 
-impl UnionNodeDefault of  Default<UnionNode> {
+impl UnionNodeDefault of Default<UnionNode> {
     fn default() -> UnionNode {
         UnionNode {
             parent: 0,
@@ -181,7 +181,7 @@ impl UnionNodeDefault of  Default<UnionNode> {
             red_points: 0,
             open_edges: 0,
             contested: false,
-            node_type: 2, // Default to None
+            node_type: 2 // Default to None
         }
     }
 }
