@@ -8,6 +8,10 @@ Playbook (Lore and Game Rules): https://evolute.notion.site/playbook
 
 Play Evolute Kingdom - Mage Duel 👉 https://mageduel.evolute.network/
 
+### Want to contribute? 
+We'd love your help!
+Check out our [technical documentation](https://docs.mageduel.evolute.network/docs/dojo-server/introduction/quick-start) to get started and see how you can make an impact.
+
 # Development Setup
 
 To start development, install `cairo` and the necessary toolchain using the [Cairo installation guide](https://book.cairo-lang.org/ch01-01-installation.html). Then, install the latest Dojo toolchain by following the [Dojo installation guide](https://book.dojoengine.org/getting-started). After setup, you will have access to:
@@ -79,47 +83,6 @@ Each move is a step toward building a greater world, but in the end, only one wi
 
 For detailed rules, check our [playbook](https://evolute.notion.site/playbook).
 
-# Matchmaking
-
-Matchmaking works as follows:
-
-- One player creates a game.
-- The second player sees the game in the list and joins.
-- The first player can cancel the game before another player joins.
-- When the second player joins, a board is generated with random parameters, and the game begins.
-- Once the game starts, it cannot be canceled, nor can a third player join.
-- A player can only participate in one game at a time.
-
-# Snapshots
-
-Once a game has ended, a player (or community) can create a snapshot of the match by specifying the board ID and move number. This snapshot captures the state of the game at that moment.
-
-Using this snapshot, a new game can be started from that specific point, allowing two players to continue playing from an existing game state.
-
-The matchmaking rules remain the same, except that the board parameters are pre-defined, and players begin from the recorded move instead of starting from scratch.
-
-![](assets/Matchmaking.png)
-
-# Architectural Decisions & Challenges
-
-## Event Sourcing for Snapshots
-
-To enable snapshots, we implemented an **event sourcing model** for moves. Each move is stored along with a reference to the previous move, allowing us to reconstruct the board state at any point in time. This approach also makes it easy to implement snapshots as forks from the main board.
-
-![](assets/EventSourcing.png)
-
-## Disjoint-Set Data Structure for Scoring
-
-To handle score calculations for contested cities and roads, we implemented a **custom Disjoint-Set data structure**. This allows us to efficiently merge roads and cities into sets while simultaneously updating each player's score and tracking the number of open edges in each set.
-
-## Modular Rule System
-
-We separated the game rules into an independent model, allowing us to modify rules dynamically without affecting the core game logic. This approach offers flexibility for introducing the number of cities and roads spawned on edges, the number of each type of tile in the deck, and the number of jokers without requiring a complete overhaul of the system.
-
-## Randomized Tile Draw Mechanism
-
-To prevent players from predicting the order of tile draws, we implemented a system where only the top tile of the deck is revealed randomly each turn. The randomization is enforced through blockchain-based entropy, ensuring fairness and unpredictability in tile distribution. This ensures that the sequence of upcoming tiles remains unknown, maintaining strategic depth and preventing players from planning moves too far in advance.
-
 # Sovereign World
 
 To deploy the game, we set up a dedicated **sovereign world** infrastructure:
@@ -133,10 +96,8 @@ To deploy the game, we set up a dedicated **sovereign world** infrastructure:
 
 ![](assets/Deployment.jpg)
 
-Provable Katana RPC: https://api.cartridge.gg/x/evolute-duel/katana
+# Our RPCs
 
-Provable Torii GraphQL RPC: https://api.cartridge.gg/x/evolute-duel/torii/graphql
+Release Katana RPC: https://api.cartridge.gg/x/evolute-duel/katana
 
-Release Katana RPC: https://api.cartridge.gg/x/liyard-evolute-duel/katana
-
-Release Torii GraphQL RPC: https://api.cartridge.gg/x/liyard-evolute-duel/torii/graphql
+Release Torii GraphQL RPC: https://api.cartridge.gg/x/evolute-duel/torii/graphql
