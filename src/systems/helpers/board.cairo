@@ -1,5 +1,4 @@
 
-use dojo::event::EventStorage;
 use dojo::model::{Model};
 use dojo::world::{WorldStorage};
 use dojo::model::{ModelStorage};
@@ -11,10 +10,9 @@ use core::dict::Felt252Dict;
 
 use evolute_duel::{
     models::{
-        scoring::{UnionFind, UnionFindTrait},
+        scoring::{UnionFindTrait},
         game::{Board, Rules, Move},
-    },
-    events::{BoardCreated, BoardCreatedFromSnapshot, BoardCreateFromSnapshotFalied}, 
+    }, 
     types::packing::{GameState, TEdge, Tile, PlayerSide, UnionNode},
     systems::helpers::{
         city_scoring::{connect_adjacent_city_edges, connect_city_edges_in_tile},
@@ -67,7 +65,7 @@ pub fn create_board(
         last_update_timestamp: get_block_timestamp(),
     };
 
-    let top_tile = draw_tile_from_board_deck(ref board);
+    let _top_tile = draw_tile_from_board_deck(ref board);
 
     world.write_model(@board);
 
@@ -82,22 +80,6 @@ pub fn create_board(
             Model::<Board>::ptr_from_keys(board_id),
             selector!("initial_edge_state"),
             initial_edge_state.clone(),
-        );
-
-    world
-        .emit_event(
-            @BoardCreated {
-                board_id,
-                initial_edge_state,
-                top_tile,
-                state: tiles,
-                player1: board.player1,
-                player2: board.player2,
-                blue_score: board.blue_score,
-                red_score: board.red_score,
-                last_move_id,
-                game_state,
-            },
         );
 
     return board;
@@ -133,13 +115,7 @@ pub fn create_board_from_snapshot(
     let mut number_of_reverted_moves = old_board_move_number - move_number.into();
     for _ in  0..number_of_reverted_moves {
         if last_move_id.is_none() {
-            world
-                .emit_event(
-                    @BoardCreateFromSnapshotFalied {
-                        player: player1, old_board_id, move_number,
-                    },
-                );
-            break;
+            panic!("[ERROR] Can't create board from snapshot! No more moves to revert");
         }
         let move_id = last_move_id.unwrap();
         let move: Move = world.read_model(move_id);

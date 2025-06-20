@@ -2,9 +2,6 @@ use starknet::ContractAddress;
 /// Interface defining actions for player profile management.
 #[starknet::interface]
 pub trait IPlayerProfileActions<T> {
-    /// Retrieves the player's balance.
-    fn balance(ref self: T);
-
     /// Lets admin set the player's data.
     /// - `player_id`: Unique identifier for the player.
     /// - `username`: Player's chosen in-game name.
@@ -24,12 +21,6 @@ pub trait IPlayerProfileActions<T> {
         active_skin: u8, 
         role: u8
     );
-
-    /// Retrieves the player's username.
-    fn username(ref self: T);
-
-    /// Retrieves the player's active skin.
-    fn active_skin(ref self: T);
 
     /// Changes the player's username.
     /// - `new_username`: The new username to be set.
@@ -59,7 +50,6 @@ pub mod player_profile_actions {
 
     use evolute_duel::{
         events::{
-            CurrentPlayerBalance, CurrentPlayerActiveSkin, CurrentPlayerUsername,
             PlayerUsernameChanged, PlayerSkinChanged, PlayerSkinChangeFailed,
         },
         models::{
@@ -106,13 +96,6 @@ pub mod player_profile_actions {
 
     #[abi(embed_v0)]
     impl PlayerProfileActionsImpl of IPlayerProfileActions<ContractState> {
-        fn balance(ref self: ContractState) {
-            let mut world = self.world_default();
-            let player_id = get_caller_address();
-            let player: Player = world.read_model(player_id);
-            world.emit_event(@CurrentPlayerBalance { player_id, balance: player.balance });
-        }
-
         fn set_player(
             ref self: ContractState, 
             player_id: ContractAddress, 
@@ -132,13 +115,6 @@ pub mod player_profile_actions {
             world.write_model(@player);
         }
 
-        fn username(ref self: ContractState) {
-            let mut world = self.world_default();
-            let player_id = get_caller_address();
-            let player: Player = world.read_model(player_id);
-            world.emit_event(@CurrentPlayerUsername { player_id, username: player.username });
-        }
-
         fn change_username(ref self: ContractState, new_username: felt252) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
@@ -147,16 +123,6 @@ pub mod player_profile_actions {
             world.write_model(@player);
 
             world.emit_event(@PlayerUsernameChanged { player_id, new_username });
-        }
-
-        fn active_skin(ref self: ContractState) {
-            let mut world = self.world_default();
-            let player_id = get_caller_address();
-            let player: Player = world.read_model(player_id);
-            world
-                .emit_event(
-                    @CurrentPlayerActiveSkin { player_id, active_skin: player.active_skin },
-                );
         }
 
         fn change_skin(ref self: ContractState, skin_id: u8) {
@@ -183,10 +149,6 @@ pub mod player_profile_actions {
             world.write_model(@player);
 
             world.emit_event(@PlayerSkinChanged { player_id, new_skin: skin_id });
-            world
-                .emit_event(
-                    @CurrentPlayerActiveSkin { player_id, active_skin: player.active_skin },
-                );
 
             match skin_id {
                 0 | 1 => {}, // Default skin, no achievement => {},
@@ -195,11 +157,6 @@ pub mod player_profile_actions {
                 4 => AchievementsTrait::unlock_mammoth(world, player_id), //[Achievements] Mammoth skin
                 _ => {},
                 
-            }
-
-            //[Achievements] Mammoth skin
-            if skin_id == 4 {
-                AchievementsTrait::unlock_mammoth(world, player_id);
             }
         }
 

@@ -1,6 +1,5 @@
 use dojo::event::EventStorage;
 use evolute_duel::{
-    models::scoring::{UnionFind},
     events::{CityContestWon, CityContestDraw},
     systems::helpers::{
         union_find::{find, union}, board::{},

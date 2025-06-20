@@ -49,9 +49,8 @@ pub mod game {
         },
         events::{
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
-            PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
-            Skiped, Moved, SnapshotCreated, SnapshotCreateFailed, CurrentPlayerBalance, InvalidMove,
-            CantFinishGame,
+            PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished,
+            Skiped, Moved, SnapshotCreated, SnapshotCreateFailed, InvalidMove,
         },
         systems::helpers::{
             board::{
@@ -392,7 +391,7 @@ pub mod game {
             let mut board: Board = world.read_model(board_id);
 
             if game.status == GameStatus::Finished {
-                world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
+                world.emit_event(@GameFinished { player, board_id });
                 println!("Game is already finished");
                 return;
             }
@@ -886,7 +885,7 @@ pub mod game {
             let mut board: Board = world.read_model(board_id);
 
             if game.status == GameStatus::Finished {
-                world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
+                world.emit_event(@GameFinished { player, board_id });
                 println!("Game is already finished");
                 return;
             }
@@ -1113,7 +1112,7 @@ pub mod game {
             let mut board: Board = world.read_model(board_id);
 
             if game.status == GameStatus::Finished {
-                world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
+                world.emit_event(@GameFinished { player, board_id });
                 println!("Game is already finished");
                 return;
             }
@@ -1235,7 +1234,6 @@ pub mod game {
                 union_find.write(world); 
                 return;
             } else {
-                world.emit_event(@CantFinishGame { player_id: player, board_id });
                 println!("Cant finish game, time delta is less than 2 * MOVE_TIME");
                 return;
             }
@@ -1381,8 +1379,8 @@ pub mod game {
             world.write_model(@host_game);
             world.write_model(@guest_game);
 
-            world.emit_event(@GameFinished { host_player: player1_address, board_id: board.id });
-            world.emit_event(@GameFinished { host_player: player2_address, board_id: board.id });
+            world.emit_event(@GameFinished { player: player1_address, board_id: board.id });
+            world.emit_event(@GameFinished { player: player2_address, board_id: board.id });
 
             let mut player1: Player = world.read_model(player1_address);
             let mut player2: Player = world.read_model(player2_address);
@@ -1419,17 +1417,6 @@ pub mod game {
 
             world.write_model(@player1);
             world.write_model(@player2);
-
-
-            world
-                .emit_event(
-                    @CurrentPlayerBalance { player_id: player1_address, balance: player1.balance },
-                );
-
-            world
-                .emit_event(
-                    @CurrentPlayerBalance { player_id: player2_address, balance: player2.balance },
-                );
 
             world
                 .write_member(
