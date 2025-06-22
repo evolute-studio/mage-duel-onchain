@@ -1,7 +1,7 @@
 use dojo::world::{WorldStorage};
 use dojo::model::{Model, ModelStorage};
 use evolute_duel::types::packing::{UnionNode};
-// --------------------------------------
+use alexandria_data_structures::vec::{NullableVec, VecTrait};// --------------------------------------
 // Scoring Models
 // --------------------------------------
 
@@ -138,8 +138,8 @@ pub impl UnionFindImpl of UnionFindTrait {
     }
 
     fn from_union_nodes(
-        road_nodes_arr: Array<UnionNode>,
-        city_nodes_arr: Array<UnionNode>,
+        ref road_nodes: NullableVec<UnionNode>,
+        ref city_nodes: NullableVec<UnionNode>,
         potential_city_contests: Array<u8>,
         potential_road_contests: Array<u8>,
     ) -> UnionFind {
@@ -151,9 +151,9 @@ pub impl UnionFindImpl of UnionFindTrait {
         let mut nodes_contested = array![];
         let mut nodes_types = array![];
 
-        for i in 0..road_nodes_arr.len() {
-            let road_node = *road_nodes_arr[i];
-            let city_node = *city_nodes_arr[i];
+        for i in 0..road_nodes.len() {
+            let road_node = road_nodes.at(i.into());
+            let city_node = city_nodes.at(i.into());
             if road_node.node_type == 1 {
                 nodes_parents.append(road_node.parent);
                 nodes_ranks.append(road_node.rank);
@@ -196,4 +196,99 @@ pub impl UnionFindImpl of UnionFindTrait {
 
         union_find
     }
+
+    fn update_with_union_nodes(
+        ref self: UnionFind,
+        ref city_nodes: NullableVec<UnionNode>,
+        ref road_nodes: NullableVec<UnionNode>,
+    ) {
+        self = Self::from_union_nodes(
+            ref road_nodes,
+            ref city_nodes,
+            self.potential_city_contests.clone(),
+            self.potential_road_contests.clone(),
+        );
+    }
+
+    fn to_nullable_vecs(
+        ref self: UnionFind,
+    ) -> (
+        NullableVec<UnionNode>,
+        NullableVec<UnionNode>
+    ) {
+        let mut city_nodes = VecTrait::<NullableVec, UnionNode>::new();
+        let mut road_nodes = VecTrait::<NullableVec, UnionNode>::new();
+
+        for i in 0..self.nodes_parents.len() {
+            let mut node: UnionNode = Default::default();
+            node.node_type = *self.nodes_types.at(i.into());
+            node.parent = *self.nodes_parents.at(i.into());
+            node.rank = *self.nodes_ranks.at(i.into());
+            node.blue_points = *self.nodes_blue_points.at(i.into());
+            node.red_points = *self.nodes_red_points.at(i.into());
+            node.open_edges = *self.nodes_open_edges.at(i.into());
+            node.contested = *self.nodes_contested.at(i.into());
+            if node.node_type == 0 {
+                road_nodes
+                    .push(
+                        UnionNode {
+                            parent: i.try_into().unwrap(),
+                            rank: 0,
+                            blue_points: 0,
+                            red_points: 0,
+                            open_edges: 0,
+                            contested: false,
+                            node_type: 2 // 0 - City, 1 - Road, 2 - None
+                        },
+                    );
+                city_nodes.push(node);
+            } else if node.node_type == 1 {
+                road_nodes.push(node);
+                city_nodes
+                    .push(
+                        UnionNode {
+                            parent: i.try_into().unwrap(),
+                            rank: 0,
+                            blue_points: 0,
+                            red_points: 0,
+                            open_edges: 0,
+                            contested: false,
+                            node_type: 2 // 0 - City, 1 - Road, 2 - None
+                        },
+                    );
+            } else {
+                road_nodes
+                    .push(
+                        UnionNode {
+                            parent: i.try_into().unwrap(),
+                            rank: 0,
+                            blue_points: 0,
+                            red_points: 0,
+                            open_edges: 0,
+                            contested: false,
+                            node_type: 2 // 0 - City, 1 - Road, 2 - None
+                        },
+                    );
+                city_nodes
+                    .push(
+                        UnionNode {
+                            parent: i.try_into().unwrap(),
+                            rank: 0,
+                            blue_points: 0,
+                            red_points: 0,
+                            open_edges: 0,
+                            contested: false,
+                            node_type: 2 // 0 - City, 1 - Road, 2 - None
+                        },
+                    );
+            }
+        };
+
+        return (
+            city_nodes,
+            road_nodes
+        );
+    }
+
+
 }

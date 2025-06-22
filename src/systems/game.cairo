@@ -353,32 +353,23 @@ pub mod game {
             let player = get_caller_address();
             let game: Game = world.read_model(player);
 
-            if game.board_id.is_none() {
-                world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
-                println!("Player is not in game");
+            if !AssertsTrait::assert_player_in_game(@game, Option::None, world) {
                 return;
             }
 
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
-            if game.status == GameStatus::Finished {
-                world.emit_event(@GameFinished { player, board_id });
-                println!("Game is already finished");
+            if !AssertsTrait::assert_game_is_in_progress(@game, world) {
                 return;
             }
 
             let (player1_address, player1_side, joker_number1) = board.player1;
             let (player2_address, player2_side, joker_number2) = board.player2;
 
-            let (player_side, joker_number) = if player == player1_address {
-                (player1_side, joker_number1)
-            } else if player == player2_address {
-                (player2_side, joker_number2)
-            } else {
-                world.emit_event(@PlayerNotInGame { player_id: player, board_id });
-                println!("Player is not in game");
-                return;
+            let (player_side, joker_number) = match board.get_player_data(player, world) {
+                Option::Some((side, joker_number)) => (side, joker_number),
+                Option::None => {return;}
             };
 
             let is_joker = joker_tile.is_some();
@@ -489,81 +480,7 @@ pub mod game {
 
             let mut union_find: UnionFind = world.read_model(board_id);
 
-            let mut city_nodes = VecTrait::<NullableVec, UnionNode>::new();
-            let mut road_nodes = VecTrait::<NullableVec, UnionNode>::new();
-            // println!("Union find: {:?}", union_find);
-            // println!("Union find sizes. node_parents: {:?}, node_types: {:?}, node_ranks: {:?},
-            // node_blue_points: {:?}, node_red_points: {:?}, node_open_edges: {:?}, node_contested:
-            // {:?}, node_types: {:?}", union_find.nodes_parents.len(),
-            // union_find.nodes_types.len(), union_find.nodes_ranks.len(),
-            // union_find.nodes_blue_points.len(), union_find.nodes_red_points.len(),
-            // union_find.nodes_open_edges.len(), union_find.nodes_contested.len(),
-            // union_find.nodes_types.len());
-            for i in 0..union_find.nodes_parents.len() {
-                // println!("i: {}", i);
-                let mut node: UnionNode = Default::default();
-                node.node_type = *union_find.nodes_types.at(i.into());
-                node.parent = *union_find.nodes_parents.at(i.into());
-                node.rank = *union_find.nodes_ranks.at(i.into());
-                node.blue_points = *union_find.nodes_blue_points.at(i.into());
-                node.red_points = *union_find.nodes_red_points.at(i.into());
-                node.open_edges = *union_find.nodes_open_edges.at(i.into());
-                node.contested = *union_find.nodes_contested.at(i.into());
-                if node.node_type == 0 {
-                    road_nodes
-                        .push(
-                            UnionNode {
-                                parent: i.try_into().unwrap(),
-                                rank: 0,
-                                blue_points: 0,
-                                red_points: 0,
-                                open_edges: 0,
-                                contested: false,
-                                node_type: 2 // 0 - City, 1 - Road, 2 - None
-                            },
-                        );
-                    city_nodes.push(node);
-                } else if node.node_type == 1 {
-                    road_nodes.push(node);
-                    city_nodes
-                        .push(
-                            UnionNode {
-                                parent: i.try_into().unwrap(),
-                                rank: 0,
-                                blue_points: 0,
-                                red_points: 0,
-                                open_edges: 0,
-                                contested: false,
-                                node_type: 2 // 0 - City, 1 - Road, 2 - None
-                            },
-                        );
-                } else {
-                    road_nodes
-                        .push(
-                            UnionNode {
-                                parent: i.try_into().unwrap(),
-                                rank: 0,
-                                blue_points: 0,
-                                red_points: 0,
-                                open_edges: 0,
-                                contested: false,
-                                node_type: 2 // 0 - City, 1 - Road, 2 - None
-                            },
-                        );
-                    city_nodes
-                        .push(
-                            UnionNode {
-                                parent: i.try_into().unwrap(),
-                                rank: 0,
-                                blue_points: 0,
-                                red_points: 0,
-                                open_edges: 0,
-                                contested: false,
-                                node_type: 2 // 0 - City, 1 - Road, 2 - None
-                            },
-                        );
-                }
-            };
+            let (mut city_nodes, mut  road_nodes) = union_find.to_nullable_vecs();
 
             // print!("0");
 
@@ -685,65 +602,9 @@ pub mod game {
                     );
             }
 
-            let mut new_nodes_parents = array![];
-            let mut new_nodes_ranks = array![];
-            let mut new_nodes_blue_points = array![];
-            let mut new_nodes_red_points = array![];
-            let mut new_nodes_open_edges = array![];
-            let mut new_nodes_contested = array![];
-            let mut new_nodes_types = array![];
-            println!("Road nodes length: {:?}", road_nodes.len());
-            println!("City nodes length: {:?}", city_nodes.len());
-            print!("[Road nodes types]: [");
-            for i in 0..256_usize {
-                let road_node = road_nodes.at(i.into());
-                print!("{}, ", road_node.node_type);
-            };
-            println!("]");
-
-            print!("[City nodes types]: [");
-            for i in 0..256_usize {
-                let city_node = city_nodes.at(i.into());
-                print!("{}, ", city_node.node_type);
-            };
-            println!("]");
-
-            for i in 0..256_usize {
-                let road_node = road_nodes.at(i.into());
-                let city_node = city_nodes.at(i.into());
-                if road_node.node_type == 1 {
-                    new_nodes_types.append(road_node.node_type);
-                    new_nodes_parents.append(road_node.parent);
-                    new_nodes_ranks.append(road_node.rank);
-                    new_nodes_blue_points.append(road_node.blue_points);
-                    new_nodes_red_points.append(road_node.red_points);
-                    new_nodes_open_edges.append(road_node.open_edges);
-                    new_nodes_contested.append(road_node.contested);
-                } else if city_node.node_type == 0 {
-                    new_nodes_types.append(city_node.node_type);
-                    new_nodes_parents.append(city_node.parent);
-                    new_nodes_ranks.append(city_node.rank);
-                    new_nodes_blue_points.append(city_node.blue_points);
-                    new_nodes_red_points.append(city_node.red_points);
-                    new_nodes_open_edges.append(city_node.open_edges);
-                    new_nodes_contested.append(city_node.contested);
-                } else {
-                    new_nodes_types.append(2); // 0 - City, 1 - Road, 2 - None
-                    new_nodes_parents.append(i.try_into().unwrap());
-                    new_nodes_ranks.append(0);
-                    new_nodes_blue_points.append(0);
-                    new_nodes_red_points.append(0);
-                    new_nodes_open_edges.append(0);
-                    new_nodes_contested.append(false);
-                }
-            };
-            union_find.nodes_parents = new_nodes_parents.span();
-            union_find.nodes_ranks = new_nodes_ranks.span();
-            union_find.nodes_blue_points = new_nodes_blue_points.span();
-            union_find.nodes_red_points = new_nodes_red_points.span();
-            union_find.nodes_open_edges = new_nodes_open_edges.span();
-            union_find.nodes_contested = new_nodes_contested.span();
-            union_find.nodes_types = new_nodes_types.span();
+            union_find.update_with_union_nodes(
+                ref city_nodes, ref road_nodes
+            );
 
             union_find.write(world);
 
@@ -861,101 +722,27 @@ pub mod game {
             let mut world = self.world_default();
             let game: Game = world.read_model(player);
 
-            if game.board_id.is_none() {
-                world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
-                println!("Player is not in game");
+            if !AssertsTrait::assert_player_in_game(@game, Option::None, world) {
                 return;
             }
 
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
-            if game.status == GameStatus::Finished {
-                world.emit_event(@GameFinished { player, board_id });
-                println!("Game is already finished");
+            if !AssertsTrait::assert_game_is_in_progress(@game, world) {
                 return;
             }
 
             let (player1_address, player1_side, _) = board.player1;
             let (player2_address, player2_side, _) = board.player2;
 
-            let player_side = if player == player1_address {
-                player1_side
-            } else if player == player2_address {
-                player2_side
-            } else {
-                world.emit_event(@PlayerNotInGame { player_id: player, board_id });
-                println!("Player is not in game");
-                return;
+            let (player_side, _) = match board.get_player_data(player, world) {
+                Option::Some((side, joker_number)) => (side, joker_number),
+                Option::None => {return;}
             };
 
             let mut union_find: UnionFind = world.read_model(board_id);
-            let mut city_nodes = VecTrait::<NullableVec, UnionNode>::new();
-            let mut road_nodes = VecTrait::<NullableVec, UnionNode>::new();
-            for i in 0..union_find.nodes_parents.len() {
-                let mut node: UnionNode = Default::default();
-                node.node_type = *union_find.nodes_types.at(i.into());
-                node.parent = *union_find.nodes_parents.at(i.into());
-                node.rank = *union_find.nodes_ranks.at(i.into());
-                node.blue_points = *union_find.nodes_blue_points.at(i.into());
-                node.red_points = *union_find.nodes_red_points.at(i.into());
-                node.open_edges = *union_find.nodes_open_edges.at(i.into());
-                node.contested = *union_find.nodes_contested.at(i.into());
-                if node.node_type == 0 {
-                    road_nodes
-                        .push(
-                            UnionNode {
-                                parent: i.try_into().unwrap(),
-                                rank: 0,
-                                blue_points: 0,
-                                red_points: 0,
-                                open_edges: 0,
-                                contested: false,
-                                node_type: 2 // 0 - City, 1 - Road, 2 - None
-                            },
-                        );
-                    city_nodes.push(node);
-                } else if node.node_type == 1 {
-                    road_nodes.push(node);
-                    city_nodes
-                        .push(
-                            UnionNode {
-                                parent: i.try_into().unwrap(),
-                                rank: 0,
-                                blue_points: 0,
-                                red_points: 0,
-                                open_edges: 0,
-                                contested: false,
-                                node_type: 2 // 0 - City, 1 - Road, 2 - None
-                            },
-                        );
-                } else {
-                    road_nodes
-                        .push(
-                            UnionNode {
-                                parent: i.try_into().unwrap(),
-                                rank: 0,
-                                blue_points: 0,
-                                red_points: 0,
-                                open_edges: 0,
-                                contested: false,
-                                node_type: 2 // 0 - City, 1 - Road, 2 - None
-                            },
-                        );
-                    city_nodes
-                        .push(
-                            UnionNode {
-                                parent: i.try_into().unwrap(),
-                                rank: 0,
-                                blue_points: 0,
-                                red_points: 0,
-                                open_edges: 0,
-                                contested: false,
-                                node_type: 2 // 0 - City, 1 - Road, 2 - None
-                            },
-                        );
-                }
-            };
+            let (mut city_nodes, mut road_nodes) = union_find.to_nullable_vecs();
 
             let prev_move_id = board.last_move_id;
             if prev_move_id.is_some() {
@@ -1016,49 +803,10 @@ pub mod game {
                             ref city_nodes,
                             ref road_nodes,
                         );
-                    let mut new_nodes_parents = array![];
-                    let mut new_nodes_ranks = array![];
-                    let mut new_nodes_blue_points = array![];
-                    let mut new_nodes_red_points = array![];
-                    let mut new_nodes_open_edges = array![];
-                    let mut new_nodes_contested = array![];
-                    let mut new_nodes_types = array![];
-                    for i in 0..256_usize {
-                        let road_node = road_nodes.at(i.into());
-                        let city_node = city_nodes.at(i.into());
-                        if road_node.node_type == 1 {
-                            new_nodes_types.append(road_node.node_type);
-                            new_nodes_parents.append(road_node.parent);
-                            new_nodes_ranks.append(road_node.rank);
-                            new_nodes_blue_points.append(road_node.blue_points);
-                            new_nodes_red_points.append(road_node.red_points);
-                            new_nodes_open_edges.append(road_node.open_edges);
-                            new_nodes_contested.append(road_node.contested);
-                        } else if city_node.node_type == 0 {
-                            new_nodes_types.append(city_node.node_type);
-                            new_nodes_parents.append(city_node.parent);
-                            new_nodes_ranks.append(city_node.rank);
-                            new_nodes_blue_points.append(city_node.blue_points);
-                            new_nodes_red_points.append(city_node.red_points);
-                            new_nodes_open_edges.append(city_node.open_edges);
-                            new_nodes_contested.append(city_node.contested);
-                        } else {
-                            new_nodes_types.append(2); // 0 - City, 1 - Road, 2 - None
-                            new_nodes_parents.append(i.try_into().unwrap());
-                            new_nodes_ranks.append(0);
-                            new_nodes_blue_points.append(0);
-                            new_nodes_red_points.append(0);
-                            new_nodes_open_edges.append(0);
-                            new_nodes_contested.append(false);
-                        }
-                    };
-                    union_find.nodes_parents = new_nodes_parents.span();
-                    union_find.nodes_ranks = new_nodes_ranks.span();
-                    union_find.nodes_blue_points = new_nodes_blue_points.span();
-                    union_find.nodes_red_points = new_nodes_red_points.span();
-                    union_find.nodes_open_edges = new_nodes_open_edges.span();
-                    union_find.nodes_contested = new_nodes_contested.span();
-                    union_find.nodes_types = new_nodes_types.span();
+                    
+                    union_find.update_with_union_nodes(
+                        ref city_nodes, ref road_nodes
+                    );
 
                     union_find.write(world);
                 }
@@ -1100,17 +848,13 @@ pub mod game {
             let mut world = self.world_default();
             let game: Game = world.read_model(player);
 
-            if game.board_id.is_none() || game.board_id.unwrap() != board_id {
-                world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
-                println!("Player is not in game");
+            if !AssertsTrait::assert_player_in_game(@game, Option::Some(board_id), world) {
                 return;
             }
 
             let mut board: Board = world.read_model(board_id);
 
-            if game.status == GameStatus::Finished {
-                world.emit_event(@GameFinished { player, board_id });
-                println!("Game is already finished");
+            if !AssertsTrait::assert_game_is_in_progress(@game, world) {
                 return;
             }
 
@@ -1120,72 +864,7 @@ pub mod game {
             if time_delta > 2 * MOVE_TIME {
                 //FINISH THE GAME
                 let mut union_find: UnionFind = world.read_model(board_id);
-                let mut city_nodes = VecTrait::<NullableVec, UnionNode>::new();
-                let mut road_nodes = VecTrait::<NullableVec, UnionNode>::new();
-                for i in 0..union_find.nodes_parents.len() {
-                    let mut node: UnionNode = Default::default();
-                    node.node_type = *union_find.nodes_types.at(i.into());
-                    node.parent = *union_find.nodes_parents.at(i.into());
-                    node.rank = *union_find.nodes_ranks.at(i.into());
-                    node.blue_points = *union_find.nodes_blue_points.at(i.into());
-                    node.red_points = *union_find.nodes_red_points.at(i.into());
-                    node.open_edges = *union_find.nodes_open_edges.at(i.into());
-                    node.contested = *union_find.nodes_contested.at(i.into());
-                    if node.node_type == 0 {
-                        road_nodes
-                            .push(
-                                UnionNode {
-                                    parent: i.try_into().unwrap(),
-                                    rank: 0,
-                                    blue_points: 0,
-                                    red_points: 0,
-                                    open_edges: 0,
-                                    contested: false,
-                                    node_type: 2 // 0 - City, 1 - Road, 2 - None
-                                },
-                            );
-                        city_nodes.push(node);
-                    } else if node.node_type == 1 {
-                        road_nodes.push(node);
-                        city_nodes
-                            .push(
-                                UnionNode {
-                                    parent: i.try_into().unwrap(),
-                                    rank: 0,
-                                    blue_points: 0,
-                                    red_points: 0,
-                                    open_edges: 0,
-                                    contested: false,
-                                    node_type: 2 // 0 - City, 1 - Road, 2 - None
-                                },
-                            );
-                    } else {
-                        road_nodes
-                            .push(
-                                UnionNode {
-                                    parent: i.try_into().unwrap(),
-                                    rank: 0,
-                                    blue_points: 0,
-                                    red_points: 0,
-                                    open_edges: 0,
-                                    contested: false,
-                                    node_type: 2 // 0 - City, 1 - Road, 2 - None
-                                },
-                            );
-                        city_nodes
-                            .push(
-                                UnionNode {
-                                    parent: i.try_into().unwrap(),
-                                    rank: 0,
-                                    blue_points: 0,
-                                    red_points: 0,
-                                    open_edges: 0,
-                                    contested: false,
-                                    node_type: 2 // 0 - City, 1 - Road, 2 - None
-                                },
-                            );
-                    }
-                };
+                let (mut city_nodes, mut road_nodes) = union_find.to_nullable_vecs();
                 self
                     ._finish_game(
                         ref board,
@@ -1195,50 +874,9 @@ pub mod game {
                         ref road_nodes,
                     );
 
-                let mut new_nodes_parents = array![];
-                let mut new_nodes_ranks = array![];
-                let mut new_nodes_blue_points = array![];
-                let mut new_nodes_red_points = array![];
-                let mut new_nodes_open_edges = array![];
-                let mut new_nodes_contested = array![];
-                let mut new_nodes_types = array![];
-                for i in 0..256_usize {
-                    let road_node = road_nodes.at(i.into());
-                    let city_node = city_nodes.at(i.into());
-                    if road_node.node_type == 1 {
-                        new_nodes_types.append(road_node.node_type);
-                        new_nodes_parents.append(road_node.parent);
-                        new_nodes_ranks.append(road_node.rank);
-                        new_nodes_blue_points.append(road_node.blue_points);
-                        new_nodes_red_points.append(road_node.red_points);
-                        new_nodes_open_edges.append(road_node.open_edges);
-                        new_nodes_contested.append(road_node.contested);
-                    } else if city_node.node_type == 0 {
-                        new_nodes_types.append(city_node.node_type);
-                        new_nodes_parents.append(city_node.parent);
-                        new_nodes_ranks.append(city_node.rank);
-                        new_nodes_blue_points.append(city_node.blue_points);
-                        new_nodes_red_points.append(city_node.red_points);
-                        new_nodes_open_edges.append(city_node.open_edges);
-                        new_nodes_contested.append(city_node.contested);
-                    } else {
-                        new_nodes_types.append(2); // 0 - City, 1 - Road, 2 - None
-                        new_nodes_parents.append(i.try_into().unwrap());
-                        new_nodes_ranks.append(0);
-                        new_nodes_blue_points.append(0);
-                        new_nodes_red_points.append(0);
-                        new_nodes_open_edges.append(0);
-                        new_nodes_contested.append(false);
-                    }
-                };
-                union_find.nodes_parents = new_nodes_parents.span();
-                union_find.nodes_ranks = new_nodes_ranks.span();
-                union_find.nodes_blue_points = new_nodes_blue_points.span();
-                union_find.nodes_red_points = new_nodes_red_points.span();
-                union_find.nodes_open_edges = new_nodes_open_edges.span();
-                union_find.nodes_contested = new_nodes_contested.span();
-                union_find.nodes_types = new_nodes_types.span();
-
+                union_find.update_with_union_nodes(
+                    ref city_nodes, ref road_nodes
+                );
                 union_find.write(world);
                 return;
             } else {

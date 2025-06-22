@@ -1,6 +1,9 @@
-use dojo::model::{Model};
-use dojo::world::{WorldStorage};
-use dojo::model::{ModelStorage};
+use dojo::{
+    model::{Model, ModelStorage},
+    world::{WorldStorage},
+    event::EventStorage,
+};
+
 
 use starknet::{ContractAddress, contract_address_const};
 use origami_random::deck::{DeckTrait};
@@ -15,6 +18,7 @@ use evolute_duel::{
         road_scoring::{connect_adjacent_road_edges, connect_road_edges_in_tile},
         tile_helpers::{calcucate_tile_points, calculate_adjacent_edge_points},
     },
+    events::{PlayerNotInGame},
 };
 
 use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
@@ -206,17 +210,8 @@ pub impl BoardImpl of BoardTrait {
             ref potential_city_contests,
         );
 
-        let mut road_nodes_arr: Array<UnionNode> = array![];
-        for i in 0..road_nodes.len() {
-            road_nodes_arr.append(road_nodes.at(i.into()));
-        };
-        let mut city_nodes_arr: Array<UnionNode> = array![];
-        for i in 0..city_nodes.len() {
-            city_nodes_arr.append(city_nodes.at(i.into()));
-        };
-
         let mut union_find = UnionFindTrait::from_union_nodes(
-            road_nodes_arr, city_nodes_arr, potential_road_contests, potential_city_contests,
+            ref road_nodes, ref city_nodes, potential_road_contests, potential_city_contests,
         );
         union_find.write(world);
 
@@ -534,7 +529,9 @@ pub impl BoardImpl of BoardTrait {
             return Option::None;
         }
         let mut dice = DiceTrait::new(
-            avaliable_tiles.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into(),
+            avaliable_tiles.len().try_into().unwrap(), 'SEED'
+            //  + get_block_timestamp().into()
+             ,
         );
 
         let mut next_tile = dice.roll() - 1;
@@ -572,7 +569,10 @@ pub impl BoardImpl of BoardTrait {
 
         for side in 0..4_u8 {
             let mut deck = DeckTrait::new(
-                ('SEED' + side.into() + get_block_timestamp().into() + board_id).into(), 8,
+                // (
+                    'SEED'
+                    //  + side.into() + get_block_timestamp().into() + board_id).into()
+                     , 8,
             );
             let mut edge: Felt252Dict<u8> = Default::default();
             for i in 0..8_u8 {
@@ -603,5 +603,20 @@ pub impl BoardImpl of BoardTrait {
         };
 
         return deck_rules_flat;
+    }
+
+    fn get_player_data(ref self: Board, player: ContractAddress, mut world: WorldStorage) -> Option<(PlayerSide, u8)> {
+        let (player1_address, player1_side, joker_number1) = self.player1;
+        let (player2_address, player2_side, joker_number2) = self.player2;
+
+        return if player == player1_address {
+            Option::Some((player1_side, joker_number1))
+        } else if player == player2_address {
+            Option::Some((player2_side, joker_number2))
+        } else {
+            world.emit_event(@PlayerNotInGame { player_id: player, board_id: self.id });
+            println!("Player is not in game");
+            Option::None
+        };
     }
 }
