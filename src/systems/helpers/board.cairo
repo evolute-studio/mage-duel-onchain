@@ -488,7 +488,6 @@ pub impl BoardImpl of BoardTrait {
         rotation: u8,
         col: u8,
         row: u8,
-        is_joker: bool,
         side: PlayerSide,
     ) {
         let mut updated_state: Array<(u8, u8, u8)> = ArrayTrait::new();
@@ -618,5 +617,11 @@ pub impl BoardImpl of BoardTrait {
             println!("Player is not in game");
             Option::None
         };
+    }
+
+    fn get_joker_numbers(self: @Board) -> (u8, u8) {
+        let (_, _, joker_number1) = *self.player1;
+        let (_, _, joker_number2) = *self.player2;
+        (joker_number1, joker_number2)
     }
 }

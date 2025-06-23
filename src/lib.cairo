@@ -29,6 +29,9 @@ pub mod types {
 pub mod libs {
     pub mod achievements;
     pub mod asserts;
+    pub mod timing;
+    pub mod scoring;
+    pub mod move_execution;
 }
 
 pub mod utils {

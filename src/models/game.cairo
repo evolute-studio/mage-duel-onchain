@@ -52,7 +52,7 @@ pub struct Board {
 /// If `tile` is `None`, this move represents a skip.
 /// If `prev_move_id` is `None`, this move is the first move of the game.
 /// If `is_joker` is `true`, the move involved a joker tile.
-#[derive(Drop, Serde, Introspect, Debug)]
+#[derive(Drop, Serde, Introspect, Debug, Copy)]
 #[dojo::model]
 pub struct Move {
     #[key]

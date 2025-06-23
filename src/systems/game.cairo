@@ -47,26 +47,20 @@ pub mod game {
             scoring::{UnionFind, UnionFindTrait},
         },
         events::{
-            GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
-            PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, Skiped, Moved,
-            SnapshotCreated, SnapshotCreateFailed, InvalidMove,
+            GameCreated, GameStarted, GameCanceled, BoardUpdated,
+            GameFinished, Skiped,
+            SnapshotCreated, SnapshotCreateFailed,
         },
         systems::helpers::{
             board::{BoardTrait},
-            city_scoring::{
-                connect_city_edges_in_tile, connect_adjacent_city_edges, close_all_cities,
-            },
-            road_scoring::{
-                connect_road_edges_in_tile, connect_adjacent_road_edges, close_all_roads,
-            },
-            tile_helpers::{calcucate_tile_points, calculate_adjacent_edge_points},
-            validation::{is_valid_move},
         },
         types::packing::{GameStatus, GameState, PlayerSide, UnionNode},
     };
 
     use evolute_duel::libs::{ // store::{Store, StoreTrait},
         achievements::{AchievementsTrait}, asserts::{AssertsTrait},
+        timing::{TimingTrait}, scoring::{ScoringTrait},
+        move_execution::{MoveExecutionTrait, MoveData},
     };
     use evolute_duel::types::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
 
@@ -74,9 +68,7 @@ pub mod game {
     use dojo::model::{ModelStorage, Model};
 
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use core::dict::Felt252Dict;
-
-    use alexandria_data_structures::vec::{NullableVec, VecTrait};
+    use alexandria_data_structures::vec::{NullableVec};
 
     use achievement::components::achievable::AchievableComponent;
     component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
@@ -297,10 +289,7 @@ pub mod game {
             let guest_player = get_caller_address();
 
             let mut host_game: Game = world.read_model(host_player);
-            let host_game_status = host_game.status;
-
             let mut guest_game: Game = world.read_model(guest_player);
-            let guest_game_status = guest_game.status;
 
             if !AssertsTrait::assert_ready_to_join_game(@guest_game, @host_game, world) {
                 return;
@@ -364,8 +353,8 @@ pub mod game {
                 return;
             }
 
-            let (player1_address, player1_side, joker_number1) = board.player1;
-            let (player2_address, player2_side, joker_number2) = board.player2;
+            let (player1_address, player1_side, _joker_number1) = board.player1;
+            let (player2_address, player2_side, _joker_number2) = board.player2;
 
             let (player_side, joker_number) = match board.get_player_data(player, world) {
                 Option::Some((side, joker_number)) => (side, joker_number),
@@ -374,346 +363,68 @@ pub mod game {
 
             let is_joker = joker_tile.is_some();
 
-            if is_joker && joker_number == 0 {
-                world.emit_event(@NotEnoughJokers { player_id: player, board_id });
-                println!("Not enough jokers");
+            if !MoveExecutionTrait::validate_joker_usage(joker_tile, joker_number, player, board_id, world) {
                 return;
             }
 
-            let prev_move_id = board.last_move_id;
-            if prev_move_id.is_some() {
-                let prev_move_id = prev_move_id.unwrap();
-                let prev_move: Move = world.read_model(prev_move_id);
-                let prev_player_side = prev_move.player_side;
-                let time = get_block_timestamp();
-                let last_update_timestamp = board.last_update_timestamp;
-                let time_delta = time - last_update_timestamp;
-
-                if player_side == prev_player_side {
-                    if time_delta > MOVE_TIME && time_delta <= 2 * MOVE_TIME {
-                        //Skip the move of the previous player
-                        let another_player = if player == player1_address {
-                            player2_address
-                        } else {
-                            player1_address
-                        };
-                        let another_player_side = if player == player1_address {
-                            player2_side
-                        } else {
-                            player1_side
-                        };
-                        self
-                            ._skip_move(
-                                another_player,
-                                another_player_side,
-                                ref board,
-                                self.move_id_generator,
-                                false,
-                            )
-                    }
-
-                    if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
-                        world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        println!("[Not your turn]");
-                        return;
-                    }
-                } else {
-                    if time_delta > MOVE_TIME {
-                        world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        println!("[Not your turn] Move time is over");
-                        return;
-                    }
-                }
-            };
-
-            let tile = match joker_tile {
-                Option::Some(tile_index) => { tile_index },
-                Option::None => {
-                    match @board.top_tile {
-                        Option::Some(top_tile) => { *top_tile },
-                        Option::None => { return panic!("No tiles in the deck"); },
-                    }
-                },
-            };
-
-            let move_id = self.move_id_generator.read();
-
-            let move = Move {
-                id: move_id,
-                prev_move_id: board.last_move_id,
-                player_side,
-                tile: Option::Some(tile.into()),
-                rotation: rotation,
-                col,
-                row,
-                is_joker,
-                first_board_id: board_id,
-                timestamp: get_block_timestamp(),
-            };
-
-            // TODO: revert invalid move when it's stable
-            if !is_valid_move(
-                tile.into(), rotation, col, row, board.state.span(), board.initial_edge_state,
+            if let Option::Some((another_player, another_player_side)) = TimingTrait::should_skip_opponent_move(
+                @board, player, player_side, player1_address, player2_address, player1_side, player2_side, MOVE_TIME, world
             ) {
-                world
-                    .emit_event(
-                        @InvalidMove {
-                            player,
-                            prev_move_id: move.prev_move_id,
-                            tile: move.tile,
-                            rotation: move.rotation,
-                            col: move.col,
-                            row: move.row,
-                            is_joker: move.is_joker,
-                            board_id,
-                        },
-                    );
-                println!("[Invalid move] \nBoard: {:?} \nMove: {:?}", board, move);
+                self._skip_move(another_player, another_player_side, ref board, self.move_id_generator, false);
+            }
+
+            if !TimingTrait::validate_move_timing(@board, player, player_side, MOVE_TIME, world) {
                 return;
             }
 
-            let top_tile = if !is_joker {
-                board.draw_tile_from_board_deck()
-            } else {
-                board.top_tile
+            let tile = match MoveExecutionTrait::get_tile_for_move(joker_tile, @board) {
+                Option::Some(tile) => tile,
+                Option::None => { return panic!("No tiles in the deck"); },
             };
+
+            if !MoveExecutionTrait::validate_move(tile, rotation, col, row, @board) {
+                let move_id = self.move_id_generator.read();
+                let move_data = MoveData { tile, rotation, col, row, is_joker, player_side };
+                let move_record = MoveExecutionTrait::create_move_record(move_id, move_data, board.last_move_id, board_id);
+                MoveExecutionTrait::emit_invalid_move_event(move_record, board_id, player, world);
+                println!("[Invalid move] \nBoard: {:?}, Move: {:?}", board, move_record);
+                return;
+            }
 
             let mut union_find: UnionFind = world.read_model(board_id);
-
-            let (mut city_nodes, mut  road_nodes) = union_find.to_nullable_vecs();
-
-            // print!("0");
-
-            let (tile_city_points, tile_road_points) = calcucate_tile_points(tile.into());
-            let (edges_city_points, edges_road_points) = calculate_adjacent_edge_points(
-                ref board.initial_edge_state, col, row, tile.into(), rotation,
-            );
-            let (city_points, road_points) = (
-                tile_city_points + edges_city_points, tile_road_points + edges_road_points,
-            );
-            if player_side == PlayerSide::Blue {
-                let (old_city_points, old_road_points) = board.blue_score;
-                board.blue_score = (old_city_points + city_points, old_road_points + road_points);
-            } else {
-                let (old_city_points, old_road_points) = board.red_score;
-                board.red_score = (old_city_points + city_points, old_road_points + road_points);
-            }
-
-            let mut visited: Felt252Dict<bool> = Default::default();
-            let tile_position = (col * 8 + row).into();
-
-            // print!("1");
-            connect_city_edges_in_tile(
-                ref world, ref city_nodes, tile_position, tile.into(), rotation, player_side.into(),
-            );
-            //println!("2");
-            let city_contest_scoring_result = connect_adjacent_city_edges(
-                ref world,
-                board_id,
-                board.state.span(),
-                ref board.initial_edge_state,
-                ref city_nodes,
-                tile_position,
-                tile.into(),
-                rotation,
-                player_side.into(),
-                player,
-                ref visited,
-                ref union_find.potential_city_contests,
+            let scoring_result = ScoringTrait::calculate_move_scoring(
+                tile, rotation, col, row, player_side, player, board_id, ref board, ref union_find, world
             );
 
-            if city_contest_scoring_result.is_some() {
-                let (winner, points_delta): (PlayerSide, u16) = city_contest_scoring_result
-                    .unwrap();
-                if winner == PlayerSide::Blue {
-                    let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                    board.blue_score = (old_blue_city_points + points_delta, old_blue_road_points);
-                    let (old_red_city_points, old_red_road_points) = board.red_score;
-                    board.red_score = (old_red_city_points - points_delta, old_red_road_points);
-                } else {
-                    let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                    board.blue_score = (old_blue_city_points - points_delta, old_blue_road_points);
-                    let (old_red_city_points, old_red_road_points) = board.red_score;
-                    board.red_score = (old_red_city_points + points_delta, old_red_road_points);
-                }
-            }
+            ScoringTrait::apply_scoring_results(scoring_result, player_side, ref board);
 
-            //println!("3");
-            connect_road_edges_in_tile(
-                ref world, ref road_nodes, tile_position, tile.into(), rotation, player_side.into(),
-            );
-            //println!("4");
-            let road_contest_scoring_results = connect_adjacent_road_edges(
-                ref world,
-                board_id,
-                board.state.span(),
-                ref board.initial_edge_state,
-                ref road_nodes,
-                tile_position,
-                tile.into(),
-                rotation,
-                player_side.into(),
-                player,
-                ref visited,
-                ref union_find.potential_road_contests,
-            );
-            //println!("5");
-            for i in 0..road_contest_scoring_results.len() {
-                let road_scoring_result = *road_contest_scoring_results.at(i.into());
-                if road_scoring_result.is_some() {
-                    let (winner, points_delta) = road_scoring_result.unwrap();
-                    if winner == PlayerSide::Blue {
-                        let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                        board
-                            .blue_score =
-                                (old_blue_city_points, old_blue_road_points + points_delta);
-                        let (old_red_city_points, old_red_road_points) = board.red_score;
-                        board.red_score = (old_red_city_points, old_red_road_points - points_delta);
-                    } else {
-                        let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                        board
-                            .blue_score =
-                                (old_blue_city_points, old_blue_road_points - points_delta);
-                        let (old_red_city_points, old_red_road_points) = board.red_score;
-                        board.red_score = (old_red_city_points, old_red_road_points + points_delta);
-                    }
-                }
-            };
+            let move_data = MoveData { tile, rotation, col, row, is_joker, player_side };
+            let top_tile = MoveExecutionTrait::update_board_after_move(move_data, ref board, is_joker);
 
-            board.update_board_state(tile.into(), rotation, col, row, is_joker, player_side);
-
-            let (joker_number1, joker_number2) = board.update_board_joker_number(
-                player_side, is_joker,
-            );
-
+            let move_id = self.move_id_generator.read();
+            let move_record = MoveExecutionTrait::create_move_record(move_id, move_data, board.last_move_id, board_id);
+            
             board.last_move_id = Option::Some(move_id);
-            board.moves_done = board.moves_done + 1;
             self.move_id_generator.write(move_id + 1);
 
-            if top_tile.is_none() && joker_number1 == 0 && joker_number2 == 0 {
-                //FINISH THE GAME
-                self
-                    ._finish_game(
-                        ref board,
-                        union_find.potential_city_contests.span(),
-                        union_find.potential_road_contests.span(),
-                        ref city_nodes,
-                        ref road_nodes,
-                    );
+            let (updated_joker1, updated_joker2) = board.get_joker_numbers();
+            if MoveExecutionTrait::should_finish_game(top_tile, updated_joker1, updated_joker2) {
+                let (mut city_nodes, mut road_nodes) = union_find.to_nullable_vecs();
+                self._finish_game(
+                    ref board,
+                    union_find.potential_city_contests.span(),
+                    union_find.potential_road_contests.span(),
+                    ref city_nodes,
+                    ref road_nodes,
+                );
+                union_find.update_with_union_nodes(ref city_nodes, ref road_nodes);
             }
 
-            union_find.update_with_union_nodes(
-                ref city_nodes, ref road_nodes
-            );
-
             union_find.write(world);
+            MoveExecutionTrait::persist_board_updates(@board, move_record, top_tile, world);
+            MoveExecutionTrait::emit_move_events(move_record, @board, player, world);
 
-            world.write_model(@move);
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("available_tiles_in_deck"),
-                    board.available_tiles_in_deck.clone(),
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), top_tile,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("state"),
-                    board.state.clone(),
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id), selector!("player1"), board.player1,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id), selector!("player2"), board.player2,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("blue_score"),
-                    board.blue_score,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("red_score"),
-                    board.red_score,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("last_move_id"),
-                    board.last_move_id,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("moves_done"),
-                    board.moves_done,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("game_state"),
-                    board.game_state,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("last_update_timestamp"),
-                    get_block_timestamp(),
-                );
-
-            world
-                .emit_event(
-                    @Moved {
-                        move_id,
-                        player,
-                        prev_move_id: move.prev_move_id,
-                        tile: move.tile,
-                        rotation: move.rotation,
-                        col: move.col,
-                        row: move.row,
-                        is_joker: move.is_joker,
-                        board_id,
-                        timestamp: move.timestamp,
-                    },
-                );
-            world
-                .emit_event(
-                    @BoardUpdated {
-                        board_id: board.id,
-                        available_tiles_in_deck: board.available_tiles_in_deck.span(),
-                        top_tile: board.top_tile,
-                        state: board.state.span(),
-                        player1: board.player1,
-                        player2: board.player2,
-                        blue_score: board.blue_score,
-                        red_score: board.red_score,
-                        last_move_id: board.last_move_id,
-                        moves_done: board.moves_done,
-                        game_state: board.game_state,
-                    },
-                );
-
-            println!("Move made: {:?} \nBoard: {:?} \nUnion find: {:?}", move, board, union_find);
+            // println!("Move made: {:?} \nBoard: {:?} \nUnion find: {:?}", move_record, board, union_find);
         }
 
         fn skip_move(ref self: ContractState) {
@@ -741,105 +452,44 @@ pub mod game {
                 Option::None => {return;}
             };
 
-            let mut union_find: UnionFind = world.read_model(board_id);
-            let (mut city_nodes, mut road_nodes) = union_find.to_nullable_vecs();
-
-            let prev_move_id = board.last_move_id;
-            if prev_move_id.is_some() {
-                let prev_move_id = prev_move_id.unwrap();
-                let prev_move: Move = world.read_model(prev_move_id);
-                let prev_player_side = prev_move.player_side;
-
-                let time = get_block_timestamp();
-                let last_update_timestamp = board.last_update_timestamp;
-                let time_delta = time - last_update_timestamp;
-
-                if player_side == prev_player_side {
-                    if time_delta > MOVE_TIME && time_delta <= 2 * MOVE_TIME {
-                        //Skip the move of the previous player
-                        let another_player = if player == player1_address {
-                            player2_address
-                        } else {
-                            player1_address
-                        };
-                        let another_player_side = if player == player1_address {
-                            player2_side
-                        } else {
-                            player1_side
-                        };
-                        self
-                            ._skip_move(
-                                another_player,
-                                another_player_side,
-                                ref board,
-                                self.move_id_generator,
-                                false,
-                            )
-                    }
-
-                    if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
-                        world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        println!("[Not your turn]");
-                        return;
-                    }
-                } else {
-                    if time_delta > MOVE_TIME {
-                        world.emit_event(@NotYourTurn { player_id: player, board_id });
-                        println!("[Not your turn] Move time is over");
-                        return;
-                    }
+            if let Option::Some((skip_player, skip_player_side)) = TimingTrait::validate_skip_move_timing(
+                @board, player, player_side, player1_address, player2_address, player1_side, player2_side, MOVE_TIME, world
+            ) {
+                if skip_player != player {
+                    self._skip_move(skip_player, skip_player_side, ref board, self.move_id_generator, false);
                 }
-
-                let prev_move_id = board.last_move_id.unwrap();
-                let prev_move: Move = world.read_model(prev_move_id);
-
-                if prev_move.tile.is_none() && !prev_move.is_joker {
-                    //FINISH THE GAME
-                    self
-                        ._finish_game(
-                            ref board,
-                            union_find.potential_city_contests.span(),
-                            union_find.potential_road_contests.span(),
-                            ref city_nodes,
-                            ref road_nodes,
-                        );
+                
+                if TimingTrait::check_if_game_should_finish_after_skip(@board, world) {
+                    let mut union_find: UnionFind = world.read_model(board_id);
+                    let (mut city_nodes, mut road_nodes) = union_find.to_nullable_vecs();
                     
-                    union_find.update_with_union_nodes(
-                        ref city_nodes, ref road_nodes
+                    self._finish_game(
+                        ref board,
+                        union_find.potential_city_contests.span(),
+                        union_find.potential_road_contests.span(),
+                        ref city_nodes,
+                        ref road_nodes,
                     );
-
+                    
+                    union_find.update_with_union_nodes(ref city_nodes, ref road_nodes);
                     union_find.write(world);
+                    return;
                 }
-            };
-            board.redraw_tile_from_board_deck();
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("available_tiles_in_deck"),
-                    board.available_tiles_in_deck.clone(),
-                );
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
-                );
+            } else {
+                return;
+            }
+            MoveExecutionTrait::redraw_tile_and_update_board(ref board, board_id, world);
 
             self._skip_move(player, player_side, ref board, self.move_id_generator, true);
-            world
-                .emit_event(
-                    @BoardUpdated {
-                        board_id: board.id,
-                        available_tiles_in_deck: board.available_tiles_in_deck.span(),
-                        top_tile: board.top_tile,
-                        state: board.state.span(),
-                        player1: board.player1,
-                        player2: board.player2,
-                        blue_score: board.blue_score,
-                        red_score: board.red_score,
-                        last_move_id: board.last_move_id,
-                        game_state: board.game_state,
-                        moves_done: board.moves_done,
-                    },
-                );
+            
+            let skip_move_record = MoveExecutionTrait::create_skip_move_record(
+                self.move_id_generator.read() - 1, 
+                player_side, 
+                board.last_move_id, 
+                board_id
+            );
+            
+            MoveExecutionTrait::emit_move_events(skip_move_record, @board, player, world);
         }
 
         fn finish_game(ref self: ContractState, board_id: felt252) {
@@ -858,10 +508,7 @@ pub mod game {
                 return;
             }
 
-            let last_update_timestamp = board.last_update_timestamp;
-            let timestamp = get_block_timestamp();
-            let time_delta = timestamp - last_update_timestamp;
-            if time_delta > 2 * MOVE_TIME {
+            if TimingTrait::validate_finish_game_timing(@board, MOVE_TIME) {
                 //FINISH THE GAME
                 let mut union_find: UnionFind = world.read_model(board_id);
                 let (mut city_nodes, mut road_nodes) = union_find.to_nullable_vecs();
@@ -968,55 +615,15 @@ pub mod game {
         ) {
             //FINISH THE GAME
             let mut world = self.world_default();
-            let city_scoring_results = close_all_cities(
-                ref world, potential_city_contests, ref city_nodes, board.id,
+            ScoringTrait::calculate_final_scoring(
+                potential_city_contests,
+                potential_road_contests,
+                ref city_nodes,
+                ref road_nodes,
+                board.id,
+                ref board,
+                world,
             );
-            for i in 0..city_scoring_results.len() {
-                let city_scoring_result = *city_scoring_results.at(i.into());
-                if city_scoring_result.is_some() {
-                    let (winner, points_delta) = city_scoring_result.unwrap();
-                    if winner == PlayerSide::Blue {
-                        let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                        board
-                            .blue_score =
-                                (old_blue_city_points + points_delta, old_blue_road_points);
-                        let (old_red_city_points, old_red_road_points) = board.red_score;
-                        board.red_score = (old_red_city_points - points_delta, old_red_road_points);
-                    } else {
-                        let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                        board
-                            .blue_score =
-                                (old_blue_city_points - points_delta, old_blue_road_points);
-                        let (old_red_city_points, old_red_road_points) = board.red_score;
-                        board.red_score = (old_red_city_points + points_delta, old_red_road_points);
-                    }
-                }
-            };
-
-            let road_scoring_results = close_all_roads(
-                ref world, potential_road_contests, ref road_nodes, board.id,
-            );
-            for i in 0..road_scoring_results.len() {
-                let road_scoring_result = *road_scoring_results.at(i.into());
-                if road_scoring_result.is_some() {
-                    let (winner, points_delta) = road_scoring_result.unwrap();
-                    if winner == PlayerSide::Blue {
-                        let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                        board
-                            .blue_score =
-                                (old_blue_city_points, old_blue_road_points + points_delta);
-                        let (old_red_city_points, old_red_road_points) = board.red_score;
-                        board.red_score = (old_red_city_points, old_red_road_points - points_delta);
-                    } else {
-                        let (old_blue_city_points, old_blue_road_points) = board.blue_score;
-                        board
-                            .blue_score =
-                                (old_blue_city_points, old_blue_road_points - points_delta);
-                        let (old_red_city_points, old_red_road_points) = board.red_score;
-                        board.red_score = (old_red_city_points, old_red_road_points + points_delta);
-                    }
-                }
-            };
 
             let (player1_address, player1_side, joker_number1) = board.player1;
             let (player2_address, _player2_side, joker_number2) = board.player2;
