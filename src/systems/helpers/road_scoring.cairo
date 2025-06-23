@@ -395,7 +395,6 @@ pub fn close_all_roads(
     return contest_results.span();
 }
 // #[cfg(test)]
-// #[allow(unused_imports)]
 // mod tests {
 //     use super::*;
 //     use dojo_cairo_test::WorldStorageTestTrait;
@@ -459,6 +458,7 @@ pub fn close_all_roads(
 //     #[test]
 //     fn test_connect_road_edges_in_tile() {
 //         // Initialize test environment
+//         let caller = starknet::contract_address_const::<0x0>();
 //         let ndef = namespace_def();
 
 //         // Register the resources.
@@ -475,6 +475,8 @@ pub fn close_all_roads(
 //         let rotation = 0;
 //         let side = PlayerSide::Blue;
 
+//         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
+
 //         // Call function to connect road edges
 //         connect_road_edges_in_tile(
 //             ref world, board_id, tile_position, tile.into(), rotation, side.into(),
@@ -483,10 +485,10 @@ pub fn close_all_roads(
 //         // Verify all road edges are connected
 //         let base_pos = convert_board_position_to_node_position(tile_position, 0);
 //         let root = find(ref world, board_id, base_pos).position;
-//         let _road_node: RoadNode = world.read_model((board_id, base_pos + 2));
+//         let road_node: RoadNode = world.read_model((board_id, base_pos + 2));
 
-//         ////println!("Root1: {:?}", find(ref world, board_id, base_pos));
-//         ////println!("Root2: {:?}", road_node);
+//         //println!("Root1: {:?}", find(ref world, board_id, base_pos));
+//         //println!("Root2: {:?}", road_node);
 
 //         for i in 0..4_u8 {
 //             if i % 2 == 1 {
@@ -504,6 +506,7 @@ pub fn close_all_roads(
 
 //     #[test]
 //     fn test_connect_adjacent_road_edges() {
+//         let caller = starknet::contract_address_const::<0x0>();
 //         let ndef = namespace_def();
 
 //         let mut world = spawn_test_world([ndef].span());
@@ -519,7 +522,7 @@ pub fn close_all_roads(
 //         let rotation = 0;
 //         let side = PlayerSide::Blue;
 
-//         let mut initial_edge_state = generate_initial_board_state(1, 1, board_id);
+//         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
 
 //         connect_road_edges_in_tile(
 //             ref world, board_id, tile_position_1, tile_1.into(), rotation, side.into(),
@@ -539,30 +542,26 @@ pub fn close_all_roads(
 //             }
 //         };
 
-//         let mut visited: Felt252Dict<bool> = Default::default();
-
 //         connect_adjacent_road_edges(
 //             ref world,
 //             board_id,
-//             ref state,
-//             ref initial_edge_state,
+//             state.clone(),
+//             initial_edge_state.clone(),
 //             tile_position_1,
 //             tile_1.into(),
 //             rotation,
 //             side.into(),
-//             ref visited,
 //         );
 
 //         connect_adjacent_road_edges(
 //             ref world,
 //             board_id,
-//             ref state,
-//             ref initial_edge_state,
+//             state,
+//             initial_edge_state.clone(),
 //             tile_position_2,
 //             tile_2.into(),
 //             rotation,
 //             side.into(),
-//             ref visited,
 //         );
 
 //         let edge_pos_1 = convert_board_position_to_node_position(tile_position_1, 1);
@@ -578,6 +577,7 @@ pub fn close_all_roads(
 
 //     #[test]
 //     fn test_connect_adjacent_road_edges_contest() {
+//         let caller = starknet::contract_address_const::<0x0>();
 //         let ndef = namespace_def();
 
 //         let mut world = spawn_test_world([ndef].span());
@@ -603,7 +603,7 @@ pub fn close_all_roads(
 //         let side3 = PlayerSide::Blue;
 //         let side4 = PlayerSide::Blue;
 
-//         let mut initial_edge_state = generate_initial_board_state(1, 1, board_id);
+//         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
 
 //         connect_road_edges_in_tile(
 //             ref world, board_id, tile_position_1, tile_1.into(), rotation1, side1.into(),
@@ -613,7 +613,7 @@ pub fn close_all_roads(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_1, 0),
 //         );
 //         assert_eq!(root1.open_edges, 2, "Road contest is not conducted correctly");
-//         ////println!("Root1: {:?}", root1);
+//         //println!("Root1: {:?}", root1);
 
 //         connect_road_edges_in_tile(
 //             ref world, board_id, tile_position_2, tile_2.into(), rotation2, side2.into(),
@@ -623,7 +623,7 @@ pub fn close_all_roads(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_2, 1),
 //         );
 //         assert_eq!(root2.open_edges, 2, "Road contest is not conducted correctly");
-//         ////println!("Root2: {:?}", root2);
+//         //println!("Root2: {:?}", root2);
 
 //         connect_road_edges_in_tile(
 //             ref world, board_id, tile_position_3, tile_3.into(), rotation3, side3.into(),
@@ -633,7 +633,7 @@ pub fn close_all_roads(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_3, 2),
 //         );
 //         assert_eq!(root3.open_edges, 2, "Road contest is not conducted correctly");
-//         ////println!("Root3: {:?}", root3);
+//         //println!("Root3: {:?}", root3);
 
 //         connect_road_edges_in_tile(
 //             ref world, board_id, tile_position_4, tile_4.into(), rotation4, side4.into(),
@@ -643,7 +643,7 @@ pub fn close_all_roads(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_4, 3),
 //         );
 //         assert_eq!(root4.open_edges, 2, "Road contest is not conducted correctly");
-//         ////println!("Root4: {:?}", root4);
+//         //println!("Root4: {:?}", root4);
 
 //         let mut state = ArrayTrait::new();
 //         for i in 0..64_u8 {
@@ -654,24 +654,21 @@ pub fn close_all_roads(
 //             }
 //         };
 
-//         let mut visited: Felt252Dict<bool> = Default::default();
-
 //         connect_adjacent_road_edges(
 //             ref world,
 //             board_id,
-//             ref state,
-//             ref initial_edge_state,
+//             state,
+//             initial_edge_state.clone(),
 //             tile_position_1,
 //             tile_1.into(),
 //             rotation1,
 //             side1.into(),
-//             ref visited,
 //         );
 
 //         let rot1 = find(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_1, 0),
 //         );
-//         ////println!("Rot1: {:?}", rot1);
+//         //println!("Rot1: {:?}", rot1);
 //         assert_eq!(rot1.open_edges, 2, "Road contest is not conducted correctly");
 
 //         let mut state = ArrayTrait::new();
@@ -688,19 +685,18 @@ pub fn close_all_roads(
 //         connect_adjacent_road_edges(
 //             ref world,
 //             board_id,
-//             ref state,
-//             ref initial_edge_state,
+//             state.clone(),
+//             initial_edge_state.clone(),
 //             tile_position_2,
 //             tile_2.into(),
 //             rotation2,
 //             side2.into(),
-//             ref visited,
 //         );
 
 //         let rot2 = find(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_2, 1),
 //         );
-//         ////println!("Rot2: {:?}", rot2);
+//         //println!("Rot2: {:?}", rot2);
 //         assert_eq!(rot2.open_edges, 2, "Road contest is not conducted correctly");
 
 //         let mut state = ArrayTrait::new();
@@ -719,19 +715,18 @@ pub fn close_all_roads(
 //         connect_adjacent_road_edges(
 //             ref world,
 //             board_id,
-//             ref state,
-//             ref initial_edge_state,
+//             state.clone(),
+//             initial_edge_state.clone(),
 //             tile_position_3,
 //             tile_3.into(),
 //             rotation3,
 //             side3.into(),
-//             ref visited,
 //         );
 
 //         let rot3 = find(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_3, 2),
 //         );
-//         ////println!("Rot3: {:?}", rot3);
+//         //println!("Rot3: {:?}", rot3);
 //         assert_eq!(rot3.open_edges, 2, "Road contest is not conducted correctly");
 
 //         let mut state = ArrayTrait::new();
@@ -752,19 +747,18 @@ pub fn close_all_roads(
 //         connect_adjacent_road_edges(
 //             ref world,
 //             board_id,
-//             ref state,
-//             ref initial_edge_state,
+//             state,
+//             initial_edge_state.clone(),
 //             tile_position_4,
 //             tile_4.into(),
 //             rotation4,
 //             side4.into(),
-//             ref visited,
 //         );
 
 //         let rot4 = find(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_4, 3),
 //         );
-//         ////println!("Rot4: {:?}", rot4);
+//         //println!("Rot4: {:?}", rot4);
 //         assert_eq!(rot4.open_edges, 0, "Road contest is not conducted correctly");
 
 //         // 1 and 2

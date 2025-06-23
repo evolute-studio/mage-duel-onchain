@@ -1,6 +1,6 @@
 use dojo::{world::WorldStorage, event::EventStorage};
 use evolute_duel::{
-    models::{game::Game}, 
+    models::{game::Game},
     events::{GameCreateFailed, GameJoinFailed, SnapshotCreateFailed, PlayerNotInGame, GameFinished},
     types::{packing::GameStatus},
 };
@@ -36,8 +36,11 @@ pub impl AssersImpl of AssertsTrait {
         true
     }
 
-    fn assert_player_in_game(game: @Game, board_id: Option<felt252>, mut world: WorldStorage) -> bool {
-        if game.board_id.is_none() || (board_id.is_some() && (*game.board_id).unwrap() != board_id.unwrap()) {
+    fn assert_player_in_game(
+        game: @Game, board_id: Option<felt252>, mut world: WorldStorage,
+    ) -> bool {
+        if game.board_id.is_none()
+            || (board_id.is_some() && (*game.board_id).unwrap() != board_id.unwrap()) {
             world.emit_event(@PlayerNotInGame { player_id: *game.player, board_id: 0 });
             println!("Player is not in game");
             return false;
@@ -47,7 +50,10 @@ pub impl AssersImpl of AssertsTrait {
 
     fn assert_game_is_in_progress(game: @Game, mut world: WorldStorage) -> bool {
         if *game.status == GameStatus::Finished {
-            world.emit_event(@GameFinished { player: *game.player, board_id: (*game.board_id).unwrap() });
+            world
+                .emit_event(
+                    @GameFinished { player: *game.player, board_id: (*game.board_id).unwrap() },
+                );
             println!("Game is already finished");
             return false;
         }

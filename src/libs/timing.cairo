@@ -1,13 +1,8 @@
 use starknet::ContractAddress;
 use evolute_duel::{
-    models::{game::{Board, Move}},
-    events::{NotYourTurn},
-    types::packing::{PlayerSide},
+    models::{game::{Board, Move}}, events::{NotYourTurn}, types::packing::{PlayerSide},
 };
-use dojo::{
-    model::{ModelStorage},
-    event::EventStorage,
-};
+use dojo::{model::{ModelStorage}, event::EventStorage};
 use starknet::get_block_timestamp;
 
 #[generate_trait]
@@ -133,14 +128,13 @@ pub impl TimingImpl of TimingTrait {
     }
 
     fn check_if_game_should_finish_after_skip(
-        board: @Board,
-        mut world: dojo::world::WorldStorage,
+        board: @Board, mut world: dojo::world::WorldStorage,
     ) -> bool {
         let prev_move_id = *board.last_move_id;
         if prev_move_id.is_some() {
             let prev_move_id = prev_move_id.unwrap();
             let prev_move: Move = world.read_model(prev_move_id);
-            
+
             if prev_move.tile.is_none() && !prev_move.is_joker {
                 return true;
             }
@@ -148,10 +142,7 @@ pub impl TimingImpl of TimingTrait {
         false
     }
 
-    fn validate_finish_game_timing(
-        board: @Board,
-        move_time: u64,
-    ) -> bool {
+    fn validate_finish_game_timing(board: @Board, move_time: u64) -> bool {
         let last_update_timestamp = *board.last_update_timestamp;
         let timestamp = get_block_timestamp();
         let time_delta = timestamp - last_update_timestamp;

@@ -1,5 +1,4 @@
 // #[cfg(test)]
-// #[allow(unused_imports)]
 // mod tests {
 //     use super::*;
 //     use dojo_cairo_test::WorldStorageTestTrait;
@@ -26,7 +25,6 @@
 //         },
 //     };
 //     use evolute_duel::systems::game::{};
-//     use core::dict::Felt252Dict;
 
 //     fn namespace_def() -> NamespaceDef {
 //         NamespaceDef {
@@ -51,6 +49,7 @@
 
 //     #[test]
 //     fn test_contest1() {
+//         let caller = starknet::contract_address_const::<0x0>();
 //         let ndef = namespace_def();
 
 //         let mut world = spawn_test_world([ndef].span());
@@ -59,7 +58,7 @@
 //         let board_id = 1;
 
 //         // City and road just on bottom edge
-//         let mut initial_edge_state = array![
+//         let initial_edge_state = array![
 //             2,
 //             2,
 //             2,
@@ -95,7 +94,7 @@
 //         ];
 
 //         let mut state: Array<(u8, u8, u8)> = ArrayTrait::new();
-//         for _ in 0..64_u8 {
+//         for i in 0..64_u8 {
 //             state.append((Tile::Empty.into(), 0, 0));
 //         };
 
@@ -125,18 +124,15 @@
 //         println!("road_root1: {:?}", road_root1);
 //         println!("city_root1: {:?}", city_root1);
 
-//         let mut visited: Felt252Dict<bool> = Default::default();
-
 //         let city_scoring_result1 = connect_adjacent_city_edges(
 //             ref world,
 //             board_id,
-//             ref state,
-//             ref initial_edge_state,
+//             state.clone(),
+//             initial_edge_state.clone(),
 //             tile_position_1,
 //             tile_1.into(),
 //             rotation1,
 //             side1.into(),
-//             ref visited,
 //         );
 
 //         println!("there");
@@ -144,13 +140,12 @@
 //         let road_scoring_result1 = connect_adjacent_road_edges(
 //             ref world,
 //             board_id,
-//             ref state,
-//             ref initial_edge_state,
+//             state.clone(),
+//             initial_edge_state.clone(),
 //             tile_position_1,
 //             tile_1.into(),
 //             rotation1,
 //             side1.into(),
-//             ref visited,
 //         );
 
 //         println!("{:?}", city_scoring_result1);
@@ -207,29 +202,23 @@
 //         let city_scoring_result2 = connect_adjacent_city_edges(
 //             ref world,
 //             board_id,
-//             ref state,
-//             ref initial_edge_state,
-//             ref city_nodes,
+//             state.clone(),
+//             initial_edge_state.clone(),
 //             tile_position_2,
 //             tile_2.into(),
 //             rotation2,
 //             side2.into(),
-//             ref visited,
-//             ref potential_city_contests,
 //         );
 //         println!("state: {:?}", state);
 //         let road_scoring_result2 = connect_adjacent_road_edges(
 //             ref world,
 //             board_id,
-//             ref state,
-//             ref initial_edge_state,
-//             ref road_nodes,
+//             state.clone(),
+//             initial_edge_state.clone(),
 //             tile_position_2,
 //             tile_2.into(),
 //             rotation2,
 //             side2.into(),
-//             ref visited,
-//             ref potential_road_contests,
 //         );
 
 //         println!("{:?}", city_scoring_result2);

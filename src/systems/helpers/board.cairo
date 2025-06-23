@@ -1,17 +1,15 @@
-use dojo::{
-    model::{Model, ModelStorage},
-    world::{WorldStorage},
-    event::EventStorage,
-};
+use dojo::{model::{Model, ModelStorage}, world::{WorldStorage}, event::EventStorage};
 
 
 use starknet::{ContractAddress, contract_address_const};
-use origami_random::deck::{DeckTrait};
-use origami_random::dice::{DiceTrait};
+use origami_random::{
+    deck::{DeckTrait},
+    dice::{DiceTrait},
+};
 use core::dict::Felt252Dict;
 
 use evolute_duel::{
-    models::{scoring::{UnionFindTrait}, game::{Board, Rules, Move}},
+    models::{scoring::{UnionFindTrait}, game::{Board, Rules, Move, AvailableTiles}},
     types::packing::{GameState, TEdge, Tile, PlayerSide, UnionNode},
     systems::helpers::{
         city_scoring::{connect_adjacent_city_edges, connect_city_edges_in_tile},
@@ -48,12 +46,16 @@ pub impl BoardImpl of BoardTrait {
         tiles.append_span([((Tile::Empty).into(), 0, 0); 64].span());
 
         let last_move_id = Option::None;
-        let game_state = GameState::InProgress;
+        let game_state = GameState::Creating;
+
+        let mut dice = DiceTrait::new(deck_rules_flat.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into() + board_id.into());
+
+        let commited_tile = Option::Some(dice.roll() - 1);
 
         let mut board = Board {
             id: board_id,
             initial_edge_state: array![].span(),
-            available_tiles_in_deck: deck_rules_flat,
+            available_tiles_in_deck: deck_rules_flat.clone(),
             top_tile: Option::None,
             state: tiles.clone(),
             player1: (player1, PlayerSide::Blue, rules.joker_number),
@@ -64,9 +66,9 @@ pub impl BoardImpl of BoardTrait {
             moves_done: 0,
             game_state,
             last_update_timestamp: get_block_timestamp(),
+            commited_tile,
+            phase_started_at: get_block_timestamp(),
         };
-
-        let _top_tile = board.draw_tile_from_board_deck();
 
         world.write_model(@board);
 
@@ -83,14 +85,28 @@ pub impl BoardImpl of BoardTrait {
                 initial_edge_state.clone(),
             );
 
-        let mut union_find = UnionFindTrait::new(board.id);
-        // println!("Union find: {:?}", union_find);
-        UnionFindTrait::write_empty(board.id, world);
-        union_find.write(world);
+        // Create player available tiles.
+        let mut available_tiles: Array<u8> = array![];
+        for i in 0..deck_rules_flat.len() {
+            available_tiles.append(i.try_into().unwrap());
+        };
+
+        world
+            .write_model(
+                @AvailableTiles {
+                    board_id, player: player1, available_tiles: available_tiles.span(),
+                },
+            );
+
+        world
+            .write_model(
+                @AvailableTiles {
+                    board_id, player: player2, available_tiles: available_tiles.span(),
+                },
+            );
 
         return board;
     }
-
 
     fn create_board_from_snapshot(
         ref world: WorldStorage,
@@ -107,6 +123,7 @@ pub impl BoardImpl of BoardTrait {
 
         // ////println!("old_board: {:?}", old_board);
         let mut deleted_tiles_positions: Felt252Dict<bool> = Default::default();
+        let mut deleted_tile_types: Felt252Dict<u8> = Default::default();
         let (_, player1_side, mut joker_number1) = old_board.player1;
         let (_, player2_side, mut joker_number2) = old_board.player2;
 
@@ -117,12 +134,12 @@ pub impl BoardImpl of BoardTrait {
         // //println!("number of reverted moves: {:?}", old_board_move_number - move_number.into());
 
         let mut last_move_id = old_board.last_move_id;
-        let mut top_tile = old_board.top_tile;
-        let mut available_tiles_in_deck = old_board.available_tiles_in_deck.clone();
+        let mut available_tiles_in_deck = array![];
         let mut number_of_reverted_moves = old_board_move_number - move_number.into();
         for _ in 0..number_of_reverted_moves {
             if last_move_id.is_none() {
-                panic!("[ERROR] Can't create board from snapshot! No more moves to revert");
+                panic!("[ERROR] Not enough moves to revert when creating board from snapshot.");
+                break;
             }
             let move_id = last_move_id.unwrap();
             let move: Move = world.read_model(move_id);
@@ -145,14 +162,41 @@ pub impl BoardImpl of BoardTrait {
                 } else {
                     joker_number2 += 1;
                 }
-            } // Update top tile and available tiles in deck
-            else {
-                if top_tile.is_some() {
-                    available_tiles_in_deck.append(top_tile.unwrap());
-                }
-                top_tile = move.tile;
             }
-            // //println!("move REVERTED: {:?}", move);
+        };
+
+        let move: Move = world.read_model(last_move_id.unwrap());
+        let old_board_id = move.first_board_id;
+        let old_board: Board = world.read_model(old_board_id);
+        let old_available_tiles_in_deck: Array<u8> = old_board.available_tiles_in_deck;
+
+        for i in number_of_reverted_moves..old_board_move_number {
+            let move_id = last_move_id.unwrap();
+            let move: Move = world.read_model(move_id);
+            last_move_id = move.prev_move_id;
+            if move.first_board_id != old_board_id {
+                break;
+            }
+            let top_tile = move.top_tile;
+            match top_tile {
+                Option::Some(tile) => {
+                    // If the top tile is not empty, add it to the deck.
+                    let old = deleted_tile_types.get(tile.into());
+                    deleted_tile_types.insert(tile.into(), old + 1);
+                },
+                Option::None => {// If the top tile is empty, do nothing.
+                },
+            }
+        };
+
+        for i in old_available_tiles_in_deck {
+            if deleted_tile_types.get(i.into()) > 0 {
+                available_tiles_in_deck.append(i);
+            } else {
+                // If the tile is deleted, add it to the deck.
+                let old = deleted_tile_types.get(i.into());
+                deleted_tile_types.insert(i.into(), old - 1);
+            }
         };
 
         // Update board state
@@ -167,11 +211,18 @@ pub impl BoardImpl of BoardTrait {
             }
         };
 
+        let mut dice = DiceTrait::new(
+            available_tiles_in_deck.len().try_into().unwrap(),
+            'SEED' + get_block_timestamp().into() + board_id.into(),
+        );
+
+        let commited_tile = Option::Some(dice.roll() - 1);
+
         let mut board = Board {
             id: board_id,
             initial_edge_state: array![].span(),
             available_tiles_in_deck: available_tiles_in_deck,
-            top_tile,
+            top_tile: Option::None,
             state: updated_state,
             player1: (player1, player1_side, joker_number1),
             player2: (player1, player2_side, joker_number2),
@@ -179,8 +230,10 @@ pub impl BoardImpl of BoardTrait {
             red_score: (0, 0),
             last_move_id,
             moves_done: move_number,
-            game_state: GameState::InProgress,
+            game_state: GameState::Creating,
             last_update_timestamp: get_block_timestamp(),
+            phase_started_at: get_block_timestamp(),
+            commited_tile,
         };
 
         board.initial_edge_state = old_board.initial_edge_state.clone();
@@ -216,7 +269,6 @@ pub impl BoardImpl of BoardTrait {
         union_find.write(world);
 
         // //println!("Final board created from snapshot: {:?}", board);
-
         world
             .write_member(
                 Model::<Board>::ptr_from_keys(board_id),
@@ -230,7 +282,9 @@ pub impl BoardImpl of BoardTrait {
                 board.available_tiles_in_deck.clone(),
             );
         world
-            .write_member(Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), top_tile);
+            .write_member(
+                Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
+            );
         world
             .write_member(
                 Model::<Board>::ptr_from_keys(board_id), selector!("state"), board.state.clone(),
@@ -483,12 +537,7 @@ pub impl BoardImpl of BoardTrait {
 
 
     fn update_board_state(
-        ref self: Board,
-        tile: Tile,
-        rotation: u8,
-        col: u8,
-        row: u8,
-        side: PlayerSide,
+        ref self: Board, tile: Tile, rotation: u8, col: u8, row: u8, side: PlayerSide,
     ) {
         let mut updated_state: Array<(u8, u8, u8)> = ArrayTrait::new();
         let index = (col * 8 + row).into();
@@ -527,10 +576,8 @@ pub impl BoardImpl of BoardTrait {
             self.top_tile = Option::None;
             return Option::None;
         }
-        let mut dice = DiceTrait::new(
-            avaliable_tiles.len().try_into().unwrap(), 'SEED'
-            //  + get_block_timestamp().into()
-             ,
+        let mut dice = DiceTrait::new(avaliable_tiles.len().try_into().unwrap(), 'SEED'//  + get_block_timestamp().into()
+
         );
 
         let mut next_tile = dice.roll() - 1;
@@ -567,12 +614,9 @@ pub impl BoardImpl of BoardTrait {
         let mut initial_state: Array<u8> = ArrayTrait::new();
 
         for side in 0..4_u8 {
-            let mut deck = DeckTrait::new(
-                // (
-                    'SEED'
-                    //  + side.into() + get_block_timestamp().into() + board_id).into()
-                     , 8,
-            );
+            let mut deck = DeckTrait::new(// (
+            'SEED'//  + side.into() + get_block_timestamp().into() + board_id).into()
+            , 8);
             let mut edge: Felt252Dict<u8> = Default::default();
             for i in 0..8_u8 {
                 edge.insert(i.into(), TEdge::M.into());
@@ -604,7 +648,9 @@ pub impl BoardImpl of BoardTrait {
         return deck_rules_flat;
     }
 
-    fn get_player_data(ref self: Board, player: ContractAddress, mut world: WorldStorage) -> Option<(PlayerSide, u8)> {
+    fn get_player_data(
+        ref self: Board, player: ContractAddress, mut world: WorldStorage,
+    ) -> Option<(PlayerSide, u8)> {
         let (player1_address, player1_side, joker_number1) = self.player1;
         let (player2_address, player2_side, joker_number2) = self.player2;
 

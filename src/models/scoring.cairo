@@ -1,7 +1,9 @@
 use dojo::world::{WorldStorage};
 use dojo::model::{Model, ModelStorage};
 use evolute_duel::types::packing::{UnionNode};
-use alexandria_data_structures::vec::{NullableVec, VecTrait};// --------------------------------------
+use alexandria_data_structures::vec::{
+    NullableVec, VecTrait,
+}; // --------------------------------------
 // Scoring Models
 // --------------------------------------
 
@@ -202,20 +204,16 @@ pub impl UnionFindImpl of UnionFindTrait {
         ref city_nodes: NullableVec<UnionNode>,
         ref road_nodes: NullableVec<UnionNode>,
     ) {
-        self = Self::from_union_nodes(
-            ref road_nodes,
-            ref city_nodes,
-            self.potential_city_contests.clone(),
-            self.potential_road_contests.clone(),
-        );
+        self =
+            Self::from_union_nodes(
+                ref road_nodes,
+                ref city_nodes,
+                self.potential_city_contests.clone(),
+                self.potential_road_contests.clone(),
+            );
     }
 
-    fn to_nullable_vecs(
-        ref self: UnionFind,
-    ) -> (
-        NullableVec<UnionNode>,
-        NullableVec<UnionNode>
-    ) {
+    fn to_nullable_vecs(ref self: UnionFind) -> (NullableVec<UnionNode>, NullableVec<UnionNode>) {
         let mut city_nodes = VecTrait::<NullableVec, UnionNode>::new();
         let mut road_nodes = VecTrait::<NullableVec, UnionNode>::new();
 
@@ -284,11 +282,6 @@ pub impl UnionFindImpl of UnionFindTrait {
             }
         };
 
-        return (
-            city_nodes,
-            road_nodes
-        );
+        return (city_nodes, road_nodes);
     }
-
-
 }

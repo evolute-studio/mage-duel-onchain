@@ -3,7 +3,8 @@ use dojo::world::{WorldStorage};
 use alexandria_data_structures::vec::{VecTrait, NullableVec};
 //Union find
 pub fn find(ref world: WorldStorage, ref nodes: NullableVec<UnionNode>, position: u8) -> u8 {
-    println!("[Union find] calles find({}, {})", nodes.len(), position);
+    // println!("[Union find] calles find({}, {})", nodes.len(), position);
+
     if let Option::Some(node) = nodes.get(position.into()) {
         let mut current = node;
         if current.parent != position {

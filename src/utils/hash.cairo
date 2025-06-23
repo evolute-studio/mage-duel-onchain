@@ -1,22 +1,36 @@
-use core::poseidon::{PoseidonTrait, HashState};
+use core::poseidon::{PoseidonTrait};
 use core::hash::HashStateTrait;
+use core::sha256::compute_sha256_byte_array;
 
 pub fn hash_values(values: Span<felt252>) -> felt252 {
-    assert(values.len() > 0, 'hash_values() has no values!');
-    let mut state: HashState = PoseidonTrait::new();
-    state = state.update(*values[0]);
-    if (values.len() == 1) {
-        state = state.update(*values[0]);
-    } else {
-        let mut index: usize = 1;
-        while (index < values.len()) {
-            state = state.update(*values[index]);
-            index += 1;
-        };
-    }
-    (state.finalize())
+    let hash = hash_values_with_sha256(values);
+    println!("SHA256 hash: {:?}", hash);
+    hash_sha256_to_felt252(hash.span())
 }
 
+pub fn hash_values_with_sha256(values: Span<felt252>) -> [u32; 8] {
+    assert(values.len() > 0, 'hash_values() has no values!');
+    let mut bytes_input: ByteArray = "";
+    for value in values {
+        let as_byte_array: ByteArray = format!("{}", *value);
+        bytes_input.append(@as_byte_array);
+    };
+    println!("Input bytes: {:?}", bytes_input);
+    let hash = compute_sha256_byte_array(@bytes_input);
+
+    hash
+}
+
+pub fn hash_sha256_to_felt252(hash: Span<u32>) -> felt252 {
+    assert!(hash.len() == 8, "hash_sha256_to_felt252() expects a SHA256 hash of 8 u32 values!");
+    let mut state = PoseidonTrait::new();
+    for element in hash {
+        state = state.update((*element).into());
+    };
+    let result = state.finalize();
+    assert(result != 0, 'hash_values() returned zero!');
+    result
+}
 
 //----------------------------------------
 // Unit  tests

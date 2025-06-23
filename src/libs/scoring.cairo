@@ -4,7 +4,7 @@ use evolute_duel::{
     systems::helpers::{
         city_scoring::{connect_city_edges_in_tile, connect_adjacent_city_edges, close_all_cities},
         road_scoring::{connect_road_edges_in_tile, connect_adjacent_road_edges, close_all_roads},
-        tile_helpers::{calcucate_tile_points, calculate_adjacent_edge_points}
+        tile_helpers::{calcucate_tile_points, calculate_adjacent_edge_points},
     },
     types::packing::{PlayerSide, UnionNode},
 };
@@ -85,25 +85,28 @@ pub impl ScoringImpl of ScoringTrait {
 
         union_find.update_with_union_nodes(ref city_nodes, ref road_nodes);
 
-        ScoringResult {
-            city_points,
-            road_points,
-            city_contest_result,
-            road_contest_results,
-        }
+        ScoringResult { city_points, road_points, city_contest_result, road_contest_results }
     }
 
     fn apply_scoring_results(
-        scoring_result: ScoringResult,
-        player_side: PlayerSide,
-        ref board: Board,
+        scoring_result: ScoringResult, player_side: PlayerSide, ref board: Board,
     ) {
         if player_side == PlayerSide::Blue {
             let (old_city_points, old_road_points) = board.blue_score;
-            board.blue_score = (old_city_points + scoring_result.city_points, old_road_points + scoring_result.road_points);
+            board
+                .blue_score =
+                    (
+                        old_city_points + scoring_result.city_points,
+                        old_road_points + scoring_result.road_points,
+                    );
         } else {
             let (old_city_points, old_road_points) = board.red_score;
-            board.red_score = (old_city_points + scoring_result.city_points, old_road_points + scoring_result.road_points);
+            board
+                .red_score =
+                    (
+                        old_city_points + scoring_result.city_points,
+                        old_road_points + scoring_result.road_points,
+                    );
         }
 
         if scoring_result.city_contest_result.is_some() {
@@ -122,10 +125,7 @@ pub impl ScoringImpl of ScoringTrait {
     }
 
     fn apply_contest_points(
-        winner: PlayerSide,
-        points_delta: u16,
-        ref board: Board,
-        is_city: bool,
+        winner: PlayerSide, points_delta: u16, ref board: Board, is_city: bool,
     ) {
         if winner == PlayerSide::Blue {
             if is_city {

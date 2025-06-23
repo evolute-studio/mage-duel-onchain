@@ -36,6 +36,8 @@ pub struct Board {
     pub game_state: GameState,
     pub moves_done: u8,
     pub last_update_timestamp: u64,
+    pub commited_tile: Option<u8>,
+    pub phase_started_at: u64,
 }
 
 /// Represents a player's move, tracking tile placement and game progression.
@@ -66,6 +68,7 @@ pub struct Move {
     pub is_joker: bool,
     pub first_board_id: felt252,
     pub timestamp: u64,
+    pub top_tile: Option<u8>,
 }
 
 /// Defines the game rules, including deck composition, scoring mechanics, and special tile rules.
@@ -116,5 +119,26 @@ pub struct Snapshot {
     pub player: ContractAddress,
     pub board_id: felt252,
     pub move_number: u8,
+}
+
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct TileCommitments {
+    #[key]
+    pub board_id: felt252,
+    #[key]
+    pub player: ContractAddress,
+    pub tile_commitments: Span<felt252>,
+}
+
+
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct AvailableTiles {
+    #[key]
+    pub board_id: felt252,
+    #[key]
+    pub player: ContractAddress,
+    pub available_tiles: Span<u8>,
 }
 
