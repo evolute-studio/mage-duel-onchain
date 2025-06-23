@@ -11,29 +11,27 @@ mod tests {
 
     use evolute_duel::{
         models::{
-            Game, m_Game, Board, m_Board, Move, m_Move, Rules, m_Rules, Snapshot, m_Snapshot,
-            Player, m_Player, Shop, m_Shop, UnionFind, m_UnionFind,
+            game::{Game, m_Game, Board, m_Board, Move, m_Move, Rules, m_Rules, Snapshot, m_Snapshot},
+            player::{Player, m_Player},
+            skins::{Shop, m_Shop},
+            scoring::{UnionFind, m_UnionFind},
         },
         events::{
-            BoardCreated, e_BoardCreated, BoardCreatedFromSnapshot, e_BoardCreatedFromSnapshot,
-            BoardCreateFromSnapshotFalied, e_BoardCreateFromSnapshotFalied, SnapshotCreated,
+            SnapshotCreated,
             e_SnapshotCreated, SnapshotCreateFailed, e_SnapshotCreateFailed, BoardUpdated,
-            e_BoardUpdated, RulesCreated, e_RulesCreated, Moved, e_Moved, Skiped, e_Skiped,
+            e_BoardUpdated, Moved, e_Moved, Skiped, e_Skiped,
             InvalidMove, e_InvalidMove, GameFinished, e_GameFinished, GameStarted, e_GameStarted,
             GameCreated, e_GameCreated, GameCreateFailed, e_GameCreateFailed, GameJoinFailed,
             e_GameJoinFailed, GameCanceled, e_GameCanceled, GameCanceleFailed, e_GameCanceleFailed,
             PlayerNotInGame, e_PlayerNotInGame, NotYourTurn, e_NotYourTurn, NotEnoughJokers,
-            e_NotEnoughJokers, GameIsAlreadyFinished, e_GameIsAlreadyFinished, CantFinishGame,
-            e_CantFinishGame, CityContestWon, e_CityContestWon, CityContestDraw, e_CityContestDraw,
-            RoadContestWon, e_RoadContestWon, RoadContestDraw, e_RoadContestDraw,
-            CurrentPlayerBalance, e_CurrentPlayerBalance, CurrentPlayerUsername,
-            e_CurrentPlayerUsername, CurrentPlayerActiveSkin, e_CurrentPlayerActiveSkin,
+            e_NotEnoughJokers, CityContestWon, e_CityContestWon, CityContestDraw, e_CityContestDraw,
+            RoadContestWon, e_RoadContestWon, RoadContestDraw, e_RoadContestDraw, 
             PlayerUsernameChanged, e_PlayerUsernameChanged, PlayerSkinChanged, e_PlayerSkinChanged,
             PlayerSkinChangeFailed, e_PlayerSkinChangeFailed,
         },
         types::packing::{GameStatus},
         systems::{
-            helpers::board::{create_board}, game::{game, IGameDispatcher, IGameDispatcherTrait},
+            helpers::board::{BoardTrait}, game::{game, IGameDispatcher, IGameDispatcherTrait},
             player_profile_actions::{
                 player_profile_actions, IPlayerProfileActionsDispatcher,
                 IPlayerProfileActionsDispatcherTrait,
@@ -54,13 +52,9 @@ mod tests {
                 TestResource::Model(m_UnionFind::TEST_CLASS_HASH),
                 TestResource::Model(m_Player::TEST_CLASS_HASH),
                 TestResource::Model(m_Shop::TEST_CLASS_HASH),
-                TestResource::Event(e_BoardCreated::TEST_CLASS_HASH),
-                TestResource::Event(e_BoardCreatedFromSnapshot::TEST_CLASS_HASH),
-                TestResource::Event(e_BoardCreateFromSnapshotFalied::TEST_CLASS_HASH),
                 TestResource::Event(e_SnapshotCreated::TEST_CLASS_HASH),
                 TestResource::Event(e_SnapshotCreateFailed::TEST_CLASS_HASH),
                 TestResource::Event(e_BoardUpdated::TEST_CLASS_HASH),
-                TestResource::Event(e_RulesCreated::TEST_CLASS_HASH),
                 TestResource::Event(e_Moved::TEST_CLASS_HASH),
                 TestResource::Event(e_Skiped::TEST_CLASS_HASH),
                 TestResource::Event(e_InvalidMove::TEST_CLASS_HASH),
@@ -74,18 +68,15 @@ mod tests {
                 TestResource::Event(e_PlayerNotInGame::TEST_CLASS_HASH),
                 TestResource::Event(e_NotYourTurn::TEST_CLASS_HASH),
                 TestResource::Event(e_NotEnoughJokers::TEST_CLASS_HASH),
-                TestResource::Event(e_GameIsAlreadyFinished::TEST_CLASS_HASH),
-                TestResource::Event(e_CantFinishGame::TEST_CLASS_HASH),
                 TestResource::Event(e_CityContestWon::TEST_CLASS_HASH),
                 TestResource::Event(e_CityContestDraw::TEST_CLASS_HASH),
                 TestResource::Event(e_RoadContestWon::TEST_CLASS_HASH),
                 TestResource::Event(e_RoadContestDraw::TEST_CLASS_HASH),
-                TestResource::Event(e_CurrentPlayerBalance::TEST_CLASS_HASH),
-                TestResource::Event(e_CurrentPlayerUsername::TEST_CLASS_HASH),
-                TestResource::Event(e_CurrentPlayerActiveSkin::TEST_CLASS_HASH),
                 TestResource::Event(e_PlayerUsernameChanged::TEST_CLASS_HASH),
                 TestResource::Event(e_PlayerSkinChanged::TEST_CLASS_HASH),
                 TestResource::Event(e_PlayerSkinChangeFailed::TEST_CLASS_HASH),
+                TestResource::Event(achievement::events::index::e_TrophyCreation::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(achievement::events::index::e_TrophyProgression::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Contract(game::TEST_CLASS_HASH),
                 TestResource::Contract(player_profile_actions::TEST_CLASS_HASH),
             ]
@@ -271,7 +262,7 @@ mod tests {
             Option::Some(num) => num,
         };
         if moves_number.into() > moves.len() {
-            return println!("move_number is greater than moves length");
+            return panic!("move_number is greater than moves length");
         }
         use evolute_duel::types::packing::{GameState, PlayerSide};
         let mut board_for_snapshot = Board {
@@ -312,6 +303,7 @@ mod tests {
     }
 
     #[test]
+    #[available_gas(429465835234324)]
     fn test_game_move() {
         let host_player = starknet::contract_address_const::<0x0>();
         let guest_player = starknet::contract_address_const::<0x1>();
