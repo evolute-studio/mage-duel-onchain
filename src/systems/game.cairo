@@ -343,9 +343,10 @@ pub mod game {
             };
 
             host_game.board_id = Option::Some(board_id);
+            host_game.status = GameStatus::InProgress;
             guest_game.board_id = Option::Some(board_id);
             guest_game.snapshot_id = host_game.snapshot_id;
-            guest_game.status = GameStatus::Created;
+            guest_game.status = GameStatus::InProgress;
 
             world.write_model(@host_game);
             world.write_model(@guest_game);
@@ -390,7 +391,7 @@ pub mod game {
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
-            if game.status != GameStatus::Created {
+            if game.status != GameStatus::InProgress {
                 return panic!("[Commit Error] Game status is {:?}", game.status);
             }
 
