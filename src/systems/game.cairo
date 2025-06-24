@@ -434,7 +434,7 @@ pub mod game {
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
-            if game.status != GameStatus::Created {
+            if game.status != GameStatus::InProgress {
                 return panic!("[Commit Error] Game status is {:?}", game.status);
             }
 
