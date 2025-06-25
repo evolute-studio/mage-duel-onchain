@@ -12,6 +12,3 @@ transactions = true
 
 [sql] 
 historical = ["evolute_duel-TrophyProgression"]
-
-[indexing]
-transactions = true
