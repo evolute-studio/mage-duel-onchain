@@ -85,6 +85,11 @@ pub impl BoardImpl of BoardTrait {
                 initial_edge_state.clone(),
             );
 
+        let mut union_find = UnionFindTrait::new(board.id);
+        // println!("Union find: {:?}", union_find);
+        UnionFindTrait::write_empty(board.id, world);
+        union_find.write(world);
+
         // Create player available tiles.
         let mut available_tiles: Array<u8> = array![];
         for i in 0..deck_rules_flat.len() {
