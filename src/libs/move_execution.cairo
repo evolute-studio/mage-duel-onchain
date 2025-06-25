@@ -36,10 +36,21 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
         true
     }
 
-    fn get_tile_for_move(joker_tile: Option<u8>, board: @Board) -> Option<u8> {
+    fn get_tile_for_move(joker_tile: Option<u8>, board: @Board) -> u8 {
         match joker_tile {
-            Option::Some(tile_index) => Option::Some(tile_index),
-            Option::None => *board.top_tile,
+            Option::Some(tile_type) => tile_type,
+            Option::None => {
+                match *board.top_tile {
+                    Option::Some(tile_index) => *board.available_tiles_in_deck.at(tile_index.into()),
+                    Option::None => {
+                        if board.commited_tile.is_none() {
+                            return panic!("No tiles in the deck"); 
+                        } else {
+                            return panic!("Tile is not revealed yet");
+                        }
+                    },
+                }
+            },
         }
     }
 

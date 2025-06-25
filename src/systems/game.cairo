@@ -786,10 +786,7 @@ pub mod game {
                 return;
             }
 
-            let tile = match MoveExecutionTrait::get_tile_for_move(joker_tile, @board) {
-                Option::Some(tile) => tile,
-                Option::None => { return panic!("No tiles in the deck"); },
-            };
+            let tile = MoveExecutionTrait::get_tile_for_move(joker_tile, @board);
 
             if !MoveExecutionTrait::validate_move(tile, rotation, col, row, @board) {
                 let move_id = self.move_id_generator.read();
@@ -814,6 +811,7 @@ pub mod game {
             let move_record = MoveExecutionTrait::create_move_record(move_id, move_data, board.last_move_id, board_id);
             
             board.last_move_id = Option::Some(move_id);
+            board.moves_done += 1;
             self.move_id_generator.write(move_id + 1);
 
             let available_tiles_player1: AvailableTiles =
@@ -843,6 +841,8 @@ pub mod game {
             union_find.write(world);
             MoveExecutionTrait::persist_board_updates(@board, move_record, top_tile, world);
             MoveExecutionTrait::emit_move_events(move_record, @board, player, world);
+
+            board.top_tile = Option::None;
             board.game_state = match board.commited_tile {
                 Option::Some(_) => {
                     GameState::Reveal
