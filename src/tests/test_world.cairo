@@ -33,7 +33,7 @@ mod tests {
             PlayerUsernameChanged, e_PlayerUsernameChanged, PlayerSkinChanged, e_PlayerSkinChanged,
             PlayerSkinChangeFailed, e_PlayerSkinChangeFailed, PhaseStarted, e_PhaseStarted,
         },
-        packing::{GameStatus},
+        types::packing::{GameStatus},
         systems::{
             helpers::board::{create_board},
             game::{game, IGameDispatcher, IGameDispatcherTrait},
@@ -285,7 +285,7 @@ mod tests {
         if moves_number.into() > moves.len() {
             return panic!("move_number is greater than moves length");
         }
-        use evolute_duel::packing::{
+        use evolute_duel::types::packing::{
             GameState,
             PlayerSide,
         };

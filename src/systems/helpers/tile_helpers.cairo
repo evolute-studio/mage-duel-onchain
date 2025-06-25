@@ -1,4 +1,4 @@
-use evolute_duel::{packing::{TEdge, Tile}};
+use evolute_duel::{types::packing::{TEdge, Tile}};
 
 #[derive(Drop, Serde, Debug)]
 struct ExtendedTile {

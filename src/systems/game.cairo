@@ -77,7 +77,7 @@ pub mod game {
             tile_helpers::{calcucate_tile_points, calculate_adjacent_edge_points},
             validation::{is_valid_move},
         },
-        packing::{GameStatus, GameState, PlayerSide, UnionNode},
+        types::packing::{GameStatus, GameState, PlayerSide, UnionNode},
     };
 
     use evolute_duel::libs::{
@@ -210,9 +210,6 @@ pub mod game {
             world.write_model(@game);
 
             world.emit_event(@GameCreated { host_player, status });
-
-            //[Achievements] Create game
-            AchievementsTrait::create_game(world, host_player);
         }
 
         fn create_snapshot(ref self: ContractState, board_id: felt252, move_number: u8) -> Option<felt252> {

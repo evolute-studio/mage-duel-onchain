@@ -17,7 +17,6 @@ pub enum Task {
     CityBuilder,
     Bandi,
     Golem,
-    Test,
     FirstCity,
     FirstRoad,
     Mammoth,
@@ -37,7 +36,6 @@ pub impl TaskImpl of TaskTrait {
             Task::CityBuilder => tasks::CityBuilder::CityBuilder::identifier(),
             Task::Bandi => tasks::Bandi::Bandi::identifier(),
             Task::Golem => tasks::Golem::Golem::identifier(),
-            Task::Test => tasks::Test::Test::identifier(),
             Task::FirstCity => tasks::FirstCity::FirstCity::identifier(),
             Task::FirstRoad => tasks::FirstRoad::FirstRoad::identifier(),
             Task::Mammoth => tasks::Mammoth::Mammoth::identifier(),
@@ -54,7 +52,6 @@ pub impl TaskImpl of TaskTrait {
             Task::CityBuilder => tasks::CityBuilder::CityBuilder::description(count),
             Task::Bandi => tasks::Bandi::Bandi::description(count),
             Task::Golem => tasks::Golem::Golem::description(count),
-            Task::Test => tasks::Test::Test::description(count),
             Task::FirstCity => tasks::FirstCity::FirstCity::description(count),
             Task::FirstRoad => tasks::FirstRoad::FirstRoad::description(count),
             Task::Mammoth => tasks::Mammoth::Mammoth::description(count),
@@ -80,10 +77,9 @@ impl IntoTaskU8 of Into<Task, u8> {
             Task::CityBuilder => 4,
             Task::Bandi => 5,
             Task::Golem => 6,
-            Task::Test => 7,
-            Task::FirstCity => 8,
-            Task::FirstRoad => 9,
-            Task::Mammoth => 10,
+            Task::FirstCity => 7,
+            Task::FirstRoad => 8,
+            Task::Mammoth => 9,
         }
     }
 }
@@ -100,10 +96,9 @@ impl IntoU8Task of Into<u8, Task> {
             4 => Task::CityBuilder,
             5 => Task::Bandi,
             6 => Task::Golem,
-            7 => Task::Test,
-            8 => Task::FirstCity,
-            9 => Task::FirstRoad,
-            10 => Task::Mammoth,
+            7 => Task::FirstCity,
+            8 => Task::FirstRoad,
+            9 => Task::Mammoth,
             _ => Task::None,
         }
     }

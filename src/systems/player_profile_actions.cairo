@@ -1,13 +1,29 @@
+use starknet::ContractAddress;
 /// Interface defining actions for player profile management.
 #[starknet::interface]
 pub trait IPlayerProfileActions<T> {
     /// Retrieves the player's balance.
     fn balance(ref self: T);
 
-    /// Lets admin set the player's balance.
-    /// - `balance`: The new balance to be set.
-    /// - `player_id`: The ID of the player whose balance is to be set.
-    fn set_balance(ref self: T, balance: u32, player_id: felt252);
+    /// Lets admin set the player's data.
+    /// - `player_id`: Unique identifier for the player.
+    /// - `username`: Player's chosen in-game name.
+    /// - `balance`: Current balance of in-game currency or points.
+    /// - `games_played`: Total number of games played by the player.
+    /// - `active_skin`: The currently equipped skin or avatar.
+    /// - `role`: The role of the player (0: Guest, 1: Controller, 2: Bot).
+    /// This function is intended for administrative use only.
+    /// It allows setting or updating the player's profile information.
+    /// It should be used with caution to ensure that player data integrity is maintained.
+    /// Admins should ensure that the provided data is valid and consistent with the game's rules.
+    fn set_player(
+        ref self: T, 
+        player_id: ContractAddress, 
+        username: felt252,  balance: u32, 
+        games_played: felt252, 
+        active_skin: u8, 
+        role: u8
+    );
 
     /// Retrieves the player's username.
     fn username(ref self: T);
@@ -49,7 +65,7 @@ pub mod player_profile_actions {
         models::{
             player::{Player},
             skins::{Shop},
-        }, packing::{},
+        }, types::packing::{},
     };
     use evolute_duel::libs::achievements::AchievementsTrait;
     use openzeppelin_access::ownable::OwnableComponent;
@@ -97,11 +113,22 @@ pub mod player_profile_actions {
             world.emit_event(@CurrentPlayerBalance { player_id, balance: player.balance });
         }
 
-        fn set_balance(ref self: ContractState, balance: u32, player_id: felt252) {
+        fn set_player(
+            ref self: ContractState, 
+            player_id: ContractAddress, 
+            username: felt252,  balance: u32, 
+            games_played: felt252, 
+            active_skin: u8, 
+            role: u8
+        ) {
             self.ownable.assert_only_owner();
             let mut world = self.world_default();
             let mut player: Player = world.read_model(player_id);
+            player.username = username;
             player.balance = balance;
+            player.games_played = games_played;
+            player.active_skin = active_skin;
+            player.role = role;
             world.write_model(@player);
         }
 
@@ -161,14 +188,13 @@ pub mod player_profile_actions {
                     @CurrentPlayerActiveSkin { player_id, active_skin: player.active_skin },
                 );
 
-            //[Achievements] Bandi skin
-            if skin_id == 2 {
-                AchievementsTrait::unlock_bandi(world, player_id);
-            }
-
-            //[Achievements] Golem skin
-            if skin_id == 3 {
-                AchievementsTrait::unlock_golem(world, player_id);
+            match skin_id {
+                0 | 1 => {}, // Default skin, no achievement => {},
+                2 => AchievementsTrait::unlock_bandi(world, player_id), //[Achievements] Bandi skin
+                3 => AchievementsTrait::unlock_golem(world, player_id), //[Achievements] Golem skin
+                4 => AchievementsTrait::unlock_mammoth(world, player_id), //[Achievements] Mammoth skin
+                _ => {},
+                
             }
 
             //[Achievements] Mammoth skin

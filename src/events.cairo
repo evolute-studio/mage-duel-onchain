@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use evolute_duel::packing::{GameState, GameStatus, PlayerSide};
+use evolute_duel::types::packing::{GameState, GameStatus, PlayerSide};
 
 #[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::event]
