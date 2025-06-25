@@ -35,9 +35,6 @@ pub mod utils {
 }
 
 pub mod tests {
-    pub mod test_helpers {
-        pub mod game_caller;
-    }
-    pub mod test_world;
-    pub mod test_scoring;
+    mod test_world;
+    mod test_scoring;
 }

@@ -324,6 +324,7 @@ pub fn close_all_cities(
 
 
 // #[cfg(test)]
+// #[allow(unused_imports)]
 // mod tests {
 //     use super::*;
 //     use dojo_cairo_test::WorldStorageTestTrait;
@@ -387,7 +388,6 @@ pub fn close_all_cities(
 //     #[test]
 //     fn test_connect_city_edges_in_tile() {
 //         // Initialize test environment
-//         let caller = starknet::contract_address_const::<0x0>();
 //         let ndef = namespace_def();
 
 //         // Register the resources.
@@ -404,8 +404,6 @@ pub fn close_all_cities(
 //         let rotation = 0;
 //         let side = PlayerSide::Blue;
 
-//         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
-
 //         // Call function to connect city edges
 //         connect_city_edges_in_tile(
 //             ref world, board_id, tile_position, tile.into(), rotation, side.into(),
@@ -414,7 +412,7 @@ pub fn close_all_cities(
 //         // Verify all city edges are connected
 //         let base_pos = convert_board_position_to_node_position(tile_position, 0);
 //         let root = find(ref world, board_id, base_pos).position;
-//         let city_node: CityNode = world.read_model((board_id, base_pos + 2));
+//         let _city_node: CityNode = world.read_model((board_id, base_pos + 2));
 
 //         //println!("Root1: {:?}", find(ref world, board_id, base_pos));
 //         //println!("Root2: {:?}", city_node);
@@ -435,7 +433,6 @@ pub fn close_all_cities(
 
 //     #[test]
 //     fn test_connect_adjacent_city_edges() {
-//         let caller = starknet::contract_address_const::<0x0>();
 //         let ndef = namespace_def();
 
 //         let mut world = spawn_test_world([ndef].span());
@@ -451,7 +448,7 @@ pub fn close_all_cities(
 //         let rotation = 1;
 //         let side = PlayerSide::Blue;
 
-//         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
+//         let mut initial_edge_state = generate_initial_board_state(1, 1, board_id);
 
 //         connect_city_edges_in_tile(
 //             ref world, board_id, tile_position_1, tile_1.into(), rotation, side.into(),
@@ -471,26 +468,30 @@ pub fn close_all_cities(
 //             }
 //         };
 
-//         connect_adjacent_city_edges(
+//         let mut visited: Felt252Dict<bool> = Default::default();
+
+//         let _ = connect_adjacent_city_edges(
 //             ref world,
 //             board_id,
-//             state.clone(),
-//             initial_edge_state.clone(),
+//             ref state,
+//             ref initial_edge_state,
 //             tile_position_1,
 //             tile_1.into(),
 //             rotation,
 //             side.into(),
+//             ref visited,
 //         );
 
-//         connect_adjacent_city_edges(
+//         let _ = connect_adjacent_city_edges(
 //             ref world,
 //             board_id,
-//             state,
-//             initial_edge_state.clone(),
+//             ref state,
+//             ref initial_edge_state,
 //             tile_position_2,
 //             tile_2.into(),
 //             rotation,
 //             side.into(),
+//             ref visited,
 //         );
 
 //         let edge_pos_1 = convert_board_position_to_node_position(tile_position_1, 1);
@@ -506,7 +507,6 @@ pub fn close_all_cities(
 
 //     #[test]
 //     fn test_connect_adjacent_city_edges_contest() {
-//         let caller = starknet::contract_address_const::<0x0>();
 //         let ndef = namespace_def();
 
 //         let mut world = spawn_test_world([ndef].span());
@@ -532,7 +532,7 @@ pub fn close_all_cities(
 //         let side3 = PlayerSide::Blue;
 //         let side4 = PlayerSide::Blue;
 
-//         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
+//         let mut initial_edge_state = generate_initial_board_state(1, 1, board_id);
 
 //         connect_city_edges_in_tile(
 //             ref world, board_id, tile_position_1, tile_1.into(), rotation1, side1.into(),
@@ -583,15 +583,18 @@ pub fn close_all_cities(
 //             }
 //         };
 
-//         connect_adjacent_city_edges(
+//         let mut visited: Felt252Dict<bool> = Default::default();
+
+//         let _ = connect_adjacent_city_edges(
 //             ref world,
 //             board_id,
-//             state,
-//             initial_edge_state.clone(),
+//             ref state,
+//             ref initial_edge_state,
 //             tile_position_1,
 //             tile_1.into(),
 //             rotation1,
 //             side1.into(),
+//             ref visited,
 //         );
 
 //         let rot1 = find(
@@ -611,15 +614,16 @@ pub fn close_all_cities(
 //             }
 //         };
 
-//         connect_adjacent_city_edges(
+//         let _ = connect_adjacent_city_edges(
 //             ref world,
 //             board_id,
-//             state.clone(),
-//             initial_edge_state.clone(),
+//             ref state,
+//             ref initial_edge_state,
 //             tile_position_2,
 //             tile_2.into(),
 //             rotation2,
 //             side2.into(),
+//             ref visited,
 //         );
 
 //         let rot2 = find(
@@ -641,15 +645,16 @@ pub fn close_all_cities(
 //             }
 //         };
 
-//         connect_adjacent_city_edges(
+//         let _ = connect_adjacent_city_edges(
 //             ref world,
 //             board_id,
-//             state.clone(),
-//             initial_edge_state.clone(),
+//             ref state,
+//             ref initial_edge_state,
 //             tile_position_3,
 //             tile_3.into(),
 //             rotation3,
 //             side3.into(),
+//             ref visited,
 //         );
 
 //         let rot3 = find(
@@ -673,15 +678,16 @@ pub fn close_all_cities(
 //             }
 //         };
 
-//         connect_adjacent_city_edges(
+//         let _ = connect_adjacent_city_edges(
 //             ref world,
 //             board_id,
-//             state,
-//             initial_edge_state.clone(),
+//             ref state,
+//             ref initial_edge_state,
 //             tile_position_4,
 //             tile_4.into(),
 //             rotation4,
 //             side4.into(),
+//             ref visited,
 //         );
 
 //         let rot4 = find(
@@ -740,7 +746,6 @@ pub fn close_all_cities(
 
 //     #[test]
 //     fn test_contest_with_edge() {
-//         let caller = starknet::contract_address_const::<0x0>();
 //         let ndef = namespace_def();
 
 //         let mut world = spawn_test_world([ndef].span());
@@ -749,7 +754,7 @@ pub fn close_all_cities(
 //         let board_id = 1;
 
 //         // City and road just on bottom edge
-//         let initial_edge_state = array![
+//         let mut initial_edge_state = array![
 //             2,
 //             2,
 //             0,
@@ -804,24 +809,27 @@ pub fn close_all_cities(
 //         let mut state: Array<(u8, u8, u8)> = ArrayTrait::new();
 //         state.append_span([((Tile::Empty).into(), 0, 0); 64].span());
 
+//         let mut visited: Felt252Dict<bool> = Default::default();
+        
 //         let scoring_result = connect_adjacent_city_edges(
 //             ref world,
 //             board_id,
-//             state.clone(),
-//             initial_edge_state.clone(),
+//             ref state,
+//             ref initial_edge_state,
 //             tile_position_1,
 //             tile_1.into(),
 //             rotation1,
 //             side1.into(),
+//             ref visited
 //         );
 
-//         println!("{:?}", scoring_result);
+//         // println!("{:?}", scoring_result);
 
 //         let root2 = find(
 //             ref world, board_id, convert_board_position_to_node_position(tile_position_1, 2),
 //         );
 
-//         println!("{:?}", root2);
+//         // println!("{:?}", root2);
 //         assert_eq!(root2.open_edges, 0, "City contest is not conducted correctly");
 
 //         for i in 0..64_u8 {

@@ -12,16 +12,6 @@ pub trait IGame<T> {
     /// Allows a player to join an existing game hosted by another player.
     fn join_game(ref self: T, host_player: ContractAddress);
 
-    /// Commits tiles to the game state.
-    /// - `commitments`: A span of tile commitments to be added to the game state.
-    fn commit_tiles(ref self: T, commitments: Span<u32>);
-    /// Reveals a tile to all players.
-    /// - `tile_index`: Index of the tile to be revealed.
-    /// - `nonce`: Nonce used for the tile reveal.
-    /// - `c`: A constant value used in the reveal process.
-    fn reveal_tile(ref self: T, tile_index: u8, nonce: felt252, c: u8);
-
-    fn request_next_tile(ref self: T, tile_index: u8, nonce: felt252, c: u8);
     /// Makes a move by placing a tile on the board.
     /// - `joker_tile`: Optional joker tile played during the move.
     /// - `rotation`: Rotation applied to the placed tile.
@@ -35,7 +25,7 @@ pub trait IGame<T> {
     /// Creates a snapshot of the current game state.
     /// - `board_id`: ID of the board being saved.
     /// - `move_number`: Move number at the time of snapshot.
-    fn create_snapshot(ref self: T, board_id: felt252, move_number: u8) -> Option<felt252>;
+    fn create_snapshot(ref self: T, board_id: felt252, move_number: u8);
 
     /// Restores a game session from a snapshot.
     /// - `snapshot_id`: ID of the snapshot to restore from.
@@ -53,7 +43,7 @@ pub mod game {
     use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
     use evolute_duel::{
         models::{
-            game::{Board, Rules, Move, Game, Snapshot, TileCommitments, AvailableTiles},
+            game::{Board, Rules, Move, Game, Snapshot},
             player::{Player},
             scoring::{UnionFind, UnionFindTrait},
         },
@@ -61,7 +51,7 @@ pub mod game {
             GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
             PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished, GameIsAlreadyFinished,
             Skiped, Moved, SnapshotCreated, SnapshotCreateFailed, CurrentPlayerBalance, InvalidMove,
-            CantFinishGame, PhaseStarted
+            CantFinishGame,
         },
         systems::helpers::{
             board::{
@@ -84,17 +74,12 @@ pub mod game {
         // store::{Store, StoreTrait},
         achievements::{AchievementsTrait},
     };
-    use evolute_duel::utils::hash::{
-        hash_values, hash_sha256_to_felt252,
-    };
     use evolute_duel::types::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
 
     use dojo::event::EventStorage;
     use dojo::model::{ModelStorage, Model};
 
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use origami_random::dice::{DiceTrait};
-
     use core::dict::Felt252Dict;
 
     use alexandria_data_structures::vec::{NullableVec, VecTrait};
@@ -119,9 +104,8 @@ pub mod game {
         achievable: AchievableComponent::Storage,
     }
 
-    const CREATING_TIME : u64 = 65; // 1 min
-    const REVEAL_TIME : u64 = 65; // 1 min
-    const MOVE_TIME : u64 = 65; // 1 min
+    const MOVE_TIME : u64 = 65; // 60 seconds on turn and 5 seconds for latency fix
+
 
     fn dojo_init(self: @ContractState) {
         let mut world = self.world_default();
@@ -212,7 +196,7 @@ pub mod game {
             world.emit_event(@GameCreated { host_player, status });
         }
 
-        fn create_snapshot(ref self: ContractState, board_id: felt252, move_number: u8) -> Option<felt252> {
+        fn create_snapshot(ref self: ContractState, board_id: felt252, move_number: u8) {
             let mut world = self.world_default();
             let player = get_caller_address();
 
@@ -227,7 +211,7 @@ pub mod game {
                         },
                     );
                 println!("Snapshot create failed, move number is greater than max move number");
-                return Option::None;
+                return;
             }
 
             let snapshot_id = self.snapshot_id_generator.read();
@@ -239,8 +223,6 @@ pub mod game {
             world.write_model(@snapshot);
 
             world.emit_event(@SnapshotCreated { snapshot_id, player, board_id, move_number });
-
-            Option::Some(snapshot_id)
         }
 
         fn create_game_from_snapshot(ref self: ContractState, snapshot_id: felt252) {
@@ -348,6 +330,8 @@ pub mod game {
                 println!("Game join failed");
                 return ;
             }
+            host_game.status = GameStatus::InProgress;
+            guest_game.status = GameStatus::InProgress;
 
             let board_id: felt252 = if host_game.board_id.is_none() {
                 let board = create_board(
@@ -383,403 +367,12 @@ pub mod game {
             };
 
             host_game.board_id = Option::Some(board_id);
-            host_game.status = GameStatus::InProgress;
             guest_game.board_id = Option::Some(board_id);
             guest_game.snapshot_id = host_game.snapshot_id;
-            guest_game.status = GameStatus::InProgress;
 
             world.write_model(@host_game);
             world.write_model(@guest_game);
             world.emit_event(@GameStarted { host_player, guest_player, board_id });
-
-            let mut board: Board = world.read_model(board_id);
-
-            board.game_state = GameState::Creating;
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("game_state"),
-                board.game_state,
-            );
-
-            board.phase_started_at = get_block_timestamp();
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("phase_started_at"),
-                board.phase_started_at,
-            );
-
-            world.emit_event(@PhaseStarted {
-                board_id,
-                phase: 0, // GameState::Creating
-                top_tile: board.top_tile,
-                commited_tile: board.commited_tile,
-                started_at: board.phase_started_at,
-            });
-        }
-
-        fn commit_tiles(ref self: ContractState, commitments: Span<u32>) {
-            let mut world = self.world_default();
-            let player = get_caller_address();
-
-            let mut game: Game = world.read_model(player);
-
-            if game.board_id.is_none() {
-                world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
-                return;
-            }
-
-            let board_id = game.board_id.unwrap();
-            let mut board: Board = world.read_model(board_id);
-
-            if game.status != GameStatus::InProgress {
-                return panic!("[Commit Error] Game status is {:?}", game.status);
-            }
-
-            if board.game_state != GameState::Creating {
-                return panic!("[Commit Error] Game state is {:?}", board.game_state);
-            }
-
-            let timestamp = get_block_timestamp();
-
-            if timestamp > board.phase_started_at + CREATING_TIME {
-                world.emit_event(@GameCreateFailed { host_player: player, status: game.status });
-                println!(
-                    "[ERROR] Commit timeout: {:?} > {:?} + {:?}",
-                    timestamp, board.phase_started_at, CREATING_TIME
-                );
-                return;
-            }
-
-            let mut tile_commitments = array![];
-            println!("comitments length: {:?}", commitments.len());
-            if commitments.len() % 8 != 0 {
-                panic!("[ERROR] Commitments length is not a multiple of 8");
-                return;
-            }
-            for i in 0..(commitments.len() / 8) {
-                let commitment: Span<u32> = commitments.slice(i * 8, 8);
-                println!("sha256 commitments[{}]: {:?}", i, commitment);
-                let tile_commitment = hash_sha256_to_felt252(commitment);
-                tile_commitments.append(tile_commitment);
-            };
-            let tile_commitments = tile_commitments.span();
-
-            world.write_model(@TileCommitments { board_id, player, tile_commitments });
-
-            let (player1_address, player1_side, joker_number1) = board.player1;
-            let (player2_address, player2_side, joker_number2) = board.player2;
-
-            let another_player = if player == player1_address {
-                player2_address
-            } else if player == player2_address {
-                player1_address
-            } else {
-                world.emit_event(@PlayerNotInGame { player_id: player, board_id });
-                return;
-            };
-
-            let another_player_commitments: TileCommitments = world.read_model((board_id, another_player));
-
-            if another_player_commitments.tile_commitments.len() == tile_commitments.len() {
-                game.status = GameStatus::InProgress;
-                let mut another_player_game: Game = world.read_model(another_player);
-                another_player_game.status = GameStatus::InProgress;
-                world.write_model(@another_player_game);
-                world.write_model(@game);
-
-                board.game_state = GameState::Reveal;
-                world.write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("game_state"),
-                    board.game_state,
-                );
-
-                board.phase_started_at = timestamp;
-                world.write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("phase_started_at"),
-                    board.phase_started_at,
-                );
-
-                let mut dice = DiceTrait::new(
-                    board.available_tiles_in_deck.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into() + board_id.into(),
-                );
-
-                let commited_tile = Option::Some(dice.roll() - 1);
-
-                board.commited_tile = commited_tile;
-
-                world.write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("commited_tile"),
-                    board.commited_tile,
-                );
-
-                world.emit_event(@PhaseStarted {
-                    board_id,
-                    phase: 1, // Reveal phase
-                    top_tile: board.top_tile,
-                    commited_tile: board.commited_tile,
-                    started_at: board.phase_started_at,
-                });
-            }
-        }
-           
-
-        fn reveal_tile(ref self: ContractState, tile_index: u8, nonce: felt252, c: u8) {
-            let mut world = self.world_default();
-            let player = get_caller_address();
-
-            let game: Game = world.read_model(player);
-
-            if game.board_id.is_none() {
-                world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
-                return;
-            }
-
-            let board_id = game.board_id.unwrap();
-            let mut board: Board = world.read_model(board_id);
-
-            assert!(board.top_tile.is_none(), "[ERROR] Tile is already revealed");
-
-            assert!(board.commited_tile.is_some(), "[ERROR] No tile committed");
-
-            assert!(board.game_state == GameState::Reveal, 
-                "[ERROR] Game state is not Reveal: {:?}", board.game_state
-            );
-
-            if get_block_timestamp() > board.phase_started_at + REVEAL_TIME {
-                println!(
-                    "[ERROR] Reveal timeout: {:?} > {:?} + {:?}",
-                    get_block_timestamp(),
-                    board.phase_started_at,
-                    REVEAL_TIME
-                );
-                return;
-            }
-
-            assert!(
-                board.commited_tile.unwrap() == c, 
-                "[ERROR] Committed tile mismatch: expected {}, got {}", board.commited_tile.unwrap(), c
-            );
-
-            let prev_move_id = board.last_move_id;
-            if prev_move_id.is_some() {
-                let prev_move_id = prev_move_id.unwrap();
-                let prev_move: Move = world.read_model(prev_move_id);
-                let prev_player_side = prev_move.player_side;
-                let time = get_block_timestamp();
-                let prev_move_time = prev_move.timestamp;
-                let time_delta = time - prev_move_time;
-                let (player1_address, player1_side, joker_number1) = board.player1;
-                let (player2_address, player2_side, joker_number2) = board.player2;
-
-                let (player_side, joker_number) = if player == player1_address {
-                    (player1_side, joker_number1)
-                } else if player == player2_address {
-                    (player2_side, joker_number2)
-                } else {
-                    world.emit_event(@PlayerNotInGame { player_id: player, board_id });
-                    return;
-                };
-
-                if player_side == prev_player_side {
-                    world.emit_event(@NotYourTurn { player_id: player, board_id });
-                    return;
-                }
-            };
-
-            let tile_commitments_entry: TileCommitments = world.read_model((board_id, player));
-            let tile_commitments = tile_commitments_entry.tile_commitments;
-
-            let saved_tile_commitment = *tile_commitments.at(tile_index.into());
-            let tile_commitment = hash_values([tile_index.into(), nonce, c.into()].span());
-
-            // Check if the tile commitment matches the saved one
-            assert!(
-                saved_tile_commitment == tile_commitment,
-                "[ERROR] Tile commitment mismatch: expected {}, got {}",
-                saved_tile_commitment, tile_commitment
-            );
-
-
-            let tile = *board.available_tiles_in_deck
-                .at(tile_index.into());
-            // If the tile is valid, reveal it
-            board.top_tile = Option::Some(tile_index);
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("top_tile"),
-                    board.top_tile,
-                );
-            board.commited_tile = Option::None;
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("commited_tile"),
-                    board.commited_tile,
-                );
-            board.game_state = GameState::Request;
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("game_state"),
-                board.game_state,
-            );
-
-            board.phase_started_at = get_block_timestamp();
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("phase_started_at"),
-                board.phase_started_at,
-            );
-
-            world.emit_event(@PhaseStarted {
-                board_id,
-                phase: 2, // GameState::Request
-                top_tile: board.top_tile,
-                commited_tile: board.commited_tile,
-                started_at: board.phase_started_at,
-            });
-
-            // Remove the tile from the available tiles in deck
-            let player_available_tiles_entry: AvailableTiles =
-                world.read_model((board_id, player));
-
-            let mut player_available_tiles = player_available_tiles_entry.available_tiles;
-            let mut new_available_tiles: Array<u8> = array![];
-            for i in 0..player_available_tiles.len() {
-                if *player_available_tiles.at(i.into()) != c {
-                    new_available_tiles.append(*player_available_tiles.at(i.into()));
-                }
-            };
-            world.write_model(@AvailableTiles {
-                board_id,
-                player,
-                available_tiles: new_available_tiles.span(),
-            });
-
-
-        }
-
-        fn request_next_tile(ref self: ContractState, tile_index: u8, nonce: felt252, c: u8){
-            let mut world = self.world_default();
-            let player = get_caller_address();
-
-            let game: Game = world.read_model(player);
-
-            if game.board_id.is_none() {
-                world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
-                return;
-            }
-
-            let board_id = game.board_id.unwrap();
-            let mut board: Board = world.read_model(board_id);
-
-            assert!(board.top_tile.is_some(), "[REQUEST ERROR] Tile is not revealed yet");
-
-            assert!(
-                board.commited_tile.is_none(),
-                "[REQUEST ERROR] Tile still committed, can't request next tile"
-            );
-
-            assert!(
-                board.game_state == GameState::Request,
-                "[REQUEST ERROR] Game state is not Request: {:?}",
-                board.game_state
-            );
-
-            if get_block_timestamp() > board.phase_started_at + REVEAL_TIME {
-                println!(
-                    "[REQUEST ERROR] Reveal timeout: {:?} > {:?} + {:?}",
-                    get_block_timestamp(),
-                    board.phase_started_at,
-                    REVEAL_TIME
-                );
-                return;
-            }
-
-            let tile = *board.available_tiles_in_deck.at(tile_index.into());
-
-            assert!(
-                board.top_tile.unwrap() == tile_index,
-                "[REQUEST ERROR] Tile mismatch: expected {}, got {}",
-                board.top_tile.unwrap(),
-                tile_index
-            );
-
-            // Check committed tile
-
-            let tile_commitments_entry: TileCommitments = world.read_model((board_id, player));
-            let tile_commitments = tile_commitments_entry.tile_commitments;
-
-            let saved_tile_commitment = *tile_commitments.at(tile_index.into());
-            let tile_commitment = hash_values([tile_index.into(), nonce, c.into()].span());
-
-            // Check if the tile commitment matches the saved one
-            assert!(
-                saved_tile_commitment == tile_commitment,
-                "[ERROR] Tile commitment mismatch: expected {}, got {}",
-                saved_tile_commitment, tile_commitment
-            );
-
-
-            let player_available_tiles_entry: AvailableTiles = world.read_model((board_id, player));
-
-            let mut player_available_tiles = player_available_tiles_entry.available_tiles;
-            // println!("player_available_tiles: {:?}", player_available_tiles);
-            let mut new_available_tiles: Array<u8> = array![];
-            for i in 0..player_available_tiles.len() {
-                if *player_available_tiles.at(i.into()) != c {
-                    new_available_tiles.append(*player_available_tiles.at(i.into()));
-                }
-            };
-            // println!("new_available_tiles: {:?}", new_available_tiles);
-            world.write_model(@AvailableTiles {
-                board_id,
-                player,
-                available_tiles: new_available_tiles.span(),
-            });
-
-
-            if new_available_tiles.len() > 0 {
-                // Redraw the tile from the deck
-                let mut dice = DiceTrait::new(new_available_tiles.len().try_into().unwrap(), 
-                    'SEED',
-                    // nonce
-                );
-
-                // Roll the dice to get a new tile index
-                let new_tile_index = dice.roll() - 1;
-                let commited_tile = *new_available_tiles.at(new_tile_index.into());
-                // Update the board with the new tile
-                board.commited_tile = Option::Some(commited_tile);
-                world.write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("commited_tile"),
-                    board.commited_tile,
-                );
-            }
-
-            board.game_state = GameState::Move;
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("game_state"),
-                board.game_state,
-            );
-            board.phase_started_at = get_block_timestamp();
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("phase_started_at"),
-                board.phase_started_at,
-            );
-            world.emit_event(@PhaseStarted {
-                board_id,
-                phase: 3, // GameState::Move
-                top_tile: board.top_tile,
-                commited_tile: board.commited_tile,
-                started_at: board.phase_started_at,
-            });
         }
 
         fn make_move(
@@ -801,22 +394,6 @@ pub mod game {
             if game.status == GameStatus::Finished {
                 world.emit_event(@GameIsAlreadyFinished { player_id: player, board_id });
                 println!("Game is already finished");
-                return;
-            }
-
-            assert!(
-                board.game_state == GameState::Move,
-                "[ERROR] Game state is not Move: {:?}",
-                board.game_state
-            );
-
-            if get_block_timestamp() > board.phase_started_at + MOVE_TIME {
-                println!(
-                    "[ERROR] Move timeout: {:?} > {:?} + {:?}",
-                    get_block_timestamp(),
-                    board.phase_started_at,
-                    MOVE_TIME
-                );
                 return;
             }
 
@@ -851,8 +428,39 @@ pub mod game {
                 let time_delta = time - last_update_timestamp;
 
                 if player_side == prev_player_side {
-                    world.emit_event(@NotYourTurn { player_id: player, board_id });
-                    return;
+                    if time_delta > MOVE_TIME && time_delta <= 2 * MOVE_TIME {
+                        //Skip the move of the previous player
+                        let another_player = if player == player1_address {
+                            player2_address
+                        } else {
+                            player1_address
+                        };
+                        let another_player_side = if player == player1_address {
+                            player2_side
+                        } else {
+                            player1_side
+                        };
+                        self
+                            ._skip_move(
+                                another_player,
+                                another_player_side,
+                                ref board,
+                                self.move_id_generator,
+                                false,
+                            )
+                    }
+
+                    if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
+                        world.emit_event(@NotYourTurn { player_id: player, board_id });
+                        println!("[Not your turn]");
+                        return ;
+                    }
+                } else {
+                    if time_delta > MOVE_TIME {
+                        world.emit_event(@NotYourTurn { player_id: player, board_id });
+                        println!("[Not your turn] Move time is over");
+                        return ;
+                    }
                 }
             };
 
@@ -860,14 +468,8 @@ pub mod game {
                 Option::Some(tile_index) => { tile_index },
                 Option::None => {
                     match @board.top_tile {
-                        Option::Some(tile_index) => { *board.available_tiles_in_deck.at((*tile_index).into()) },
-                        Option::None => { 
-                            if board.commited_tile.is_none() {
-                                return panic!("No tiles in the deck"); 
-                            } else {
-                                return panic!("Tile is not revealed yet");
-                            }
-                        },
+                        Option::Some(top_tile) => { *top_tile },
+                        Option::None => { return panic!("No tiles in the deck"); },
                     }
                 },
             };
@@ -885,10 +487,6 @@ pub mod game {
                 is_joker, 
                 first_board_id: board_id,
                 timestamp: get_block_timestamp(),
-                top_tile: match board.top_tile {
-                    Option::Some(tile_index) => Option::Some(*board.available_tiles_in_deck.at(tile_index.into())),
-                    Option::None => Option::None,
-                },
             };
 
             // TODO: revert invalid move when it's stable
@@ -911,6 +509,12 @@ pub mod game {
                 println!("[Invalid move] \nBoard: {:?} \nMove: {:?}", board, move);
                 return ;
             }
+
+            let top_tile = if !is_joker {
+                draw_tile_from_board_deck(ref board)
+            } else {
+                board.top_tile
+            };
 
             let mut union_find: UnionFind = world.read_model(board_id);
 
@@ -975,7 +579,6 @@ pub mod game {
             // print!("0");
 
             let (tile_city_points, tile_road_points) = calcucate_tile_points(tile.into());
-
             let (edges_city_points, edges_road_points) = calculate_adjacent_edge_points(
                 ref board.initial_edge_state, col, row, tile.into(), rotation,
             );
@@ -1081,21 +684,7 @@ pub mod game {
             board.moves_done = board.moves_done + 1;    
             self.move_id_generator.write(move_id + 1);
 
-            let available_tiles_player1: AvailableTiles =
-                world.read_model((board_id, player1_address));
-            let available_tiles_player2: AvailableTiles =
-                world.read_model((board_id, player2_address));
-
-            board.game_state = match board.commited_tile {
-                Option::Some(_) => {
-                    GameState::Reveal
-                },
-                Option::None => {
-                    GameState::Move
-                }
-            };
-
-            if available_tiles_player1.available_tiles.len() == 0 && available_tiles_player2.available_tiles.len() == 0 && joker_number1 == 0 && joker_number2 == 0 {
+            if top_tile.is_none() && joker_number1 == 0 && joker_number2 == 0 {
                 //FINISH THE GAME
                 self
                     ._finish_game(
@@ -1114,21 +703,21 @@ pub mod game {
             let mut new_nodes_open_edges = array![];
             let mut new_nodes_contested = array![];
             let mut new_nodes_types = array![];
-            // println!("Road nodes length: {:?}", road_nodes.len());
-            // println!("City nodes length: {:?}", city_nodes.len());
-            // print!("[Road nodes types]: [");
-            // for i in 0..256_usize {
-            //     let road_node = road_nodes.at(i.into());
-            //     print!("{}, ", road_node.node_type);
-            // };
-            // println!("]");
+            println!("Road nodes length: {:?}", road_nodes.len());
+            println!("City nodes length: {:?}", city_nodes.len());
+            print!("[Road nodes types]: [");
+            for i in 0..256_usize {
+                let road_node = road_nodes.at(i.into());
+                print!("{}, ", road_node.node_type);
+            };
+            println!("]");
 
-            // print!("[City nodes types]: [");
-            // for i in 0..256_usize {
-            //     let city_node = city_nodes.at(i.into());
-            //     print!("{}, ", city_node.node_type);
-            // };
-            // println!("]");
+            print!("[City nodes types]: [");
+            for i in 0..256_usize {
+                let city_node = city_nodes.at(i.into());
+                print!("{}, ", city_node.node_type);
+            };
+            println!("]");
 
 
             for i in 0..256_usize {
@@ -1172,11 +761,16 @@ pub mod game {
 
             world.write_model(@move);
 
-            board.top_tile = Option::None;
-            // println!("top_tile: {:?}", board.top_tile);
             world
                 .write_member(
-                    Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("available_tiles_in_deck"),
+                    board.available_tiles_in_deck.clone(),
+                );
+
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), top_tile,
                 );
 
             world
@@ -1223,19 +817,12 @@ pub mod game {
                     selector!("moves_done"),
                     board.moves_done,
                 );
+
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
                     selector!("game_state"),
                     board.game_state,
-                );
-
-            board.phase_started_at = get_block_timestamp();
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("phase_started_at"),
-                    board.phase_started_at,
                 );
 
             world
@@ -1276,19 +863,11 @@ pub mod game {
                         game_state: board.game_state,
                     },
                 );
-            
-            world.emit_event(@PhaseStarted {
-                board_id,
-                phase: if board.commited_tile.is_some() {1} else {3}, // GameState::Reveal or GameState::Move
-                top_tile: board.top_tile,
-                commited_tile: board.commited_tile,
-                started_at: board.phase_started_at,
-            });
 
-            // println!(
-            //     "Move made: {:?} \nBoard: {:?} \nUnion find: {:?}",
-            //     move, board, union_find,
-            // );
+            println!(
+                "Move made: {:?} \nBoard: {:?} \nUnion find: {:?}",
+                move, board, union_find,
+            );
         }
 
         fn skip_move(ref self: ContractState) {
@@ -1311,12 +890,6 @@ pub mod game {
                 println!("Game is already finished");
                 return;
             }
-
-            assert!(
-                board.game_state == GameState::Move,
-                "[ERROR] Game state is not Move: {:?}",
-                board.game_state
-            );
 
             let (player1_address, player1_side, _) = board.player1;
             let (player2_address, player2_side, _) = board.player2;
@@ -1399,8 +972,39 @@ pub mod game {
                 let time_delta = time - last_update_timestamp;
 
                 if player_side == prev_player_side {
-                    world.emit_event(@NotYourTurn { player_id: player, board_id });
-                    return;
+                    if time_delta > MOVE_TIME && time_delta <= 2 * MOVE_TIME {
+                        //Skip the move of the previous player
+                        let another_player = if player == player1_address {
+                            player2_address
+                        } else {
+                            player1_address
+                        };
+                        let another_player_side = if player == player1_address {
+                            player2_side
+                        } else {
+                            player1_side
+                        };
+                        self
+                            ._skip_move(
+                                another_player,
+                                another_player_side,
+                                ref board,
+                                self.move_id_generator,
+                                false,  
+                            )
+                    }
+
+                    if time_delta <= MOVE_TIME || time_delta > 2 * MOVE_TIME {
+                        world.emit_event(@NotYourTurn { player_id: player, board_id });
+                        println!("[Not your turn]");
+                        return ;
+                    }
+                } else {
+                    if time_delta > MOVE_TIME {
+                        world.emit_event(@NotYourTurn { player_id: player, board_id });
+                        println!("[Not your turn] Move time is over");
+                        return;
+                    }
                 }
 
                 let prev_move_id = board.last_move_id.unwrap();
@@ -1463,34 +1067,16 @@ pub mod game {
                     union_find.write(world); 
                 }
             };
-
-            board.top_tile = Option::None;
+            redraw_tile_from_board_deck(ref board);
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("available_tiles_in_deck"),
+                    board.available_tiles_in_deck.clone(),
+                );
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
-                );
-            
-            board.game_state = match board.commited_tile {
-                Option::Some(_) => {
-                    GameState::Reveal
-                },
-                Option::None => {
-                    GameState::Move
-                }
-            };            
-            
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("game_state"),
-                    board.game_state,
-                );
-            board.phase_started_at = get_block_timestamp();
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("phase_started_at"),
-                    board.phase_started_at,
                 );
 
             self._skip_move(player, player_side, ref board, self.move_id_generator, true);
@@ -1510,13 +1096,6 @@ pub mod game {
                         moves_done: board.moves_done,
                     },
                 );
-            world.emit_event(@PhaseStarted {
-                board_id,
-                phase: if board.commited_tile.is_some() {1} else {3}, // GameState::Reveal or GameState::Move
-                top_tile: board.top_tile,
-                commited_tile: board.commited_tile,
-                started_at: board.phase_started_at,
-            });
         }
 
         fn finish_game(ref self: ContractState, board_id: felt252) {
@@ -1697,10 +1276,6 @@ pub mod game {
                 is_joker: false,
                 first_board_id: board_id,
                 timestamp,
-                top_tile: match board.top_tile {
-                    Option::Some(tile_index) => Option::Some(*board.available_tiles_in_deck.at(tile_index.into())),
-                    Option::None => Option::None,
-                },
             };
 
             board.last_move_id = Option::Some(move_id);
