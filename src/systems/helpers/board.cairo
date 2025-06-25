@@ -581,9 +581,7 @@ pub impl BoardImpl of BoardTrait {
             self.top_tile = Option::None;
             return Option::None;
         }
-        let mut dice = DiceTrait::new(avaliable_tiles.len().try_into().unwrap(), 'SEED'//  + get_block_timestamp().into()
-
-        );
+        let mut dice = DiceTrait::new(avaliable_tiles.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into());
 
         let mut next_tile = dice.roll() - 1;
 
@@ -619,8 +617,8 @@ pub impl BoardImpl of BoardTrait {
         let mut initial_state: Array<u8> = ArrayTrait::new();
 
         for side in 0..4_u8 {
-            let mut deck = DeckTrait::new(// (
-            'SEED'//  + side.into() + get_block_timestamp().into() + board_id).into()
+            let mut deck = DeckTrait::new(
+            ('SEED' + side.into() + get_block_timestamp().into() + board_id).into()
             , 8);
             let mut edge: Felt252Dict<u8> = Default::default();
             for i in 0..8_u8 {
