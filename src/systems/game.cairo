@@ -811,7 +811,6 @@ pub mod game {
             let move_record = MoveExecutionTrait::create_move_record(move_id, move_data, board.last_move_id, board_id);
             
             board.last_move_id = Option::Some(move_id);
-            board.moves_done += 1;
             self.move_id_generator.write(move_id + 1);
 
             let available_tiles_player1: AvailableTiles =
@@ -821,7 +820,6 @@ pub mod game {
 
             let (updated_joker1, updated_joker2) = board.get_joker_numbers();
             if MoveExecutionTrait::should_finish_game(
-                top_tile, 
                 updated_joker1, 
                 updated_joker2, 
                 available_tiles_player1.available_tiles.len(), 
@@ -842,7 +840,6 @@ pub mod game {
             MoveExecutionTrait::persist_board_updates(@board, move_record, top_tile, world);
             MoveExecutionTrait::emit_move_events(move_record, @board, player, world);
 
-            board.top_tile = Option::None;
             board.game_state = match board.commited_tile {
                 Option::Some(_) => {
                     GameState::Reveal

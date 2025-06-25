@@ -29,7 +29,7 @@ mod tests {
             e_PlayerUsernameChanged, PlayerSkinChanged, e_PlayerSkinChanged, PlayerSkinChangeFailed,
             e_PlayerSkinChangeFailed, PhaseStarted, e_PhaseStarted,
         },
-        types::packing::{GameStatus},
+        types::packing::{GameStatus, GameState},
         systems::{
             helpers::board::{BoardTrait}, game::{game, IGameDispatcher, IGameDispatcherTrait},
             player_profile_actions::{
@@ -609,7 +609,6 @@ mod tests {
 
     use origami_random::deck::{Deck, DeckTrait};
     use evolute_duel::utils::hash::hash_values;
-    use evolute_duel::packing::{GameState};
     use evolute_duel::systems::helpers::tile_helpers::{create_extended_tile};
 
     use evolute_duel::tests::test_helpers::game_caller::{GameCallerTrait, GameType};

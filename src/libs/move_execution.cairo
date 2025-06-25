@@ -81,11 +81,7 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
     fn update_board_after_move(
         move_data: MoveData, ref board: Board, is_joker: bool,
     ) -> Option<u8> {
-        let top_tile = if !is_joker {
-            BoardTrait::draw_tile_from_board_deck(ref board)
-        } else {
-            board.top_tile
-        };
+        let top_tile = Option::None;
 
         BoardTrait::update_board_state(
             ref board,
@@ -237,13 +233,11 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
     }
 
     fn should_finish_game(
-        top_tile: Option<u8>, 
         joker_number1: u8, 
         joker_number2: u8, 
         available_tiles_len_player1: u32, 
         available_tiles_len_player2: u32
     ) -> bool {
-        (top_tile.is_none() && joker_number1 == 0 && joker_number2 == 0) ||
         (available_tiles_len_player1 == 0 && available_tiles_len_player2 == 0 && joker_number1 == 0 && joker_number2 == 0)
     }
 
