@@ -1,6 +1,6 @@
 use starknet::ContractAddress;
 use evolute_duel::{
-    models::{game::{Board, Move, AvailableTiles}}, events::{Moved, BoardUpdated, InvalidMove, NotEnoughJokers},
+    models::{game::{Board, Move}}, events::{Moved, BoardUpdated, InvalidMove, NotEnoughJokers},
     systems::helpers::{validation::{is_valid_move}, board::{BoardTrait}},
     types::packing::{PlayerSide},
 };

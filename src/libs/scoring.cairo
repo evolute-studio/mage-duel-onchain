@@ -11,7 +11,7 @@ use evolute_duel::{
 use alexandria_data_structures::vec::{NullableVec};
 use core::dict::Felt252Dict;
 
-#[derive(Drop, Copy)]
+#[derive(Drop, Copy, Debug)]
 pub struct ScoringResult {
     pub city_points: u16,
     pub road_points: u16,

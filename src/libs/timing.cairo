@@ -7,11 +7,10 @@ use starknet::get_block_timestamp;
 
 #[generate_trait]
 pub impl TimingImpl of TimingTrait {
-    fn validate_move_timing(
+    fn validate_move_turn(
         board: @Board,
         player: ContractAddress,
         player_side: PlayerSide,
-        move_time: u64,
         mut world: dojo::world::WorldStorage,
     ) -> bool {
         let prev_move_id = *board.last_move_id;
@@ -19,20 +18,10 @@ pub impl TimingImpl of TimingTrait {
             let prev_move_id = prev_move_id.unwrap();
             let prev_move: Move = world.read_model(prev_move_id);
             let prev_player_side = prev_move.player_side;
-            let time = get_block_timestamp();
-            let last_update_timestamp = *board.last_update_timestamp;
-            let time_delta = time - last_update_timestamp;
 
             if player_side == prev_player_side {
-                if time_delta <= move_time || time_delta > 2 * move_time {
-                    world.emit_event(@NotYourTurn { player_id: player, board_id: *board.id });
-                    return false;
-                }
-            } else {
-                if time_delta > move_time {
-                    world.emit_event(@NotYourTurn { player_id: player, board_id: *board.id });
-                    return false;
-                }
+                world.emit_event(@NotYourTurn { player_id: player, board_id: *board.id });
+                return false;
             }
         }
         true

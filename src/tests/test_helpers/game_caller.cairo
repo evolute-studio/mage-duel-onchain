@@ -1,43 +1,22 @@
 use dojo::model::{ModelStorage, Model};
 use dojo::world::WorldStorage;
-use dojo::world::WorldStorageTrait;
 
 
 use evolute_duel::{
     models::{
         game::{
-            Game, m_Game, Board, m_Board, Move, m_Move, Rules, m_Rules, Snapshot, m_Snapshot,
-            TileCommitments, m_TileCommitments, AvailableTiles, m_AvailableTiles,
+            Game, Board,
         },
-        scoring::{UnionFind, m_UnionFind}, player::{Player, m_Player}, skins::{Shop, m_Shop},
     },
-    events::{ SnapshotCreated,
-        e_SnapshotCreated, SnapshotCreateFailed, e_SnapshotCreateFailed, BoardUpdated,
-        e_BoardUpdated,  Moved, e_Moved, Skiped, e_Skiped, InvalidMove,
-        e_InvalidMove, GameFinished, e_GameFinished, GameStarted, e_GameStarted, GameCreated,
-        e_GameCreated, GameCreateFailed, e_GameCreateFailed, GameJoinFailed, e_GameJoinFailed,
-        GameCanceled, e_GameCanceled, GameCanceleFailed, e_GameCanceleFailed, PlayerNotInGame,
-        e_PlayerNotInGame, NotYourTurn, e_NotYourTurn, NotEnoughJokers, e_NotEnoughJokers,
-        CityContestWon, e_CityContestWon, CityContestDraw, e_CityContestDraw, RoadContestWon,
-        e_RoadContestWon, RoadContestDraw, e_RoadContestDraw, PlayerUsernameChanged,
-        e_PlayerUsernameChanged, PlayerSkinChanged, e_PlayerSkinChanged, PlayerSkinChangeFailed,
-        e_PlayerSkinChangeFailed, PhaseStarted, e_PhaseStarted,
-    },
-    types::packing::{GameStatus, GameState},
     systems::{
-        helpers::board::{BoardTrait}, game::{game, IGameDispatcher, IGameDispatcherTrait},
-        player_profile_actions::{
-            player_profile_actions, IPlayerProfileActionsDispatcher,
-            IPlayerProfileActionsDispatcherTrait,
-        },
+        game::{IGameDispatcher, IGameDispatcherTrait},
     },
-    utils::hash::{hash_values, hash_sha256_to_felt252, hash_values_with_sha256},
+    utils::hash::{hash_values, hash_values_with_sha256},
     systems::helpers::tile_helpers::{create_extended_tile}
 };
 
 use starknet::{testing, ContractAddress};
-use core::dict::Felt252Dict;
-use origami_random::deck::{Deck, DeckTrait};
+use origami_random::deck::{DeckTrait};
 
 #[derive(Drop, Debug, Clone)]
 struct PlayerData {

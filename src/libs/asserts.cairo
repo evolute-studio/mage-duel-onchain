@@ -1,7 +1,7 @@
 use dojo::{world::WorldStorage, event::EventStorage};
 use evolute_duel::{
     models::{game::Game},
-    events::{GameCreateFailed, GameJoinFailed, SnapshotCreateFailed, PlayerNotInGame, GameFinished},
+    events::{GameCreateFailed, GameJoinFailed, PlayerNotInGame, GameFinished},
     types::{packing::GameStatus},
 };
 #[generate_trait]

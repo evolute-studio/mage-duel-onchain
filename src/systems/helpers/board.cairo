@@ -144,7 +144,6 @@ pub impl BoardImpl of BoardTrait {
         for _ in 0..number_of_reverted_moves {
             if last_move_id.is_none() {
                 panic!("[ERROR] Not enough moves to revert when creating board from snapshot.");
-                break;
             }
             let move_id = last_move_id.unwrap();
             let move: Move = world.read_model(move_id);
@@ -175,7 +174,7 @@ pub impl BoardImpl of BoardTrait {
         let old_board: Board = world.read_model(old_board_id);
         let old_available_tiles_in_deck: Array<u8> = old_board.available_tiles_in_deck;
 
-        for i in number_of_reverted_moves..old_board_move_number {
+        for _ in number_of_reverted_moves..old_board_move_number {
             let move_id = last_move_id.unwrap();
             let move: Move = world.read_model(move_id);
             last_move_id = move.prev_move_id;

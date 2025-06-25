@@ -58,9 +58,9 @@ pub mod game {
             scoring::{UnionFind, UnionFindTrait},
         },
         events::{
-            GameCreated, GameCreateFailed, GameJoinFailed, GameStarted, GameCanceled, BoardUpdated,
-            PlayerNotInGame, NotYourTurn, NotEnoughJokers, GameFinished,
-            Skiped, Moved, SnapshotCreated, SnapshotCreateFailed, InvalidMove, PhaseStarted
+            GameCreated, GameCreateFailed, GameStarted, GameCanceled, BoardUpdated,
+            PlayerNotInGame, NotYourTurn, GameFinished,
+            Skiped, SnapshotCreated, SnapshotCreateFailed, PhaseStarted
         },
         systems::helpers::{
             board::{BoardTrait},
@@ -413,8 +413,7 @@ pub mod game {
             let mut tile_commitments = array![];
             println!("comitments length: {:?}", commitments.len());
             if commitments.len() % 8 != 0 {
-                panic!("[ERROR] Commitments length is not a multiple of 8");
-                return;
+                return panic!("[ERROR] Commitments length is not a multiple of 8");
             }
             for i in 0..(commitments.len() / 8) {
                 let commitment: Span<u32> = commitments.slice(i * 8, 8);
@@ -426,8 +425,8 @@ pub mod game {
 
             world.write_model(@TileCommitments { board_id, player, tile_commitments });
 
-            let (player1_address, player1_side, joker_number1) = board.player1;
-            let (player2_address, player2_side, joker_number2) = board.player2;
+            let (player1_address, _player1_side, _joker_number1) = board.player1;
+            let (player2_address, _player2_side, _joker_number2) = board.player2;
 
             let another_player = if player == player1_address {
                 player2_address
@@ -514,16 +513,13 @@ pub mod game {
                 let prev_move_id = prev_move_id.unwrap();
                 let prev_move: Move = world.read_model(prev_move_id);
                 let prev_player_side = prev_move.player_side;
-                let time = get_block_timestamp();
-                let prev_move_time = prev_move.timestamp;
-                let time_delta = time - prev_move_time;
-                let (player1_address, player1_side, joker_number1) = board.player1;
-                let (player2_address, player2_side, joker_number2) = board.player2;
+                let (player1_address, player1_side, _joker_number1) = board.player1;
+                let (player2_address, player2_side, _joker_number2) = board.player2;
 
-                let (player_side, joker_number) = if player == player1_address {
-                    (player1_side, joker_number1)
+                let player_side = if player == player1_address {
+                    player1_side
                 } else if player == player2_address {
-                    (player2_side, joker_number2)
+                    player2_side
                 } else {
                     world.emit_event(@PlayerNotInGame { player_id: player, board_id });
                     return;
@@ -548,9 +544,6 @@ pub mod game {
                 saved_tile_commitment, tile_commitment
             );
 
-
-            let tile = *board.available_tiles_in_deck
-                .at(tile_index.into());
             // If the tile is valid, reveal it
             board.top_tile = Option::Some(tile_index);
             world
@@ -738,7 +731,6 @@ pub mod game {
             if !AssertsTrait::assert_player_in_game(@game, Option::None, world) {
                 return;
             }
-
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
@@ -762,8 +754,8 @@ pub mod game {
                 return;
             }
 
-            let (player1_address, player1_side, joker_number1) = board.player1;
-            let (player2_address, player2_side, joker_number2) = board.player2;
+            let (player1_address, _, _) = board.player1;
+            let (player2_address, _, _) = board.player2;
 
             let (player_side, joker_number) = match board.get_player_data(player, world) {
                 Option::Some((side, joker_number)) => (side, joker_number),
@@ -776,13 +768,7 @@ pub mod game {
                 return;
             }
 
-            if let Option::Some((another_player, another_player_side)) = TimingTrait::should_skip_opponent_move(
-                @board, player, player_side, player1_address, player2_address, player1_side, player2_side, MOVE_TIME, world
-            ) {
-                self._skip_move(another_player, another_player_side, ref board, self.move_id_generator, false);
-            }
-
-            if !TimingTrait::validate_move_timing(@board, player, player_side, MOVE_TIME, world) {
+            if !TimingTrait::validate_move_turn(@board, player, player_side, world) {
                 return;
             }
 
@@ -796,19 +782,29 @@ pub mod game {
                 println!("[Invalid move] \nBoard: {:?}, Move: {:?}", board, move_record);
                 return;
             }
+            
+            println!("Validation passed, proceeding with move execution");
 
             let mut union_find: UnionFind = world.read_model(board_id);
             let scoring_result = ScoringTrait::calculate_move_scoring(
                 tile, rotation, col, row, player_side, player, board_id, ref board, ref union_find, world
             );
 
+            println!("Scoring result: {:?}", scoring_result);
+
             ScoringTrait::apply_scoring_results(scoring_result, player_side, ref board);
+
+            println!("Scoring applied, updating board");
 
             let move_data = MoveData { tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile };
             let top_tile = MoveExecutionTrait::update_board_after_move(move_data, ref board, is_joker);
 
+            println!("Board updated, creating move record");
+
             let move_id = self.move_id_generator.read();
             let move_record = MoveExecutionTrait::create_move_record(move_id, move_data, board.last_move_id, board_id);
+
+            println!("Move record created: {:?}", move_record);
             
             board.last_move_id = Option::Some(move_id);
             self.move_id_generator.write(move_id + 1);
@@ -836,9 +832,14 @@ pub mod game {
                 union_find.update_with_union_nodes(ref city_nodes, ref road_nodes);
             }
 
+            println!("Union find updated, writing to world");
+            
             union_find.write(world);
+            println!("Union find written to world");
             MoveExecutionTrait::persist_board_updates(@board, move_record, top_tile, world);
+            println!("Board updates persisted, emitting move events");
             MoveExecutionTrait::emit_move_events(move_record, @board, player, world);
+            println!("Move events emitted");
 
             board.game_state = match board.commited_tile {
                 Option::Some(_) => {
@@ -941,7 +942,6 @@ pub mod game {
             } else {
                 return;
             }
-            MoveExecutionTrait::redraw_tile_and_update_board(ref board, board_id, world);
 
             self._skip_move(player, player_side, ref board, self.move_id_generator, true);
             
@@ -954,6 +954,44 @@ pub mod game {
             );
             
             MoveExecutionTrait::emit_move_events(skip_move_record, @board, player, world);
+
+            board.top_tile = Option::None;
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("top_tile"),
+                    board.top_tile,
+                );
+            board.game_state = match board.commited_tile {
+                Option::Some(_) => {
+                    GameState::Reveal
+                },
+                Option::None => {
+                    GameState::Move
+                }
+            };
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("game_state"),
+                    board.game_state,
+                );
+
+            board.phase_started_at = get_block_timestamp();
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("phase_started_at"),
+                    board.phase_started_at,
+                );
+
+            world.emit_event(@PhaseStarted {
+                board_id,
+                phase: if board.commited_tile.is_some() {1} else {3}, // GameState::Reveal or GameState::Move
+                top_tile: board.top_tile,
+                commited_tile: board.commited_tile,
+                started_at: board.phase_started_at,
+            });
         }
 
         fn finish_game(ref self: ContractState, board_id: felt252) {
