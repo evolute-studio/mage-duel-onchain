@@ -27,7 +27,7 @@ use evolute_duel::{
         PlayerUsernameChanged, e_PlayerUsernameChanged, PlayerSkinChanged, e_PlayerSkinChanged,
         PlayerSkinChangeFailed, e_PlayerSkinChangeFailed, PhaseStarted, e_PhaseStarted,
     },
-    packing::{GameStatus},
+    types::packing::{GameStatus},
     systems::{
         helpers::board::{create_board},
         game::{game, IGameDispatcher, IGameDispatcherTrait},
@@ -42,7 +42,7 @@ use starknet::{testing, ContractAddress};
 use core::dict::Felt252Dict;
 use origami_random::deck::{Deck, DeckTrait};
 use evolute_duel::utils::hash::{hash_values, hash_sha256_to_felt252, hash_values_with_sha256};
-use evolute_duel::packing::{GameState};
+use evolute_duel::types::packing::{GameState};
 use evolute_duel::systems::helpers::tile_helpers::{create_extended_tile};
 
 #[derive(Drop, Debug, Clone)]
