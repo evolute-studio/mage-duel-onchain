@@ -62,9 +62,11 @@ pub fn connect_road_edges_in_tile(
     //println!("6");
     if roads.len() == 2 && tile != Tile::CRCR.into() {
         union(ref world, ref road_nodes, *roads.at(0), *roads.at(1), true);
-        // //println!("After union in tile");
-    // //println!("{:?}", find(ref world, board_id, *roads.at(0)));
-    // //println!("{:?}", find(ref world, board_id, *roads.at(1)));
+        println!("After union in tile");
+        let edge_pos0 = find(ref world,  ref road_nodes, *roads.at(0));
+        let edge_pos1 = find(ref world,  ref road_nodes, *roads.at(1));
+        println!("{:?}", road_nodes.at(edge_pos0.into()));
+        println!("{:?}", road_nodes.at(edge_pos1.into()));
     }
 }
 
@@ -110,6 +112,9 @@ pub fn connect_adjacent_road_edges(
             if !visited.get((tile_position - 1).into()) {
                 let down_edge_pos = convert_board_position_to_node_position(tile_position - 1, 0);
 
+                println!("Down edge: {:?}", road_nodes.at(find(ref world, ref road_nodes, down_edge_pos.into()).into()));
+                println!("This edge: {:?}", road_nodes.at(edge_pos.into()));
+
                 let (tile, rotation, _) = *state.at((tile_position - 1).into());
                 let extended_down_tile = create_extended_tile(tile.into(), rotation);
                 if *extended_down_tile.edges.at(0) == (TEdge::R).into() {
@@ -132,6 +137,8 @@ pub fn connect_adjacent_road_edges(
             roads_connected.append(edge_pos)
         }
         // //println!("Edge after: {:?}", find(ref world, board_id, edge_pos));
+
+        println!("Edge after connect bottom: {:?}", road_nodes.at(find(ref world, ref road_nodes, edge_pos).into()));
     }
 
     //connect top edge
@@ -167,7 +174,8 @@ pub fn connect_adjacent_road_edges(
             road_nodes.set(edge_pos.into(), edge);
             roads_connected.append(edge_pos);
         }
-        // //println!("Edge after: {:?}", find(ref world, board_id, edge_pos));
+
+        println!("Edge after connect top: {:?}", road_nodes.at(find(ref world, ref road_nodes, edge_pos).into()));
     }
 
     //connect left edge
@@ -211,7 +219,8 @@ pub fn connect_adjacent_road_edges(
             road_nodes.set(edge_pos.into(), edge);
             roads_connected.append(edge_pos);
         }
-        // //println!("Edge after: {:?}", find(ref world, board_id, edge_pos));
+
+        println!("Edge after connect left: {:?}", road_nodes.at(find(ref world, ref road_nodes, edge_pos).into()));
     }
 
     //connect right edge
@@ -247,7 +256,7 @@ pub fn connect_adjacent_road_edges(
             road_nodes.set(edge_pos.into(), edge);
             roads_connected.append(edge_pos);
         }
-        // //println!("Edge after: {:?}", find(ref world, board_id, edge_pos));
+        println!("Edge after connect right: {:?}", road_nodes.at(find(ref world, ref road_nodes, edge_pos).into()));
     }
 
     let tile_roads_number = tile_roads_number(tile.into());

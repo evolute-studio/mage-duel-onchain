@@ -141,6 +141,28 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
             );
     }
 
+    fn emit_board_updated_event(
+        board: @Board,
+        mut world: dojo::world::WorldStorage,
+    ) {
+        world
+            .emit_event(
+                @BoardUpdated {
+                    board_id: *board.id,
+                    available_tiles_in_deck: board.available_tiles_in_deck.span(),
+                    top_tile: *board.top_tile,
+                    state: board.state.span(),
+                    player1: *board.player1,
+                    player2: *board.player2,
+                    blue_score: *board.blue_score,
+                    red_score: *board.red_score,
+                    last_move_id: *board.last_move_id,
+                    moves_done: *board.moves_done,
+                    game_state: *board.game_state,
+                },
+            );
+    }
+
     fn emit_invalid_move_event(
         move_record: Move,
         board_id: felt252,

@@ -72,6 +72,9 @@ pub mod game {
         achievements::{AchievementsTrait}, asserts::{AssertsTrait},
         timing::{TimingTrait}, scoring::{ScoringTrait},
         move_execution::{MoveExecutionTrait, MoveData},
+        tile_reveal::{TileRevealTrait, TileRevealData},
+        game_finalization::{GameFinalizationTrait, GameFinalizationData},
+        phase_management::{PhaseManagementTrait},
     };
     use evolute_duel::utils::hash::{
         hash_values, hash_sha256_to_felt252,
@@ -265,7 +268,7 @@ pub mod game {
             let mut game: Game = world.read_model(host_player);
             let status = game.status;
 
-            if status == GameStatus::InProgress {
+            if status == GameStatus::InProgress && game.board_id.is_some() {
                 let mut board: Board = world.read_model(game.board_id.unwrap());
                 let board_id = board.id.clone();
                 let (player1_address, _, _) = board.player1;
@@ -354,27 +357,12 @@ pub mod game {
 
             let mut board: Board = world.read_model(board_id);
 
-            board.game_state = GameState::Creating;
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("game_state"),
-                board.game_state,
-            );
-
-            board.phase_started_at = get_block_timestamp();
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("phase_started_at"),
-                board.phase_started_at,
-            );
-
-            world.emit_event(@PhaseStarted {
+            PhaseManagementTrait::transition_to_creating_phase(
                 board_id,
-                phase: 0, // GameState::Creating
-                top_tile: board.top_tile,
-                commited_tile: board.commited_tile,
-                started_at: board.phase_started_at,
-            });
+                board.top_tile,
+                board.commited_tile,
+                world,
+            );
         }
 
         fn commit_tiles(ref self: ContractState, commitments: Span<u32>) {
@@ -446,27 +434,12 @@ pub mod game {
                 world.write_model(@another_player_game);
                 world.write_model(@game);
 
-                board.game_state = GameState::Reveal;
-                world.write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("game_state"),
-                    board.game_state,
-                );
-
-                board.phase_started_at = timestamp;
-                world.write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("phase_started_at"),
-                    board.phase_started_at,
-                );
-
-                world.emit_event(@PhaseStarted {
+                PhaseManagementTrait::transition_to_reveal_phase(
                     board_id,
-                    phase: 1, // Reveal phase
-                    top_tile: board.top_tile,
-                    commited_tile: board.commited_tile,
-                    started_at: board.phase_started_at,
-                });
+                    board.top_tile,
+                    board.commited_tile,
+                    world,
+                );
             }
         }
            
@@ -485,120 +458,29 @@ pub mod game {
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
-            assert!(board.top_tile.is_none(), "[ERROR] Tile is already revealed");
+            let reveal_data = TileRevealData {
+                board_id,
+                player,
+                tile_index,
+                nonce,
+                c,
+            };
 
-            assert!(board.commited_tile.is_some(), "[ERROR] No tile committed");
-
-            assert!(board.game_state == GameState::Reveal, 
-                "[ERROR] Game state is not Reveal: {:?}", board.game_state
-            );
-
-            if get_block_timestamp() > board.phase_started_at + REVEAL_TIME {
-                println!(
-                    "[ERROR] Reveal timeout: {:?} > {:?} + {:?}",
-                    get_block_timestamp(),
-                    board.phase_started_at,
-                    REVEAL_TIME
-                );
+            if !TileRevealTrait::perform_tile_reveal_validation(reveal_data, @board, REVEAL_TIME, world) {
                 return;
             }
 
-            assert!(
-                board.commited_tile.unwrap() == c, 
-                "[ERROR] Committed tile mismatch: expected {}, got {}", board.commited_tile.unwrap(), c
-            );
 
-            let prev_move_id = board.last_move_id;
-            if prev_move_id.is_some() {
-                let prev_move_id = prev_move_id.unwrap();
-                let prev_move: Move = world.read_model(prev_move_id);
-                let prev_player_side = prev_move.player_side;
-                let (player1_address, player1_side, _joker_number1) = board.player1;
-                let (player2_address, player2_side, _joker_number2) = board.player2;
+            TileRevealTrait::reveal_tile_and_update_board(board_id, tile_index, world);
 
-                let player_side = if player == player1_address {
-                    player1_side
-                } else if player == player2_address {
-                    player2_side
-                } else {
-                    world.emit_event(@PlayerNotInGame { player_id: player, board_id });
-                    return;
-                };
-
-                if player_side == prev_player_side {
-                    world.emit_event(@NotYourTurn { player_id: player, board_id });
-                    return;
-                }
-            };
-
-            let tile_commitments_entry: TileCommitments = world.read_model((board_id, player));
-            let tile_commitments = tile_commitments_entry.tile_commitments;
-
-            let saved_tile_commitment = *tile_commitments.at(tile_index.into());
-            let tile_commitment = hash_values([tile_index.into(), nonce, c.into()].span());
-
-            // Check if the tile commitment matches the saved one
-            assert!(
-                saved_tile_commitment == tile_commitment,
-                "[ERROR] Tile commitment mismatch: expected {}, got {}",
-                saved_tile_commitment, tile_commitment
-            );
-
-            // If the tile is valid, reveal it
-            board.top_tile = Option::Some(tile_index);
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("top_tile"),
-                    board.top_tile,
-                );
-            board.commited_tile = Option::None;
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("commited_tile"),
-                    board.commited_tile,
-                );
-            board.game_state = GameState::Request;
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("game_state"),
-                board.game_state,
-            );
-
-            board.phase_started_at = get_block_timestamp();
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("phase_started_at"),
-                board.phase_started_at,
-            );
-
-            world.emit_event(@PhaseStarted {
+            PhaseManagementTrait::transition_to_request_phase(
                 board_id,
-                phase: 2, // GameState::Request
-                top_tile: board.top_tile,
-                commited_tile: board.commited_tile,
-                started_at: board.phase_started_at,
-            });
+                Option::Some(tile_index),
+                Option::None,
+                world,
+            );
 
-            // Remove the tile from the available tiles in deck
-            let player_available_tiles_entry: AvailableTiles =
-                world.read_model((board_id, player));
-
-            let mut player_available_tiles = player_available_tiles_entry.available_tiles;
-            let mut new_available_tiles: Array<u8> = array![];
-            for i in 0..player_available_tiles.len() {
-                if *player_available_tiles.at(i.into()) != c {
-                    new_available_tiles.append(*player_available_tiles.at(i.into()));
-                }
-            };
-            world.write_model(@AvailableTiles {
-                board_id,
-                player,
-                available_tiles: new_available_tiles.span(),
-            });
-
-
+            TileRevealTrait::update_available_tiles(board_id, player, c, world);
         }
 
         fn request_next_tile(ref self: ContractState, tile_index: u8, nonce: felt252, c: u8){
@@ -637,8 +519,6 @@ pub mod game {
                 );
                 return;
             }
-
-            let _tile = *board.available_tiles_in_deck.at(tile_index.into());
 
             assert!(
                 board.top_tile.unwrap() == tile_index,
@@ -700,25 +580,12 @@ pub mod game {
                 );
             }
 
-            board.game_state = GameState::Move;
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("game_state"),
-                board.game_state,
-            );
-            board.phase_started_at = get_block_timestamp();
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("phase_started_at"),
-                board.phase_started_at,
-            );
-            world.emit_event(@PhaseStarted {
+            PhaseManagementTrait::transition_to_move_phase(
                 board_id,
-                phase: 3, // GameState::Move
-                top_tile: board.top_tile,
-                commited_tile: board.commited_tile,
-                started_at: board.phase_started_at,
-            });
+                board.top_tile,
+                board.commited_tile,
+                world,
+            );
         }
 
         fn make_move(
@@ -830,39 +697,24 @@ pub mod game {
                     ref road_nodes,
                 );
                 union_find.update_with_union_nodes(ref city_nodes, ref road_nodes);
+                union_find.write(world);
+                return;
             }
 
             println!("Union find updated, writing to world");
             
-            union_find.write(world);
             println!("Union find written to world");
             MoveExecutionTrait::persist_board_updates(@board, move_record, top_tile, world);
             println!("Board updates persisted, emitting move events");
             MoveExecutionTrait::emit_move_events(move_record, @board, player, world);
             println!("Move events emitted");
 
-            board.game_state = match board.commited_tile {
-                Option::Some(_) => {
-                    GameState::Reveal
-                },
-                Option::None => {
-                    GameState::Move
-                }
-            };
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("game_state"),
-                    board.game_state,
-                );
-
-            board.phase_started_at = get_block_timestamp();
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("phase_started_at"),
-                    board.phase_started_at,
-                );
+            PhaseManagementTrait::transition_after_move(
+                board_id,
+                board.top_tile,
+                board.commited_tile,
+                world,
+            );
 
             world
                 .write_member(
@@ -870,14 +722,6 @@ pub mod game {
                     selector!("last_update_timestamp"),
                     get_block_timestamp(),
                 );
-            
-            world.emit_event(@PhaseStarted {
-                board_id,
-                phase: if board.commited_tile.is_some() {1} else {3}, // GameState::Reveal or GameState::Move
-                top_tile: board.top_tile,
-                commited_tile: board.commited_tile,
-                started_at: board.phase_started_at,
-            });
 
             // println!(
             //     "Move made: {:?} \nBoard: {:?} \nUnion find: {:?}",
@@ -908,41 +752,27 @@ pub mod game {
                 board.game_state
             );
 
-            let (player1_address, player1_side, _) = board.player1;
-            let (player2_address, player2_side, _) = board.player2;
+            // Check phase timing
+            if !TimingTrait::validate_phase_timing(@board, MOVE_TIME) {
+                println!("[ERROR] Phase timeout exceeded");
+                return;
+            }
 
+            // Get player data and validate turn
             let (player_side, _) = match board.get_player_data(player, world) {
                 Option::Some((side, joker_number)) => (side, joker_number),
                 Option::None => {return;}
             };
 
-            if let Option::Some((skip_player, skip_player_side)) = TimingTrait::validate_skip_move_timing(
-                @board, player, player_side, player1_address, player2_address, player1_side, player2_side, MOVE_TIME, world
-            ) {
-                if skip_player != player {
-                    self._skip_move(skip_player, skip_player_side, ref board, self.move_id_generator, false);
-                }
-                
-                if TimingTrait::check_if_game_should_finish_after_skip(@board, world) {
-                    let mut union_find: UnionFind = world.read_model(board_id);
-                    let (mut city_nodes, mut road_nodes) = union_find.to_nullable_vecs();
-                    
-                    self._finish_game(
-                        ref board,
-                        union_find.potential_city_contests.span(),
-                        union_find.potential_road_contests.span(),
-                        ref city_nodes,
-                        ref road_nodes,
-                    );
-                    
-                    union_find.update_with_union_nodes(ref city_nodes, ref road_nodes);
-                    union_find.write(world);
-                    return;
-                }
-            } else {
+            // Validate it's current player's turn
+            if !TimingTrait::validate_current_player_turn(@board, player, player_side, world) {
                 return;
             }
 
+            // Check if this will be two consecutive skips (game should end)
+            let should_finish_game = TimingTrait::check_two_consecutive_skips(@board, world);
+
+            // Execute skip move
             self._skip_move(player, player_side, ref board, self.move_id_generator, true);
             
             let skip_move_record = MoveExecutionTrait::create_skip_move_record(
@@ -953,7 +783,6 @@ pub mod game {
                 board.top_tile
             );
             
-            MoveExecutionTrait::emit_move_events(skip_move_record, @board, player, world);
 
             board.top_tile = Option::None;
             world
@@ -962,36 +791,36 @@ pub mod game {
                     selector!("top_tile"),
                     board.top_tile,
                 );
-            board.game_state = match board.commited_tile {
-                Option::Some(_) => {
-                    GameState::Reveal
-                },
-                Option::None => {
-                    GameState::Move
-                }
-            };
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("game_state"),
-                    board.game_state,
+            
+            // If two consecutive skips, finish the game
+            if should_finish_game {
+                println!("Two consecutive skips detected, finishing the game");
+                let mut union_find: UnionFind = world.read_model(board_id);
+                let (mut city_nodes, mut road_nodes) = union_find.to_nullable_vecs();
+                
+                self._finish_game(
+                    ref board,
+                    union_find.potential_city_contests.span(),
+                    union_find.potential_road_contests.span(),
+                    ref city_nodes,
+                    ref road_nodes,
                 );
+                
+                union_find.update_with_union_nodes(ref city_nodes, ref road_nodes);
+                union_find.write(world);
+                return;
+            }
+            
+            MoveExecutionTrait::emit_board_updated_event(
+                @board, world,
+            );
 
-            board.phase_started_at = get_block_timestamp();
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("phase_started_at"),
-                    board.phase_started_at,
-                );
-
-            world.emit_event(@PhaseStarted {
+            PhaseManagementTrait::transition_after_move(
                 board_id,
-                phase: if board.commited_tile.is_some() {1} else {3}, // GameState::Reveal or GameState::Move
-                top_tile: board.top_tile,
-                commited_tile: board.commited_tile,
-                started_at: board.phase_started_at,
-            });
+                board.top_tile,
+                board.commited_tile,
+                world,
+            );
         }
 
         fn finish_game(ref self: ContractState, board_id: felt252) {
@@ -1119,124 +948,28 @@ pub mod game {
             ref city_nodes: NullableVec<UnionNode>,
             ref road_nodes: NullableVec<UnionNode>,
         ) {
-            //FINISH THE GAME
             let mut world = self.world_default();
-            ScoringTrait::calculate_final_scoring(
+            let (player1_address, player1_side, joker_number1) = board.player1;
+            let (player2_address, _player2_side, joker_number2) = board.player2;
+
+            let finalization_data = GameFinalizationData {
+                board_id: board.id,
+                player1_address,
+                player2_address,
+                player1_side,
+                joker_number1,
+                joker_number2,
+            };
+
+            GameFinalizationTrait::finalize_game(
+                finalization_data,
+                ref board,
                 potential_city_contests,
                 potential_road_contests,
                 ref city_nodes,
                 ref road_nodes,
-                board.id,
-                ref board,
                 world,
             );
-
-            let (player1_address, player1_side, joker_number1) = board.player1;
-            let (player2_address, _player2_side, joker_number2) = board.player2;
-
-            board.game_state = GameState::Finished;
-            let mut host_game: Game = world.read_model(player1_address);
-            let mut guest_game: Game = world.read_model(player2_address);
-            host_game.status = GameStatus::Finished;
-            guest_game.status = GameStatus::Finished;
-
-            world.write_model(@host_game);
-            world.write_model(@guest_game);
-
-            world.emit_event(@GameFinished { player: player1_address, board_id: board.id });
-            world.emit_event(@GameFinished { player: player2_address, board_id: board.id });
-
-            let mut player1: Player = world.read_model(player1_address);
-            let mut player2: Player = world.read_model(player2_address);
-
-            let rules: Rules = world.read_model(0);
-            let joker_price = rules.joker_price;
-            let blue_joker_points = joker_number1.into() * joker_price;
-            let red_joker_points = joker_number2.into() * joker_price;
-            let (blue_city_points, blue_road_points) = board.blue_score;
-            let blue_points = blue_city_points + blue_road_points + blue_joker_points;
-            let (red_city_points, red_road_points) = board.red_score;
-            let red_points = red_city_points + red_road_points + red_joker_points;
-            if player1_side == PlayerSide::Blue {
-                player1.balance += blue_points.into();
-                player2.balance += red_points.into();
-            } else if player1_side == PlayerSide::Red {
-                player1.balance += red_points.into();
-                player2.balance += blue_points.into();
-            }
-
-            player1.games_played += 1;
-            player2.games_played += 1;
-
-            //Finish challenge
-
-            let winner = if blue_points > red_points {
-                Option::Some(1)
-            } else if blue_points < red_points {
-                Option::Some(2)
-            } else {
-                Option::Some(0)
-            };
-
-            world.write_model(@player1);
-            world.write_model(@player2);
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board.id),
-                    selector!("blue_score"),
-                    board.blue_score,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board.id),
-                    selector!("red_score"),
-                    board.red_score,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board.id),
-                    selector!("game_state"),
-                    board.game_state,
-                );
-
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board.id),
-                    selector!("last_update_timestamp"),
-                    get_block_timestamp(),
-                );
-
-            world
-                .emit_event(
-                    @BoardUpdated {
-                        board_id: board.id,
-                        available_tiles_in_deck: board.available_tiles_in_deck.span(),
-                        top_tile: board.top_tile,
-                        state: board.state.span(),
-                        player1: board.player1,
-                        player2: board.player2,
-                        blue_score: board.blue_score,
-                        red_score: board.red_score,
-                        last_move_id: board.last_move_id,
-                        moves_done: board.moves_done,
-                        game_state: board.game_state,
-                    },
-                );
-
-            // [Achivement] Seasoned
-            let mut world = self.world_default();
-            AchievementsTrait::play_game(world, player1_address);
-            AchievementsTrait::play_game(world, player2_address);
-
-            // [Achivement] Winner
-            if winner == Option::Some(1) {
-                AchievementsTrait::win_game(world, player1_address);
-            } else if winner == Option::Some(2) {
-                AchievementsTrait::win_game(world, player2_address);
-            }
         }
     }
 }

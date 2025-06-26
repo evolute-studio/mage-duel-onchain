@@ -8,7 +8,7 @@ use evolute_duel::{
     },
     types::packing::{PlayerSide, UnionNode},
 };
-use alexandria_data_structures::vec::{NullableVec};
+use alexandria_data_structures::vec::{NullableVec, VecTrait};
 use core::dict::Felt252Dict;
 
 #[derive(Drop, Copy, Debug)]
@@ -42,12 +42,40 @@ pub impl ScoringImpl of ScoringTrait {
         let city_points = tile_city_points + edges_city_points;
         let road_points = tile_road_points + edges_road_points;
 
+
+        println!("NODES BEFORE SCORING:");
+        // Printing debug information
+        for i in 0..city_nodes.len() {
+            let node = city_nodes.at(i.into());
+            if node.node_type != 0 {
+                continue; // Skip non-city nodes
+            }
+            println!(
+                "City Node {}: parent={}, rank={}, blue_points={}, red_points={}, open_edges={}",
+                i, node.parent, node.rank, node.blue_points, node.red_points, node.open_edges
+            );
+        };
+
+        for i in 0..road_nodes.len() {
+            let node = road_nodes.at(i.into());
+            if node.node_type != 1 {
+                continue; // Skip non-road nodes
+            }
+            println!(
+                "Road Node {}: parent={}, rank={}, blue_points={}, red_points={}, open_edges={}",
+                i, node.parent, node.rank, node.blue_points, node.red_points, node.open_edges
+            );
+        };
+
+
         let mut visited: Felt252Dict<bool> = Default::default();
         let tile_position = (col * 8 + row).into();
+
 
         connect_city_edges_in_tile(
             ref world, ref city_nodes, tile_position, tile, rotation, player_side.into(),
         );
+
 
         let city_contest_result = connect_adjacent_city_edges(
             ref world,
@@ -64,9 +92,11 @@ pub impl ScoringImpl of ScoringTrait {
             ref union_find.potential_city_contests,
         );
 
+
         connect_road_edges_in_tile(
             ref world, ref road_nodes, tile_position, tile, rotation, player_side.into(),
         );
+
 
         let road_contest_results = connect_adjacent_road_edges(
             ref world,
@@ -83,7 +113,37 @@ pub impl ScoringImpl of ScoringTrait {
             ref union_find.potential_road_contests,
         );
 
+
         union_find.update_with_union_nodes(ref city_nodes, ref road_nodes);
+
+
+        println!("NODES AFTER SCORING:");
+        // Printing debug information
+        for i in 0..city_nodes.len() {
+            let node = city_nodes.at(i.into());
+            if node.node_type != 0 {
+                continue; // Skip non-city nodes
+            }
+            println!(
+                "City Node {}: parent={}, rank={}, blue_points={}, red_points={}, open_edges={}",
+                i, node.parent, node.rank, node.blue_points, node.red_points, node.open_edges
+            );
+        };
+
+        for i in 0..road_nodes.len() {
+            let node = road_nodes.at(i.into());
+            if node.node_type != 1 {
+                continue; // Skip non-road nodes
+            }
+            println!(
+                "Road Node {}: parent={}, rank={}, blue_points={}, red_points={}, open_edges={}",
+                i, node.parent, node.rank, node.blue_points, node.red_points, node.open_edges
+            );
+        };
+
+
+
+        union_find.write(world);
 
         ScoringResult { city_points, road_points, city_contest_result, road_contest_results }
     }
@@ -163,6 +223,7 @@ pub impl ScoringImpl of ScoringTrait {
         ref board: Board,
         mut world: dojo::world::WorldStorage,
     ) {
+        println!("Calculating final scoring...");
         let city_scoring_results = close_all_cities(
             ref world, potential_city_contests, ref city_nodes, board_id,
         );

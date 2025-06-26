@@ -144,6 +144,7 @@ pub impl UnionFindImpl of UnionFindTrait {
         ref city_nodes: NullableVec<UnionNode>,
         potential_city_contests: Array<u8>,
         potential_road_contests: Array<u8>,
+        board_id: felt252,
     ) -> UnionFind {
         let mut nodes_parents = array![];
         let mut nodes_ranks = array![];
@@ -184,7 +185,7 @@ pub impl UnionFindImpl of UnionFindTrait {
         };
 
         let union_find = UnionFind {
-            board_id: 0,
+            board_id,
             nodes_parents: nodes_parents.span(),
             nodes_ranks: nodes_ranks.span(),
             nodes_blue_points: nodes_blue_points.span(),
@@ -210,6 +211,7 @@ pub impl UnionFindImpl of UnionFindTrait {
                 ref city_nodes,
                 self.potential_city_contests.clone(),
                 self.potential_road_contests.clone(),
+                board_id: self.board_id,
             );
     }
 

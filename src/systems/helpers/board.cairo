@@ -268,7 +268,7 @@ pub impl BoardImpl of BoardTrait {
         );
 
         let mut union_find = UnionFindTrait::from_union_nodes(
-            ref road_nodes, ref city_nodes, potential_road_contests, potential_city_contests,
+            ref road_nodes, ref city_nodes, potential_road_contests, potential_city_contests, board.id,
         );
         union_find.write(world);
 
