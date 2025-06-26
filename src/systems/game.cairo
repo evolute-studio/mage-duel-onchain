@@ -839,7 +839,10 @@ pub mod game {
                 return;
             }
 
-            if TimingTrait::validate_finish_game_timing(@board, MOVE_TIME) {
+            // Check if current phase has timed out OR if it's been too long since last update
+            let phase_timeout = TimingTrait::validate_phase_timeout(@board, CREATING_TIME, REVEAL_TIME, MOVE_TIME);
+            
+            if phase_timeout {
                 //FINISH THE GAME
                 let mut union_find: UnionFind = world.read_model(board_id);
                 let (mut city_nodes, mut road_nodes) = union_find.to_nullable_vecs();
@@ -858,7 +861,7 @@ pub mod game {
                 union_find.write(world);
                 return;
             } else {
-                println!("Cant finish game, time delta is less than 2 * MOVE_TIME");
+                println!("Cannot finish game: no phase timeout");
                 return;
             }
         }

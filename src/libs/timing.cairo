@@ -41,12 +41,26 @@ pub impl TimingImpl of TimingTrait {
         }
         true
     }
-
-    fn validate_finish_game_timing(board: @Board, move_time: u64) -> bool {
-        let last_update_timestamp = *board.last_update_timestamp;
-        let timestamp = get_block_timestamp();
-        let time_delta = timestamp - last_update_timestamp;
-        time_delta > 2 * move_time
+    
+    fn validate_phase_timeout(board: @Board, creating_time: u64, reveal_time: u64, move_time: u64) -> bool {
+        let current_timestamp = get_block_timestamp();
+        let phase_started_at = *board.phase_started_at;
+        
+        match *board.game_state {
+            evolute_duel::types::packing::GameState::Creating => {
+                current_timestamp > phase_started_at + creating_time
+            },
+            evolute_duel::types::packing::GameState::Reveal => {
+                current_timestamp > phase_started_at + reveal_time
+            },
+            evolute_duel::types::packing::GameState::Request => {
+                current_timestamp > phase_started_at + reveal_time
+            },
+            evolute_duel::types::packing::GameState::Move => {
+                current_timestamp > phase_started_at + move_time
+            },
+            _ => false,
+        }
     }
 
     fn check_two_consecutive_skips(
