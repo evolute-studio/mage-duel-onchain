@@ -6,7 +6,6 @@ use evolute_duel::{
     models::{
         game::{Board, Game, TileCommitments, AvailableTiles, Rules},
         player::{Player},
-        scoring::{UnionFind},
     },
     types::packing::{GameState, GameStatus, PlayerSide},
     utils::hash::{hash_values},
@@ -31,15 +30,12 @@ pub impl TraitTestHelpersImpl of TraitTestHelpersTrait {
 
     fn create_test_board() -> Board {
         let (player1, player2) = Self::create_test_player_addresses();
-        let available_tiles = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        let initial_edge_state = array![0, 0, 0, 0].span();
+        let available_tiles = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].span();
         
         Board {
             id: BOARD_ID,
-            initial_edge_state,
             available_tiles_in_deck: available_tiles,
             top_tile: Option::Some(TILE_INDEX),
-            state: array![],
             player1: (player1, PlayerSide::Blue, 3),
             player2: (player2, PlayerSide::Red, 3),
             blue_score: (100, 50),
@@ -47,7 +43,6 @@ pub impl TraitTestHelpersImpl of TraitTestHelpersTrait {
             last_move_id: Option::None,
             game_state: GameState::Reveal,
             moves_done: 0,
-            last_update_timestamp: get_block_timestamp(),
             commited_tile: Option::Some(TILE_TYPE),
             phase_started_at: get_block_timestamp(),
         }
@@ -72,7 +67,6 @@ pub impl TraitTestHelpersImpl of TraitTestHelpersTrait {
             player,
             status,
             board_id: Option::Some(BOARD_ID),
-            snapshot_id: Option::None,
         }
     }
 

@@ -38,9 +38,9 @@ impl PlayerDataImpl of PlayerDataTrait {
 
     fn generate_commitments(ref self: PlayerData, n: u8, game_type: GameType) {
         self.generate_permutation(n);
-        println!("Permutation generated and saved: {:?}", self.permutation);
+        // println!("Permutation generated and saved: {:?}", self.permutation);
         self.generate_nonces(n);
-        println!("Nonces generated and saved: {:?}", self.nonces);
+        // println!("Nonces generated and saved: {:?}", self.nonces);
         let mut commitments = array![];
         for i in 0..n {
             let commitment = hash_values_with_sha256(
@@ -159,34 +159,10 @@ pub impl GameCallerImpl of GameCallerTrait {
         self.game_system.create_game();
     }
 
-    fn create_game_from_snapshot(ref self: GameCaller, board_id: felt252) {
-        let host_player_address = self.host_player_data.address;
-        testing::set_contract_address(host_player_address);
-
-        let move_number = match self.game_type {
-            GameType::Standard => { panic!("Cannot create game from snapshot in Standard mode") },
-            GameType::Snapshot(move_number) => move_number,
-        };
-
-        let snapshot_id = match self.game_system.create_snapshot(board_id, move_number) {
-            Option::Some(snapshot_id) => {
-                println!("Snapshot created with ID: {}", snapshot_id);
-                snapshot_id
-            },
-            Option::None => {
-                println!("Failed to create snapshot");
-                return panic!("Failed to create snapshot");
-            },
-        };
-
-        self.game_system.create_game_from_snapshot(snapshot_id);
-    }
 
     fn join_game(ref self: GameCaller) {
         testing::set_contract_address(self.guest_player_data.address);
         self.game_system.join_game(self.host_player_data.address);
-
-        self.update_commited_tile();
     }
 
     fn commit_tiles(ref self: GameCaller) {
@@ -206,12 +182,13 @@ pub impl GameCallerImpl of GameCallerTrait {
         // Commit tiles for both players
         testing::set_contract_address(self.host_player_data.address);
         self.game_system.commit_tiles(self.host_player_data.tile_commitments.span());
-        println!("Host player committed tiles: {:?}", self.host_player_data.tile_commitments);
+        // println!("Host player committed tiles: {:?}", self.host_player_data.tile_commitments);
 
         testing::set_contract_address(self.guest_player_data.address);
         self.game_system.commit_tiles(self.guest_player_data.tile_commitments.span());
-        println!("Guest player committed tiles: {:?}", self.guest_player_data.tile_commitments);
+        // println!("Guest player committed tiles: {:?}", self.guest_player_data.tile_commitments);
 
+        self.update_commited_tile();
         self.turn = Turn::Host;
     }
 
@@ -224,7 +201,15 @@ pub impl GameCallerImpl of GameCallerTrait {
                 let (tile_index, nonce, c) = self.host_player_data.get_reveal_data(c);
                 tile = tile_index;
                 self.game_system.reveal_tile(tile_index, nonce, c);
-                println!("Host player revealed tile: {}", tile_index);
+                let board_id: Option<felt252> = self
+                    .world
+                    .read_member(
+                        Model::<Game>::ptr_from_keys(self.host_player_data.address),
+                        selector!("board_id"),
+                    );
+                let mut board: Board = self.world.read_model(board_id.unwrap());
+                let tile_type = *board.available_tiles_in_deck.at(tile_index.into());                
+                println!("Host player revealed tile: {:?}, at index: {}, and type: {}", create_extended_tile(tile_type.into(), 0), tile_index, tile_type);
             },
             Turn::Guest => {
                 println!("Guest player is revealing tile with c: {}", c);
@@ -232,7 +217,15 @@ pub impl GameCallerImpl of GameCallerTrait {
                 let (tile_index, nonce, c) = self.guest_player_data.get_reveal_data(c);
                 tile = tile_index;
                 self.game_system.reveal_tile(tile_index, nonce, c);
-                println!("Guest player revealed tile: {}", tile_index);
+                let board_id: Option<felt252> = self
+                    .world
+                    .read_member(
+                        Model::<Game>::ptr_from_keys(self.host_player_data.address),
+                        selector!("board_id"),
+                    );
+                let mut board: Board = self.world.read_model(board_id.unwrap());
+                let tile_type = *board.available_tiles_in_deck.at(tile_index.into());
+                println!("Guest player revealed tile: {:?}, at index: {}, and type: {}", create_extended_tile(tile_type.into(), 0), tile_index, tile_type);
             },
         }
 
@@ -301,9 +294,8 @@ pub impl GameCallerImpl of GameCallerTrait {
     }
 
     fn process_auto_multiple_moves(
-        ref self: GameCaller, moves: u8, snapshot_move_number: u8,
-    ) -> Array<(u8, u8, u8)> {
-        let mut snapshot_state = array![];
+        ref self: GameCaller, moves: u8,
+    ) {
         self.update_commited_tile();
         for i in 0..moves {
             println!("{}", i);
@@ -315,14 +307,9 @@ pub impl GameCallerImpl of GameCallerTrait {
                     selector!("board_id"),
                 );
             let mut board: Board = self.world.read_model(board_id.unwrap());
-            let (joker_tile, rotation, col, row) = MoveFinderTrait::find_move(ref board);
+            let (joker_tile, rotation, col, row) = MoveFinderTrait::find_move(ref board, self.world);
             self.process_move(joker_tile, rotation, col, row);
-            if i == snapshot_move_number {
-                snapshot_state = board.state.clone();
-                println!("Snapshot state at move {}: {:?}", i, snapshot_state)
-            }
         };
-        snapshot_state
     }
 
     fn process_auto_move(ref self: GameCaller) {
@@ -332,7 +319,7 @@ pub impl GameCallerImpl of GameCallerTrait {
                 Model::<Game>::ptr_from_keys(self.host_player_data.address), selector!("board_id"),
             );
         let mut board: Board = self.world.read_model(board_id.unwrap());
-        let (joker_tile, rotation, col, row) = MoveFinderTrait::find_move(ref board);
+        let (joker_tile, rotation, col, row) = MoveFinderTrait::find_move(ref board, self.world);
         println!(
             "Auto move found: joker_tile: {:?}, rotation: {}, col: {}, row: {}",
             joker_tile,
@@ -361,7 +348,7 @@ use evolute_duel::systems::helpers::validation::is_valid_move;
 #[generate_trait]
 pub impl MoveFinderImpl of MoveFinderTrait {
     fn find_move(
-        ref board: Board,
+        ref board: Board, world: WorldStorage,
     ) -> (Option<u8>, u8, u8, u8) { // Returns (joker_tile, rotation, col, row)
         let mut joker_tile: Option<u8> = Option::None;
         let mut rotation: u8 = 0;
@@ -377,11 +364,11 @@ pub impl MoveFinderImpl of MoveFinderTrait {
 
         let mut found = false;
 
-        for c in 0..7_u8 {
+        for c in 1..8_u8 {
             if found {
                 break; // Exit the loop if a valid move is found
             }
-            for r in 0..7_u8 {
+            for r in 1..8_u8 {
                 if found {
                     break; // Exit the loop if a valid move is found
                 }
@@ -389,7 +376,7 @@ pub impl MoveFinderImpl of MoveFinderTrait {
                 for rot in 0..4_u8 {
                     // Check if the move is valid
                     if is_valid_move(
-                        tile.into(), rot, c, r, board.state.span(), board.initial_edge_state,
+                        board.id, tile.into(), rot, c, r, world,
                     ) {
                         let extended_tile = create_extended_tile(tile.into(), rotation);
                         joker_tile = Option::None; // No joker tile used
@@ -413,6 +400,6 @@ pub impl MoveFinderImpl of MoveFinderTrait {
         assert!(found, "No valid move found on the board");
 
         // Return the found move
-        (joker_tile, rotation, col, row)
+        (joker_tile, rotation, col - 1, row - 1)
     }
 }

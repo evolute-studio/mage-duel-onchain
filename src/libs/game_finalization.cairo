@@ -3,10 +3,9 @@ use evolute_duel::{
     models::{
         game::{Board, Game, Rules},
         player::{Player},
-        scoring::{UnionFind, UnionFindTrait},
     },
     events::{GameFinished, BoardUpdated},
-    types::packing::{GameState, GameStatus, PlayerSide, UnionNode},
+    types::packing::{GameState, GameStatus, PlayerSide},
     libs::{
         scoring::{ScoringTrait}, 
         achievements::{AchievementsTrait}
@@ -128,12 +127,6 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
             selector!("game_state"),
             GameState::Finished,
         );
-
-        world.write_member(
-            Model::<Board>::ptr_from_keys(board_id),
-            selector!("last_update_timestamp"),
-            get_block_timestamp(),
-        );
     }
 
     fn emit_board_updated_event(
@@ -143,9 +136,7 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         world.emit_event(
             @BoardUpdated {
                 board_id: *board.id,
-                available_tiles_in_deck: board.available_tiles_in_deck.span(),
                 top_tile: *board.top_tile,
-                state: board.state.span(),
                 player1: *board.player1,
                 player2: *board.player2,
                 blue_score: *board.blue_score,
@@ -176,18 +167,11 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
     fn finalize_game(
         finalization_data: GameFinalizationData,
         ref board: Board,
-        potential_city_contests: Span<u8>,
-        potential_road_contests: Span<u8>,
-        ref city_nodes: NullableVec<UnionNode>,
-        ref road_nodes: NullableVec<UnionNode>,
+        potential_contests: Span<u32>,
         mut world: dojo::world::WorldStorage,
     ) {
         ScoringTrait::calculate_final_scoring(
-            potential_city_contests,
-            potential_road_contests,
-            ref city_nodes,
-            ref road_nodes,
-            finalization_data.board_id,
+            potential_contests,
             ref board,
             world,
         );

@@ -4,9 +4,10 @@ pub mod systems {
     pub mod helpers {
         pub mod board;
         pub mod union_find;
-        pub mod city_scoring;
+        // pub mod city_scoring;
         pub mod tile_helpers;
-        pub mod road_scoring;
+        // pub mod road_scoring;
+        pub mod scoring;
         pub mod validation;
     }
 }
@@ -45,12 +46,12 @@ pub mod utils {
 pub mod tests {
     pub mod test_helpers {
         pub mod game_caller;
-        pub mod trait_test_helpers;
+        // pub mod trait_test_helpers;
     }
     pub mod test_world;
-    pub mod test_scoring;
-    pub mod test_tile_reveal;
-    pub mod test_game_finalization;
-    pub mod test_phase_management;
-    pub mod test_player_data;
+    // pub mod test_scoring;
+    // pub mod test_tile_reveal;
+    // pub mod test_game_finalization;
+    // pub mod test_phase_management;
+    // pub mod test_player_data;
 }

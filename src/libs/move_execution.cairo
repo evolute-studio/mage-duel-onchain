@@ -2,8 +2,9 @@ use starknet::ContractAddress;
 use evolute_duel::{
     models::{game::{Board, Move}}, events::{Moved, BoardUpdated, InvalidMove, NotEnoughJokers},
     systems::helpers::{validation::{is_valid_move}, board::{BoardTrait}},
-    types::packing::{PlayerSide},
+    types::packing::{PlayerSide, Tile},
 };
+use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo::model::{ModelStorage, Model};
 use dojo::event::EventStorage;
 use starknet::get_block_timestamp;
@@ -41,7 +42,7 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
             Option::Some(tile_type) => tile_type,
             Option::None => {
                 match *board.top_tile {
-                    Option::Some(tile_index) => *board.available_tiles_in_deck.at(tile_index.into()),
+                    Option::Some(tile_index) => *(*board.available_tiles_in_deck).at(tile_index.into()),
                     Option::None => {
                         if board.commited_tile.is_none() {
                             return panic!("No tiles in the deck"); 
@@ -54,9 +55,9 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
         }
     }
 
-    fn validate_move(tile: u8, rotation: u8, col: u8, row: u8, board: @Board) -> bool {
+    fn validate_move(board_id: felt252, tile: Tile, rotation: u8, col: u8, row: u8, world: WorldStorage) -> bool {
         is_valid_move(
-            tile.into(), rotation, col, row, board.state.span(), *board.initial_edge_state,
+            board_id, tile, rotation, col, row, world
         )
     }
 
@@ -82,15 +83,6 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
         move_data: MoveData, ref board: Board, is_joker: bool,
     ) -> Option<u8> {
         let top_tile = Option::None;
-
-        BoardTrait::update_board_state(
-            ref board,
-            move_data.tile.into(),
-            move_data.rotation,
-            move_data.col,
-            move_data.row,
-            move_data.player_side,
-        );
 
         let (_, _) = BoardTrait::update_board_joker_number(
             ref board, move_data.player_side, is_joker,
@@ -127,9 +119,7 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
             .emit_event(
                 @BoardUpdated {
                     board_id: *board.id,
-                    available_tiles_in_deck: board.available_tiles_in_deck.span(),
                     top_tile: *board.top_tile,
-                    state: board.state.span(),
                     player1: *board.player1,
                     player2: *board.player2,
                     blue_score: *board.blue_score,
@@ -149,9 +139,7 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
             .emit_event(
                 @BoardUpdated {
                     board_id: *board.id,
-                    available_tiles_in_deck: board.available_tiles_in_deck.span(),
                     top_tile: *board.top_tile,
-                    state: board.state.span(),
                     player1: *board.player1,
                     player2: *board.player2,
                     blue_score: *board.blue_score,
@@ -195,19 +183,7 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
         world.write_model(@move_record);
 
         world
-            .write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("available_tiles_in_deck"),
-                board.available_tiles_in_deck.clone(),
-            );
-
-        world
             .write_member(Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), top_tile);
-
-        world
-            .write_member(
-                Model::<Board>::ptr_from_keys(board_id), selector!("state"), board.state.clone(),
-            );
 
         world
             .write_member(
@@ -245,13 +221,6 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
             .write_member(
                 Model::<Board>::ptr_from_keys(board_id), selector!("game_state"), *board.game_state,
             );
-
-        world
-            .write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("last_update_timestamp"),
-                get_block_timestamp(),
-            );
     }
 
     fn should_finish_game(
@@ -261,24 +230,6 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
         available_tiles_len_player2: u32
     ) -> bool {
         (available_tiles_len_player1 == 0 && available_tiles_len_player2 == 0 && joker_number1 == 0 && joker_number2 == 0)
-    }
-
-    fn redraw_tile_and_update_board(
-        ref board: Board, board_id: felt252, mut world: dojo::world::WorldStorage,
-    ) {
-        BoardTrait::redraw_tile_from_board_deck(ref board);
-
-        world
-            .write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("available_tiles_in_deck"),
-                board.available_tiles_in_deck.clone(),
-            );
-
-        world
-            .write_member(
-                Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
-            );
     }
 
     fn create_skip_move_record(

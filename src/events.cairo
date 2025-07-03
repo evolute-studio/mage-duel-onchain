@@ -26,9 +26,7 @@ pub struct SnapshotCreateFailed {
 pub struct BoardUpdated {
     #[key]
     pub board_id: felt252,
-    pub available_tiles_in_deck: Span<u8>,
     pub top_tile: Option<u8>,
-    pub state: Span<(u8, u8, u8)>,
     //(address, side, joker_number)
     pub player1: (ContractAddress, PlayerSide, u8),
     //(address, side, joker_number)
@@ -179,7 +177,7 @@ pub struct CityContestWon {
     #[key]
     pub board_id: felt252,
     #[key]
-    pub root: u8,
+    pub root: u32,
     pub winner: PlayerSide,
     pub red_points: u16,
     pub blue_points: u16,
@@ -191,7 +189,7 @@ pub struct CityContestDraw {
     #[key]
     pub board_id: felt252,
     #[key]
-    pub root: u8,
+    pub root: u32,
     pub red_points: u16,
     pub blue_points: u16,
 }
@@ -202,7 +200,7 @@ pub struct RoadContestWon {
     #[key]
     pub board_id: felt252,
     #[key]
-    pub root: u8,
+    pub root: u32,
     pub winner: PlayerSide,
     pub red_points: u16,
     pub blue_points: u16,
@@ -214,7 +212,7 @@ pub struct RoadContestDraw {
     #[key]
     pub board_id: felt252,
     #[key]
-    pub root: u8,
+    pub root: u32,
     pub red_points: u16,
     pub blue_points: u16,
 }

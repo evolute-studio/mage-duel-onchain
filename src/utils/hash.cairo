@@ -4,7 +4,7 @@ use core::sha256::compute_sha256_byte_array;
 
 pub fn hash_values(values: Span<felt252>) -> felt252 {
     let hash = hash_values_with_sha256(values);
-    println!("SHA256 hash: {:?}", hash);
+    // println!("SHA256 hash: {:?}", hash);
     hash_sha256_to_felt252(hash.span())
 }
 
@@ -15,7 +15,7 @@ pub fn hash_values_with_sha256(values: Span<felt252>) -> [u32; 8] {
         let as_byte_array: ByteArray = format!("{}", *value);
         bytes_input.append(@as_byte_array);
     };
-    println!("Input bytes: {:?}", bytes_input);
+    // println!("Input bytes: {:?}", bytes_input);
     let hash = compute_sha256_byte_array(@bytes_input);
 
     hash

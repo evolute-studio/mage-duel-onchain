@@ -44,12 +44,6 @@ pub impl PhaseManagementImpl of PhaseManagementTrait {
             selector!("phase_started_at"),
             timestamp,
         );
-
-        world.write_member(
-            Model::<Board>::ptr_from_keys(board_id),
-            selector!("last_update_timestamp"),
-            timestamp,
-        );
     }
 
     fn emit_phase_started_event(

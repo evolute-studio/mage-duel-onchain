@@ -1,17 +1,17 @@
-#[derive(Serde, Drop, IntrospectPacked, PartialEq, Debug, Destruct, Copy)]
+#[derive(Serde, Drop, Introspect, PartialEq, Debug, Destruct, Copy)]
 pub enum TEdge {
+    None,
     C,
     R,
-    M,
     F,
 }
 
 impl TEdgeIntoU8 of Into<TEdge, u8> {
     fn into(self: TEdge) -> u8 {
         match self {
-            TEdge::C => 0,
-            TEdge::R => 1,
-            TEdge::M => 2,
+            TEdge::None => 0,
+            TEdge::C => 1,
+            TEdge::R => 2,
             TEdge::F => 3,
         }
     }
@@ -20,9 +20,9 @@ impl TEdgeIntoU8 of Into<TEdge, u8> {
 impl U8IntoTEdge of Into<u8, TEdge> {
     fn into(self: u8) -> TEdge {
         match self {
-            0 => TEdge::C,
-            1 => TEdge::R,
-            2 => TEdge::M,
+            0 => TEdge::None,
+            1 => TEdge::C,
+            2 => TEdge::R,
             3 => TEdge::F,
             _ => panic!("Unsupported TEdge"),
         }
@@ -133,7 +133,7 @@ pub enum GameState {
     Finished,
 }
 
-#[derive(Drop, Serde, Copy, IntrospectPacked, PartialEq, Debug)]
+#[derive(Drop, Serde, Copy, Introspect, PartialEq, Debug)]
 pub enum GameStatus {
     Finished,
     Created,
@@ -141,8 +141,9 @@ pub enum GameStatus {
     InProgress,
 }
 
-#[derive(Drop, Serde, Copy, IntrospectPacked, PartialEq, Debug)]
+#[derive(Drop, Serde, Copy, Introspect, PartialEq, Debug)]
 pub enum PlayerSide {
+    None,
     Blue,
     Red,
 }
@@ -150,41 +151,21 @@ pub enum PlayerSide {
 impl PlayerSideToU8 of Into<PlayerSide, u8> {
     fn into(self: PlayerSide) -> u8 {
         match self {
-            PlayerSide::Blue => 0,
-            PlayerSide::Red => 1,
+            PlayerSide::None => 0,
+            PlayerSide::Blue => 1,
+            PlayerSide::Red => 2,
         }
     }
 }
 
-/// Represents a node involved in a potential contest.
-///
-/// - `parent`: Parent node reference for union-find structure.
-/// - `rank`: Rank in the disjoint set for contest resolution.
-/// - `blue_points`: Points earned by the blue player.
-/// - `red_points`: Points earned by the red player.
-/// - `open_edges`: Number of open edges in this city.
-/// - `contested`: Boolean flag indicating if the city is contested.
-#[derive(Drop, Destruct, Serde, Copy, Introspect, PartialEq, Debug)]
-pub struct UnionNode {
-    pub parent: u8,
-    pub rank: u8,
-    pub blue_points: u16,
-    pub red_points: u16,
-    pub open_edges: u8,
-    pub contested: bool,
-    pub node_type: u8, // 0: City, 1: Road, 2: None
-}
-
-impl UnionNodeDefault of Default<UnionNode> {
-    fn default() -> UnionNode {
-        UnionNode {
-            parent: 0,
-            rank: 0,
-            blue_points: 0,
-            red_points: 0,
-            open_edges: 0,
-            contested: false,
-            node_type: 2 // Default to None
+impl U8ToPlayerSide of Into<u8, PlayerSide> {
+    fn into(self: u8) -> PlayerSide {
+        match self {
+            0 => PlayerSide::None,
+            1 => PlayerSide::Blue,
+            2 => PlayerSide::Red,
+            _ => panic!("Unsupported PlayerSide"),
         }
     }
 }
+

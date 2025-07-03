@@ -17,11 +17,12 @@ use alexandria_data_structures::vec::{NullableVec, VecTrait};
 
 pub fn connect_road_edges_in_tile(
     ref world: WorldStorage,
-    ref road_nodes: NullableVec<UnionNode>,
-    tile_position: u8,
+    board_id: felt252,
+    col: u8,
+    row: u8,
     tile: u8,
     rotation: u8,
-    side: u8,
+    side: PlayerSide,
 ) {
     let extended_tile = create_extended_tile(tile.into(), rotation);
 
