@@ -1,5 +1,6 @@
 pub mod systems {
     pub mod game;
+    pub mod metagame;
     pub mod player_profile_actions;
     pub mod helpers {
         pub mod board;
@@ -17,6 +18,7 @@ pub mod models {
     pub mod game;
     pub mod scoring;
     pub mod skins;
+    pub mod metagame;
 }
 
 pub mod events;

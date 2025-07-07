@@ -572,7 +572,7 @@ pub mod game {
             println!("Validation passed, proceeding with move execution");
 
             let scoring_result = ScoringTrait::calculate_move_scoring(
-                tile, rotation, col, row, player_side, player, board_id, world
+                tile, rotation, col.into(), row.into(), player_side, player, board_id, 10, world
             );
 
             println!("Scoring result: {:?}", scoring_result);

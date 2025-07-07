@@ -267,16 +267,16 @@ pub impl GameCallerImpl of GameCallerTrait {
         }
     }
 
-    fn process_move(ref self: GameCaller, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8) {
+    fn process_move(ref self: GameCaller, joker_tile: Option<u8>, rotation: u8, col: u32, row: u32) {
         match self.turn {
             Turn::Host => {
                 testing::set_contract_address(self.host_player_data.address);
-                self.game_system.make_move(joker_tile, rotation, col, row);
+                self.game_system.make_move(joker_tile, rotation, col.try_into().unwrap(), row.try_into().unwrap());
                 self.turn = Turn::Guest;
             },
             Turn::Guest => {
                 testing::set_contract_address(self.guest_player_data.address);
-                self.game_system.make_move(joker_tile, rotation, col, row);
+                self.game_system.make_move(joker_tile, rotation, col.try_into().unwrap(), row.try_into().unwrap());
                 self.turn = Turn::Host;
             },
         }
@@ -288,7 +288,7 @@ pub impl GameCallerImpl of GameCallerTrait {
         for (joker_tile, rotation, col, row) in moves {
             println!("{}", i);
             self.commited_tile = self.process_reveal_phase(self.commited_tile).unwrap();
-            self.process_move(joker_tile, rotation, col, row);
+            self.process_move(joker_tile, rotation, col.try_into().unwrap(), row.try_into().unwrap());
             i += 1;
         }
     }
@@ -349,11 +349,11 @@ use evolute_duel::systems::helpers::validation::is_valid_move;
 pub impl MoveFinderImpl of MoveFinderTrait {
     fn find_move(
         ref board: Board, world: WorldStorage,
-    ) -> (Option<u8>, u8, u8, u8) { // Returns (joker_tile, rotation, col, row)
+    ) -> (Option<u8>, u8, u32, u32) { // Returns (joker_tile, rotation, col, row)
         let mut joker_tile: Option<u8> = Option::None;
         let mut rotation: u8 = 0;
-        let mut col: u8 = 0;
-        let mut row: u8 = 0;
+        let mut col: u32 = 0;
+        let mut row: u32 = 0;
 
         // Implement your logic to find the move here
         // For example, you can iterate over the board and find a valid move
@@ -364,11 +364,11 @@ pub impl MoveFinderImpl of MoveFinderTrait {
 
         let mut found = false;
 
-        for c in 1..8_u8 {
+        for c in 1..8_u32 {
             if found {
                 break; // Exit the loop if a valid move is found
             }
-            for r in 1..8_u8 {
+            for r in 1..8_u32 {
                 if found {
                     break; // Exit the loop if a valid move is found
                 }
@@ -376,7 +376,7 @@ pub impl MoveFinderImpl of MoveFinderTrait {
                 for rot in 0..4_u8 {
                     // Check if the move is valid
                     if is_valid_move(
-                        board.id, tile.into(), rot, c, r, world,
+                        board.id, tile.into(), rot, c, r, 10, 1, 8, 1, 8, false, world,
                     ) {
                         let extended_tile = create_extended_tile(tile.into(), rotation);
                         joker_tile = Option::None; // No joker tile used

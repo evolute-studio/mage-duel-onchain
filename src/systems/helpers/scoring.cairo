@@ -21,10 +21,11 @@ use starknet::ContractAddress;
 pub fn connect_edges_in_tile(
     mut world: WorldStorage,
     board_id: felt252,
-    col: u8,
-    row: u8,
+    col: u32,
+    row: u32,
     tile: u8,
     rotation: u8,
+    board_size: u32,
     side: PlayerSide,
 ) -> (u16, u16) {
     let extended_tile = create_extended_tile(tile.into(), rotation);
@@ -38,7 +39,7 @@ pub fn connect_edges_in_tile(
             TEdge::R => 1_u16,
             _ => 0_u16,
         };
-        let position = convert_board_position_to_node_position(col, row, i);
+        let position = convert_board_position_to_node_position(col, row, i, board_size);
         
         match node_type {
             TEdge::C => cities.append(position),
@@ -88,10 +89,11 @@ pub fn connect_edges_in_tile(
 pub fn connect_adjacent_edges(
     mut world: WorldStorage,
     board_id: felt252,
-    col: u8,
-    row: u8,
+    col: u32,
+    row: u32,
     tile: u8,
     rotation: u8,
+    board_size: u32,
     player_side: PlayerSide,
     player_address: ContractAddress,
 ) //None - if no contest or draw, Some(u8, u16) -> (who_wins, points_delta) - if contest
@@ -103,9 +105,9 @@ pub fn connect_adjacent_edges(
     
     let direction_offsets = array![
         4 + 2, // Up
-        10 * 4 + 2, // Right
+        board_size.try_into().unwrap() * 4 + 2, // Right
         -4 - 2, // Down
-        -10 * 4 - 2, // Left
+        -board_size.try_into().unwrap() * 4 - 2, // Left
     ];
     let tile_position: u32 = col.into() * 10 + row.into();
     let mut city_points_for_initial_nodes: u16 = 0;
