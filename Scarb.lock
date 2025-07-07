@@ -44,6 +44,7 @@ dependencies = [
  "dojo",
  "dojo_cairo_test",
  "openzeppelin_access",
+ "openzeppelin_token",
  "origami_random",
 ]
 
@@ -57,9 +58,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "openzeppelin_account"
+version = "1.0.0"
+source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v1.0.0#755ce1adbf8d89ed23fbb8daa328fcbeab7c6424"
+dependencies = [
+ "openzeppelin_introspection",
+ "openzeppelin_utils",
+]
+
+[[package]]
 name = "openzeppelin_introspection"
 version = "1.0.0"
 source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v1.0.0#755ce1adbf8d89ed23fbb8daa328fcbeab7c6424"
+
+[[package]]
+name = "openzeppelin_token"
+version = "1.0.0"
+source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v1.0.0#755ce1adbf8d89ed23fbb8daa328fcbeab7c6424"
+dependencies = [
+ "openzeppelin_access",
+ "openzeppelin_account",
+ "openzeppelin_introspection",
+ "openzeppelin_utils",
+]
 
 [[package]]
 name = "openzeppelin_utils"
