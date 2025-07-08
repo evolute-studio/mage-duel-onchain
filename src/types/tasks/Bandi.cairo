@@ -7,7 +7,7 @@ pub impl Bandi of TaskTrait {
     }
 
     #[inline]
-    fn description(count: u32) -> ByteArray {
+    fn description(count: u128) -> ByteArray {
         "Unlock Bandi skin"
     }
 }

@@ -7,7 +7,7 @@ pub impl Winner of TaskTrait {
     }
 
     #[inline]
-    fn description(count: u32) -> ByteArray {
+    fn description(count: u128) -> ByteArray {
         format!("Win {} games", count)
     }
 }
