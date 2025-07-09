@@ -7,7 +7,7 @@ pub impl CityBuilder of TaskTrait {
     }
 
     #[inline]
-    fn description(count: u32) -> ByteArray {
+    fn description(count: u128) -> ByteArray {
         format!("Build a city of 10+ edges")
     }
 }

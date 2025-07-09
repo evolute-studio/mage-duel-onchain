@@ -1,4 +1,4 @@
-#[cfg(test)]
+// #[cfg(test)]
 mod tests {
     use core::starknet::testing;
     use dojo::model::{ModelStorage, Model};

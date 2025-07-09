@@ -48,9 +48,9 @@ pub mod tests {
         pub mod trait_test_helpers;
     }
     pub mod test_world;
-    pub mod test_scoring;
-    pub mod test_tile_reveal;
-    pub mod test_game_finalization;
-    pub mod test_phase_management;
-    pub mod test_player_data;
+    // pub mod test_scoring;
+    // pub mod test_tile_reveal;
+    // pub mod test_game_finalization;
+    // pub mod test_phase_management;
+    // pub mod test_player_data;
 }

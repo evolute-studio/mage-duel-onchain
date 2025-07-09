@@ -7,7 +7,7 @@ pub impl FirstRoad of TaskTrait {
     }
 
     #[inline]
-    fn description(count: u32) -> ByteArray {
+    fn description(count: u128) -> ByteArray {
         format!("Build a first road")
     }
 }

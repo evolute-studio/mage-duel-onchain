@@ -8,9 +8,10 @@ Playbook (Lore and Game Rules): https://evolute.notion.site/playbook
 
 Play Evolute Kingdom - Mage Duel 👉 https://mageduel.evolute.network/
 
-### Want to contribute? 
-We'd love your help!
-Check out our [technical documentation](https://docs.mageduel.evolute.network/docs/dojo-server/introduction/quick-start) to get started and see how you can make an impact.
+# Documentation
+Full documentation for both the client and the server can be found here:
+
+https://docs.mageduel.evolute.network/
 
 # Development Setup
 
@@ -74,30 +75,10 @@ Predefined scripts in `Scarb.toml` allow local testing:
     # and so on...
     ```
     
+## Repository Links:
 
-# Game rules
+- [Client](https://github.com/evolute-studio/mage-duel-client)
 
-Two mages stand against each other, not to destroy, but to create. Their power, **Evolute**, grants them the ability to shape matter itself — forming **Cities**, **Roads**, and **Fields** from pure magic. 
+- [Server](https://github.com/evolute-studio/mage-duel-onchain)
 
-Each move is a step toward building a greater world, but in the end, only one will prevail.
-
-For detailed rules, check our [playbook](https://evolute.notion.site/playbook).
-
-# Sovereign World
-
-To deploy the game, we set up a dedicated **sovereign world** infrastructure:
-
-- On **Slot**, we deployed the **Katana sequencer** and **Torii indexer**.
-- On **DigitalOcean**, we deployed a **Celestia light node** and **Saya**, which:
-    - Fetches blocks from Katana.
-    - Proves the blocks.
-    - Sends proofs to Celestia for verification.
-- The **game UI** interacts with Katana and Torii running on Slot, ensuring smooth gameplay and data retrieval.
-
-![](assets/Deployment.jpg)
-
-# Our RPCs
-
-Release Katana RPC: https://api.cartridge.gg/x/evolute-duel/katana
-
-Release Torii GraphQL RPC: https://api.cartridge.gg/x/evolute-duel/torii/graphql
+- [Wrapper Web Application](https://github.com/evolute-studio/mage-duel-webgl)

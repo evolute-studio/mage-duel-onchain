@@ -43,7 +43,7 @@ pub impl TaskImpl of TaskTrait {
     }
 
     #[inline]
-    fn description(self: Task, count: u32) -> ByteArray {
+    fn description(self: Task, count: u128) -> ByteArray {
         match self {
             Task::None => "",
             Task::Seasoned => tasks::Seasoned::Seasoned::description(count),
@@ -59,7 +59,7 @@ pub impl TaskImpl of TaskTrait {
     }
 
     #[inline]
-    fn tasks(self: Task, count: u32) -> Span<BushidoTask> {
+    fn tasks(self: Task, count: u128) -> Span<BushidoTask> {
         let task_id: felt252 = self.identifier();
         let description: ByteArray = self.description(count);
         array![BushidoTaskTrait::new(task_id, count, description)].span()
