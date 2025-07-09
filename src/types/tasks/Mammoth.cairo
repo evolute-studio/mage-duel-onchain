@@ -7,7 +7,7 @@ pub impl Mammoth of TaskTrait {
     }
 
     #[inline]
-    fn description(count: u32) -> ByteArray {
+    fn description(count: u128) -> ByteArray {
         "Unlock MAMMOTH skin"
     }
 }

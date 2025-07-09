@@ -71,7 +71,7 @@ pub impl Winner of TrophyTrait {
 
     #[inline]
     fn tasks(level: u8) -> Span<BushidoTask> {
-        let count: u32 = match level {
+        let count: u128 = match level {
             0 => 1,
             1 => 5,
             2 => 25,
