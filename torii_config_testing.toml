@@ -1,4 +1,4 @@
-world_address = "0x55a227da2ac221a6311ec2df35df5c6fc25b450696f6c68bb604c8c350d59b7"
+world_address = "0x0230035e44105bbc11acf2dd1b271a78d53627a810e6a2fb024fd2edcf273c9c"
 rpc = "https://api.cartridge.gg/x/dev-evolute-duel/katana"
 
 [runner]

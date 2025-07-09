@@ -6,4 +6,3 @@ sozo migrate --profile testing
 slot deployments create dev-evolute-duel --team evolute --tier pro torii --config torii_config_testing.toml --version v1.6.0-alpha.1
 sozo inspect --profile testing
 #slot deployments logs liyard-dojo-starter torii -f
-
