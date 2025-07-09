@@ -10,18 +10,23 @@ pub trait IMetaGame<T> {
 // dojo decorator
 #[dojo::contract]
 pub mod metagame {
-    const CENTER_BOARD_COL: u32 = 16384;
+    use super::super::rewards_manager::IRewardsManagerDispatcherTrait;
+const CENTER_BOARD_COL: u32 = 16384;
     const CENTER_BOARD_ROW: u32 = 16384;
     const BOARD_SIZE: u32 = 32768; // Assuming a board size of 32768x32768 for the metagame
 
     use super::IMetaGame;
     use evolute_duel::{
-        models::metagame::{MetagameBoardBounds, MetagamePlayerData},
-        systems::helpers::validation::{is_valid_move},
+        models::metagame::{MetagameBoardBounds, MetagamePlayerData, Position},
+        systems::helpers::{
+            validation::{is_valid_move},
+            prizes::prize_system::{has_prize_at},
+        },
         types::packing::{Tile, TEdge, PlayerSide},
         libs::{
             scoring::{ScoringTrait, ScoringImpl},
-        }
+        },
+        interfaces::dns::{DnsTrait}, 
     };
 
     use dojo::{
@@ -112,6 +117,15 @@ pub mod metagame {
                 }
             };
             player_data.deck = new_player_deck.span();
+            player_data.tiles_placed += 1;
+            if player_data.first_tile_placed.is_none() {
+                player_data.first_tile_placed = Option::Some(
+                    Position {
+                        col,
+                        row
+                    }
+                );
+            }
             world.write_model(@player_data);
 
             // Update bounds if necessary
@@ -129,6 +143,34 @@ pub mod metagame {
             }
             
             world.write_model(@board_bounds);
+            // Check if the placed tile has a prize
+            match player_data.first_tile_placed {
+                Option::Some(position) => {
+                    match has_prize_at(
+                        player_address,
+                        col,
+                        row,
+                        position.col,
+                        position.row,
+                        season_id,
+                    ) {
+                        Option::Some(prize) => {
+                            let rewards_manager_dispatcher = world.rewards_manager_dispatcher();
+                            rewards_manager_dispatcher
+                                .transfer_rewards(
+                                    player_address,
+                                    prize
+                                );
+                        },
+                        Option::None => {
+                            // No prize at this position, do nothing
+                        }
+                    }
+                },
+                Option::None => {
+                    // If no first tile placed, do nothing
+                }
+            }
         }
     }
 

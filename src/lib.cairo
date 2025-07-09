@@ -11,6 +11,7 @@ pub mod systems {
         // pub mod road_scoring;
         pub mod scoring;
         pub mod validation;
+        pub mod prizes;
     }
     pub mod tokens {
         pub mod evolute_coin;

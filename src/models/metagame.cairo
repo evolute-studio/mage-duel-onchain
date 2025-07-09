@@ -1,6 +1,6 @@
 use starknet::ContractAddress;
 
-#[derive(Drop, Serde, Copy, Introspect, PartialEq, Debug)]
+#[derive(Drop, Serde, Copy, Introspect, Debug)]
 #[dojo::model]
 pub struct MetagamePlayerData {
     #[key]
@@ -9,7 +9,14 @@ pub struct MetagamePlayerData {
     pub player_address: ContractAddress, // Player's address
     pub deck: Span<u8>, // Deck of tiles available to the player
     pub tiles_placed: u32, // Number of tiles placed by the player
+    pub first_tile_placed: Option<Position>, // Coordinates of the first tile placed
     // pub score: u32, // Player's score (optional, can be added later)
+}
+
+#[derive(Drop, Serde, Copy, Introspect, PartialEq, Debug)]
+pub struct Position {
+    pub col: u32,
+    pub row: u32,
 }
 
 #[derive(Drop, Serde, Copy, Introspect, PartialEq, Debug)]
