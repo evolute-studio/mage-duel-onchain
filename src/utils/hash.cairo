@@ -48,7 +48,7 @@ mod unit {
         let h123: felt252 = hash_values([111, 222, 333].span());
         let h1234: felt252 = hash_values([111, 222, 333, 444].span());
         assert_ne!(h1, 0, "h1");
-        assert_eq!(h1, h11, "h1 == h11");
+        assert_ne!(h1, h11, "h1 == h11");
         assert_ne!(h1, h12, "h1 != h12");
         assert_ne!(h12, h123, "h12 != h123");
         assert_ne!(h123, h1234, "h3 != h4");

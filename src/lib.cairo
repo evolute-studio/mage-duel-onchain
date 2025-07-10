@@ -1,6 +1,7 @@
 pub mod systems {
     pub mod game;
     pub mod player_profile_actions;
+    pub mod tutorial;
     pub mod helpers {
         pub mod board;
         pub mod union_find;
