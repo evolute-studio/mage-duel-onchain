@@ -193,7 +193,7 @@ pub impl BoardImpl of BoardTrait {
         let mut board = Board {
             id: board_id,
             available_tiles_in_deck: deck_rules_flat,
-            top_tile: Option::None,
+            top_tile: Option::Some(0),
             player1: (player_address, PlayerSide::Blue, 2),
             player2: (bot_address, PlayerSide::Red, 2),
             blue_score: (0, 0),
@@ -216,9 +216,21 @@ pub impl BoardImpl of BoardTrait {
     fn tutorial_deck() -> Span<u8> {
         // Example deck for tutorial
         let mut deck_rules_flat = ArrayTrait::new();
+        deck_rules_flat.append(Tile::FRFR.into());
+        deck_rules_flat.append(Tile::CRFR.into());
+        deck_rules_flat.append(Tile::CCRF.into());
+        deck_rules_flat.append(Tile::CCFF.into());
+        //We have 24 tiles in total, so we can add more tiles to fill the deck
         // Add 1 of each tile type for simplicity
-        for tile_index in 0..24_u8 {
-            deck_rules_flat.append(tile_index);
+        let mut i: u8 = 4;
+        let mut dice = DiceTrait::new(
+            24,
+            ('TUTORIAL_DECK' + get_block_timestamp().into()),
+        );
+        while i < 24 {
+            let tile_type = dice.roll().into() - 1;
+            deck_rules_flat.append(tile_type);
+            i += 1;
         };
         return deck_rules_flat.span();
     }
@@ -229,16 +241,16 @@ pub impl BoardImpl of BoardTrait {
         // For tutorial, we can use a simplified version of the initial board state
         let bases = array![
             0,
-            5 * 6 * 4 + 3,
-            (5 * 6 + 5) * 4 + 2,
-            5 * 4 + 1,
+            6 * 7 * 4 + 3,
+            (6 * 7 + 6) * 4 + 2,
+            6 * 4 + 1,
         ].span();
 
-        let steps: Span<i32> = array![6 * 4, 4, -6 * 4, -4].span();
+        let steps: Span<i32> = array![7 * 4, 4, -7 * 4, -4].span();
 
-        let edges_positions = array![2, 3, 4, 2];
+        let edges_positions = array![2, 2, 3, 4];
 
-        let edges_types = array![TEdge::C, TEdge::R, TEdge::C, TEdge::R].span();
+        let edges_types = array![TEdge::R, TEdge::C, TEdge::R, TEdge::C].span();
 
         for side in 0..4_u8 {
             let position = (*bases.at(side.into()) + (*steps.at(side.into())) * (*edges_positions.at(side.into())));
