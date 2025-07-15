@@ -373,517 +373,522 @@ pub fn close_all_nodes(
     };
     return contest_results.span();
 }
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use dojo_cairo_test::WorldStorageTestTrait;
-//     use dojo::model::{ModelStorage};
-//     use dojo::world::WorldStorageTrait;
-//     use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource, ContractDef};
-
-//     use evolute_duel::{
-//         models::{CityNode, m_CityNode, PotentialCityContests, m_PotentialCityContests},
-//         events::{CityContestWon, e_CityContestWon, CityContestDraw, e_CityContestDraw},
-//         packing::{Tile},
-//         systems::helpers::{board::generate_initial_board_state, city_union_find::{connected}},
-//     };
-//     use evolute_duel::systems::game::{};
-
-//     fn namespace_def() -> NamespaceDef {
-//         NamespaceDef {
-//             namespace: "evolute_duel",
-//             resources: [
-//                 TestResource::Model(m_CityNode::TEST_CLASS_HASH),
-//                 TestResource::Model(m_PotentialCityContests::TEST_CLASS_HASH),
-//                 TestResource::Event(e_CityContestWon::TEST_CLASS_HASH),
-//                 TestResource::Event(e_CityContestDraw::TEST_CLASS_HASH),
-//             ]
-//                 .span(),
-//         }
-//     }
-
-//     fn contract_defs() -> Span<ContractDef> {
-//         [].span()
-//     }
-
-//     #[test]
-//     fn test_no_rotation() {
-//         let tile = Tile::CCCF;
-//         let extended = create_extended_tile(tile, 0);
-//         assert_eq!(extended.edges, [TEdge::C, TEdge::C, TEdge::C, TEdge::F].span());
-//     }
-
-//     #[test]
-//     fn test_rotation_90() {
-//         let tile = Tile::CCCF;
-//         let extended = create_extended_tile(tile, 1);
-//         assert_eq!(extended.edges, [TEdge::F, TEdge::C, TEdge::C, TEdge::C].span());
-//     }
-
-//     #[test]
-//     fn test_rotation_180() {
-//         let tile = Tile::CCCF;
-//         let extended = create_extended_tile(tile, 2);
-//         assert_eq!(extended.edges, [TEdge::C, TEdge::F, TEdge::C, TEdge::C].span());
-//     }
-
-//     #[test]
-//     fn test_rotation_270() {
-//         let tile = Tile::CCCF;
-//         let extended = create_extended_tile(tile, 3);
-//         assert_eq!(extended.edges, [TEdge::C, TEdge::C, TEdge::F, TEdge::C].span());
-//     }
-
-//     #[test]
-//     fn test_connect_city_edges_in_tile() {
-//         // Initialize test environment
-//         let caller = starknet::contract_address_const::<0x0>();
-//         let ndef = namespace_def();
-
-//         // Register the resources.
-//         let mut world = spawn_test_world([ndef].span());
-
-//         // Ensures permissions and initializations are synced.
-//         world.sync_perms_and_inits(contract_defs());
-
-//         let board_id = 1;
-//         let tile_position = 2; // Arbitrary tile position
-
-//         // Create a tile with all edges as city (CCCC)
-//         let tile = Tile::CFCF;
-//         let rotation = 0;
-//         let side = PlayerSide::Blue;
-
-//         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
-
-//         // Call function to connect city edges
-//         connect_city_edges_in_tile(
-//             ref world, board_id, tile_position, tile.into(), rotation, side.into(),
-//         );
-
-//         // Verify all city edges are connected
-//         let base_pos = convert_board_position_to_node_position(tile_position, 0);
-//         let root = find(ref world, board_id, base_pos).position;
-//         let city_node: CityNode = world.read_model((board_id, base_pos + 2));
-
-//         //println!("Root1: {:?}", find(ref world, board_id, base_pos));
-//         //println!("Root2: {:?}", city_node);
-
-//         for i in 0..4_u8 {
-//             if i % 2 == 1 {
-//                 continue;
-//             }
-//             let edge_pos = convert_board_position_to_node_position(tile_position, i);
-//             assert_eq!(
-//                 find(ref world, board_id, edge_pos).position,
-//                 root,
-//                 "City edge {} is not connected correctly",
-//                 edge_pos,
-//             );
-//         };
-//     }
-
-//     #[test]
-//     fn test_connect_adjacent_city_edges() {
-//         let caller = starknet::contract_address_const::<0x0>();
-//         let ndef = namespace_def();
-
-//         let mut world = spawn_test_world([ndef].span());
-//         world.sync_perms_and_inits(contract_defs());
-
-//         let board_id = 1;
-
-//         let tile_position_1 = 10;
-//         let tile_position_2 = 18;
-
-//         let tile_1 = Tile::CFCF;
-//         let tile_2 = Tile::CFCF;
-//         let rotation = 1;
-//         let side = PlayerSide::Blue;
-
-//         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
-
-//         connect_city_edges_in_tile(
-//             ref world, board_id, tile_position_1, tile_1.into(), rotation, side.into(),
-//         );
-//         connect_city_edges_in_tile(
-//             ref world, board_id, tile_position_2, tile_2.into(), rotation, side.into(),
-//         );
-
-//         let mut state = ArrayTrait::new();
-//         for i in 0..64_u8 {
-//             if i == tile_position_1 {
-//                 state.append((tile_1.into(), rotation, side.into()));
-//             } else if i == tile_position_2 {
-//                 state.append((tile_2.into(), rotation, side.into()));
-//             } else {
-//                 state.append((Tile::Empty.into(), 0, 0));
-//             }
-//         };
-
-//         connect_adjacent_city_edges(
-//             ref world,
-//             board_id,
-//             state.clone(),
-//             initial_edge_state.clone(),
-//             tile_position_1,
-//             tile_1.into(),
-//             rotation,
-//             side.into(),
-//         );
-
-//         connect_adjacent_city_edges(
-//             ref world,
-//             board_id,
-//             state,
-//             initial_edge_state.clone(),
-//             tile_position_2,
-//             tile_2.into(),
-//             rotation,
-//             side.into(),
-//         );
-
-//         let edge_pos_1 = convert_board_position_to_node_position(tile_position_1, 1);
-//         let edge_pos_2 = convert_board_position_to_node_position(tile_position_2, 3);
-
-//         assert!(
-//             connected(ref world, board_id, edge_pos_1, edge_pos_2),
-//             "Adjacent edges {} and {} are not connected correctly",
-//             edge_pos_1,
-//             edge_pos_2,
-//         );
-//     }
-
-//     #[test]
-//     fn test_connect_adjacent_city_edges_contest() {
-//         let caller = starknet::contract_address_const::<0x0>();
-//         let ndef = namespace_def();
-
-//         let mut world = spawn_test_world([ndef].span());
-//         world.sync_perms_and_inits(contract_defs());
-
-//         let board_id = 1;
-
-//         let tile_position_1 = 10; // CCFF
-//         let tile_position_2 = 11; // FCCF
-//         let tile_position_3 = 19; // FFCC
-//         let tile_position_4 = 18; // CFFC
-
-//         let tile_1 = Tile::CCFF;
-//         let tile_2 = Tile::CCFF;
-//         let tile_3 = Tile::CCFF;
-//         let tile_4 = Tile::CCFF;
-//         let rotation1 = 0;
-//         let rotation2 = 1;
-//         let rotation3 = 2;
-//         let rotation4 = 3;
-//         let side1 = PlayerSide::Blue;
-//         let side2 = PlayerSide::Red;
-//         let side3 = PlayerSide::Blue;
-//         let side4 = PlayerSide::Blue;
-
-//         let initial_edge_state = generate_initial_board_state(1, 1, board_id);
-
-//         connect_city_edges_in_tile(
-//             ref world, board_id, tile_position_1, tile_1.into(), rotation1, side1.into(),
-//         );
-
-//         let root1 = find(
-//             ref world, board_id, convert_board_position_to_node_position(tile_position_1, 0),
-//         );
-//         assert_eq!(root1.open_edges, 2, "City contest is not conducted correctly");
-//         //println!("Root1: {:?}", root1);
-
-//         connect_city_edges_in_tile(
-//             ref world, board_id, tile_position_2, tile_2.into(), rotation2, side2.into(),
-//         );
-
-//         let root2 = find(
-//             ref world, board_id, convert_board_position_to_node_position(tile_position_2, 1),
-//         );
-//         assert_eq!(root2.open_edges, 2, "City contest is not conducted correctly");
-//         //println!("Root2: {:?}", root2);
-
-//         connect_city_edges_in_tile(
-//             ref world, board_id, tile_position_3, tile_3.into(), rotation3, side3.into(),
-//         );
-
-//         let root3 = find(
-//             ref world, board_id, convert_board_position_to_node_position(tile_position_3, 2),
-//         );
-//         assert_eq!(root3.open_edges, 2, "City contest is not conducted correctly");
-//         //println!("Root3: {:?}", root3);
-
-//         connect_city_edges_in_tile(
-//             ref world, board_id, tile_position_4, tile_4.into(), rotation4, side4.into(),
-//         );
-
-//         let root4 = find(
-//             ref world, board_id, convert_board_position_to_node_position(tile_position_4, 3),
-//         );
-//         assert_eq!(root4.open_edges, 2, "City contest is not conducted correctly");
-//         //println!("Root4: {:?}", root4);
-
-//         let mut state = ArrayTrait::new();
-//         for i in 0..64_u8 {
-//             if i == tile_position_1 {
-//                 state.append((tile_1.into(), rotation1, side1.into()));
-//             } else {
-//                 state.append((Tile::Empty.into(), 0, 0));
-//             }
-//         };
-
-//         connect_adjacent_city_edges(
-//             ref world,
-//             board_id,
-//             state,
-//             initial_edge_state.clone(),
-//             tile_position_1,
-//             tile_1.into(),
-//             rotation1,
-//             side1.into(),
-//         );
-
-//         let rot1 = find(
-//             ref world, board_id, convert_board_position_to_node_position(tile_position_1, 0),
-//         );
-//         //println!("Rot1: {:?}", rot1);
-//         assert_eq!(rot1.open_edges, 2, "City contest is not conducted correctly");
-
-//         let mut state = ArrayTrait::new();
-//         for i in 0..64_u8 {
-//             if i == tile_position_1 {
-//                 state.append((tile_1.into(), rotation1, side1.into()));
-//             } else if i == tile_position_2 {
-//                 state.append((tile_2.into(), rotation2, side2.into()));
-//             } else {
-//                 state.append((Tile::Empty.into(), 0, 0));
-//             }
-//         };
-
-//         connect_adjacent_city_edges(
-//             ref world,
-//             board_id,
-//             state.clone(),
-//             initial_edge_state.clone(),
-//             tile_position_2,
-//             tile_2.into(),
-//             rotation2,
-//             side2.into(),
-//         );
-
-//         let rot2 = find(
-//             ref world, board_id, convert_board_position_to_node_position(tile_position_2, 1),
-//         );
-//         //println!("Rot2: {:?}", rot2);
-//         assert_eq!(rot2.open_edges, 2, "City contest is not conducted correctly");
-
-//         let mut state = ArrayTrait::new();
-//         for i in 0..64_u8 {
-//             if i == tile_position_1 {
-//                 state.append((tile_1.into(), rotation1, side1.into()));
-//             } else if i == tile_position_2 {
-//                 state.append((tile_2.into(), rotation2, side2.into()));
-//             } else if i == tile_position_3 {
-//                 state.append((tile_3.into(), rotation3, side3.into()));
-//             } else {
-//                 state.append((Tile::Empty.into(), 0, 0));
-//             }
-//         };
-
-//         connect_adjacent_city_edges(
-//             ref world,
-//             board_id,
-//             state.clone(),
-//             initial_edge_state.clone(),
-//             tile_position_3,
-//             tile_3.into(),
-//             rotation3,
-//             side3.into(),
-//         );
-
-//         let rot3 = find(
-//             ref world, board_id, convert_board_position_to_node_position(tile_position_3, 2),
-//         );
-//         //println!("Rot3: {:?}", rot3);
-//         assert_eq!(rot3.open_edges, 2, "City contest is not conducted correctly");
-
-//         let mut state = ArrayTrait::new();
-//         for i in 0..64_u8 {
-//             if i == tile_position_1 {
-//                 state.append((tile_1.into(), rotation1, side1.into()));
-//             } else if i == tile_position_2 {
-//                 state.append((tile_2.into(), rotation2, side2.into()));
-//             } else if i == tile_position_3 {
-//                 state.append((tile_3.into(), rotation3, side3.into()));
-//             } else if i == tile_position_4 {
-//                 state.append((tile_4.into(), rotation4, side4.into()));
-//             } else {
-//                 state.append((Tile::Empty.into(), 0, 0));
-//             }
-//         };
-
-//         connect_adjacent_city_edges(
-//             ref world,
-//             board_id,
-//             state,
-//             initial_edge_state.clone(),
-//             tile_position_4,
-//             tile_4.into(),
-//             rotation4,
-//             side4.into(),
-//         );
-
-//         let rot4 = find(
-//             ref world, board_id, convert_board_position_to_node_position(tile_position_4, 3),
-//         );
-//         //println!("Rot4: {:?}", rot4);
-//         assert_eq!(rot4.open_edges, 0, "City contest is not conducted correctly");
-
-//         // 1 and 2
-//         let edge_pos_1 = convert_board_position_to_node_position(tile_position_1, 0);
-//         let edge_pos_2 = convert_board_position_to_node_position(tile_position_2, 2);
-
-//         assert!(
-//             connected(ref world, board_id, edge_pos_1, edge_pos_2),
-//             "Adjacent edges {} and {} are not connected correctly",
-//             edge_pos_1,
-//             edge_pos_2,
-//         );
-
-//         // 2 and 3
-//         let edge_pos_2 = convert_board_position_to_node_position(tile_position_2, 1);
-//         let edge_pos_3 = convert_board_position_to_node_position(tile_position_3, 3);
-
-//         assert!(
-//             connected(ref world, board_id, edge_pos_2, edge_pos_3),
-//             "Adjacent edges {} and {} are not connected correctly",
-//             edge_pos_2,
-//             edge_pos_3,
-//         );
-
-//         // 3 and 4
-//         let edge_pos_3 = convert_board_position_to_node_position(tile_position_3, 2);
-//         let edge_pos_4 = convert_board_position_to_node_position(tile_position_4, 0);
-
-//         assert!(
-//             connected(ref world, board_id, edge_pos_3, edge_pos_4),
-//             "Adjacent edges {} and {} are not connected correctly",
-//             edge_pos_3,
-//             edge_pos_4,
-//         );
-
-//         // 4 and 1
-//         let edge_pos_4 = convert_board_position_to_node_position(tile_position_4, 3);
-//         let edge_pos_1 = convert_board_position_to_node_position(tile_position_1, 1);
-
-//         assert!(
-//             connected(ref world, board_id, edge_pos_4, edge_pos_1),
-//             "Adjacent edges {} and {} are not connected correctly",
-//             edge_pos_4,
-//             edge_pos_1,
-//         );
-
-//         let city_root = find(ref world, board_id, edge_pos_1);
-//         assert_eq!(city_root.open_edges, 0, "City contest is not conducted correctly");
-//     }
-
-//     #[test]
-//     fn test_contest_with_edge() {
-//         let caller = starknet::contract_address_const::<0x0>();
-//         let ndef = namespace_def();
-
-//         let mut world = spawn_test_world([ndef].span());
-//         world.sync_perms_and_inits(contract_defs());
-
-//         let board_id = 1;
-
-//         // City and road just on bottom edge
-//         let initial_edge_state = array![
-//             2,
-//             2,
-//             0,
-//             2,
-//             2,
-//             2,
-//             1,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//             2,
-//         ];
-
-//         let tile_1 = Tile::CFRR;
-//         let col1 = 2;
-//         let row1 = 0;
-//         let tile_position_1 = col1 * 8 + row1;
-//         let rotation1 = 2;
-//         let side1 = PlayerSide::Blue;
-
-//         connect_city_edges_in_tile(
-//             ref world, board_id, tile_position_1, tile_1.into(), rotation1, side1.into(),
-//         );
-
-//         let root1 = find(
-//             ref world, board_id, convert_board_position_to_node_position(tile_position_1, 2),
-//         );
-
-//         assert_eq!(root1.open_edges, 1, "City contest is not conducted correctly");
-
-//         let mut state: Array<(u8, u8, u8)> = ArrayTrait::new();
-//         state.append_span([((Tile::Empty).into(), 0, 0); 64].span());
-
-//         let mut visited: Felt252Dict<bool> = Default::default();
-
-//         let scoring_result = connect_adjacent_city_edges(
-//             ref world,
-//             board_id,
-//             state.clone(),
-//             initial_edge_state.clone(),
-//             tile_position_1,
-//             tile_1.into(),
-//             rotation1,
-//             side1.into(),
-//         );
-
-//         println!("{:?}", scoring_result);
-
-//         let root2 = find(
-//             ref world, board_id, convert_board_position_to_node_position(tile_position_1, 2),
-//         );
-
-//         println!("{:?}", root2);
-//         assert_eq!(root2.open_edges, 0, "City contest is not conducted correctly");
-
-//         for i in 0..64_u8 {
-//             if i == tile_position_1 {
-//                 state.append((tile_1.into(), rotation1, side1.into()));
-//             } else {
-//                 state.append((Tile::Empty.into(), 0, 0));
-//             }
-//         };
-//     }
-// }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dojo::model::ModelStorageTest;
+    use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource};
+    use evolute_duel::models::scoring::{m_UnionNode, m_PotentialContests};
+    use evolute_duel::events::{e_CityContestWon, e_CityContestDraw, e_RoadContestWon, e_RoadContestDraw};
+    use starknet::contract_address_const;
+
+    fn setup_world() -> WorldStorage {
+        let namespace_def = NamespaceDef {
+            namespace: "evolute_duel", 
+            resources: [
+                TestResource::Model(m_UnionNode::TEST_CLASS_HASH),
+                TestResource::Model(m_PotentialContests::TEST_CLASS_HASH),
+                TestResource::Event(e_CityContestWon::TEST_CLASS_HASH),
+                TestResource::Event(e_CityContestDraw::TEST_CLASS_HASH),
+                TestResource::Event(e_RoadContestWon::TEST_CLASS_HASH),
+                TestResource::Event(e_RoadContestDraw::TEST_CLASS_HASH),
+            ].span()
+        };
+        spawn_test_world([namespace_def].span())
+    }
+
+    #[test]
+    fn test_is_edge_node_bottom_edge() {
+        // Test bottom edge (row == 0)
+        assert!(is_edge_node(1, 0, 0, 10) == true, "Should be bottom edge");
+        assert!(is_edge_node(5, 0, 0, 10) == true, "Should be bottom edge");
+        assert!(is_edge_node(8, 0, 0, 10) == true, "Should be bottom edge");
+        
+        // Test corners (not edges)
+        assert!(is_edge_node(0, 0, 0, 10) == false, "Corner should not be edge");
+        assert!(is_edge_node(9, 0, 0, 10) == false, "Corner should not be edge");
+        
+        // Test non-bottom positions
+        assert!(is_edge_node(1, 1, 0, 10) == false, "Should not be bottom edge");
+    }
+
+    #[test]
+    fn test_is_edge_node_left_edge() {
+        // Test left edge (col == 0)
+        assert!(is_edge_node(0, 1, 1, 10) == true, "Should be left edge");
+        assert!(is_edge_node(0, 5, 1, 10) == true, "Should be left edge");
+        assert!(is_edge_node(0, 8, 1, 10) == true, "Should be left edge");
+        
+        // Test corners (not edges)
+        assert!(is_edge_node(0, 0, 1, 10) == false, "Corner should not be edge");
+        assert!(is_edge_node(0, 9, 1, 10) == false, "Corner should not be edge");
+        
+        // Test non-left positions
+        assert!(is_edge_node(1, 1, 1, 10) == false, "Should not be left edge");
+    }
+
+    #[test]
+    fn test_is_edge_node_top_edge() {
+        // Test top edge (row == board_size - 1)
+        assert!(is_edge_node(1, 9, 2, 10) == true, "Should be top edge");
+        assert!(is_edge_node(5, 9, 2, 10) == true, "Should be top edge");
+        assert!(is_edge_node(8, 9, 2, 10) == true, "Should be top edge");
+        
+        // Test corners (not edges)
+        assert!(is_edge_node(0, 9, 2, 10) == false, "Corner should not be edge");
+        assert!(is_edge_node(9, 9, 2, 10) == false, "Corner should not be edge");
+        
+        // Test non-top positions
+        assert!(is_edge_node(1, 8, 2, 10) == false, "Should not be top edge");
+    }
+
+    #[test]
+    fn test_is_edge_node_right_edge() {
+        // Test right edge (col == board_size - 1)
+        assert!(is_edge_node(9, 1, 3, 10) == true, "Should be right edge");
+        assert!(is_edge_node(9, 5, 3, 10) == true, "Should be right edge");
+        assert!(is_edge_node(9, 8, 3, 10) == true, "Should be right edge");
+        
+        // Test corners (not edges)
+        assert!(is_edge_node(9, 0, 3, 10) == false, "Corner should not be edge");
+        assert!(is_edge_node(9, 9, 3, 10) == false, "Corner should not be edge");
+        
+        // Test non-right positions
+        assert!(is_edge_node(8, 1, 3, 10) == false, "Should not be right edge");
+    }
+
+    #[test]
+    fn test_is_edge_node_out_of_bounds() {
+        // Test out of bounds coordinates
+        assert!(is_edge_node(10, 5, 0, 10) == false, "Out of bounds should return false");
+        assert!(is_edge_node(5, 10, 0, 10) == false, "Out of bounds should return false");
+        assert!(is_edge_node(11, 11, 0, 10) == false, "Out of bounds should return false");
+    }
+
+    #[test]
+    fn test_connect_edges_in_tile_cccc() {
+        let world = setup_world();
+        let board_id = 123;
+        let col = 5;
+        let row = 5;
+        let tile = Tile::CCCC.into();
+        let rotation = 0;
+        let player_side = PlayerSide::Blue;
+        let board_size = 10;
+
+        let (city_points, road_points) = connect_edges_in_tile(
+            world, board_id, col, row, tile, rotation, player_side, board_size
+        );
+        assert!(city_points == 8, "CCCC should give 8 city points (4 edges * 2 points)");
+        assert!(road_points == 0, "CCCC should give 0 road points");
+
+        // get node on this position
+        let root_position = find(world, board_id, convert_board_position_to_node_position(col, row, 0, board_size));
+        let root: UnionNode = world.read_model((board_id, root_position));
+
+        assert!(root.blue_points == 8, "Blue should get all city points");
+        assert!(root.red_points == 0, "Red should have no points");
+        assert!(root.node_type == TEdge::C, "Node type should be city");
+        assert!(root.open_edges == 4, "Open edges should be 4");
+        assert!(root.player_side == player_side, "Player side should be Blue");
+        assert!(root.contested == false, "Node should not be contested");
+        assert!(root.rank == 2, "Node rank should be 2");
+        assert!(root.parent == root.position, "Parent should be the same as position");
+    }
+
+    #[test]
+    fn test_connect_edges_in_tile_rrrr() {
+        let world = setup_world();
+        let board_id = 123;
+        let col = 5;
+        let row = 5;
+        let tile = Tile::RRRR.into();
+        let rotation = 0;
+        let player_side = PlayerSide::Red;
+        let board_size = 10;
+
+        let (city_points, road_points) = connect_edges_in_tile(
+            world, board_id, col, row, tile, rotation, player_side, board_size
+        );
+
+        assert!(city_points == 0, "RRRR should give 0 city points");
+        assert!(road_points == 4, "RRRR should give 4 road points");
+
+        // Check the root node
+        let root_position_up = convert_board_position_to_node_position(col, row, 0, board_size);
+        let root_up: UnionNode = world.read_model((board_id, root_position_up));
+        assert!(root_up.blue_points == 0, "Blue should have no points");
+        assert!(root_up.red_points == 1, "Red should get all road points");
+        assert!(root_up.node_type == TEdge::R, "Node type should be road");
+        assert!(root_up.open_edges == 1, "Road should have 1 open edge");
+        assert!(root_up.player_side == player_side, "Player side should be Red");
+        assert!(root_up.contested == false, "Node should not be contested");
+        assert!(root_up.rank == 1, "Node rank should be 1");
+
+        let root_position_right = convert_board_position_to_node_position(col, row, 1, board_size);
+        let root_right: UnionNode = world.read_model((board_id, root_position_right));
+        assert!(root_right.blue_points == 0, "Blue should have no points");
+        assert!(root_right.red_points == 1, "Red should get all road points");
+        assert!(root_right.node_type == TEdge::R, "Node type should be road");
+        assert!(root_right.open_edges == 1, "Road should have 1 open edge");
+        assert!(root_right.player_side == player_side, "Player side should be Red");
+        assert!(root_right.contested == false, "Node should not be contested");
+        assert!(root_right.rank == 1, "Node rank should be 1");
+
+        let root_position_down = convert_board_position_to_node_position(col, row, 2, board_size);
+        let root_down: UnionNode = world.read_model((board_id, root_position_down));
+        assert!(root_down.blue_points == 0, "Blue should have no points");
+        assert!(root_down.red_points == 1, "Red should get all road points");
+        assert!(root_down.node_type == TEdge::R, "Node type should be road");
+        assert!(root_down.open_edges == 1, "Road should have 1 open edge");
+        assert!(root_down.player_side == player_side, "Player side should be Red");
+        assert!(root_down.contested == false, "Node should not be contested");
+        assert!(root_down.rank == 1, "Node rank should be 1");
+
+        let root_position_left = convert_board_position_to_node_position(col, row, 3, board_size);
+        let root_left: UnionNode = world.read_model((board_id, root_position_left));
+        assert!(root_left.blue_points == 0, "Blue should have no points");
+        assert!(root_left.red_points == 1, "Red should get all road points");
+        assert!(root_left.node_type == TEdge::R, "Node type should be road");
+        assert!(root_left.open_edges == 1, "Road should have 1 open edge");
+        assert!(root_left.player_side == player_side, "Player side should be Red");
+        assert!(root_left.contested == false, "Node should not be contested");
+        assert!(root_left.rank == 1, "Node rank should be 1");
+    }
+
+    #[test]
+    fn test_connect_edges_in_tile_ccrr() {
+        let world = setup_world();
+        let board_id = 123;
+        let col = 5;
+        let row = 5;
+        let tile = Tile::CCRR.into();
+        let rotation = 0;
+        let player_side = PlayerSide::Blue;
+        let board_size = 10;
+
+        let (city_points, road_points) = connect_edges_in_tile(
+            world, board_id, col, row, tile, rotation, player_side, board_size
+        );
+
+        assert!(city_points == 4, "CCRR should give 4 city points (2 edges * 2 points)");
+        assert!(road_points == 2, "CCRR should give 2 road points");
+
+        // Check city root
+        let city_root_position = find(world, board_id, convert_board_position_to_node_position(col, row, 0, board_size));
+        let city_root: UnionNode = world.read_model((board_id, city_root_position));
+        
+        assert!(city_root.blue_points == 4, "Blue should get city points");
+        assert!(city_root.red_points == 0, "Red should have no city points");
+        assert!(city_root.node_type == TEdge::C, "Node type should be city");
+        assert!(city_root.open_edges == 2, "City should have 2 open edges");
+        assert!(city_root.player_side == player_side, "Player side should be Blue");
+
+        // Check road root
+        let road_root_position = find(world, board_id, convert_board_position_to_node_position(col, row, 2, board_size));
+        let road_root: UnionNode = world.read_model((board_id, road_root_position));
+        
+        assert!(road_root.blue_points == 2, "Blue should get road points");
+        assert!(road_root.red_points == 0, "Red should have no road points");
+        assert!(road_root.node_type == TEdge::R, "Node type should be road");
+        assert!(road_root.open_edges == 2, "Road should have 2 open edges");
+        assert!(road_root.player_side == player_side, "Player side should be Blue");
+    }
+
+    #[test]
+    fn test_connect_edges_in_tile_crcr() {
+        let world = setup_world();
+        let board_id = 123;
+        let col = 5;
+        let row = 5;
+        let tile = Tile::CRCR.into();
+        let rotation = 0;
+        let player_side = PlayerSide::Blue;
+        let board_size = 10;
+
+        let (city_points, road_points) = connect_edges_in_tile(
+            world, board_id, col, row, tile, rotation, player_side, board_size
+        );
+
+        assert!(city_points == 4, "CRCR should give 4 city points (2 edges * 2 points)");
+        assert!(road_points == 2, "CRCR should give 2 road points");
+
+        // For CRCR, roads should NOT be connected (special case)
+        // Check individual city nodes
+        let city_root1_position = find(world, board_id, convert_board_position_to_node_position(col, row, 0, board_size));
+        let city_root1: UnionNode = world.read_model((board_id, city_root1_position));
+        
+        assert!(city_root1.blue_points == 4, "Blue should get points for city");
+        assert!(city_root1.red_points == 0, "Red should have no points for city");
+        assert!(city_root1.node_type == TEdge::C, "Node type should be city");
+        assert!(city_root1.open_edges == 2, "City should have 2 open edge");
+        assert!(city_root1.player_side == player_side, "Player side should be Blue");
+
+        // Check individual road nodes (should NOT be connected)
+        let road_root1_position = find(world, board_id, convert_board_position_to_node_position(col, row, 1, board_size));
+        let road_root1: UnionNode = world.read_model((board_id, road_root1_position));
+        
+        assert!(road_root1.blue_points == 1, "Blue should get points for first road");
+        assert!(road_root1.red_points == 0, "Red should have no points for first road");
+        assert!(road_root1.node_type == TEdge::R, "Node type should be road");
+        assert!(road_root1.open_edges == 1, "Road should have 1 open edge");
+        assert!(road_root1.player_side == player_side, "Player side should be Blue");
+
+        let road_root2_position = find(world, board_id, convert_board_position_to_node_position(col, row, 3, board_size));
+        let road_root2: UnionNode = world.read_model((board_id, road_root2_position));
+        
+        assert!(road_root2.blue_points == 1, "Blue should get points for second road");
+        assert!(road_root2.red_points == 0, "Red should have no points for second road");
+        assert!(road_root2.node_type == TEdge::R, "Node type should be road");
+        assert!(road_root2.open_edges == 1, "Road should have 1 open edge");
+        assert!(road_root2.player_side == player_side, "Player side should be Blue");
+
+        // Verify roads are NOT connected (different parents)
+        assert!(road_root1.parent != road_root2.parent, "Roads should not be connected in CRCR");
+    }
+
+    #[test]
+    fn test_connect_edges_in_tile_ffff() {
+        let world = setup_world();
+        let board_id = 123;
+        let col = 5;
+        let row = 5;
+        let tile = Tile::FFFF.into();
+        let rotation = 0;
+        let player_side = PlayerSide::Blue;
+        let board_size = 10;
+
+        let (city_points, road_points) = connect_edges_in_tile(
+            world, board_id, col, row, tile, rotation, player_side, board_size
+        );
+
+        assert!(city_points == 0, "FFFF should give 0 city points");
+        assert!(road_points == 0, "FFFF should give 0 road points");
+
+        // Check that no nodes are created for field edges
+        let position1 = convert_board_position_to_node_position(col, row, 0, board_size);
+        let node1: UnionNode = world.read_model((board_id, position1));
+        assert!(node1.node_type == TEdge::F, "Node type should be field");
+        assert!(node1.blue_points == 0, "Field should have no points");
+        assert!(node1.red_points == 0, "Field should have no points");
+    }
+
+    #[test]
+    fn test_connect_edges_in_tile_cccf() {
+        let world = setup_world();
+        let board_id = 123;
+        let col = 5;
+        let row = 5;
+        let tile = Tile::CCCF.into();
+        let rotation = 0;
+        let player_side = PlayerSide::Red;
+        let board_size = 10;
+
+        let (city_points, road_points) = connect_edges_in_tile(
+            world, board_id, col, row, tile, rotation, player_side, board_size
+        );
+
+        assert!(city_points == 6, "CCCF should give 6 city points (3 edges * 2 points)");
+        assert!(road_points == 0, "CCCF should give 0 road points");
+
+        // Check city root
+        let city_root_position = find(world, board_id, convert_board_position_to_node_position(col, row, 0, board_size));
+        let city_root: UnionNode = world.read_model((board_id, city_root_position));
+        
+        assert!(city_root.blue_points == 0, "Blue should have no points");
+        assert!(city_root.red_points == 6, "Red should get all city points");
+        assert!(city_root.node_type == TEdge::C, "Node type should be city");
+        assert!(city_root.open_edges == 3, "City should have 3 open edges");
+        assert!(city_root.player_side == player_side, "Player side should be Red");
+    }
+
+    #[test]
+    fn test_connect_edges_in_tile_cccr() {
+        let world = setup_world();
+        let board_id = 123;
+        let col = 5;
+        let row = 5;
+        let tile = Tile::CCCR.into();
+        let rotation = 0;
+        let player_side = PlayerSide::Blue;
+        let board_size = 10;
+
+        let (city_points, road_points) = connect_edges_in_tile(
+            world, board_id, col, row, tile, rotation, player_side, board_size
+        );
+
+        assert!(city_points == 6, "CCCR should give 6 city points (3 edges * 2 points)");
+        assert!(road_points == 1, "CCCR should give 1 road point");
+
+        // Check city root
+        let city_root_position = find(world, board_id, convert_board_position_to_node_position(col, row, 0, board_size));
+        let city_root: UnionNode = world.read_model((board_id, city_root_position));
+        
+        assert!(city_root.blue_points == 6, "Blue should get city points");
+        assert!(city_root.red_points == 0, "Red should have no city points");
+        assert!(city_root.node_type == TEdge::C, "Node type should be city");
+        assert!(city_root.open_edges == 3, "City should have 3 open edges");
+        assert!(city_root.player_side == player_side, "Player side should be Blue");
+
+        // Check road node
+        let road_root_position = find(world, board_id, convert_board_position_to_node_position(col, row, 3, board_size));
+        let road_root: UnionNode = world.read_model((board_id, road_root_position));
+        
+        assert!(road_root.blue_points == 1, "Blue should get road points");
+        assert!(road_root.red_points == 0, "Red should have no road points");
+        assert!(road_root.node_type == TEdge::R, "Node type should be road");
+        assert!(road_root.open_edges == 1, "Road should have 1 open edge");
+        assert!(road_root.player_side == player_side, "Player side should be Blue");
+    }
+
+    #[test]
+    fn test_connect_edges_in_tile_ffrr() {
+        let world = setup_world();
+        let board_id = 123;
+        let col = 5;
+        let row = 5;
+        let tile = Tile::FFRR.into();
+        let rotation = 0;
+        let player_side = PlayerSide::Red;
+        let board_size = 10;
+
+        let (city_points, road_points) = connect_edges_in_tile(
+            world, board_id, col, row, tile, rotation, player_side, board_size
+        );
+
+        assert!(city_points == 0, "FFRR should give 0 city points");
+        assert!(road_points == 2, "FFRR should give 2 road points");
+
+        // Check road root
+        let road_root_position = find(world, board_id, convert_board_position_to_node_position(col, row, 2, board_size));
+        let road_root: UnionNode = world.read_model((board_id, road_root_position));
+        
+        assert!(road_root.blue_points == 0, "Blue should have no points");
+        assert!(road_root.red_points == 2, "Red should get road points");
+        assert!(road_root.node_type == TEdge::R, "Node type should be road");
+        assert!(road_root.open_edges == 2, "Road should have 2 open edges");
+        assert!(road_root.player_side == player_side, "Player side should be Red");
+    }
+
+    #[test]
+    fn test_handle_contest_blue_wins() {
+        let world = setup_world();
+        let board_id = 123;
+        let position = 1000;
+        
+        let mut root = UnionNode {
+            board_id,
+            position,
+            parent: position,
+            rank: 1,
+            blue_points: 6,
+            red_points: 4,
+            open_edges: 0,
+            contested: false,
+            node_type: TEdge::C,
+            player_side: PlayerSide::None,
+        };
+
+        let result = handle_contest(world, ref root);
+
+        assert!(result.is_some(), "Should return contest result");
+        let (winner, edge_type, points_delta) = result.unwrap();
+        assert!(winner == PlayerSide::Blue, "Blue should win");
+        assert!(edge_type == TEdge::C, "Should be city edge");
+        assert!(points_delta == 4, "Points delta should be red's points");
+        assert!(root.contested == true, "Root should be marked as contested");
+        assert!(root.blue_points == 10, "Blue should get all points");
+        assert!(root.red_points == 0, "Red should have no points");
+    }
+
+    #[test]
+    fn test_handle_contest_red_wins() {
+        let world = setup_world();
+        let board_id = 123;
+        let position = 1000;
+        
+        let mut root = UnionNode {
+            board_id,
+            position,
+            parent: position,
+            rank: 1,
+            blue_points: 3,
+            red_points: 7,
+            open_edges: 0,
+            contested: false,
+            node_type: TEdge::R,
+            player_side: PlayerSide::None,
+        };
+
+        let result = handle_contest(world, ref root);
+
+        assert!(result.is_some(), "Should return contest result");
+        let (winner, edge_type, points_delta) = result.unwrap();
+        assert!(winner == PlayerSide::Red, "Red should win");
+        assert!(edge_type == TEdge::R, "Should be road edge");
+        assert!(points_delta == 3, "Points delta should be blue's points");
+        assert!(root.contested == true, "Root should be marked as contested");
+        assert!(root.red_points == 10, "Red should get all points");
+        assert!(root.blue_points == 0, "Blue should have no points");
+    }
+
+    #[test]
+    fn test_handle_contest_draw() {
+        let world = setup_world();
+        let board_id = 123;
+        let position = 1000;
+        
+        let mut root = UnionNode {
+            board_id,
+            position,
+            parent: position,
+            rank: 1,
+            blue_points: 5,
+            red_points: 5,
+            open_edges: 0,
+            contested: false,
+            node_type: TEdge::C,
+            player_side: PlayerSide::None,
+        };
+
+        let result = handle_contest(world, ref root);
+
+        assert!(result.is_none(), "Should return None for draw");
+        assert!(root.contested == true, "Root should be marked as contested");
+        assert!(root.blue_points == 5, "Blue points should remain unchanged");
+        assert!(root.red_points == 5, "Red points should remain unchanged");
+    }
+
+    #[test]
+    fn test_connect_adjacent_edges_basic() {
+        let world = setup_world();
+        let board_id = 123;
+        let col = 5;
+        let row = 5;
+        let tile = Tile::CCCC.into();
+        let rotation = 0;
+        let board_size = 10;
+        let player_side = PlayerSide::Blue;
+        let player_address = contract_address_const::<0x123>();
+
+        // First place the tile
+        connect_edges_in_tile(
+            world, board_id, col, row, tile, rotation, player_side, board_size
+        );
+
+        // Then connect adjacent edges
+        let ((blue_city_delta, blue_road_delta), (red_city_delta, red_road_delta)) = 
+            connect_adjacent_edges(
+                world, board_id, col, row, tile, rotation, board_size, player_side, player_address
+            );
+
+        // Should have no deltas since no adjacent tiles
+        assert!(blue_city_delta == 0, "Should have no blue city delta");
+        assert!(blue_road_delta == 0, "Should have no blue road delta");
+        assert!(red_city_delta == 0, "Should have no red city delta");
+        assert!(red_road_delta == 0, "Should have no red road delta");
+    }
+}
 
 
