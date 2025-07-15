@@ -25,22 +25,23 @@ pub impl ScoringImpl of ScoringTrait {
     fn calculate_move_scoring(
         tile: u8,
         rotation: u8,
-        col: u8,
-        row: u8,
+        col: u32,
+        row: u32,
         player_side: PlayerSide,
         player_address: ContractAddress,
         board_id: felt252,
+        board_size: u32,
         mut world: dojo::world::WorldStorage,
     ) -> ScoringResult {
         let (city_points, road_points) = connect_edges_in_tile(
-            world, board_id, col, row, tile, rotation, player_side
+            world, board_id, col, row, tile, rotation, board_size, player_side
         );
 
         let (
             (mut blue_city_points_delta, mut blue_road_points_delta), 
             (mut red_city_points_delta, mut red_road_points_delta)
         ) = connect_adjacent_edges(
-            world, board_id, col, row, tile, rotation, player_side, player_address
+            world, board_id, col, row, tile, rotation, board_size, player_side, player_address
         );
 
         if player_side == PlayerSide::Blue {

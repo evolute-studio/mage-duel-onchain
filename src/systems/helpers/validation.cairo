@@ -12,8 +12,14 @@ pub fn is_valid_move(
     board_id: felt252,
     tile: Tile,
     rotation: u8,
-    col: u8,
-    row: u8,
+    col: u32,
+    row: u32,
+    board_size: u32,
+    min_col: u32,
+    min_row: u32,
+    max_col: u32,
+    max_row: u32,
+    can_place_not_adjacents: bool,
     world: WorldStorage,
 ) -> bool {
     if tile == Tile::Empty {
@@ -21,11 +27,13 @@ pub fn is_valid_move(
     }
     
     //check if valid col and row
-    if !(col >= 1 && col <= 8 && row >= 1 && row <= 8) {return false;}
+    if !(col >= min_col && col <= max_col && row >= min_row && row <= max_row) {
+        return false;
+    }
     
     //check if the tile is empty
     
-    let tile_position: u32 = col.into() * 10 + row.into();
+    let tile_position: u32 = col.into() * board_size + row.into();
     let mut is_placed = false;
     let position: u32 = tile_position.into() * 4;
     for i in 0..4_u8 {
@@ -45,9 +53,9 @@ pub fn is_valid_move(
 
     let direction_offsets = array![
         4 + 2, // Up
-        10 * 4 + 2, // Right
+        board_size.try_into().unwrap() * 4 + 2, // Right
         -4 - 2, // Down
-        -10 * 4 - 2, // Left
+        -board_size.try_into().unwrap() * 4 - 2, // Left
     ];
 
     let mut result = true;
@@ -57,7 +65,7 @@ pub fn is_valid_move(
         let edge_position: u32 = tile_position * 4 + side.into();
         let adjacent_node_position: u32 = (edge_position.try_into().unwrap() + offset).try_into().unwrap();
         
-        if adjacent_node_position < 0 || adjacent_node_position > 10 * 10 * 4 {
+        if adjacent_node_position < 0 || adjacent_node_position / 4 > board_size * board_size {
             // Out of bounds
             continue;
         }
@@ -76,7 +84,7 @@ pub fn is_valid_move(
         }
     };
 
-    if actual_connections == 0 {
+    if actual_connections == 0 && !can_place_not_adjacents {
         result = false; 
     }
 

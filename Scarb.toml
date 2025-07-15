@@ -50,6 +50,7 @@ cancel_game1 = "sozo --release execute evolute_duel-game cancel_game --account-a
 dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.6.0-alpha.1" }
 origami_random = { git = "https://github.com/dojoengine/origami" }
 openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v1.0.0" }
+openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
 achievement = { git = "https://github.com/evolute-studio/arcade" } # fork of arcade https://github.com/cartridge-gg/arcade 
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.4.0" }
 
