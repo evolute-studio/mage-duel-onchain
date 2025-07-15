@@ -227,7 +227,7 @@ pub impl BoardImpl of BoardTrait {
             24,
             ('TUTORIAL_DECK' + get_block_timestamp().into()),
         );
-        while i < 24 {
+        while i < 25 {
             let tile_type = dice.roll().into() - 1;
             deck_rules_flat.append(tile_type);
             i += 1;
@@ -238,7 +238,6 @@ pub impl BoardImpl of BoardTrait {
     fn generate_tutorial_initial_board_state(
         board_id: felt252, mut world: WorldStorage,
     ) {
-        // For tutorial, we can use a simplified version of the initial board state
         let bases = array![
             0,
             6 * 7 * 4 + 3,
