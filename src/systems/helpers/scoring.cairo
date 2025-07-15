@@ -18,14 +18,37 @@ use alexandria_data_structures::vec::{VecTrait, NullableVec};
 use evolute_duel::libs::{achievements::{AchievementsTrait}};
 use starknet::ContractAddress;
 
+pub fn is_edge_node(col: u32, row: u32, side: u8, board_size: u32) -> bool {    
+    if col > board_size || row > board_size {
+        return false;
+    }
+
+    match side {
+        0 => {
+            row == 0 && (col > 0 && col < board_size - 1)
+        }, // Bottom Edge(Node looks Up)
+        1 => {
+            col == 0 && (row > 0 && row < board_size - 1)
+        }, // Left Edge(Node looks Right)
+        2 => {
+            row == board_size - 1 && (col > 0 && col < board_size - 1)
+        }, // Top Edge(Node looks Down)
+        3 => {
+            col == board_size - 1 && (row > 0 && row < board_size - 1)
+        }, // Right Edge(Node looks Left)
+        _ => false,
+    }
+}
+
 pub fn connect_edges_in_tile(
     mut world: WorldStorage,
     board_id: felt252,
-    col: u8,
-    row: u8,
+    col: u32,
+    row: u32,
     tile: u8,
     rotation: u8,
     side: PlayerSide,
+    board_size: u32
 ) -> (u16, u16) {
     let extended_tile = create_extended_tile(tile.into(), rotation);
 
@@ -38,7 +61,7 @@ pub fn connect_edges_in_tile(
             TEdge::R => 1_u16,
             _ => 0_u16,
         };
-        let position = convert_board_position_to_node_position(col, row, i);
+        let position = convert_board_position_to_node_position(col, row, i, board_size);
         
         match node_type {
             TEdge::C => cities.append(position),
@@ -88,11 +111,12 @@ pub fn connect_edges_in_tile(
 pub fn connect_adjacent_edges(
     mut world: WorldStorage,
     board_id: felt252,
-    col: u8,
-    row: u8,
+    col: u32,
+    row: u32,
     tile: u8,
     rotation: u8,
     player_side: PlayerSide,
+    board_size: u32,
     player_address: ContractAddress,
 ) //None - if no contest or draw, Some(u8, u16) -> (who_wins, points_delta) - if contest
 -> ((i16, i16), (i16, i16)) {
@@ -103,11 +127,11 @@ pub fn connect_adjacent_edges(
     
     let direction_offsets = array![
         4 + 2, // Up
-        10 * 4 + 2, // Right
+        board_size.try_into().unwrap() * 4 + 2, // Right
         -4 - 2, // Down
-        -10 * 4 - 2, // Left
+        -board_size.try_into().unwrap() * 4 - 2, // Left
     ];
-    let tile_position: u32 = col.into() * 10 + row.into();
+    let tile_position: u32 = col.into() * board_size + row.into();
     let mut city_points_for_initial_nodes: u16 = 0;
     let mut road_points_for_initial_nodes: u16 = 0;
 
@@ -123,7 +147,12 @@ pub fn connect_adjacent_edges(
         let adjacent_node_position: u32 = (node_position.try_into().unwrap() + offset).try_into().unwrap();
         let mut adjacent_node: UnionNode = world.read_model((board_id, adjacent_node_position));
         if adjacent_node.node_type == TEdge::None {
-            // No tile placed in this position
+            if is_edge_node(col, row, side, board_size) {
+                let root_pos = find(world, board_id, node_position);
+                let mut root: UnionNode = world.read_model((board_id, root_pos));
+                root.open_edges -= 1;
+                world.write_model(@root);
+            }
             continue;
         } //If initial tile 
         else if adjacent_node.open_edges == 1 && adjacent_node.player_side == PlayerSide::None {

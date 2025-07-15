@@ -45,13 +45,12 @@ pub mod game {
     use evolute_duel::{
         models::{
             game::{Board, Rules, Move, Game, TileCommitments, AvailableTiles},
-            player::{Player},
             scoring::{PotentialContests},
         },
         events::{
-            GameCreated, GameCreateFailed, GameStarted, GameCanceled, BoardUpdated,
-            PlayerNotInGame, NotYourTurn, GameFinished,
-            Skiped, SnapshotCreated, SnapshotCreateFailed, PhaseStarted
+            GameCreated, GameCreateFailed, GameStarted, GameCanceled,
+            PlayerNotInGame,
+            Skiped, 
         },
         systems::helpers::{
             board::{BoardTrait},
@@ -60,7 +59,7 @@ pub mod game {
     };
 
     use evolute_duel::libs::{ // store::{Store, StoreTrait},
-        achievements::{AchievementsTrait}, asserts::{AssertsTrait},
+        asserts::{AssertsTrait},
         timing::{TimingTrait}, scoring::{ScoringTrait},
         move_execution::{MoveExecutionTrait, MoveData},
         tile_reveal::{TileRevealTrait, TileRevealData},
@@ -76,7 +75,6 @@ pub mod game {
     use dojo::model::{ModelStorage, Model};
 
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use alexandria_data_structures::vec::{NullableVec};
     use origami_random::dice::DiceTrait;
 
 
@@ -574,7 +572,7 @@ pub mod game {
             println!("Validation passed, proceeding with move execution");
 
             let scoring_result = ScoringTrait::calculate_move_scoring(
-                tile, rotation, col, row, player_side, player, board_id, world
+                tile, rotation, col.into(), row.into(), player_side, player, board_id, 10, world
             );
 
             println!("Scoring result: {:?}", scoring_result);
