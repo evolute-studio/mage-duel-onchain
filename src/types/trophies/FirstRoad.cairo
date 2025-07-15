@@ -46,7 +46,7 @@ pub impl FirstRoad of TrophyTrait {
 
     #[inline]
     fn tasks(level: u8) -> Span<BushidoTask> {
-        let count: u32 = 1;
+        let count: u128 = 1;
         Task::FirstRoad.tasks(count)
     }
 }

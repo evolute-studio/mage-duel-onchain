@@ -1,7 +1,7 @@
 [package]
 cairo-version = "=2.10.1"
 name = "evolute_duel"
-version = "1.5.1"
+version = "1.6.0"
 edition = "2024_07"
 
 [cairo]
@@ -47,7 +47,7 @@ cancel_game1 = "sozo --release execute evolute_duel-game cancel_game --account-a
 
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.5.1" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.6.0-alpha.1" }
 origami_random = { git = "https://github.com/dojoengine/origami" }
 openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v1.0.0" }
 openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
@@ -63,7 +63,7 @@ build-external-contracts = [
 
 [dev-dependencies]
 cairo_test = "=2.10.1"
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.5.1" }
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.6.0-alpha.1" }
 assert_macros = "2.10.1"
 
 [profile.provable]

@@ -1,7 +1,7 @@
 {
   "world": {
-    "class_hash": "0x4c60dc46a8ca8bb47675b7b914053cef769afbf0e340523187336b72bd71d1f",
-    "address": "0x55a227da2ac221a6311ec2df35df5c6fc25b450696f6c68bb604c8c350d59b7",
+    "class_hash": "0x7746f30d2b8494780387ed469797ecb5c62c7b6f49f4939a5e60e0f7ae5f99e",
+    "address": "0x230035e44105bbc11acf2dd1b271a78d53627a810e6a2fb024fd2edcf273c9c",
     "seed": "evolute_duel",
     "name": "Dojo starter",
     "entrypoints": [
@@ -1328,8 +1328,8 @@
   },
   "contracts": [
     {
-      "address": "0x32d647520aad338beeb0c0de77ae8599d1eb2589b05032197bb1d0fe4b16558",
-      "class_hash": "0x11abec0c16423d1bf9cebdb3a62f6f779256ceaa0a7c435e7b0fa0984169d0c",
+      "address": "0x33e9b5a5b6399b1d6f7767912647471c306c18530ebbb8487ee5df49b894267",
+      "class_hash": "0x6922d9114e966b2382c61b4b7d78572f8f5165746e187e0ed5e86c4483bcd36",
       "abi": [
         {
           "type": "impl",
@@ -1728,8 +1728,8 @@
       ]
     },
     {
-      "address": "0x58c120e7d2701b421d63339c877c065271501c3582e33e53e04c2d7752d09c9",
-      "class_hash": "0x46a86fc867d4bafb24980f9e68d2b08e965c3f008270d4d1cbb82abdf2d454b",
+      "address": "0x53a2a410bb7186a18fbd3ad38cf8d20fdd1e86ec41ee1ae3fb544d5da75d36f",
+      "class_hash": "0x542ca216e789b0721290cc686e65718078d9a57e5d3bbdcb64b1c88dbb1693",
       "abi": [
         {
           "type": "impl",
@@ -2328,13 +2328,13 @@
     },
     {
       "members": [],
-      "class_hash": "0x6fede2561a93b4808a6a00e19457a94d616e7ee53fc952f75af58da9bae45f5",
+      "class_hash": "0x702d5440a155e0704b268f8d6dbf74cb8ae09b164064fe3b4f896cf725dcac7",
       "tag": "evolute_duel-TrophyCreation",
       "selector": "0x62464d1b1e16fb532116fa08f25e545c8a8089d16473d61256e8b3ea8f132bf"
     },
     {
       "members": [],
-      "class_hash": "0x3d60f68ff66df399a5efc60c6aacda487ced739897ddcea54270b7c147206d",
+      "class_hash": "0x113e43bc604068a5811205b126a3e318b21e5c72746138efa6fb40277067f00",
       "tag": "evolute_duel-TrophyProgression",
       "selector": "0x5d087bb1cc662181d9fd66fe2145fcaafdadcb57f350bbad05a2d1e206e6e17"
     }

@@ -7,7 +7,7 @@ pub impl Seasoned of TaskTrait {
     }
 
     #[inline]
-    fn description(count: u32) -> ByteArray {
+    fn description(count: u128) -> ByteArray {
         format!("Play {} games", count)
     }
 }
