@@ -11,9 +11,7 @@ use evolute_duel::{
         achievements::{AchievementsTrait}
     },
 };
-use alexandria_data_structures::vec::{NullableVec};
 use dojo::{model::{ModelStorage, Model}, event::EventStorage};
-use starknet::get_block_timestamp;
 
 #[derive(Drop, Copy)]
 pub struct GameFinalizationData {
@@ -168,6 +166,7 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         finalization_data: GameFinalizationData,
         ref board: Board,
         potential_contests: Span<u32>,
+        add_points_to: u8, // 0 - both, 1 - blue, 2 - red
         mut world: dojo::world::WorldStorage,
     ) {
         ScoringTrait::calculate_final_scoring(

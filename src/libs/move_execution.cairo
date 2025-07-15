@@ -4,7 +4,7 @@ use evolute_duel::{
     systems::helpers::{validation::{is_valid_move}, board::{BoardTrait}},
     types::packing::{PlayerSide, Tile},
 };
-use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo::world::{WorldStorage};
 use dojo::model::{ModelStorage, Model};
 use dojo::event::EventStorage;
 use starknet::get_block_timestamp;
