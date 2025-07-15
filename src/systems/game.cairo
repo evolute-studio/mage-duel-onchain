@@ -50,7 +50,7 @@ pub mod game {
         events::{
             GameCreated, GameCreateFailed, GameStarted, GameCanceled,
             PlayerNotInGame,
-            Skiped,
+            Skiped, 
         },
         systems::helpers::{
             board::{BoardTrait},

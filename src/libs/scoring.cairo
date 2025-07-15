@@ -32,7 +32,7 @@ pub impl ScoringImpl of ScoringTrait {
         mut world: dojo::world::WorldStorage,
     ) -> ScoringResult {
         let (city_points, road_points) = connect_edges_in_tile(
-            world, board_id, col, row, tile, rotation, board_size, player_side
+            world, board_id, col, row, tile, rotation, player_side, board_size
         );
 
         let (
