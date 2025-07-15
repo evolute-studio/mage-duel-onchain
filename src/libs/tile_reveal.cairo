@@ -1,15 +1,14 @@
 use starknet::ContractAddress;
 use evolute_duel::{
     models::{game::{Board, TileCommitments, AvailableTiles}},
-    types::packing::{GameState, PlayerSide},
+    types::packing::{GameState},
     libs::{
         timing::{TimingTrait},
         player_data::{PlayerDataTrait},
     },
 };
-use dojo::{model::{ModelStorage, Model}, event::EventStorage};
+use dojo::{model::{ModelStorage, Model}};
 use evolute_duel::utils::hash::{hash_values};
-use starknet::{get_block_timestamp};
 
 #[derive(Drop, Copy)]
 pub struct TileRevealData {

@@ -1,5 +1,4 @@
 use starknet::{ContractAddress};
-use core::num::traits::Zero;
 use dojo::world::{WorldStorage, WorldStorageTrait, IWorldDispatcher};
 use dojo::meta::interface::{IDeployedResourceDispatcher, IDeployedResourceDispatcherTrait};
 

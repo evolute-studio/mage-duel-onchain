@@ -5,15 +5,13 @@ use evolute_duel::{
     systems::helpers::{
         union_find::{find, union}, board::{},
         tile_helpers::{
-            create_extended_tile, convert_board_position_to_node_position, tile_city_number,
+            create_extended_tile, convert_board_position_to_node_position,
         },
     },
     types::packing::{TEdge, PlayerSide, Tile},
     models::scoring::{UnionNode, PotentialContests},
 };
 use dojo::world::{WorldStorage};
-use core::dict::Felt252Dict;
-use alexandria_data_structures::vec::{VecTrait, NullableVec};
 
 use evolute_duel::libs::{achievements::{AchievementsTrait}};
 use starknet::ContractAddress;

@@ -45,13 +45,12 @@ pub mod game {
     use evolute_duel::{
         models::{
             game::{Board, Rules, Move, Game, TileCommitments, AvailableTiles},
-            player::{Player},
             scoring::{PotentialContests},
         },
         events::{
-            GameCreated, GameCreateFailed, GameStarted, GameCanceled, BoardUpdated,
-            PlayerNotInGame, NotYourTurn, GameFinished,
-            Skiped, SnapshotCreated, SnapshotCreateFailed, PhaseStarted
+            GameCreated, GameCreateFailed, GameStarted, GameCanceled,
+            PlayerNotInGame,
+            Skiped,
         },
         systems::helpers::{
             board::{BoardTrait},
@@ -60,7 +59,7 @@ pub mod game {
     };
 
     use evolute_duel::libs::{ // store::{Store, StoreTrait},
-        achievements::{AchievementsTrait}, asserts::{AssertsTrait},
+        asserts::{AssertsTrait},
         timing::{TimingTrait}, scoring::{ScoringTrait},
         move_execution::{MoveExecutionTrait, MoveData},
         tile_reveal::{TileRevealTrait, TileRevealData},
@@ -76,7 +75,6 @@ pub mod game {
     use dojo::model::{ModelStorage, Model};
 
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use alexandria_data_structures::vec::{NullableVec};
     use origami_random::dice::DiceTrait;
 
 
@@ -562,7 +560,7 @@ pub mod game {
 
             let tile = MoveExecutionTrait::get_tile_for_move(joker_tile, @board);
 
-            if !MoveExecutionTrait::validate_move(board_id, tile.into(), rotation, col, row, world) {
+            if !MoveExecutionTrait::validate_move(board_id, tile.into(), rotation, col, row, 10, world) {
                 let move_id = self.move_id_generator.read();
                 let move_data = MoveData { tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile };
                 let move_record = MoveExecutionTrait::create_move_record(move_id, move_data, board.last_move_id, board_id);
@@ -680,15 +678,6 @@ pub mod game {
             // Execute skip move
             self._skip_move(player, player_side, ref board, self.move_id_generator, true);
             
-            let skip_move_record = MoveExecutionTrait::create_skip_move_record(
-                self.move_id_generator.read() - 1, 
-                player_side, 
-                board.last_move_id, 
-                board_id,
-                board.top_tile
-            );
-            
-
             board.top_tile = Option::None;
             world
                 .write_member(

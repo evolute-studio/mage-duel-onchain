@@ -28,7 +28,6 @@ pub mod tutorial {
         get_block_timestamp,
     };
     use dojo::{
-        world::WorldStorage,
         event::EventStorage,
         model::{ModelStorage, Model},
     };
@@ -39,11 +38,10 @@ pub mod tutorial {
             timing::{TimingTrait},
             scoring::{ScoringTrait},
             move_execution::{MoveExecutionTrait, MoveData},
-            phase_management::{PhaseManagementTrait},
             game_finalization::{GameFinalizationTrait, GameFinalizationData},
         },
         models::{
-            game::{Game, Board, Move, AvailableTiles},
+            game::{Game, Board, Move},
             scoring::{PotentialContests},
         },
         types::{
@@ -119,9 +117,6 @@ pub mod tutorial {
                 board.game_state
             );
 
-            let (player1_address, _, _) = board.player1;
-            let (player2_address, _, _) = board.player2;
-
             let (player_side, joker_number) = match board.get_player_data(player, world) {
                 Option::Some((side, joker_number)) => (side, joker_number),
                 Option::None => {return;}
@@ -139,7 +134,7 @@ pub mod tutorial {
 
             let tile = MoveExecutionTrait::get_tile_for_move(joker_tile, @board);
 
-            if !MoveExecutionTrait::validate_move(board_id, tile.into(), rotation, col, row, world) {
+            if !MoveExecutionTrait::validate_move(board_id, tile.into(), rotation, col, row, 7, world) {
                 let move_id = self.move_id_generator.read();
                 let move_data = MoveData { tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile };
                 let move_record = MoveExecutionTrait::create_move_record(move_id, move_data, board.last_move_id, board_id);
@@ -151,7 +146,7 @@ pub mod tutorial {
             println!("Validation passed, proceeding with move execution");
 
             let scoring_result = ScoringTrait::calculate_move_scoring(
-                tile, rotation, col, row, player_side, player, board_id, world
+                tile, rotation, col.into(), row.into(), player_side, player, board_id, 7, world
             );
 
             println!("Scoring result: {:?}", scoring_result);

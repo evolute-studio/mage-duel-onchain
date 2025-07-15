@@ -36,7 +36,6 @@ pub trait IEvoluteCoinProtected<TState> {
 
 #[dojo::contract]
 pub mod evolute_token {
-    use core::num::traits::{Bounded};
     use starknet::{ContractAddress};
     use dojo::world::{WorldStorage};
 
@@ -120,7 +119,7 @@ pub mod evolute_token {
             amount: u128,
         ) {
             // validate caller (duelist token contract)
-            let minter_address: ContractAddress = self.coin.assert_caller_is_minter();
+            let _minter_address: ContractAddress = self.coin.assert_caller_is_minter();
 
             self.coin.mint(player_address, amount.into());
         }

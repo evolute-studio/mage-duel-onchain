@@ -70,7 +70,6 @@ mod tests {
         models::game::{Game, m_Game},
         types::packing::GameStatus,
         events::{
-            GameCreateFailed, GameJoinFailed, PlayerNotInGame, GameFinished,
             e_GameCreateFailed, e_GameJoinFailed, e_PlayerNotInGame, e_GameFinished,
         },
     };

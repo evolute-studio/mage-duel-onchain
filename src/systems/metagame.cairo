@@ -1,5 +1,3 @@
-use starknet::ContractAddress;
-
 /// Interface defining core game actions and player interactions.
 #[starknet::interface]
 pub trait IMetaGame<T> {
@@ -22,9 +20,9 @@ const CENTER_BOARD_COL: u32 = 16384;
             validation::{is_valid_move},
             prizes::prize_system::{has_prize_at},
         },
-        types::packing::{Tile, TEdge, PlayerSide},
+        types::packing::{PlayerSide},
         libs::{
-            scoring::{ScoringTrait, ScoringImpl},
+            scoring::{ScoringImpl},
         },
         interfaces::dns::{DnsTrait}, 
     };
@@ -34,8 +32,8 @@ const CENTER_BOARD_COL: u32 = 16384;
         model::{ModelStorage},
     };
     use starknet::{
-        {get_caller_address, ContractAddress},
-        storage::{StoragePointerReadAccess, StoragePointerWriteAccess},
+        {get_caller_address},
+        storage::{StoragePointerReadAccess},
     };
     
     #[storage]

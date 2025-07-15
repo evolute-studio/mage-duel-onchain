@@ -4,7 +4,7 @@ use evolute_duel::{
     systems::helpers::{validation::{is_valid_move}, board::{BoardTrait}},
     types::packing::{PlayerSide, Tile},
 };
-use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo::world::{WorldStorage};
 use dojo::model::{ModelStorage, Model};
 use dojo::event::EventStorage;
 use starknet::get_block_timestamp;
@@ -55,9 +55,9 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
         }
     }
 
-    fn validate_move(board_id: felt252, tile: Tile, rotation: u8, col: u8, row: u8, world: WorldStorage) -> bool {
+    fn validate_move(board_id: felt252, tile: Tile, rotation: u8, col: u8, row: u8, board_size: u32, world: WorldStorage) -> bool {
         is_valid_move(
-            board_id, tile, rotation, col.into(), row.into(), 10, 1, 8, 1, 8, false, world
+            board_id, tile, rotation, col.into(), row.into(), board_size, 1, board_size - 2, 1, board_size - 2, false, world
         )
     }
 

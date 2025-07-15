@@ -3,7 +3,6 @@ use dojo::{
     world::{WorldStorage},
     model::{ModelStorage},
 };
-use alexandria_data_structures::vec::{VecTrait, NullableVec};
 //Union find
 pub fn find(mut world: WorldStorage, board_id: felt252, position: u32) -> u32 {
     // println!("[Union find] calles find({}, {})", nodes.len(), position);

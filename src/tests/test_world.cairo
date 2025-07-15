@@ -241,7 +241,6 @@ mod tests {
 
         // println!("Game1: {:?}", game1);
         // println!("Game2: {:?}", game2);
-        let mut board: Board = world.read_model(game1.board_id.unwrap());
         // println!("Board: {:?}", board);
     }
 
@@ -348,7 +347,6 @@ mod tests {
         game_caller.commit_tiles();
 
         let game1: Game = world.read_model(host_player);
-        let game2: Game = world.read_model(guest_player);
 
         let board_id = game1.board_id.unwrap();
 

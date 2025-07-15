@@ -11,9 +11,7 @@ use evolute_duel::{
         achievements::{AchievementsTrait}
     },
 };
-use alexandria_data_structures::vec::{NullableVec};
 use dojo::{model::{ModelStorage, Model}, event::EventStorage};
-use starknet::get_block_timestamp;
 
 #[derive(Drop, Copy)]
 pub struct GameFinalizationData {
