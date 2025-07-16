@@ -50,7 +50,7 @@ pub mod game {
         events::{
             GameCreated, GameCreateFailed, GameStarted, GameCanceled,
             PlayerNotInGame,
-            Skiped, 
+            Skiped, ErrorEvent
         },
         systems::helpers::{
             board::{BoardTrait},
@@ -286,11 +286,23 @@ pub mod game {
             let mut board: Board = world.read_model(board_id);
 
             if game.status != GameStatus::InProgress {
-                return panic!("[Commit Error] Game status is {:?}", game.status);
+                world.emit_event(@ErrorEvent {
+                    player_address: player,
+                    name: 'Commit Error',
+                    message: "You can only commit tiles when the game is in progress",
+                });
+                println!("[Commit Error] Game status is not InProgress: {:?}", game.status);
+                return;
             }
 
             if board.game_state != GameState::Creating {
-                return panic!("[Commit Error] Game state is {:?}", board.game_state);
+                world.emit_event(@ErrorEvent {
+                    player_address: player,
+                    name: 'Commit Error',
+                    message: format!("Game state is not Creating: {:?}", board.game_state),
+                });
+                println!("[Commit Error] Game state is {:?}", board.game_state);
+                return;
             }
 
             let timestamp = get_block_timestamp();
@@ -307,7 +319,13 @@ pub mod game {
             let mut tile_commitments = array![];
             // println!("comitments length: {:?}", commitments.len());
             if commitments.len() % 8 != 0 {
-                return panic!("[ERROR] Commitments length is not a multiple of 8");
+                world.emit_event(@ErrorEvent {
+                    player_address: player,
+                    name: 'Commit Error',
+                    message: "Commitments length is not a multiple of 8",
+                });
+                println!("[ERROR] Commitments length is not a multiple of 8");
+                return;
             }
             for i in 0..(commitments.len() / 8) {
                 let commitment: Span<u32> = commitments.slice(i * 8, 8);
@@ -558,7 +576,12 @@ pub mod game {
                 return;
             }
 
-            let tile = MoveExecutionTrait::get_tile_for_move(joker_tile, @board);
+            let tile = match MoveExecutionTrait::get_tile_for_move(joker_tile, @board, world, player) {
+                Option::Some(tile) => tile,
+                Option::None => {
+                    return;
+                }
+            };
 
             if !MoveExecutionTrait::validate_move(board_id, tile.into(), rotation, col, row, world) {
                 let move_id = self.move_id_generator.read();
@@ -748,7 +771,13 @@ pub mod game {
                         add_points_to
                     },
                     Option::None => {
-                        return panic!("No last move found, cannot finish game");
+                        world.emit_event(@ErrorEvent {
+                            player_address: player,
+                            name: 'Finish Game Error',
+                            message: "No last move found, cannot finish game",
+                        });
+                        println!("No last move found, cannot finish game");
+                        return;
                     }
                 };
 
