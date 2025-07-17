@@ -132,6 +132,12 @@ pub fn connect_adjacent_edges(
     let tile_position: u32 = col.into() * board_size + row.into();
     let mut city_points_for_initial_nodes: u16 = 0;
     let mut road_points_for_initial_nodes: u16 = 0;
+    let col_row_offsets: Array<(i32, i32)> = array![
+        (0, 1), // Up
+        (1, 0), // Right
+        (0, -1), // Down
+        (-1, 0), // Left
+    ];
 
     for side in 0..4_u8 {
         let node_type = *edges.at(side.into());
@@ -143,17 +149,42 @@ pub fn connect_adjacent_edges(
         let offset: i32 = *direction_offsets[side.into()];
         let node_position: u32 = tile_position * 4 + side.into();
         let adjacent_node_position: u32 = (node_position.try_into().unwrap() + offset).try_into().unwrap();
+        let (col_offset, row_offset) = *col_row_offsets.at(side.into());
+        let adjacent_col: u32 = (col.try_into().unwrap() + col_offset).try_into().unwrap();
+        let adjacent_row: u32 = (row.try_into().unwrap() + row_offset).try_into().unwrap();
+        let adjacent_side: u8 = match side {
+            0 => 2, // Up -> Down
+            1 => 3, // Right -> Left
+            2 => 0, // Down -> Up
+            3 => 1, // Left -> Right
+            _ => 0,
+        };
         let mut adjacent_node: UnionNode = world.read_model((board_id, adjacent_node_position));
         if adjacent_node.node_type == TEdge::None {
-            if is_edge_node(col, row, side, board_size) {
+            if is_edge_node(adjacent_col, adjacent_row, adjacent_side, board_size) {
                 let root_pos = find(world, board_id, node_position);
                 let mut root: UnionNode = world.read_model((board_id, root_pos));
                 root.open_edges -= 1;
                 world.write_model(@root);
+
+                if node_type == TEdge::C {
+                    city_root = Option::Some(root.position);
+                } else if node_type == TEdge::R {
+                    let mut contains = false;
+                    for i in 0..road_roots.len() {
+                        if *road_roots.at(i) == root.position {
+                            contains = true;
+                            break;
+                        }
+                    };
+                    if !contains {road_roots.append(root.position);}
+                }
             }
             continue;
         } //If initial tile 
-        else if adjacent_node.open_edges == 1 && adjacent_node.player_side == PlayerSide::None {
+        
+        
+        if adjacent_node.open_edges == 1 && adjacent_node.player_side == PlayerSide::None {
             adjacent_node.player_side = player_side;
             let points = match adjacent_node.node_type {
                 TEdge::C => {
