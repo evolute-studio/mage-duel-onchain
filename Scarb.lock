@@ -69,4 +69,4 @@ source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v1.0.0#755
 [[package]]
 name = "origami_random"
 version = "1.1.2"
-source = "git+https://github.com/dojoengine/origami#caadee17144b746da8be3c1add9d13596bd3e7e9"
+source = "git+https://github.com/dojoengine/origami#5cb443313333ead3a71a4d15e398aff7c0834bbb"
