@@ -166,6 +166,7 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         finalization_data: GameFinalizationData,
         ref board: Board,
         potential_contests: Span<u32>,
+        add_points_to: u8, // 0 - both, 1 - blue, 2 - red
         mut world: dojo::world::WorldStorage,
     ) {
         ScoringTrait::calculate_final_scoring(

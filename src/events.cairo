@@ -2,6 +2,15 @@ use starknet::ContractAddress;
 use evolute_duel::types::packing::{GameState, GameStatus, PlayerSide};
 
 #[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::event(historical = true)]
+pub struct ErrorEvent {
+    #[key]
+    pub player_address: ContractAddress,
+    pub name: felt252,
+    pub message: ByteArray,
+}
+
+#[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct SnapshotCreated {
     #[key]

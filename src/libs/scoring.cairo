@@ -9,7 +9,6 @@ use evolute_duel::{
     types::packing::{PlayerSide, TEdge},
 };
 
-
 #[derive(Drop, Copy, Debug)]
 pub struct ScoringResult {
     pub blue_city_points_delta: i16,
