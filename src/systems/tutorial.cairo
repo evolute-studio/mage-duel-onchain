@@ -97,8 +97,7 @@ pub mod tutorial {
         ) {
             let mut world = self.world_default();
             let player = get_caller_address();
-            col += 1; // Adjusting to 1-based indexing
-            row += 1; // Adjusting to 1-based indexing
+           
             let game: Game = world.read_model(player);
 
             if !AssertsTrait::assert_player_in_game(@game, Option::None, world) {
