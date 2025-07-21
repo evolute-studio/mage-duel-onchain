@@ -45,40 +45,40 @@ pub mod game {
     use evolute_duel::{
         models::{
             game::{Board, Rules, Move, Game, TileCommitments, AvailableTiles},
-            player::{Player},
             scoring::{PotentialContests},
         },
         events::{
-            GameCreated, GameCreateFailed, GameStarted, GameCanceled, BoardUpdated,
-            PlayerNotInGame, NotYourTurn, GameFinished,
-            Skiped, SnapshotCreated, SnapshotCreateFailed, PhaseStarted
+            GameCreated, GameCreateFailed, GameStarted, GameCanceled,
+            PlayerNotInGame,
+            Skiped, ErrorEvent
         },
         systems::helpers::{
             board::{BoardTrait},
         },
-        types::packing::{GameStatus, GameState, PlayerSide},
+        types::{
+            packing::{GameStatus, GameState, PlayerSide},
+            trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait},
+        },
+        constants::{CREATING_TIME, REVEAL_TIME, MOVE_TIME},
+        libs::{ // store::{Store, StoreTrait},
+            asserts::{AssertsTrait},
+            timing::{TimingTrait}, scoring::{ScoringTrait},
+            move_execution::{MoveExecutionTrait, MoveData},
+            tile_reveal::{TileRevealTrait, TileRevealData},
+            game_finalization::{GameFinalizationTrait, GameFinalizationData},
+            phase_management::{PhaseManagementTrait},
+        },
+        utils::hash::{
+            hash_values, hash_sha256_to_felt252,
+        },
     };
-
-    use evolute_duel::libs::{ // store::{Store, StoreTrait},
-        achievements::{AchievementsTrait}, asserts::{AssertsTrait},
-        timing::{TimingTrait}, scoring::{ScoringTrait},
-        move_execution::{MoveExecutionTrait, MoveData},
-        tile_reveal::{TileRevealTrait, TileRevealData},
-        game_finalization::{GameFinalizationTrait, GameFinalizationData},
-        phase_management::{PhaseManagementTrait},
+    use dojo::{
+        event::EventStorage,
+        model::{ModelStorage, Model},
     };
-    use evolute_duel::utils::hash::{
-        hash_values, hash_sha256_to_felt252,
-    };
-    use evolute_duel::types::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
-
-    use dojo::event::EventStorage;
-    use dojo::model::{ModelStorage, Model};
 
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-    use alexandria_data_structures::vec::{NullableVec};
     use origami_random::dice::DiceTrait;
-
 
     use achievement::components::achievable::AchievableComponent;
     component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
@@ -100,9 +100,7 @@ pub mod game {
         achievable: AchievableComponent::Storage,
     }
 
-    const CREATING_TIME : u64 = 65; // 1 min
-    const REVEAL_TIME : u64 = 65; // 1 min
-    const MOVE_TIME : u64 = 65; // 1 min
+    
 
     fn dojo_init(self: @ContractState) {
         let mut world = self.world_default();
@@ -288,11 +286,23 @@ pub mod game {
             let mut board: Board = world.read_model(board_id);
 
             if game.status != GameStatus::InProgress {
-                return panic!("[Commit Error] Game status is {:?}", game.status);
+                world.emit_event(@ErrorEvent {
+                    player_address: player,
+                    name: 'Commit Error',
+                    message: "You can only commit tiles when the game is in progress",
+                });
+                println!("[Commit Error] Game status is not InProgress: {:?}", game.status);
+                return;
             }
 
             if board.game_state != GameState::Creating {
-                return panic!("[Commit Error] Game state is {:?}", board.game_state);
+                world.emit_event(@ErrorEvent {
+                    player_address: player,
+                    name: 'Commit Error',
+                    message: format!("Game state is not Creating: {:?}", board.game_state),
+                });
+                println!("[Commit Error] Game state is {:?}", board.game_state);
+                return;
             }
 
             let timestamp = get_block_timestamp();
@@ -309,7 +319,13 @@ pub mod game {
             let mut tile_commitments = array![];
             // println!("comitments length: {:?}", commitments.len());
             if commitments.len() % 8 != 0 {
-                return panic!("[ERROR] Commitments length is not a multiple of 8");
+                world.emit_event(@ErrorEvent {
+                    player_address: player,
+                    name: 'Commit Error',
+                    message: "Commitments length is not a multiple of 8",
+                });
+                println!("[ERROR] Commitments length is not a multiple of 8");
+                return;
             }
             for i in 0..(commitments.len() / 8) {
                 let commitment: Span<u32> = commitments.slice(i * 8, 8);
@@ -512,8 +528,6 @@ pub mod game {
         ) {
             let mut world = self.world_default();
             let player = get_caller_address();
-            col += 1; // Adjusting to 1-based indexing
-            row += 1; // Adjusting to 1-based indexing
             let game: Game = world.read_model(player);
 
             if !AssertsTrait::assert_player_in_game(@game, Option::None, world) {
@@ -560,7 +574,12 @@ pub mod game {
                 return;
             }
 
-            let tile = MoveExecutionTrait::get_tile_for_move(joker_tile, @board);
+            let tile = match MoveExecutionTrait::get_tile_for_move(joker_tile, @board, world, player) {
+                Option::Some(tile) => tile,
+                Option::None => {
+                    return;
+                }
+            };
 
             if !MoveExecutionTrait::validate_move(board_id, tile.into(), rotation, col, row, world) {
                 let move_id = self.move_id_generator.read();
@@ -612,6 +631,7 @@ pub mod game {
                 self._finish_game(
                     ref board,
                     potential_contests_model.potential_contests.span(),
+                    0, // 0 - both players get points
                 );
                 return;
             }
@@ -678,16 +698,7 @@ pub mod game {
             let should_finish_game = TimingTrait::check_two_consecutive_skips(@board, world);
 
             // Execute skip move
-            self._skip_move(player, player_side, ref board, self.move_id_generator, true);
-            
-            let skip_move_record = MoveExecutionTrait::create_skip_move_record(
-                self.move_id_generator.read() - 1, 
-                player_side, 
-                board.last_move_id, 
-                board_id,
-                board.top_tile
-            );
-            
+            self._skip_move(player, player_side, ref board, self.move_id_generator, true);        
 
             board.top_tile = Option::None;
             world
@@ -705,6 +716,7 @@ pub mod game {
                 self._finish_game(
                     ref board,
                     potential_contests_model.potential_contests.span(),
+                    0, // 0 - both players get points
                 );
                 
                 return;
@@ -744,10 +756,34 @@ pub mod game {
             if phase_timeout {
                 //FINISH THE GAME
                 let potential_contests_model: PotentialContests = world.read_model(board_id);
+                let last_move_id = board.last_move_id;
+                let add_points_to: u8 = match last_move_id {
+                    Option::Some(move_id) => {
+                        let move_record: Move = world.read_model(move_id);
+                        let player_side = move_record.player_side;
+                        let add_points_to = match player_side {
+                            PlayerSide::Blue => 1, // Add points only to blue player
+                            PlayerSide::Red => 2, // Add points only to red player
+                            _ => 0, // Add points to both players
+                        };
+                        add_points_to
+                    },
+                    Option::None => {
+                        world.emit_event(@ErrorEvent {
+                            player_address: player,
+                            name: 'Finish Game Error',
+                            message: "No last move found, cannot finish game",
+                        });
+                        println!("No last move found, cannot finish game");
+                        return;
+                    }
+                };
+
                 self
                     ._finish_game(
                         ref board,
                         potential_contests_model.potential_contests.span(),
+                        add_points_to,
                     );
 
                 return;
@@ -831,6 +867,7 @@ pub mod game {
             self: @ContractState,
             ref board: Board,
             potential_contests: Span<u32>,
+            add_points_to: u8, // 0 - both, 1 - blue, 2 - red
         ) {
             let mut world = self.world_default();
             let (player1_address, player1_side, joker_number1) = board.player1;
@@ -849,6 +886,7 @@ pub mod game {
                 finalization_data,
                 ref board,
                 potential_contests,
+                add_points_to,
                 world,
             );
         }

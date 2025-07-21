@@ -5,18 +5,38 @@ use evolute_duel::{
     systems::helpers::{
         union_find::{find, union}, board::{},
         tile_helpers::{
-            create_extended_tile, convert_board_position_to_node_position, tile_city_number,
+            create_extended_tile, convert_board_position_to_node_position,
         },
     },
     types::packing::{TEdge, PlayerSide, Tile},
     models::scoring::{UnionNode, PotentialContests},
 };
 use dojo::world::{WorldStorage};
-use core::dict::Felt252Dict;
-use alexandria_data_structures::vec::{VecTrait, NullableVec};
 
 use evolute_duel::libs::{achievements::{AchievementsTrait}};
 use starknet::ContractAddress;
+
+pub fn is_edge_node(col: u32, row: u32, side: u8, board_size: u32) -> bool {    
+    if col > board_size || row > board_size {
+        return false;
+    }
+
+    match side {
+        0 => {
+            row == 0 && (col > 0 && col < board_size - 1)
+        }, // Bottom Edge(Node looks Up)
+        1 => {
+            col == 0 && (row > 0 && row < board_size - 1)
+        }, // Left Edge(Node looks Right)
+        2 => {
+            row == board_size - 1 && (col > 0 && col < board_size - 1)
+        }, // Top Edge(Node looks Down)
+        3 => {
+            col == board_size - 1 && (row > 0 && row < board_size - 1)
+        }, // Right Edge(Node looks Left)
+        _ => false,
+    }
+}
 
 pub fn connect_edges_in_tile(
     mut world: WorldStorage,
@@ -25,8 +45,8 @@ pub fn connect_edges_in_tile(
     row: u32,
     tile: u8,
     rotation: u8,
-    board_size: u32,
     side: PlayerSide,
+    board_size: u32
 ) -> (u16, u16) {
     let extended_tile = create_extended_tile(tile.into(), rotation);
 
@@ -109,9 +129,15 @@ pub fn connect_adjacent_edges(
         -4 - 2, // Down
         -board_size.try_into().unwrap() * 4 - 2, // Left
     ];
-    let tile_position: u32 = col.into() * 10 + row.into();
+    let tile_position: u32 = col.into() * board_size + row.into();
     let mut city_points_for_initial_nodes: u16 = 0;
     let mut road_points_for_initial_nodes: u16 = 0;
+    let col_row_offsets: Array<(i32, i32)> = array![
+        (0, 1), // Up
+        (1, 0), // Right
+        (0, -1), // Down
+        (-1, 0), // Left
+    ];
 
     for side in 0..4_u8 {
         let node_type = *edges.at(side.into());
@@ -123,12 +149,42 @@ pub fn connect_adjacent_edges(
         let offset: i32 = *direction_offsets[side.into()];
         let node_position: u32 = tile_position * 4 + side.into();
         let adjacent_node_position: u32 = (node_position.try_into().unwrap() + offset).try_into().unwrap();
+        let (col_offset, row_offset) = *col_row_offsets.at(side.into());
+        let adjacent_col: u32 = (col.try_into().unwrap() + col_offset).try_into().unwrap();
+        let adjacent_row: u32 = (row.try_into().unwrap() + row_offset).try_into().unwrap();
+        let adjacent_side: u8 = match side {
+            0 => 2, // Up -> Down
+            1 => 3, // Right -> Left
+            2 => 0, // Down -> Up
+            3 => 1, // Left -> Right
+            _ => 0,
+        };
         let mut adjacent_node: UnionNode = world.read_model((board_id, adjacent_node_position));
         if adjacent_node.node_type == TEdge::None {
-            // No tile placed in this position
+            if is_edge_node(adjacent_col, adjacent_row, adjacent_side, board_size) {
+                let root_pos = find(world, board_id, node_position);
+                let mut root: UnionNode = world.read_model((board_id, root_pos));
+                root.open_edges -= 1;
+                world.write_model(@root);
+
+                if node_type == TEdge::C {
+                    city_root = Option::Some(root.position);
+                } else if node_type == TEdge::R {
+                    let mut contains = false;
+                    for i in 0..road_roots.len() {
+                        if *road_roots.at(i) == root.position {
+                            contains = true;
+                            break;
+                        }
+                    };
+                    if !contains {road_roots.append(root.position);}
+                }
+            }
             continue;
         } //If initial tile 
-        else if adjacent_node.open_edges == 1 && adjacent_node.player_side == PlayerSide::None {
+        
+        
+        if adjacent_node.open_edges == 1 && adjacent_node.player_side == PlayerSide::None {
             adjacent_node.player_side = player_side;
             let points = match adjacent_node.node_type {
                 TEdge::C => {

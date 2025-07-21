@@ -1,16 +1,13 @@
 use starknet::ContractAddress;
 use evolute_duel::{
-    models::{game::{Board}, scoring::{UnionNode}},
+    models::{game::{Board}},
     systems::helpers::{
         // city_scoring::{connect_city_edges_in_tile, connect_adjacent_city_edges, close_all_cities},
         // road_scoring::{connect_road_edges_in_tile, connect_adjacent_road_edges, close_all_roads},
         scoring::{connect_edges_in_tile, connect_adjacent_edges, close_all_nodes},
-        tile_helpers::{calcucate_tile_points, calculate_adjacent_edge_points},
     },
     types::packing::{PlayerSide, TEdge},
 };
-use alexandria_data_structures::vec::{NullableVec, VecTrait};
-use core::dict::Felt252Dict;
 
 #[derive(Drop, Copy, Debug)]
 pub struct ScoringResult {
@@ -34,7 +31,7 @@ pub impl ScoringImpl of ScoringTrait {
         mut world: dojo::world::WorldStorage,
     ) -> ScoringResult {
         let (city_points, road_points) = connect_edges_in_tile(
-            world, board_id, col, row, tile, rotation, board_size, player_side
+            world, board_id, col, row, tile, rotation, player_side, board_size
         );
 
         let (

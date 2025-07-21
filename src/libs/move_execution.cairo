@@ -3,8 +3,9 @@ use evolute_duel::{
     models::{game::{Board, Move}}, events::{Moved, BoardUpdated, InvalidMove, NotEnoughJokers},
     systems::helpers::{validation::{is_valid_move}, board::{BoardTrait}},
     types::packing::{PlayerSide, Tile},
+    events::{ErrorEvent}
 };
-use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo::world::{WorldStorage};
 use dojo::model::{ModelStorage, Model};
 use dojo::event::EventStorage;
 use starknet::get_block_timestamp;
@@ -37,17 +38,27 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
         true
     }
 
-    fn get_tile_for_move(joker_tile: Option<u8>, board: @Board) -> u8 {
+    fn get_tile_for_move(joker_tile: Option<u8>, board: @Board, mut world: WorldStorage, player_address: ContractAddress) -> Option<u8> {
         match joker_tile {
-            Option::Some(tile_type) => tile_type,
+            Option::Some(tile_type) => Option::Some(tile_type),
             Option::None => {
                 match *board.top_tile {
-                    Option::Some(tile_index) => *(*board.available_tiles_in_deck).at(tile_index.into()),
+                    Option::Some(tile_index) => Option::Some(*(*board.available_tiles_in_deck).at(tile_index.into())),
                     Option::None => {
                         if board.commited_tile.is_none() {
-                            return panic!("No tiles in the deck"); 
+                            world.emit_event(@ErrorEvent {
+                                player_address,
+                                name: 'No tiles in the deck',
+                                message: "There are no tiles available in the deck to play",
+                            });
+                            return Option::None; 
                         } else {
-                            return panic!("Tile is not revealed yet");
+                            world.emit_event(@ErrorEvent {
+                                player_address,
+                                name: 'Tile not revealed',
+                                message: "The top tile is not revealed yet",
+                            });
+                            return Option::None;
                         }
                     },
                 }

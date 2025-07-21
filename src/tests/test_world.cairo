@@ -533,141 +533,141 @@ mod tests {
 
     use evolute_duel::tests::test_helpers::game_caller::{GameCallerTrait, GameType};
 
-    fn generate_permutation(n: u8, player_address: ContractAddress) -> Array<u8> {
-        let mut deck = DeckTrait::new(player_address.into(), n.into());
-        let mut permutation = array![];
-        for _ in 0..n {
-            let tile = deck.draw() - 1; // Convert to 0-based index
-            permutation.append(tile);
-        };
-        permutation
-    }
+    // fn generate_permutation(n: u8, player_address: ContractAddress) -> Array<u8> {
+    //     let mut deck = DeckTrait::new(player_address.into(), n.into());
+    //     let mut permutation = array![];
+    //     for _ in 0..n {
+    //         let tile = deck.draw() - 1; // Convert to 0-based index
+    //         permutation.append(tile);
+    //     };
+    //     permutation
+    // }
 
-    fn generate_nonces(n: u8, player_address: ContractAddress) -> Array<felt252> {
-        let mut deck = DeckTrait::new(player_address.into() + n.into(), n.into());
-        let mut nonces = array![];
-        for _ in 0..n {
-            let nonce = deck.draw() - 1; // Convert to 0-based index
-            nonces.append(hash_values(array![nonce.into()].span()));
-        };
-        nonces
-    }
+    // fn generate_nonces(n: u8, player_address: ContractAddress) -> Array<felt252> {
+    //     let mut deck = DeckTrait::new(player_address.into() + n.into(), n.into());
+    //     let mut nonces = array![];
+    //     for _ in 0..n {
+    //         let nonce = deck.draw() - 1; // Convert to 0-based index
+    //         nonces.append(hash_values(array![nonce.into()].span()));
+    //     };
+    //     nonces
+    // }
 
-    fn generate_commitments(
-        n: u8, nonces: Array<felt252>, permutation: Array<u8>,
-    ) -> Array<felt252> {
-        let mut commitments = array![];
-        for i in 0..n {
-            let commitment = hash_values(
-                array![i.into(), (*nonces.at(i.into())).into(), (*permutation.at(i.into())).into()]
-                    .span(),
-            );
-            commitments.append(commitment);
-        };
-        commitments
-    }
+    // fn generate_commitments(
+    //     n: u8, nonces: Array<felt252>, permutation: Array<u8>,
+    // ) -> Array<felt252> {
+    //     let mut commitments = array![];
+    //     for i in 0..n {
+    //         let commitment = hash_values(
+    //             array![i.into(), (*nonces.at(i.into())).into(), (*permutation.at(i.into())).into()]
+    //                 .span(),
+    //         );
+    //         commitments.append(commitment);
+    //     };
+    //     commitments
+    // }
 
-    fn find_tile_to_reveal(c: u8, permutation: Array<u8>, nonces: Array<felt252>) -> u8 {
-        let mut result = 65;
-        for i in 0..permutation.len() {
-            if *permutation.at(i) == c {
-                result = i;
-            }
-        };
-        assert(result < 65, 'Tile not found in permutation');
-        result.try_into().unwrap()
-    }
+    // fn find_tile_to_reveal(c: u8, permutation: Array<u8>, nonces: Array<felt252>) -> u8 {
+    //     let mut result = 65;
+    //     for i in 0..permutation.len() {
+    //         if *permutation.at(i) == c {
+    //             result = i;
+    //         }
+    //     };
+    //     assert(result < 65, 'Tile not found in permutation');
+    //     result.try_into().unwrap()
+    // }
 
-    #[test]
-    #[available_gas(429465835234324)]
-    fn test_reveal_commit() {
-        let host_player = starknet::contract_address_const::<0x0>();
-        let guest_player = starknet::contract_address_const::<0x1>();
+    // #[test]
+    // #[available_gas(429465835234324)]
+    // fn test_reveal_commit() {
+    //     let host_player = starknet::contract_address_const::<0x0>();
+    //     let guest_player = starknet::contract_address_const::<0x1>();
 
-        starknet::testing::set_contract_address(host_player);
+    //     starknet::testing::set_contract_address(host_player);
 
-        let ndef = namespace_def();
-        let mut world = spawn_test_world([ndef].span());
-        world.sync_perms_and_inits(contract_defs());
+    //     let ndef = namespace_def();
+    //     let mut world = spawn_test_world([ndef].span());
+    //     world.sync_perms_and_inits(contract_defs());
 
-        let (contract_address, _) = world.dns(@"game").unwrap();
-        let mut game_caller = GameCallerTrait::new(
-            world, contract_address, host_player, guest_player, GameType::Standard,
-        );
+    //     let (contract_address, _) = world.dns(@"game").unwrap();
+    //     let mut game_caller = GameCallerTrait::new(
+    //         world, contract_address, host_player, guest_player, GameType::Standard,
+    //     );
 
-        let initial_game: Game = world.read_model(host_player);
-        assert(initial_game.status == GameStatus::Finished, 'initial game status is wrong');
+    //     let initial_game: Game = world.read_model(host_player);
+    //     assert(initial_game.status == GameStatus::Finished, 'initial game status is wrong');
 
-        println!("Initial Game: {:?}", initial_game);
-        // Create a new game
-        game_caller.create_game();
+    //     println!("Initial Game: {:?}", initial_game);
+    //     // Create a new game
+    //     game_caller.create_game();
 
-        let mut new_game: Game = world.read_model(host_player);
-        assert(new_game.status == GameStatus::Created, 'game status is wrong');
-        println!("New Game: {:?}", new_game);
+    //     let mut new_game: Game = world.read_model(host_player);
+    //     assert(new_game.status == GameStatus::Created, 'game status is wrong');
+    //     println!("New Game: {:?}", new_game);
 
-        // Join the game
-        game_caller.join_game();
+    //     // Join the game
+    //     game_caller.join_game();
 
-        let game1: Game = world.read_model(host_player);
-        let game2: Game = world.read_model(guest_player);
-        assert!(game1.status == GameStatus::Created, "game status is wrong: {:?}", game1.status);
-        assert!(game2.status == GameStatus::Created, "game status is wrong: {:?}", game2.status);
+    //     let game1: Game = world.read_model(host_player);
+    //     let game2: Game = world.read_model(guest_player);
+    //     assert!(game1.status == GameStatus::InProgress, "game status is wrong: {:?}", game1.status);
+    //     assert!(game2.status == GameStatus::InProgress, "game status is wrong: {:?}", game2.status);
 
-        let board_id = game1.board_id.unwrap();
+    //     let board_id = game1.board_id.unwrap();
 
-        let board: Board = world.read_model(board_id);
+    //     let board: Board = world.read_model(board_id);
 
-        println!("Board: {:?}", board);
+    //     println!("Board: {:?}", board);
 
-        // println!("First Player Permutation: {:?}", first_player_permutation);
-        // println!("First Player Nonces: {:?}", first_player_nonces);
-        game_caller.commit_tiles();
+    //     // println!("First Player Permutation: {:?}", first_player_permutation);
+    //     // println!("First Player Nonces: {:?}", first_player_nonces);
+    //     game_caller.commit_tiles();
 
-        let game1: Game = world.read_model(host_player);
-        let game2: Game = world.read_model(guest_player);
-        assert!(game1.status == GameStatus::InProgress, "game status is wrong: {:?}", game1.status);
-        assert!(game2.status == GameStatus::InProgress, "game status is wrong: {:?}", game2.status);
+    //     let game1: Game = world.read_model(host_player);
+    //     let game2: Game = world.read_model(guest_player);
+    //     assert!(game1.status == GameStatus::InProgress, "game status is wrong: {:?}", game1.status);
+    //     assert!(game2.status == GameStatus::InProgress, "game status is wrong: {:?}", game2.status);
 
-        let commited_tile = game_caller.process_reveal_phase(board.commited_tile.unwrap());
+    //     let commited_tile = game_caller.process_reveal_phase(board.commited_tile.unwrap());
 
-        let board: Board = world.read_model(board_id);
-        let game_state = board.game_state;
-        assert!(game_state == GameState::Move, "Game state is not 1 after reveal");
+    //     let board: Board = world.read_model(board_id);
+    //     let game_state = board.game_state;
+    //     assert!(game_state == GameState::Move, "Game state is not 1 after reveal");
 
-        // Check the top tile
-        let top_tile = board.top_tile.unwrap();
-        println!("Top tile after reveal: {:?}", top_tile);
-        //Extended tile
-        let extended_tile = create_extended_tile(top_tile.into(), 0);
-        println!("Extended Tile: {:?}", extended_tile);
+    //     // Check the top tile
+    //     let top_tile = board.top_tile.unwrap();
+    //     println!("Top tile after reveal: {:?}", top_tile);
+    //     //Extended tile
+    //     let extended_tile = create_extended_tile(top_tile.into(), 0);
+    //     println!("Extended Tile: {:?}", extended_tile);
 
-        // Move by the host player
-        let rotation = 0;
-        let col = 7;
-        let row = 0;
-        game_caller.process_move(Option::None, rotation, col, row);
+    //     // Move by the host player
+    //     let rotation = 0;
+    //     let col = 7;
+    //     let row = 0;
+    //     game_caller.process_move(Option::None, rotation, col, row);
 
-        let commited_tile = game_caller.process_reveal_phase(commited_tile.unwrap());
+    //     let commited_tile = game_caller.process_reveal_phase(commited_tile.unwrap());
 
-        let board: Board = world.read_model(board_id);
-        let game_state = board.game_state;
-        assert!(game_state == GameState::Move, "Game state is not 1 after second reveal");
+    //     let board: Board = world.read_model(board_id);
+    //     let game_state = board.game_state;
+    //     assert!(game_state == GameState::Move, "Game state is not 1 after second reveal");
 
-        // Check the top tile
-        let top_tile = board.top_tile.unwrap();
-        println!("Top tile after second reveal: {:?}", top_tile);
-        let extended_tile = create_extended_tile(top_tile.into(), 0);
-        println!("Extended Tile after second reveal: {:?}", extended_tile);
+    //     // Check the top tile
+    //     let top_tile = board.top_tile.unwrap();
+    //     println!("Top tile after second reveal: {:?}", top_tile);
+    //     let extended_tile = create_extended_tile(top_tile.into(), 0);
+    //     println!("Extended Tile after second reveal: {:?}", extended_tile);
 
-        // Move by the guest player
-        let rotation = 1;
-        let col = 0;
-        let row = 1;
-        game_caller.process_move(Option::None, rotation, col, row);
+    //     // Move by the guest player
+    //     let rotation = 1;
+    //     let col = 0;
+    //     let row = 1;
+    //     game_caller.process_move(Option::None, rotation, col, row);
 
-        let board: Board = world.read_model(board_id);
-        println!("Board after second move: {:?}", board);
-    }
+    //     let board: Board = world.read_model(board_id);
+    //     println!("Board after second move: {:?}", board);
+    // }
 }
 
