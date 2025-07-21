@@ -51,7 +51,7 @@ pub mod tutorial {
         systems::helpers::{
             board::{BoardTrait},
         },
-        events::{GameCreated, Skiped},
+        events::{GameCreated, GameStarted, Skiped},
     };
     
     #[storage]
@@ -91,6 +91,12 @@ pub mod tutorial {
             world.emit_event(@GameCreated { 
                 host_player,
                 status: GameStatus::Created,
+            });
+
+            world.emit_event(@GameStarted {
+                host_player,
+                guest_player: bot_address,
+                board_id: board.id,
             });
 
             PhaseManagementTrait::transition_to_move_phase(
