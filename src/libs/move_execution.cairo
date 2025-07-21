@@ -91,17 +91,21 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
     }
 
     fn update_board_after_move(
-        move_data: MoveData, ref board: Board, is_joker: bool,
+        move_data: MoveData, ref board: Board, is_joker: bool, is_tutorial: bool,
     ) -> Option<u8> {
-        let top_tile = match board.top_tile {
-            Option::Some(tile_index) => {
-                if tile_index == (board.available_tiles_in_deck.len().try_into().unwrap() - 1) {
-                    Option::None
-                } else {
-                    Option::Some(tile_index + 1)
-                }
-            },
-            Option::None => Option::None, 
+        let top_tile = if is_tutorial {
+            match @board.top_tile {
+                Option::Some(tile_index) => {
+                    if *tile_index == (board.available_tiles_in_deck.len().try_into().unwrap() - 1) {
+                        Option::None
+                    } else {
+                        Option::Some(*tile_index + 1)
+                    }
+                },
+                Option::None => Option::None, 
+            }
+        } else {
+            Option::None
         };
 
         let (_, _) = BoardTrait::update_board_joker_number(

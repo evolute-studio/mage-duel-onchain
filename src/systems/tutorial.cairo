@@ -39,6 +39,7 @@ pub mod tutorial {
             scoring::{ScoringTrait},
             move_execution::{MoveExecutionTrait, MoveData},
             game_finalization::{GameFinalizationTrait, GameFinalizationData},
+            phase_management::{PhaseManagementTrait},
         },
         models::{
             game::{Game, Board, Move},
@@ -91,7 +92,15 @@ pub mod tutorial {
                 host_player,
                 status: GameStatus::Created,
             });
+
+            PhaseManagementTrait::transition_to_move_phase(
+                board.id,
+                board.top_tile,
+                board.commited_tile,
+                world,
+            );
         }
+
         fn make_move(
             ref self: ContractState, joker_tile: Option<u8>, rotation: u8, mut col: u8, mut row: u8,
         ) {
@@ -131,7 +140,12 @@ pub mod tutorial {
                 return;
             }
 
-            let tile = MoveExecutionTrait::get_tile_for_move(joker_tile, @board);
+            let tile = match MoveExecutionTrait::get_tile_for_move(joker_tile, @board, world, player) {
+                Option::Some(tile) => tile,
+                Option::None => {
+                    return;
+                }
+            };
 
             if !MoveExecutionTrait::validate_move(board_id, tile.into(), rotation, col, row, 7, world) {
                 let move_id = self.move_id_generator.read();
@@ -155,7 +169,7 @@ pub mod tutorial {
             println!("Scoring applied, updating board");
 
             let move_data = MoveData { tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile };
-            let top_tile = MoveExecutionTrait::update_board_after_move(move_data, ref board, is_joker);
+            let top_tile = MoveExecutionTrait::update_board_after_move(move_data, ref board, is_joker, is_tutorial: true);
 
             println!("Board updated, creating move record");
 
@@ -182,6 +196,13 @@ pub mod tutorial {
             println!("Board updates persisted, emitting move events");
             MoveExecutionTrait::emit_move_events(move_record, @board, player, world);
             println!("Move events emitted");
+
+            PhaseManagementTrait::transition_to_move_phase(
+                board.id,
+                board.top_tile,
+                board.commited_tile,
+                world,
+            );
 
             // println!(
             //     "Move made: {:?} \nBoard: {:?} \nUnion find: {:?}",
@@ -348,6 +369,7 @@ pub mod tutorial {
                 finalization_data,
                 ref board,
                 potential_contests,
+                0, // Both
                 world,
             );
         }

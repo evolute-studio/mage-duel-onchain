@@ -1,10 +1,8 @@
 use dojo::{model::{ModelStorage}, world::{WorldStorage}, event::EventStorage};
-use dojo::{model::{ModelStorage}, world::{WorldStorage}, event::EventStorage};
-
-
 use starknet::{ContractAddress};
 use origami_random::{
     deck::{DeckTrait},
+    dice::{DiceTrait},
 };
 
 use evolute_duel::{
