@@ -20,7 +20,7 @@ rpc_url = "https://api.cartridge.gg/x/evolute-duel/katana"
 # Default account for katana with seed = 0
 account_address = "0x5b6b8189bb580f0df1e6d6bec509ff0d6c9be7365d10627e0cf222ec1b47a71"
 private_key = "0x33003003001800009900180300d206308b0070db00121318d17b5e6262150b"
-world_address = "0x55a227da2ac221a6311ec2df35df5c6fc25b450696f6c68bb604c8c350d59b7"
+world_address = "0x0230035e44105bbc11acf2dd1b271a78d53627a810e6a2fb024fd2edcf273c9c"
 
 [writers]
 "evolute_duel" = ["evolute_duel-game", "evolute_duel-player_profile_actions"]
