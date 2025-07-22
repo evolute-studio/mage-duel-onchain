@@ -68,7 +68,7 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
 
     fn validate_move(board_id: felt252, tile: Tile, rotation: u8, col: u8, row: u8, board_size: u32, world: WorldStorage) -> bool {
         is_valid_move(
-            board_id, tile, rotation, col.into(), row.into(), board_size, 1, board_size - 2, 1, board_size - 2, false, world
+            board_id, tile, rotation, col.into(), row.into(), board_size, 1, 1, board_size - 2, board_size - 2, false, world
         )
     }
 
