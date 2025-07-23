@@ -30,14 +30,6 @@ pub mod rewards_manager {
         },
     };
 
-    #[storage]
-    struct Storage {
-    }
-
-    fn dojo_init(self: @ContractState) {
-        
-    }
-
     #[abi(embed_v0)]
     impl RewardManagerImpl of IRewardsManager<ContractState> {
         fn transfer_rewards(ref self: ContractState, player_address: ContractAddress, amount: u128) {

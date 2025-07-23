@@ -23,9 +23,9 @@ private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 # world_address = "0x55a227da2ac221a6311ec2df35df5c6fc25b450696f6c68bb604c8c350d59b7"
 
 [writers]
-"evolute_duel" = ["evolute_duel-game", "evolute_duel-player_profile_actions"]
-"evolute_duel-TrophyCreation" = ["evolute_duel-game", "evolute_duel-player_profile_actions"]
-"evolute_duel-TrophyProgression" = ["evolute_duel-game", "evolute_duel-player_profile_actions"]
+"evolute_duel" = ["evolute_duel-game", "evolute_duel-player_profile_actions", "evolute_duel-metagame", "evolute_duel-rewards_manager"]
+"evolute_duel-TrophyCreation" = ["evolute_duel-game", "evolute_duel-player_profile_actions", "evolute_duel-metagame", "evolute_duel-rewards_manager"]
+"evolute_duel-TrophyProgression" = ["evolute_duel-game", "evolute_duel-player_profile_actions", "evolute_duel-metagame", "evolute_duel-rewards_manager"]
 
 [init_call_args]
 "evolute_duel-player_profile_actions" = ["0x0114c35624bf2Ed7cFc2C6AeB75a982c8263280BE47fefD1dE716D70A180B108"]

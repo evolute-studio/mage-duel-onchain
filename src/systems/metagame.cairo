@@ -4,6 +4,9 @@ use starknet::ContractAddress;
 #[starknet::interface]
 pub trait IMetaGame<T> {
     fn place_tile(ref self: T, tile_index: u32, col: u32, row: u32, rotation: u8);
+
+    // Testing methods
+    fn get_random_deck(ref self: T, player_address: ContractAddress);
 }
 
 
@@ -11,7 +14,7 @@ pub trait IMetaGame<T> {
 #[dojo::contract]
 pub mod metagame {
     use super::super::rewards_manager::IRewardsManagerDispatcherTrait;
-const CENTER_BOARD_COL: u32 = 16384;
+    const CENTER_BOARD_COL: u32 = 16384;
     const CENTER_BOARD_ROW: u32 = 16384;
     const BOARD_SIZE: u32 = 32768; // Assuming a board size of 32768x32768 for the metagame
 
@@ -37,6 +40,7 @@ const CENTER_BOARD_COL: u32 = 16384;
         {get_caller_address, ContractAddress},
         storage::{StoragePointerReadAccess, StoragePointerWriteAccess},
     };
+    use origami_random::deck::{DeckTrait};
     
     #[storage]
     struct Storage {
@@ -171,6 +175,21 @@ const CENTER_BOARD_COL: u32 = 16384;
                     // If no first tile placed, do nothing
                 }
             }
+        }
+
+        fn get_random_deck(ref self: ContractState, player_address: ContractAddress) {
+            let mut world = self.world_default();
+            let season_id = self.current_season_id.read();
+            let mut player_data: MetagamePlayerData = world.read_model((season_id, player_address));
+            let mut new_deck = array![];
+            let mut random_deck = DeckTrait::new('SEED', 24);
+            // Generate a random deck of tiles for the player
+            for i in 0..5_u8 { // Assuming a deck size of 20 tiles
+                let tile = random_deck.draw();
+                new_deck.append(tile);
+            };
+            player_data.deck = new_deck.span();
+            world.write_model(@player_data);
         }
     }
 

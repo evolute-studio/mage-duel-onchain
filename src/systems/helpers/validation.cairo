@@ -28,6 +28,7 @@ pub fn is_valid_move(
     
     //check if valid col and row
     if !(col >= min_col && col <= max_col && row >= min_row && row <= max_row) {
+        println!("Invalid column or row: col={}, row={}, min_col={}, max_col={}, min_row={}, max_row={}", col, row, min_col, max_col, min_row, max_row);
         return false;
     }
     
@@ -41,6 +42,7 @@ pub fn is_valid_move(
         if node.node_type != TEdge::None {is_placed = true;}
     };
     if is_placed {
+        println!("Tile already placed at position: col={}, row={}", col, row);
         return false;
     }
     
@@ -76,6 +78,11 @@ pub fn is_valid_move(
             continue;
         }
         if adjacent_node.node_type != *edges.at(side.into()) && adjacent_node.node_type != TEdge::None {
+            println!("Edge does not match: expected {:?}, found {:?}", edges.at(side.into()), adjacent_node.node_type);
+            println!(
+                "Context: board_id={}, edge_position={}, adjacent_node_position={}, tile_position={}, col={}, row={}", 
+                board_id, edge_position, adjacent_node_position, tile_position, col, row
+            );
             // Edge does not match
             result = false;
             break;
@@ -85,6 +92,7 @@ pub fn is_valid_move(
     };
 
     if actual_connections == 0 && !can_place_not_adjacents {
+        println!("No adjacent connections found for tile at position: col={}, row={}", col, row);
         result = false; 
     }
 

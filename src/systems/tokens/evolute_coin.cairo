@@ -35,7 +35,7 @@ pub trait IEvoluteCoinProtected<TState> {
 }
 
 #[dojo::contract]
-pub mod evolute_token {
+pub mod evolute_coin {
     use core::num::traits::{Bounded};
     use starknet::{ContractAddress};
     use dojo::world::{WorldStorage};

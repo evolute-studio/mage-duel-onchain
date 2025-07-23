@@ -581,7 +581,7 @@ pub mod game {
                 }
             };
 
-            if !MoveExecutionTrait::validate_move(board_id, tile.into(), rotation, col, row, world) {
+            if !MoveExecutionTrait::validate_move(board_id, tile.into(), rotation, col, row, 10, world) {
                 let move_id = self.move_id_generator.read();
                 let move_data = MoveData { tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile };
                 let move_record = MoveExecutionTrait::create_move_record(move_id, move_data, board.last_move_id, board_id);

@@ -12,3 +12,6 @@ transactions = true
 
 [sql] 
 historical = ["evolute_duel-TrophyProgression"]
+
+[server]
+http_cors_origins = ["*"]
