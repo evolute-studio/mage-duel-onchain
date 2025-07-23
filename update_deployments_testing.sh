@@ -61,7 +61,7 @@ fi
 sozo build --profile testing 
 sozo migrate --profile testing
 if [ "$skip_deployments" = false ]; then
-  slot deployments create "$project" --team evolute --tier "$tier" torii --config torii_config_testing.toml --version v1.6.0-alpha.1
+  slot deployments create "$project" --team evolute --tier "$tier" torii --config torii_config_testing.toml #--version v1.6.0-alpha.1
 fi
 sozo inspect --profile testing
 #slot deployments logs liyard-dojo-starter torii -f
