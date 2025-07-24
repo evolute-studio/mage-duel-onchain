@@ -113,6 +113,7 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
         );
 
         board.moves_done = board.moves_done + 1;
+        board.top_tile = top_tile;
 
         top_tile
     }
