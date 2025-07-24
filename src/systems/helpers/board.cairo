@@ -211,7 +211,7 @@ pub impl BoardImpl of BoardTrait {
     fn tutorial_deck() -> Span<u8> {
         // Example deck for tutorial
         let mut deck_rules_flat = ArrayTrait::new();
-        deck_rules_flat.append(Tile::FRFR.into());
+        deck_rules_flat.append(Tile::FFRR.into());
         deck_rules_flat.append(Tile::CRFR.into());
         deck_rules_flat.append(Tile::CCRF.into());
         deck_rules_flat.append(Tile::CCFF.into());
