@@ -215,7 +215,7 @@ pub impl BoardImpl of BoardTrait {
         let mut new_avaliable_tiles = array![];
         for i in 0..self.available_tiles_in_deck.len() {
             let current_tile = *self.available_tiles_in_deck.at(i.into());
-            if current_tile == tile_index {
+            if i == tile_index.into() {
                 new_avaliable_tiles.append(tile.into());
             } else {
                 new_avaliable_tiles.append(current_tile);
