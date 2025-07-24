@@ -181,7 +181,7 @@ pub impl BoardImpl of BoardTrait {
         let board_id = player_address.into();
 
         let rules: Rules = world.read_model(0);
-        let mut deck_rules_flat = Self::tutorial_deck(rules.deck, 0);
+        let mut deck_rules_flat = Self::tutorial_deck(rules.deck);
 
         let last_move_id = Option::None;
         let game_state = GameState::Move;
@@ -209,19 +209,29 @@ pub impl BoardImpl of BoardTrait {
         return board;
     }
 
+    fn replace_tile_in_deck(
+        ref self: Board, tile_index: u8, tile: Tile, world: WorldStorage,
+    ) {
+        let mut new_avaliable_tiles = array![];
+        for i in 0..self.available_tiles_in_deck.len() {
+            let current_tile = *self.available_tiles_in_deck.at(i.into());
+            if current_tile == tile_index {
+                new_avaliable_tiles.append(tile.into());
+            } else {
+                new_avaliable_tiles.append(current_tile);
+            }
+        };
+        self.available_tiles_in_deck = new_avaliable_tiles.span();
+    }
+
     fn tutorial_deck(
         deck_rules: Span<u8>,
-        direction: u8, //0 - left, 1 - right
     ) -> Span<u8> {
         // Example deck for tutorial
         let mut deck_rules_flat = ArrayTrait::new();
         deck_rules_flat.append(Tile::FFRR.into());
         deck_rules_flat.append(Tile::CRFR.into());
-        if direction == 0 {
-            deck_rules_flat.append(Tile::CCFR.into());
-        } else {
-            deck_rules_flat.append(Tile::CCRF.into());
-        }
+        deck_rules_flat.append(Tile::CCFR.into());
         deck_rules_flat.append(Tile::CCFF.into());
         //We have 24 tiles in total, so we can add more tiles to fill the deck
         // Add 1 of each tile type for simplicity

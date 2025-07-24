@@ -117,8 +117,9 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
             if move_data.rotation == 2 {
                 // If the first move if road facing right, we need to change deck
                 println!("Updating deck to right facing tiles");
-                let rules: Rules = world.read_model(0);
-                board.available_tiles_in_deck = BoardTrait::tutorial_deck(rules.deck, 1);
+                BoardTrait::replace_tile_in_deck(
+                    ref board, 2, Tile::CCRF, world
+                );
                 Self::update_avaliable_tiles_in_board(
                     board.id, board.available_tiles_in_deck, world
                 );
