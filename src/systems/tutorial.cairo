@@ -266,14 +266,6 @@ pub mod tutorial {
 
             // Execute skip move
             self._skip_move(player, player_side, ref board, self.move_id_generator, true);
-
-            board.top_tile = Option::None;
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("top_tile"),
-                    board.top_tile,
-                );
             
             // If two consecutive skips, finish the game
             if should_finish_game {
@@ -290,6 +282,13 @@ pub mod tutorial {
             
             MoveExecutionTrait::emit_board_updated_event(
                 @board, world,
+            );
+
+            PhaseManagementTrait::transition_to_move_phase(
+                board.id,
+                board.top_tile,
+                board.commited_tile,
+                world,
             );
         }
     }
@@ -337,10 +336,16 @@ pub mod tutorial {
 
             board.last_move_id = Option::Some(move_id);
             board.moves_done = board.moves_done + 1;
+            board.top_tile = MoveExecutionTrait::update_top_tile_in_tutorial(@board);
             move_id_generator.write(move_id + 1);
 
             world.write_model(@move);
 
+            world.write_member(
+                Model::<Board>::ptr_from_keys(board_id),
+                    selector!("top_tile"),
+                    board.top_tile,
+            );
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
