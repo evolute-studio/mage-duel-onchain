@@ -1,6 +1,6 @@
 use starknet::ContractAddress;
 use evolute_duel::{
-    models::{game::{Board, Move}}, events::{Moved, BoardUpdated, InvalidMove, NotEnoughJokers},
+    models::{game::{Board, Move, Rules}}, events::{Moved, BoardUpdated, InvalidMove, NotEnoughJokers},
     systems::helpers::{validation::{is_valid_move}, board::{BoardTrait}},
     types::packing::{PlayerSide, Tile},
     events::{ErrorEvent}
@@ -117,7 +117,8 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
             if move_data.rotation == 2 {
                 // If the first move if road facing right, we need to change deck
                 println!("Updating deck to right facing tiles");
-                board.available_tiles_in_deck = BoardTrait::tutorial_deck(1);
+                let rules: Rules = world.read_model(0);
+                board.available_tiles_in_deck = BoardTrait::tutorial_deck(rules.deck, 1);
                 Self::update_avaliable_tiles_in_board(
                     board.id, board.available_tiles_in_deck, world
                 );
