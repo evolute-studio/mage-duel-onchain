@@ -75,6 +75,11 @@ pub mod tutorial {
                 return;
             }
 
+            let mut bot_game = world.read_model(bot_address);
+            if !AssertsTrait::assert_ready_to_create_game(@bot_game, world) {
+                return;
+            }
+
             let board = BoardTrait::create_tutorial_board(
                 world,
                 host_player,
@@ -82,10 +87,16 @@ pub mod tutorial {
             );
                 
 
-            game.status = GameStatus::Created;
+            game.status = GameStatus::InProgress;
             game.board_id = Option::Some(board.id);
-
             world.write_model(@game);
+
+            
+            bot_game.status = GameStatus::InProgress;
+            bot_game.board_id = Option::Some(board.id);
+            world.write_model(@bot_game);
+
+
             
             // For now, we will just emit an event indicating the game has been created
             world.emit_event(@GameCreated { 
