@@ -10,7 +10,7 @@ use dojo::model::{ModelStorage, Model};
 use dojo::event::EventStorage;
 use starknet::get_block_timestamp;
 
-#[derive(Drop, Copy)]
+#[derive(Drop, Copy, Debug)]
 pub struct MoveData {
     pub tile: u8,
     pub rotation: u8,
@@ -91,7 +91,7 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
     }
 
     fn update_board_after_move(
-        move_data: MoveData, ref board: Board, is_joker: bool, is_tutorial: bool,
+        move_data: MoveData, ref board: Board, is_joker: bool, is_tutorial: bool, world: WorldStorage,
     ) -> Option<u8> {
         let top_tile = if is_tutorial {
             Self::update_top_tile_in_tutorial(@board)
@@ -103,10 +103,24 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
             ref board, move_data.player_side, is_joker,
         );
 
+        println!(
+            "Updating board after move: move_data: {:?}, is_joker: {}, is_tutorial: {}",
+            move_data, is_joker, is_tutorial
+        );
+        println!(
+            "Board before move: {:?}",
+            board
+        );
+
         if is_tutorial && board.moves_done == 0 {
+            println!("First move in tutorial, updating available tiles in deck");
             if move_data.rotation == 2 {
                 // If the first move if road facing right, we need to change deck
+                println!("Updating deck to right facing tiles");
                 board.available_tiles_in_deck = BoardTrait::tutorial_deck(1);
+                Self::update_avaliable_tiles_in_board(
+                    board.id, board.available_tiles_in_deck, world
+                );
             }
         }
 
@@ -206,6 +220,12 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
                     board_id,
                 },
             );
+    }
+
+    fn update_avaliable_tiles_in_board(board_id: felt252, available_tiles_in_deck: Span<u8>, mut world: WorldStorage) {
+        world.write_member(
+            Model::<Board>::ptr_from_keys(board_id), selector!("available_tiles_in_deck"), available_tiles_in_deck,
+        );
     }
 
     fn persist_board_updates(
