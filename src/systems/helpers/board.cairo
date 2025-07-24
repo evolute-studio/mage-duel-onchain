@@ -180,7 +180,7 @@ pub impl BoardImpl of BoardTrait {
     ) -> Board {
         let board_id = player_address.into();
 
-        let mut deck_rules_flat = Self::tutorial_deck();
+        let mut deck_rules_flat = Self::tutorial_deck(0);
 
         let last_move_id = Option::None;
         let game_state = GameState::Move;
@@ -208,12 +208,18 @@ pub impl BoardImpl of BoardTrait {
         return board;
     }
 
-    fn tutorial_deck() -> Span<u8> {
+    fn tutorial_deck(
+        direction: u8 //0 - left, 1 - right
+    ) -> Span<u8> {
         // Example deck for tutorial
         let mut deck_rules_flat = ArrayTrait::new();
         deck_rules_flat.append(Tile::FFRR.into());
         deck_rules_flat.append(Tile::CRFR.into());
-        deck_rules_flat.append(Tile::CCRF.into());
+        if direction == 0 {
+            deck_rules_flat.append(Tile::CCFR.into());
+        } else {
+            deck_rules_flat.append(Tile::CCRF.into());
+        }
         deck_rules_flat.append(Tile::CCFF.into());
         //We have 24 tiles in total, so we can add more tiles to fill the deck
         // Add 1 of each tile type for simplicity

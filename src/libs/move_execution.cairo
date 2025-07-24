@@ -94,16 +94,7 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
         move_data: MoveData, ref board: Board, is_joker: bool, is_tutorial: bool,
     ) -> Option<u8> {
         let top_tile = if is_tutorial {
-            match @board.top_tile {
-                Option::Some(tile_index) => {
-                    if *tile_index == (board.available_tiles_in_deck.len().try_into().unwrap() - 1) {
-                        Option::None
-                    } else {
-                        Option::Some(*tile_index + 1)
-                    }
-                },
-                Option::None => Option::None, 
-            }
+            Self::update_top_tile_in_tutorial(@board)
         } else {
             Option::None
         };
@@ -112,10 +103,30 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
             ref board, move_data.player_side, is_joker,
         );
 
+        if is_tutorial && board.moves_done == 0 {
+            if move_data.rotation == 2 {
+                // If the first move if road facing right, we need to change deck
+                board.available_tiles_in_deck = BoardTrait::tutorial_deck(1);
+            }
+        }
+
         board.moves_done = board.moves_done + 1;
         board.top_tile = top_tile;
 
         top_tile
+    }
+
+    fn update_top_tile_in_tutorial(board: @Board) -> Option<u8> {
+        match board.top_tile {
+            Option::Some(tile_index) => {
+                if *tile_index == ((*board.available_tiles_in_deck).len().try_into().unwrap() - 1) {
+                    Option::None
+                } else {
+                    Option::Some(*tile_index + 1)
+                }
+            },
+            Option::None => Option::None, 
+        }
     }
 
     fn emit_move_events(
