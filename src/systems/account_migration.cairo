@@ -85,11 +85,13 @@ pub mod account_migration {
 
             let guest_player: Player = world.read_model(caller);
             let controller_player: Player = world.read_model(target_controller);
+            // Check for existing active requests
+            let existing_request: MigrationRequest = world.read_model(caller);
 
             // VALIDATION OF GUEST ACCOUNT:
             assert!(guest_player.is_guest(), "Only guest can initiate migration");
             assert!(guest_player.tutorial_completed, "Tutorial not completed");
-            assert!(!guest_player.has_pending_migration(), "Migration already initiated");
+            assert!(existing_request.is_expired(current_time) || !guest_player.has_pending_migration(), "Migration already initiated");
             assert!(!guest_player.migration_used, "Migration already used");
 
             // VALIDATION OF TARGET ACCOUNT:
@@ -98,8 +100,6 @@ pub mod account_migration {
             assert!(!controller_player.tutorial_completed, "Controller completed tutorial");
             assert!(!controller_player.migration_used, "Controller already received migration");
 
-            // Check for existing active requests
-            let existing_request: MigrationRequest = world.read_model(caller);
             assert!(
                 existing_request.status == 0 || 
                 existing_request.is_expired(current_time) || 

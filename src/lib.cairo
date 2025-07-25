@@ -72,6 +72,7 @@ pub mod tests {
         // pub mod trait_test_helpers;
     }
     pub mod test_world;
+    pub mod test_account_migration;
     // pub mod test_scoring;
     // pub mod test_tile_reveal;
     // pub mod test_game_finalization;
