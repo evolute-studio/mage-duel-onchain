@@ -4,6 +4,7 @@ pub mod systems {
     pub mod player_profile_actions;
     // pub mod rewards_manager;
     pub mod tutorial;
+    pub mod account_migration;
     pub mod helpers {
         pub mod board;
         pub mod union_find;
@@ -26,6 +27,7 @@ pub mod models {
     pub mod skins;
     pub mod metagame;
     pub mod config;
+    pub mod migration;
 }
 
 pub mod events;

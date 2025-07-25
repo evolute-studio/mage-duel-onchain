@@ -15,6 +15,10 @@ pub trait ITutorial<T> {
     );
 
     fn skip_move(ref self: T);
+
+    /// Complete tutorial and mark player as tutorial completed.
+    /// - `game_id`: The game ID to verify completion.
+    fn complete_tutorial(ref self: T, game_id: u32);
 }   
 
 
@@ -44,7 +48,9 @@ pub mod tutorial {
         models::{
             game::{Game, Board, Move},
             scoring::{PotentialContests},
+            player::{Player, PlayerTrait},
         },
+        events::{TutorialCompleted},
         types::{
             packing::{GameStatus, GameState, PlayerSide},
         },
@@ -291,6 +297,40 @@ pub mod tutorial {
                 world,
             );
         }
+
+        fn complete_tutorial(ref self: ContractState, game_id: u32) {
+            let mut world = self.world_default();
+            let caller = get_caller_address();
+            let current_time = get_block_timestamp();
+
+            // Get the game to verify it's finished
+            let game: Game = world.read_model(game_id);
+            assert!(game.status == GameStatus::Finished, "Tutorial game not finished");
+            
+            // Verify caller participated in this game
+            let board: Board = world.read_model(game_id);
+            let (player1_address, _, _) = board.player1;
+            let (player2_address, _, _) = board.player2;
+            
+            assert!(
+                caller == player1_address || caller == player2_address,
+                "Caller did not participate in this game"
+            );
+
+            // Update player to mark tutorial as completed
+            let mut player: Player = world.read_model(caller);
+            assert!(player.is_guest(), "Only guest accounts can complete tutorial");
+            assert!(!player.tutorial_completed, "Tutorial already completed");
+
+            player.tutorial_completed = true;
+            world.write_model(@player);
+
+            // Emit tutorial completion event
+            world.emit_event(@TutorialCompleted {
+                player_id: caller,
+                completed_at: current_time
+            });
+        }
     }
 
     
@@ -395,6 +435,7 @@ pub mod tutorial {
                 world,
             );
         }
+
     }
    
 }
