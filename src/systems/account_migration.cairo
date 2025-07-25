@@ -71,7 +71,6 @@ pub mod account_migration {
 
     // Constants
     const MIGRATION_TIMEOUT: u64 = 3600; // 1 hour for confirmation
-    const MIN_TUTORIAL_COMPLETION_TIME: u64 = 300; // 5 minutes minimum tutorial time
 
     fn dojo_init(ref self: ContractState, creator_address: ContractAddress) {
         self.ownable.initializer(creator_address);
@@ -91,16 +90,20 @@ pub mod account_migration {
             assert!(guest_player.is_guest(), "Only guest can initiate migration");
             assert!(guest_player.tutorial_completed, "Tutorial not completed");
             assert!(!guest_player.has_pending_migration(), "Migration already initiated");
+            assert!(!guest_player.migration_used, "Migration already used");
 
             // VALIDATION OF TARGET ACCOUNT:
             assert!(controller_player.is_controller(), "Target must be controller");
             assert!(controller_player.games_played == 0, "Controller has existing progress");
             assert!(!controller_player.tutorial_completed, "Controller completed tutorial");
+            assert!(!controller_player.migration_used, "Controller already received migration");
 
             // Check for existing active requests
             let existing_request: MigrationRequest = world.read_model(caller);
             assert!(
-                existing_request.status == 0 || existing_request.is_expired(current_time),
+                existing_request.status == 0 || 
+                existing_request.is_expired(current_time) || 
+                existing_request.is_rejected(),
                 "Active migration request exists"
             );
 
@@ -169,13 +172,6 @@ pub mod account_migration {
                 "Target mismatch"
             );
 
-            // Anti-bot protection: check tutorial completion time
-            let tutorial_duration = migration_request.requested_at - guest_player.migration_initiated_at;
-            assert!(
-                tutorial_duration >= MIN_TUTORIAL_COMPLETION_TIME,
-                "Tutorial completed too quickly"
-            );
-
             // EXECUTE MIGRATION:
             let balance_to_transfer = guest_player.balance;
             let games_to_transfer = guest_player.games_played;
@@ -183,6 +179,7 @@ pub mod account_migration {
             controller_player.balance += guest_player.balance;
             controller_player.games_played = guest_player.games_played;
             controller_player.tutorial_completed = true;
+            controller_player.migration_used = true;
 
             // Transfer better skin if guest has one
             if guest_player.active_skin > controller_player.active_skin {
@@ -197,6 +194,7 @@ pub mod account_migration {
             cleaned_guest.active_skin = 0;
             cleaned_guest.migration_target = Zero::zero();
             cleaned_guest.migration_initiated_at = 0;
+            cleaned_guest.migration_used = true; // Mark as used to prevent re-migration
 
             // Close the request
             let mut completed_request = migration_request;
