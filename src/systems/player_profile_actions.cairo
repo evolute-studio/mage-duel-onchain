@@ -47,11 +47,12 @@ pub mod player_profile_actions {
 
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
+    use core::num::traits::Zero;
 
 
     use evolute_duel::{
         events::{PlayerUsernameChanged, PlayerSkinChanged, PlayerSkinChangeFailed},
-        models::{player::{Player}, skins::{Shop}}, types::packing::{},
+        models::{player::{Player, PlayerTrait}, skins::{Shop}}, types::packing::{},
     };
     use evolute_duel::libs::achievements::AchievementsTrait;
     use openzeppelin_access::ownable::OwnableComponent;
@@ -161,6 +162,7 @@ pub mod player_profile_actions {
         fn become_bot(ref self: ContractState) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
+            self._check_if_empty_guest(player_id);
             let mut player: Player = world.read_model(player_id);
             player.role = 2;
             world.write_model(@player);
@@ -169,6 +171,7 @@ pub mod player_profile_actions {
         fn become_controller(ref self: ContractState) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
+            self._check_if_empty_guest(player_id);
             let mut player: Player = world.read_model(player_id);
             player.role = 1;
             world.write_model(@player);
@@ -179,6 +182,21 @@ pub mod player_profile_actions {
     impl InternalImpl of InternalTrait {
         fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
             self.world(@"evolute_duel")
+        }
+
+        fn _check_if_empty_guest(self: @ContractState, guest_address: ContractAddress) {
+            let world = self.world_default();
+            let guest_player: Player = world.read_model(guest_address);
+            assert!(guest_player.is_guest(), "Only guest can perform this action");
+            assert!(guest_player.username.is_zero(), "Guest account must have no username");
+            assert!(guest_player.balance.is_zero(), "Guest account must have zero balance");
+            assert!(guest_player.games_played.is_zero(), "Guest account must have zero games played");
+            assert!(guest_player.active_skin == 0, "Guest account must have default skin");
+            assert!(guest_player.role == 0, "Guest account must have role 0 (Guest)");
+            assert!(!guest_player.tutorial_completed, "Guest account must not have completed tutorial");
+            assert!(guest_player.migration_target.is_zero(), "Guest account must not have migration target");
+            assert!(guest_player.migration_initiated_at.is_zero(), "Guest account must not have migration initiated time");
+            assert!(!guest_player.migration_used, "Guest account must not have used migration");
         }
     }
 }
