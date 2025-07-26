@@ -20,9 +20,9 @@ rpc_url = "https://api.cartridge.gg/x/evolute-duel-provable/katana"
 # Default account for katana with seed = 0
 account_address = "0x1f401c745d3dba9b9da11921d1fb006c96f571e9039a0ece3f3b0dc14f04c3d"
 private_key = "0x7230b49615d175307d580c33d6fda61fc7b9aec91df0f5c1a5ebe3b8cbfee02"
-#world_address = "0x06a4d87ac4a224fbc633b46ec896545f8783cfc6d87ce8a4ef8c5630a3c17711"
+#world_address = "0x0230035e44105bbc11acf2dd1b271a78d53627a810e6a2fb024fd2edcf273c9c"
 
 [writers]
-"evolute_duel" = ["evolute_duel-game", "evolute_duel-player_profile_actions", "evolute_duel-metagame", "evolute_duel-rewards_manager"]
-"evolute_duel-TrophyCreation" = ["evolute_duel-game", "evolute_duel-player_profile_actions", "evolute_duel-metagame", "evolute_duel-rewards_manager"]
-"evolute_duel-TrophyProgression" = ["evolute_duel-game", "evolute_duel-player_profile_actions", "evolute_duel-metagame", "evolute_duel-rewards_manager"]
+"evolute_duel" = ["evolute_duel-game", "evolute_duel-player_profile_actions", "evolute_duel-tutorial", "evolute_duel-metagame", "evolute_duel-rewards_manager"]
+"evolute_duel-TrophyCreation" = ["evolute_duel-game", "evolute_duel-player_profile_actions", "evolute_duel-tutorial", "evolute_duel-metagame", "evolute_duel-rewards_manager"]
+"evolute_duel-TrophyProgression" = ["evolute_duel-game", "evolute_duel-player_profile_actions", "evolute_duel-tutorial", "evolute_duel-metagame", "evolute_duel-rewards_manager"]

@@ -1,6 +1,6 @@
 use starknet::ContractAddress;
 use evolute_duel::{
-    models::{game::{Board, Move}}, events::{Moved, BoardUpdated, InvalidMove, NotEnoughJokers},
+    models::{game::{Board, Move, Rules}}, events::{Moved, BoardUpdated, InvalidMove, NotEnoughJokers},
     systems::helpers::{validation::{is_valid_move}, board::{BoardTrait}},
     types::packing::{PlayerSide, Tile},
     events::{ErrorEvent}
@@ -10,7 +10,7 @@ use dojo::model::{ModelStorage, Model};
 use dojo::event::EventStorage;
 use starknet::get_block_timestamp;
 
-#[derive(Drop, Copy)]
+#[derive(Drop, Copy, Debug)]
 pub struct MoveData {
     pub tile: u8,
     pub rotation: u8,
@@ -91,17 +91,58 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
     }
 
     fn update_board_after_move(
-        move_data: MoveData, ref board: Board, is_joker: bool,
+        move_data: MoveData, ref board: Board, is_joker: bool, is_tutorial: bool, world: WorldStorage,
     ) -> Option<u8> {
-        let top_tile = Option::None;
+        let top_tile = if is_tutorial {
+            Self::update_top_tile_in_tutorial(@board)
+        } else {
+            Option::None
+        };
 
         let (_, _) = BoardTrait::update_board_joker_number(
             ref board, move_data.player_side, is_joker,
         );
 
+        println!(
+            "Updating board after move: move_data: {:?}, is_joker: {}, is_tutorial: {}",
+            move_data, is_joker, is_tutorial
+        );
+        println!(
+            "Board before move: {:?}",
+            board
+        );
+
+        if is_tutorial && board.moves_done == 0 {
+            println!("First move in tutorial, updating available tiles in deck");
+            if move_data.rotation == 2 {
+                // If the first move if road facing right, we need to change deck
+                println!("Updating deck to right facing tiles");
+                BoardTrait::replace_tile_in_deck(
+                    ref board, 2, Tile::CCRF, world
+                );
+                Self::update_avaliable_tiles_in_board(
+                    board.id, board.available_tiles_in_deck, world
+                );
+            }
+        }
+
         board.moves_done = board.moves_done + 1;
+        board.top_tile = top_tile;
 
         top_tile
+    }
+
+    fn update_top_tile_in_tutorial(board: @Board) -> Option<u8> {
+        match board.top_tile {
+            Option::Some(tile_index) => {
+                if *tile_index == ((*board.available_tiles_in_deck).len().try_into().unwrap() - 1) {
+                    Option::None
+                } else {
+                    Option::Some(*tile_index + 1)
+                }
+            },
+            Option::None => Option::None, 
+        }
     }
 
     fn emit_move_events(
@@ -181,6 +222,12 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
                     board_id,
                 },
             );
+    }
+
+    fn update_avaliable_tiles_in_board(board_id: felt252, available_tiles_in_deck: Span<u8>, mut world: WorldStorage) {
+        world.write_member(
+            Model::<Board>::ptr_from_keys(board_id), selector!("available_tiles_in_deck"), available_tiles_in_deck,
+        );
     }
 
     fn persist_board_updates(

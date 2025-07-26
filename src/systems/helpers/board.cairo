@@ -1,20 +1,22 @@
 use dojo::{model::{ModelStorage}, world::{WorldStorage}, event::EventStorage};
-
-
 use starknet::{ContractAddress};
 use origami_random::{
     deck::{DeckTrait},
+    dice::{DiceTrait},
 };
 
 use evolute_duel::{
     models::{scoring::{UnionNode}, game::{Board, Rules, AvailableTiles}},
-    types::packing::{GameState, TEdge, PlayerSide},
+    types::packing::{GameState, TEdge, Tile, PlayerSide},
+    systems::helpers::{
+    },
     events::{PlayerNotInGame},
 };
 
 use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
 use core::starknet::get_block_timestamp;
+
 
 #[generate_trait]
 pub impl BoardImpl of BoardTrait {
@@ -169,5 +171,116 @@ pub impl BoardImpl of BoardTrait {
         let (_, _, joker_number1) = *self.player1;
         let (_, _, joker_number2) = *self.player2;
         (joker_number1, joker_number2)
+    }
+
+    fn create_tutorial_board(
+        mut world: WorldStorage,
+        player_address: ContractAddress,
+        bot_address: ContractAddress,
+    ) -> Board {
+        let board_id = player_address.into();
+
+        let rules: Rules = world.read_model(0);
+        let mut deck_rules_flat = Self::tutorial_deck(rules.deck);
+
+        let last_move_id = Option::None;
+        let game_state = GameState::Move;
+
+        let mut board = Board {
+            id: board_id,
+            available_tiles_in_deck: deck_rules_flat,
+            top_tile: Option::Some(0),
+            player1: (player_address, PlayerSide::Blue, 2),
+            player2: (bot_address, PlayerSide::Red, 2),
+            blue_score: (0, 0),
+            red_score: (0, 0),
+            last_move_id,
+            moves_done: 0,
+            game_state,
+            commited_tile: Option::None,
+            phase_started_at: get_block_timestamp(),
+        };
+
+        world.write_model(@board);
+
+        // Initialize edges
+        Self::generate_tutorial_initial_board_state(board_id, world);
+
+        return board;
+    }
+
+    fn replace_tile_in_deck(
+        ref self: Board, tile_index: u8, tile: Tile, world: WorldStorage,
+    ) {
+        let mut new_avaliable_tiles = array![];
+        for i in 0..self.available_tiles_in_deck.len() {
+            let current_tile = *self.available_tiles_in_deck.at(i.into());
+            if i == tile_index.into() {
+                new_avaliable_tiles.append(tile.into());
+            } else {
+                new_avaliable_tiles.append(current_tile);
+            }
+        };
+        self.available_tiles_in_deck = new_avaliable_tiles.span();
+    }
+
+    fn tutorial_deck(
+        deck_rules: Span<u8>,
+    ) -> Span<u8> {
+        // Example deck for tutorial
+        let mut deck_rules_flat = ArrayTrait::new();
+        deck_rules_flat.append(Tile::FFRR.into());
+        deck_rules_flat.append(Tile::CRFR.into());
+        deck_rules_flat.append(Tile::CCFR.into());
+        deck_rules_flat.append(Tile::CCFF.into());
+        //We have 24 tiles in total, so we can add more tiles to fill the deck
+        // Add 1 of each tile type for simplicity
+        let mut i: u8 = 4;
+        let flatten_deck_rules = Self::flatten_deck_rules(deck_rules);
+        let mut random_deck = DeckTrait::new(
+            ('TUTORIAL_DECK' + get_block_timestamp().into()),
+            flatten_deck_rules.len(),
+        );
+        while i < 25 {
+            let tile_index = random_deck.draw().into() - 1;
+            let tile_type = *flatten_deck_rules.at(tile_index);
+            deck_rules_flat.append(tile_type);
+            i += 1;
+        };
+        return deck_rules_flat.span();
+    }
+
+    fn generate_tutorial_initial_board_state(
+        board_id: felt252, mut world: WorldStorage,
+    ) {
+        let bases = array![
+            0,
+            6 * 7 * 4 + 3,
+            (6 * 7 + 6) * 4 + 2,
+            6 * 4 + 1,
+        ].span();
+
+        let steps: Span<i32> = array![7 * 4, 4, -7 * 4, -4].span();
+
+        let edges_positions = array![2, 2, 3, 4];
+
+        let edges_types = array![TEdge::R, TEdge::C, TEdge::R, TEdge::C].span();
+
+        for side in 0..4_u8 {
+            let position = (*bases.at(side.into()) + (*steps.at(side.into())) * (*edges_positions.at(side.into())));
+            let node_type = *edges_types.at(side.into());
+            world.write_model(@UnionNode {
+                board_id,
+                position: position.try_into().unwrap(),
+                parent: position.try_into().unwrap(),
+                rank: 0,
+                blue_points: 0,
+                red_points: 0,
+                open_edges: 1,
+                contested: false,
+                node_type: node_type.into(),
+                player_side: PlayerSide::None, // No player assigned yet
+            });
+        };
     }
 }

@@ -1,4 +1,4 @@
-use evolute_duel::types::packing::{PlayerSide, TEdge};
+use evolute_duel::types::packing::{PlayerSide, TEdge}; 
 
 // --------------------------------------
 // Scoring Models

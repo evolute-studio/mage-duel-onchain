@@ -1,4 +1,4 @@
-world_address="0x06a4d87ac4a224fbc633b46ec896545f8783cfc6d87ce8a4ef8c5630a3c17711"
+world_address="0x0230035e44105bbc11acf2dd1b271a78d53627a810e6a2fb024fd2edcf273c9c"
 rpc="https://api.cartridge.gg/x/evolute-duel-provable/katana"
 [events]
 raw = true 

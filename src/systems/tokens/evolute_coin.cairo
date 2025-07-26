@@ -120,7 +120,7 @@ pub mod evolute_coin {
             amount: u128,
         ) {
             // validate caller (duelist token contract)
-            let minter_address: ContractAddress = self.coin.assert_caller_is_minter();
+            let _minter_address: ContractAddress = self.coin.assert_caller_is_minter();
 
             self.coin.mint(player_address, amount.into());
         }

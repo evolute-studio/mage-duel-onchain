@@ -14,7 +14,6 @@ pub mod rewards_manager {
     use starknet::ContractAddress;
     use dojo::{
         world::WorldStorage, 
-        model::ModelStorage,
     };
     use evolute_duel::{
         systems::{

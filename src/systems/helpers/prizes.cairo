@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use core::hash::{HashStateTrait, HashStateExTrait};
+use core::hash::{HashStateTrait};
 use core::poseidon::PoseidonTrait;
 
 // Константы для настройки системы призов

@@ -1,8 +1,10 @@
 pub mod systems {
     pub mod game;
-    pub mod metagame;
+    // pub mod metagame;
     pub mod player_profile_actions;
-    pub mod rewards_manager;
+    // pub mod rewards_manager;
+    pub mod tutorial;
+    pub mod account_migration;
     pub mod helpers {
         pub mod board;
         pub mod union_find;
@@ -13,9 +15,9 @@ pub mod systems {
         pub mod validation;
         pub mod prizes;
     }
-    pub mod tokens {
-        pub mod evolute_coin;
-    }
+    // pub mod tokens {
+    //     pub mod evolute_coin;
+    // }
 }
 
 pub mod models {
@@ -25,6 +27,7 @@ pub mod models {
     pub mod skins;
     pub mod metagame;
     pub mod config;
+    pub mod migration;
 }
 
 pub mod events;
@@ -48,20 +51,20 @@ pub mod libs {
     pub mod player_data;
 }
 
-pub mod components {
-    pub mod coin_component;
-}
+// pub mod components {
+//     pub mod coin_component;
+// }
 
 pub mod utils {
     pub mod hash;
 }
 
-pub mod interfaces {
-    pub mod dns;
-    pub mod ierc20;
-    pub mod ierc721;
-    pub mod vrf;
-}
+// pub mod interfaces {
+//     pub mod dns;
+//     pub mod ierc20;
+//     pub mod ierc721;
+//     pub mod vrf;
+// }
 
 pub mod tests {
     pub mod test_helpers {
@@ -69,6 +72,7 @@ pub mod tests {
         // pub mod trait_test_helpers;
     }
     pub mod test_world;
+    pub mod test_account_migration;
     // pub mod test_scoring;
     // pub mod test_tile_reveal;
     // pub mod test_game_finalization;

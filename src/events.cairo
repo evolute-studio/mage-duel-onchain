@@ -268,3 +268,66 @@ pub struct PhaseStarted {
     pub commited_tile: Option<u8>,
     pub started_at: u64,
 }
+
+// --------------------------------------
+// Migration Events
+// --------------------------------------
+
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct MigrationInitiated {
+    #[key]
+    pub guest_address: ContractAddress,
+    #[key]
+    pub controller_address: ContractAddress,
+    pub expires_at: u64,
+}
+
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct MigrationConfirmed {
+    #[key]
+    pub guest_address: ContractAddress,
+    #[key]
+    pub controller_address: ContractAddress,
+    pub confirmed_at: u64,
+}
+
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct MigrationCompleted {
+    #[key]
+    pub guest_address: ContractAddress,
+    #[key]
+    pub controller_address: ContractAddress,
+    pub balance_transferred: u32,
+    pub games_transferred: felt252,
+}
+
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct MigrationCancelled {
+    #[key]
+    pub guest_address: ContractAddress,
+    #[key]
+    pub controller_address: ContractAddress,
+    pub cancelled_at: u64,
+}
+
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct EmergencyMigrationCancelled {
+    #[key]
+    pub guest_address: ContractAddress,
+    #[key]
+    pub admin_address: ContractAddress,
+    pub reason: ByteArray,
+}
+
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct TutorialCompleted {
+    #[key]
+    pub player_id: ContractAddress,
+    pub completed_at: u64,
+}

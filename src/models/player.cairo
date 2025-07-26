@@ -1,4 +1,5 @@
 use starknet::ContractAddress;
+use core::num::traits::Zero;
 // --------------------------------------
 // Player Profile Models
 // --------------------------------------
@@ -20,6 +21,10 @@ pub struct Player {
     pub games_played: felt252,
     pub active_skin: u8,
     pub role: u8, // 0: Guest, 1: Controller, 2: Bot
+    pub tutorial_completed: bool,
+    pub migration_target: ContractAddress,
+    pub migration_initiated_at: u64,
+    pub migration_used: bool, // Prevents repeated migrations
 }
 
 #[generate_trait]
@@ -34,6 +39,14 @@ pub impl PlayerImpl of PlayerTrait {
 
     fn is_guest(self: @Player) -> bool {
         *self.role == 0
+    }
+
+    fn can_migrate(self: @Player) -> bool {
+        *self.role == 0 && *self.tutorial_completed && (*self.migration_target).is_zero() && !*self.migration_used
+    }
+
+    fn has_pending_migration(self: @Player) -> bool {
+        !(*self.migration_target).is_zero()
     }
 }
 

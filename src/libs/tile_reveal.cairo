@@ -10,7 +10,6 @@ use evolute_duel::{
 use dojo::{model::{ModelStorage, Model}};
 use evolute_duel::utils::hash::{hash_values};
 
-
 #[derive(Drop, Copy)]
 pub struct TileRevealData {
     pub board_id: felt252,

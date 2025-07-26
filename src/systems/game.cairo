@@ -603,7 +603,7 @@ pub mod game {
             println!("Scoring applied, updating board");
 
             let move_data = MoveData { tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile };
-            let top_tile = MoveExecutionTrait::update_board_after_move(move_data, ref board, is_joker);
+            let top_tile = MoveExecutionTrait::update_board_after_move(move_data, ref board, is_joker, is_tutorial: false, world: world);
 
             println!("Board updated, creating move record");
 
@@ -698,8 +698,8 @@ pub mod game {
             let should_finish_game = TimingTrait::check_two_consecutive_skips(@board, world);
 
             // Execute skip move
-            self._skip_move(player, player_side, ref board, self.move_id_generator, true);        
-
+            self._skip_move(player, player_side, ref board, self.move_id_generator, true);
+            
             board.top_tile = Option::None;
             world
                 .write_member(
