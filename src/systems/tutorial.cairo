@@ -122,6 +122,11 @@ pub mod tutorial {
                 board.commited_tile,
                 world,
             );
+
+            println!(
+                "Tutorial game created: Host: {:?}, Bot: {:?}, Board ID: {:?}",
+                host_player, bot_address, board.id
+            );
         }
 
         fn make_move(

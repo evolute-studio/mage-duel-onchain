@@ -29,7 +29,8 @@ private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
     "evolute_duel-account_migration", 
     "evolute_duel-metagame", 
     "evolute_duel-rewards_manager", 
-    "evolute_duel-evolute_coin"]
+    "evolute_duel-evolute_coin"
+]
 "evolute_duel-TrophyCreation" = ["evolute_duel-game", "evolute_duel-tutorial"]
 "evolute_duel-TrophyProgression" = ["evolute_duel-game", "evolute_duel-player_profile_actions", "evolute_duel-tutorial"]
 

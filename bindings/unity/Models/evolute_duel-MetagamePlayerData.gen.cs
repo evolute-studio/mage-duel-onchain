@@ -14,25 +14,23 @@ public abstract record Option<A>() : Enum {
     public record None() : Option<A>;
 }
 
-// Type definition for `evolute_duel::types::packing::GameStatus` enum
-public abstract record GameStatus() : Enum {
-    public record Finished() : GameStatus;
-    public record Created() : GameStatus;
-    public record Canceled() : GameStatus;
-    public record InProgress() : GameStatus;
-}
 
+// Model definition for `evolute_duel::models::metagame::MetagamePlayerData` model
+public class evolute_duel_MetagamePlayerData : ModelInstance {
+    [ModelField("season_id")]
+        public FieldElement season_id;
 
-// Model definition for `evolute_duel::models::game::Game` model
-public class evolute_duel_Game : ModelInstance {
-    [ModelField("player")]
-        public FieldElement player;
+        [ModelField("player_address")]
+        public FieldElement player_address;
 
-        [ModelField("status")]
-        public GameStatus status;
+        [ModelField("deck")]
+        public byte[] deck;
 
-        [ModelField("board_id")]
-        public Option<FieldElement> board_id;
+        [ModelField("tiles_placed")]
+        public uint tiles_placed;
+
+        [ModelField("first_tile_placed")]
+        public Option<Position> first_tile_placed;
 
     // Start is called before the first frame update
     void Start() {

@@ -10,23 +10,42 @@ using System.Linq;
 using Enum = Dojo.Starknet.Enum;
 using BigInteger = System.Numerics.BigInteger;
 
-// System definitions for `evolute_duel-rewards_manager` contract
-public class Rewards_manager : MonoBehaviour {
+// System definitions for `evolute_duel-metagame` contract
+public class Metagame : MonoBehaviour {
     // The address of this contract
     public string contractAddress;
 
     
-    // Call the `transfer_rewards` system with the specified Account and calldata
+    // Call the `place_tile` system with the specified Account and calldata
     // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
-    public async Task<FieldElement> transfer_rewards(Account account, FieldElement player_address, BigInteger amount) {
+    public async Task<FieldElement> place_tile(Account account, uint tile_index, uint col, uint row, byte rotation) {
         List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
-        calldata.Add(player_address.Inner);
-		calldata.Add(new FieldElement(amount).Inner);
+        calldata.Add(new FieldElement(tile_index).Inner);
+		calldata.Add(new FieldElement(col).Inner);
+		calldata.Add(new FieldElement(row).Inner);
+		calldata.Add(new FieldElement(rotation).Inner);
 
         return await account.ExecuteRaw(new dojo.Call[] {
             new dojo.Call{
                 to = new FieldElement(contractAddress).Inner,
-                selector = "transfer_rewards",
+                selector = "place_tile",
+                calldata = calldata.ToArray()
+            }
+        });
+    }
+            
+
+    
+    // Call the `get_random_deck` system with the specified Account and calldata
+    // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
+    public async Task<FieldElement> get_random_deck(Account account, FieldElement player_address) {
+        List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
+        calldata.Add(player_address.Inner);
+
+        return await account.ExecuteRaw(new dojo.Call[] {
+            new dojo.Call{
+                to = new FieldElement(contractAddress).Inner,
+                selector = "get_random_deck",
                 calldata = calldata.ToArray()
             }
         });

@@ -10,22 +10,56 @@ using System.Linq;
 using Enum = Dojo.Starknet.Enum;
 using BigInteger = System.Numerics.BigInteger;
 
-// System definitions for `evolute_duel-game` contract
-public class Game : MonoBehaviour {
+// System definitions for `evolute_duel-account_migration` contract
+public class Account_migration : MonoBehaviour {
     // The address of this contract
     public string contractAddress;
 
     
-    // Call the `create_game` system with the specified Account and calldata
+    // Call the `initiate_migration` system with the specified Account and calldata
     // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
-    public async Task<FieldElement> create_game(Account account) {
+    public async Task<FieldElement> initiate_migration(Account account, FieldElement target_controller) {
+        List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
+        calldata.Add(target_controller.Inner);
+
+        return await account.ExecuteRaw(new dojo.Call[] {
+            new dojo.Call{
+                to = new FieldElement(contractAddress).Inner,
+                selector = "initiate_migration",
+                calldata = calldata.ToArray()
+            }
+        });
+    }
+            
+
+    
+    // Call the `confirm_migration` system with the specified Account and calldata
+    // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
+    public async Task<FieldElement> confirm_migration(Account account, FieldElement guest_address) {
+        List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
+        calldata.Add(guest_address.Inner);
+
+        return await account.ExecuteRaw(new dojo.Call[] {
+            new dojo.Call{
+                to = new FieldElement(contractAddress).Inner,
+                selector = "confirm_migration",
+                calldata = calldata.ToArray()
+            }
+        });
+    }
+            
+
+    
+    // Call the `cancel_migration` system with the specified Account and calldata
+    // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
+    public async Task<FieldElement> cancel_migration(Account account) {
         List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
         
 
         return await account.ExecuteRaw(new dojo.Call[] {
             new dojo.Call{
                 to = new FieldElement(contractAddress).Inner,
-                selector = "create_game",
+                selector = "cancel_migration",
                 calldata = calldata.ToArray()
             }
         });
@@ -33,16 +67,16 @@ public class Game : MonoBehaviour {
             
 
     
-    // Call the `cancel_game` system with the specified Account and calldata
+    // Call the `execute_migration` system with the specified Account and calldata
     // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
-    public async Task<FieldElement> cancel_game(Account account) {
+    public async Task<FieldElement> execute_migration(Account account, FieldElement guest_address) {
         List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
-        
+        calldata.Add(guest_address.Inner);
 
         return await account.ExecuteRaw(new dojo.Call[] {
             new dojo.Call{
                 to = new FieldElement(contractAddress).Inner,
-                selector = "cancel_game",
+                selector = "execute_migration",
                 calldata = calldata.ToArray()
             }
         });
@@ -50,127 +84,16 @@ public class Game : MonoBehaviour {
             
 
     
-    // Call the `join_game` system with the specified Account and calldata
+    // Call the `emergency_cancel_migration` system with the specified Account and calldata
     // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
-    public async Task<FieldElement> join_game(Account account, FieldElement host_player) {
+    public async Task<FieldElement> emergency_cancel_migration(Account account, FieldElement guest_address) {
         List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
-        calldata.Add(host_player.Inner);
+        calldata.Add(guest_address.Inner);
 
         return await account.ExecuteRaw(new dojo.Call[] {
             new dojo.Call{
                 to = new FieldElement(contractAddress).Inner,
-                selector = "join_game",
-                calldata = calldata.ToArray()
-            }
-        });
-    }
-            
-
-    
-    // Call the `commit_tiles` system with the specified Account and calldata
-    // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
-    public async Task<FieldElement> commit_tiles(Account account, uint[] commitments) {
-        List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
-        calldata.Add(new FieldElement(commitments.Length).Inner);
-		calldata.AddRange(commitments.SelectMany(commitmentsItem => new [] { new FieldElement(commitmentsItem).Inner }));
-
-        return await account.ExecuteRaw(new dojo.Call[] {
-            new dojo.Call{
-                to = new FieldElement(contractAddress).Inner,
-                selector = "commit_tiles",
-                calldata = calldata.ToArray()
-            }
-        });
-    }
-            
-
-    
-    // Call the `reveal_tile` system with the specified Account and calldata
-    // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
-    public async Task<FieldElement> reveal_tile(Account account, byte tile_index, FieldElement nonce, byte c) {
-        List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
-        calldata.Add(new FieldElement(tile_index).Inner);
-		calldata.Add(nonce.Inner);
-		calldata.Add(new FieldElement(c).Inner);
-
-        return await account.ExecuteRaw(new dojo.Call[] {
-            new dojo.Call{
-                to = new FieldElement(contractAddress).Inner,
-                selector = "reveal_tile",
-                calldata = calldata.ToArray()
-            }
-        });
-    }
-            
-
-    
-    // Call the `request_next_tile` system with the specified Account and calldata
-    // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
-    public async Task<FieldElement> request_next_tile(Account account, byte tile_index, FieldElement nonce, byte c) {
-        List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
-        calldata.Add(new FieldElement(tile_index).Inner);
-		calldata.Add(nonce.Inner);
-		calldata.Add(new FieldElement(c).Inner);
-
-        return await account.ExecuteRaw(new dojo.Call[] {
-            new dojo.Call{
-                to = new FieldElement(contractAddress).Inner,
-                selector = "request_next_tile",
-                calldata = calldata.ToArray()
-            }
-        });
-    }
-            
-
-    
-    // Call the `make_move` system with the specified Account and calldata
-    // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
-    public async Task<FieldElement> make_move(Account account, Option<byte> joker_tile, byte rotation, byte col, byte row) {
-        List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
-        calldata.Add(new FieldElement(Enum.GetIndex(joker_tile)).Inner);
-		if (joker_tile is Option<byte>.Some) calldata.Add(new FieldElement(((Option<byte>.Some)joker_tile).value).Inner);
-		calldata.Add(new FieldElement(rotation).Inner);
-		calldata.Add(new FieldElement(col).Inner);
-		calldata.Add(new FieldElement(row).Inner);
-
-        return await account.ExecuteRaw(new dojo.Call[] {
-            new dojo.Call{
-                to = new FieldElement(contractAddress).Inner,
-                selector = "make_move",
-                calldata = calldata.ToArray()
-            }
-        });
-    }
-            
-
-    
-    // Call the `skip_move` system with the specified Account and calldata
-    // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
-    public async Task<FieldElement> skip_move(Account account) {
-        List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
-        
-
-        return await account.ExecuteRaw(new dojo.Call[] {
-            new dojo.Call{
-                to = new FieldElement(contractAddress).Inner,
-                selector = "skip_move",
-                calldata = calldata.ToArray()
-            }
-        });
-    }
-            
-
-    
-    // Call the `finish_game` system with the specified Account and calldata
-    // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
-    public async Task<FieldElement> finish_game(Account account, FieldElement board_id) {
-        List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
-        calldata.Add(board_id.Inner);
-
-        return await account.ExecuteRaw(new dojo.Call[] {
-            new dojo.Call{
-                to = new FieldElement(contractAddress).Inner,
-                selector = "finish_game",
+                selector = "emergency_cancel_migration",
                 calldata = calldata.ToArray()
             }
         });
@@ -188,6 +111,74 @@ public class Game : MonoBehaviour {
             new dojo.Call{
                 to = new FieldElement(contractAddress).Inner,
                 selector = "upgrade",
+                calldata = calldata.ToArray()
+            }
+        });
+    }
+            
+
+    
+    // Call the `transfer_ownership` system with the specified Account and calldata
+    // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
+    public async Task<FieldElement> transfer_ownership(Account account, FieldElement new_owner) {
+        List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
+        calldata.Add(new_owner.Inner);
+
+        return await account.ExecuteRaw(new dojo.Call[] {
+            new dojo.Call{
+                to = new FieldElement(contractAddress).Inner,
+                selector = "transfer_ownership",
+                calldata = calldata.ToArray()
+            }
+        });
+    }
+            
+
+    
+    // Call the `renounce_ownership` system with the specified Account and calldata
+    // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
+    public async Task<FieldElement> renounce_ownership(Account account) {
+        List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
+        
+
+        return await account.ExecuteRaw(new dojo.Call[] {
+            new dojo.Call{
+                to = new FieldElement(contractAddress).Inner,
+                selector = "renounce_ownership",
+                calldata = calldata.ToArray()
+            }
+        });
+    }
+            
+
+    
+    // Call the `transferOwnership` system with the specified Account and calldata
+    // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
+    public async Task<FieldElement> transferOwnership(Account account, FieldElement newOwner) {
+        List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
+        calldata.Add(newOwner.Inner);
+
+        return await account.ExecuteRaw(new dojo.Call[] {
+            new dojo.Call{
+                to = new FieldElement(contractAddress).Inner,
+                selector = "transferOwnership",
+                calldata = calldata.ToArray()
+            }
+        });
+    }
+            
+
+    
+    // Call the `renounceOwnership` system with the specified Account and calldata
+    // Returns the transaction hash. Use `WaitForTransaction` to wait for the transaction to be confirmed.
+    public async Task<FieldElement> renounceOwnership(Account account) {
+        List<dojo.FieldElement> calldata = new List<dojo.FieldElement>();
+        
+
+        return await account.ExecuteRaw(new dojo.Call[] {
+            new dojo.Call{
+                to = new FieldElement(contractAddress).Inner,
+                selector = "renounceOwnership",
                 calldata = calldata.ToArray()
             }
         });
