@@ -96,7 +96,6 @@ pub mod account_migration {
 
             // VALIDATION OF TARGET ACCOUNT:
             assert!(controller_player.is_controller(), "Target must be controller");
-            assert!(controller_player.games_played == 0, "Controller has existing progress");
             assert!(!controller_player.tutorial_completed, "Controller completed tutorial");
             assert!(!controller_player.migration_used, "Controller already received migration");
 
@@ -177,7 +176,7 @@ pub mod account_migration {
             let games_to_transfer = guest_player.games_played;
 
             controller_player.balance += guest_player.balance;
-            controller_player.games_played = guest_player.games_played;
+            controller_player.games_played += guest_player.games_played;
             controller_player.tutorial_completed = true;
             controller_player.migration_used = true;
 
