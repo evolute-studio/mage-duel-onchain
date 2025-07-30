@@ -238,9 +238,9 @@ mod tests {
     fn test_initiate_migration_fails_controller_has_progress() {
         let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
 
-        // Give controller some progress
+        // Give controller tutorial completion (has progress)
         let mut controller_player: Player = world.read_model(controller_address);
-        controller_player.games_played = 3;
+        controller_player.tutorial_completed = true;
         world.write_model_test(@controller_player);
 
         testing::set_contract_address(guest_address);
