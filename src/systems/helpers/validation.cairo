@@ -22,80 +22,159 @@ pub fn is_valid_move(
     can_place_not_adjacents: bool,
     world: WorldStorage,
 ) -> bool {
+    println!("[IS_VALID_MOVE] === Starting is_valid_move validation ===");
+    println!("[IS_VALID_MOVE] Input parameters:");
+    println!("[IS_VALID_MOVE]   board_id: {}", board_id);
+    println!("[IS_VALID_MOVE]   tile: {:?}", tile);
+    println!("[IS_VALID_MOVE]   rotation: {}", rotation);
+    println!("[IS_VALID_MOVE]   col: {}, row: {}", col, row);
+    println!("[IS_VALID_MOVE]   board_size: {}", board_size);
+    println!("[IS_VALID_MOVE]   bounds: min_col={}, max_col={}, min_row={}, max_row={}", min_col, max_col, min_row, max_row);
+    println!("[IS_VALID_MOVE]   can_place_not_adjacents: {}", can_place_not_adjacents);
+
     if tile == Tile::Empty {
+        println!("[IS_VALID_MOVE] FAILED: Tile is Empty");
         return false;
     }
+    println!("[IS_VALID_MOVE] PASSED: Tile is not empty");
     
     //check if valid col and row
+    println!("[IS_VALID_MOVE] Checking bounds validation...");
+    println!("[IS_VALID_MOVE]   col ({}) >= min_col ({})? {}", col, min_col, col >= min_col);
+    println!("[IS_VALID_MOVE]   col ({}) <= max_col ({})? {}", col, max_col, col <= max_col);
+    println!("[IS_VALID_MOVE]   row ({}) >= min_row ({})? {}", row, min_row, row >= min_row);
+    println!("[IS_VALID_MOVE]   row ({}) <= max_row ({})? {}", row, max_row, row <= max_row);
+    
     if !(col >= min_col && col <= max_col && row >= min_row && row <= max_row) {
-        println!("Invalid column or row: col={}, row={}, min_col={}, max_col={}, min_row={}, max_row={}", col, row, min_col, max_col, min_row, max_row);
+        println!("[IS_VALID_MOVE] FAILED: Invalid column or row: col={}, row={}, min_col={}, max_col={}, min_row={}, max_row={}", col, row, min_col, max_col, min_row, max_row);
         return false;
     }
+    println!("[IS_VALID_MOVE] PASSED: Position within bounds");
     
     //check if the tile is empty
-    
+    println!("[IS_VALID_MOVE] Checking if position is already occupied...");
     let tile_position: u32 = col.into() * board_size + row.into();
+    println!("[IS_VALID_MOVE] Calculated tile_position: {}", tile_position);
     let mut is_placed = false;
     let position: u32 = tile_position.into() * 4;
+    println!("[IS_VALID_MOVE] Base position for node check: {}", position);
+    
     for i in 0..4_u8 {
-        let mut node: UnionNode = world.read_model((board_id, position + i.into()));
-        if node.node_type != TEdge::None {is_placed = true;}
+        let node_position = position + i.into();
+        println!("[IS_VALID_MOVE] Checking node at position {} (edge {})", node_position, i);
+        let mut node: UnionNode = world.read_model((board_id, node_position));
+        println!("[IS_VALID_MOVE]   Node type: {:?}", node.node_type);
+        if node.node_type != TEdge::None {
+            is_placed = true;
+            println!("[IS_VALID_MOVE]   Found existing tile at edge {}", i);
+        }
     };
+    
     if is_placed {
-        println!("Tile already placed at position: col={}, row={}", col, row);
+        println!("[IS_VALID_MOVE] FAILED: Tile already placed at position: col={}, row={}", col, row);
         return false;
     }
+    println!("[IS_VALID_MOVE] PASSED: Position is empty");
     
-    
+    println!("[IS_VALID_MOVE] Creating extended tile for validation...");
     let extended_tile = create_extended_tile(tile, rotation);
     let edges = extended_tile.edges;
+    println!("[IS_VALID_MOVE] Tile edges after rotation:");
+    println!("[IS_VALID_MOVE]   Up (0): {:?}", edges.at(0));
+    println!("[IS_VALID_MOVE]   Right (1): {:?}", edges.at(1));
+    println!("[IS_VALID_MOVE]   Down (2): {:?}", edges.at(2));
+    println!("[IS_VALID_MOVE]   Left (3): {:?}", edges.at(3));
+    
     let mut actual_connections = 0;
 
     //check adjacent tiles
-
+    println!("[IS_VALID_MOVE] Calculating direction offsets...");
     let direction_offsets = array![
         4 + 2, // Up
         board_size.try_into().unwrap() * 4 + 2, // Right
         -4 - 2, // Down
         -board_size.try_into().unwrap() * 4 - 2, // Left
     ];
+    
+    println!("[IS_VALID_MOVE] Direction offsets:");
+    println!("[IS_VALID_MOVE]   Up: {}", *direction_offsets[0]);
+    println!("[IS_VALID_MOVE]   Right: {}", *direction_offsets[1]);
+    println!("[IS_VALID_MOVE]   Down: {}", *direction_offsets[2]);
+    println!("[IS_VALID_MOVE]   Left: {}", *direction_offsets[3]);
 
     let mut result = true;
 
+    println!("[IS_VALID_MOVE] Checking adjacent tiles for each side...");
     for side in 0..4_u8 {
-        let offset: i32 = *direction_offsets[side.into()];
+        let side_name: ByteArray = match side {
+            0 => "Up",
+            1 => "Right", 
+            2 => "Down",
+            3 => "Left",
+            _ => "Unknown"
+        };
+        
+        println!("[IS_VALID_MOVE] --- Checking {} side (side {}) ---", side_name, side);
+        let offset: i64 = *direction_offsets[side.into()];
         let edge_position: u32 = tile_position * 4 + side.into();
+        println!("[IS_VALID_MOVE]   Edge position: {}", edge_position);
+        println!("[IS_VALID_MOVE]   Offset: {}", offset);
+        
         let adjacent_node_position: u32 = (edge_position.try_into().unwrap() + offset).try_into().unwrap();
+        println!("[IS_VALID_MOVE]   Adjacent node position: {}", adjacent_node_position);
         
         if adjacent_node_position < 0 || adjacent_node_position / 4 > board_size * board_size {
-            // Out of bounds
+            println!("[IS_VALID_MOVE]   {} side: Out of bounds, skipping", side_name);
             continue;
         }
 
         let mut adjacent_node: UnionNode = world.read_model((board_id, adjacent_node_position));
+        println!("[IS_VALID_MOVE]   {} side: Adjacent node type: {:?}", side_name, adjacent_node.node_type);
+        
         if adjacent_node.node_type == TEdge::None {
-            // No tile placed in this position
+            println!("[IS_VALID_MOVE]   {} side: No tile placed, skipping", side_name);
             continue;
         }
-        if adjacent_node.node_type != *edges.at(side.into()) && adjacent_node.node_type != TEdge::None {
-            println!("Edge does not match: expected {:?}, found {:?}", edges.at(side.into()), adjacent_node.node_type);
+        
+        let current_edge = *edges.at(side.into());
+        println!("[IS_VALID_MOVE]   {} side: Current tile edge: {:?}", side_name, current_edge);
+        println!("[IS_VALID_MOVE]   {} side: Adjacent tile edge: {:?}", side_name, adjacent_node.node_type);
+        
+        if adjacent_node.node_type != current_edge && adjacent_node.node_type != TEdge::None {
+            println!("[IS_VALID_MOVE]   {} side: EDGE MISMATCH! Expected {:?}, found {:?}", side_name, current_edge, adjacent_node.node_type);
+            println!("[IS_VALID_MOVE] Edge does not match: expected {:?}, found {:?}", edges.at(side.into()), adjacent_node.node_type);
             println!(
-                "Context: board_id={}, edge_position={}, adjacent_node_position={}, tile_position={}, col={}, row={}", 
+                "[IS_VALID_MOVE] Context: board_id={}, edge_position={}, adjacent_node_position={}, tile_position={}, col={}, row={}", 
                 board_id, edge_position, adjacent_node_position, tile_position, col, row
             );
-            // Edge does not match
             result = false;
             break;
-        } else if adjacent_node.node_type == *edges.at(side.into()) {
+        } else if adjacent_node.node_type == current_edge {
             actual_connections += 1;
+            println!("[IS_VALID_MOVE]   {} side: MATCH! Connection found (total connections: {})", side_name, actual_connections);
         }
     };
 
+    if !result {
+        println!("[IS_VALID_MOVE] FAILED: Edge mismatch detected, returning false");
+        return false;
+    } 
+
+    println!("[IS_VALID_MOVE] Connection validation summary:");
+    println!("[IS_VALID_MOVE]   Total connections found: {}", actual_connections);
+    println!("[IS_VALID_MOVE]   Can place without adjacents: {}", can_place_not_adjacents);
+    
     if actual_connections == 0 && !can_place_not_adjacents {
-        println!("No adjacent connections found for tile at position: col={}, row={}", col, row);
+        println!("[IS_VALID_MOVE] FAILED: No adjacent connections found for tile at position: col={}, row={}", col, row);
         result = false; 
+    } else if actual_connections == 0 && can_place_not_adjacents {
+        println!("[IS_VALID_MOVE] PASSED: No connections but can_place_not_adjacents is true");
+    } else {
+        println!("[IS_VALID_MOVE] PASSED: Found {} valid connections", actual_connections);
     }
 
+    println!("[IS_VALID_MOVE] Final result: {}", result);
+    println!("[IS_VALID_MOVE] === Finished is_valid_move validation ===");
     result
 }
 

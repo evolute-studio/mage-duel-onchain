@@ -146,7 +146,7 @@ pub fn connect_adjacent_edges(
             continue;
         }
 
-        let offset: i32 = *direction_offsets[side.into()];
+        let offset: i64 = *direction_offsets[side.into()];
         let node_position: u32 = tile_position * 4 + side.into();
         let adjacent_node_position: u32 = (node_position.try_into().unwrap() + offset).try_into().unwrap();
         let (col_offset, row_offset) = *col_row_offsets.at(side.into());
