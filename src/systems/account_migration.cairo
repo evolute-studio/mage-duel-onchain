@@ -40,7 +40,7 @@ pub mod account_migration {
     use evolute_duel::{
         events::{
             MigrationInitiated, MigrationConfirmed, MigrationCompleted, MigrationCancelled,
-            EmergencyMigrationCancelled
+            EmergencyMigrationCancelled, MigrationError
         },
         models::{
             player::{Player, PlayerTrait}, 
@@ -89,22 +89,94 @@ pub mod account_migration {
             let existing_request: MigrationRequest = world.read_model(caller);
 
             // VALIDATION OF GUEST ACCOUNT:
-            assert!(guest_player.is_guest(), "Only guest can initiate migration");
-            assert!(guest_player.tutorial_completed, "Tutorial not completed");
-            assert!(existing_request.is_expired(current_time) || !guest_player.has_pending_migration(), "Migration already initiated");
-            assert!(!guest_player.migration_used, "Migration already used");
+            if !guest_player.is_guest() {
+                world.emit_event(@MigrationError {
+                    guest_address: caller,
+                    controller_address: target_controller,
+                    status: 'Error',
+                    error_context: "Guest validation failed - caller is not a guest account", 
+                    error_message: "Only guest can initiate migration"
+                });
+                return;
+            }
+            
+            if !guest_player.tutorial_completed {
+                world.emit_event(@MigrationError {
+                    guest_address: caller,
+                    controller_address: target_controller,
+                    status: 'Error',
+                    error_context: "Guest validation failed - tutorial not completed",
+                    error_message: "Tutorial not completed"
+                });
+                return;
+            }
+            
+            if !existing_request.is_expired(current_time) && guest_player.has_pending_migration() {
+                world.emit_event(@MigrationError {
+                    guest_address: caller,
+                    controller_address: target_controller,
+                    status: 'Error',
+                    error_context: "Guest validation failed - already has pending migration",
+                    error_message: "Migration already initiated"
+                });
+                return;
+            }
+            
+            if guest_player.migration_used {
+                world.emit_event(@MigrationError {
+                    guest_address: caller,
+                    controller_address: target_controller,
+                    status: 'Error',
+                    error_context: "Guest validation failed - migration already used",
+                    error_message: "Migration already used"
+                });
+                return;
+            }
 
             // VALIDATION OF TARGET ACCOUNT:
-            assert!(controller_player.is_controller(), "Target must be controller");
-            assert!(!controller_player.tutorial_completed, "Controller completed tutorial");
-            assert!(!controller_player.migration_used, "Controller already received migration");
+            if !controller_player.is_controller() {
+                world.emit_event(@MigrationError {
+                    guest_address: caller,
+                    controller_address: target_controller,
+                    status: 'Error',
+                    error_context: "Controller validation failed - target is not a controller account",
+                    error_message: "Target must be controller"
+                });
+                return;
+            }
+            
+            if controller_player.tutorial_completed {
+                world.emit_event(@MigrationError {
+                    guest_address: caller,
+                    controller_address: target_controller,
+                    status: 'Error',
+                    error_context: "Controller validation failed - tutorial already completed",
+                    error_message: "Controller completed tutorial"
+                });
+                return;
+            }
+            
+            if controller_player.migration_used {
+                world.emit_event(@MigrationError {
+                    guest_address: caller,
+                    controller_address: target_controller,
+                    status: 'Error',
+                    error_context: "Controller validation failed - already received migration",
+                    error_message: "Controller already received migration"
+                });
+                return;
+            }
 
-            assert!(
-                existing_request.status == 0 || 
-                existing_request.is_expired(current_time) || 
-                existing_request.is_rejected(),
-                "Active migration request exists"
-            );
+            if !(existing_request.status == 0 || existing_request.is_expired(current_time) || existing_request.is_rejected()) {
+                world.emit_event(@MigrationError {
+                    guest_address: caller,
+                    controller_address: target_controller,
+                    status: 'Error',
+                    error_context: "Request validation failed - active migration request exists",
+                    error_message: "Active migration request exists"
+                });
+                return;
+            }
 
             // CREATE MIGRATION REQUEST:
             let migration_request = MigrationRequest {
@@ -128,6 +200,15 @@ pub mod account_migration {
                 controller_address: target_controller,
                 expires_at: current_time + MIGRATION_TIMEOUT
             });
+            
+            // Emit success event
+            world.emit_event(@MigrationError {
+                guest_address: caller,
+                controller_address: target_controller,
+                status: 'Success',
+                error_context: "Migration initiation successful - all validations passed",
+                error_message: "Migration initiated successfully"
+            });
         }
 
         fn confirm_migration(ref self: ContractState, guest_address: ContractAddress) {
@@ -138,12 +219,38 @@ pub mod account_migration {
             let mut migration_request: MigrationRequest = world.read_model(guest_address);
 
             // CRITICAL CHECK: only controller owner can confirm
-            assert!(
-                migration_request.controller_address == caller,
-                "Only controller owner can confirm"
-            );
-            assert!(migration_request.is_pending(), "Request not pending");
-            assert!(!migration_request.is_expired(current_time), "Request expired");
+            if migration_request.controller_address != caller {
+                world.emit_event(@MigrationError {
+                    guest_address: guest_address,
+                    controller_address: caller,
+                    status: 'Error',
+                    error_context: "Controller authorization failed - not the controller owner",
+                    error_message: "Only controller owner can confirm"
+                });
+                return;
+            }
+            
+            if !migration_request.is_pending() {
+                world.emit_event(@MigrationError {
+                    guest_address: guest_address,
+                    controller_address: caller,
+                    status: 'Error',
+                    error_context: "Request status invalid - not in pending state",
+                    error_message: "Request not pending"
+                });
+                return;
+            }
+            
+            if migration_request.is_expired(current_time) {
+                world.emit_event(@MigrationError {
+                    guest_address: guest_address,
+                    controller_address: caller,
+                    status: 'Error',
+                    error_context: "Request timeout - migration request has expired",
+                    error_message: "Request expired"
+                });
+                return;
+            }
 
             // Confirm the request
             migration_request.status = 1; // approved
@@ -153,6 +260,15 @@ pub mod account_migration {
                 guest_address,
                 controller_address: caller,
                 confirmed_at: current_time
+            });
+            
+            // Emit success event
+            world.emit_event(@MigrationError {
+                guest_address: guest_address,
+                controller_address: caller,
+                status: 'Success',
+                error_context: "Migration confirmation successful - controller approved the request",
+                error_message: "Migration confirmed successfully"
             });
         }
 
@@ -165,11 +281,27 @@ pub mod account_migration {
             let mut controller_player: Player = world.read_model(migration_request.controller_address);
 
             // FINAL VALIDATION:
-            assert!(migration_request.can_be_executed(current_time), "Cannot execute migration");
-            assert!(
-                guest_player.migration_target == migration_request.controller_address,
-                "Target mismatch"
-            );
+            if !migration_request.can_be_executed(current_time) {
+                world.emit_event(@MigrationError {
+                    guest_address: guest_address,
+                    controller_address: migration_request.controller_address,
+                    status: 'Error',
+                    error_context: "Execution validation failed - migration cannot be executed at this time",
+                    error_message: "Cannot execute migration"
+                });
+                return;
+            }
+            
+            if guest_player.migration_target != migration_request.controller_address {
+                world.emit_event(@MigrationError {
+                    guest_address: guest_address,
+                    controller_address: migration_request.controller_address,
+                    status: 'Error',
+                    error_context: "Target validation failed - guest migration target does not match request",
+                    error_message: "Target mismatch"
+                });
+                return;
+            }
 
             // EXECUTE MIGRATION:
             let balance_to_transfer = guest_player.balance;
@@ -209,6 +341,15 @@ pub mod account_migration {
                 balance_transferred: balance_to_transfer,
                 games_transferred: games_to_transfer
             });
+            
+            // Emit success event
+            world.emit_event(@MigrationError {
+                guest_address: guest_address,
+                controller_address: migration_request.controller_address,
+                status: 'Success',
+                error_context: "Migration execution successful - data transferred to controller",
+                error_message: "Migration executed successfully"
+            });
         }
 
         fn cancel_migration(ref self: ContractState) {
@@ -218,7 +359,16 @@ pub mod account_migration {
             let mut migration_request: MigrationRequest = world.read_model(caller);
             let mut guest_player: Player = world.read_model(caller);
 
-            assert!(migration_request.is_pending(), "Can only cancel pending requests");
+            if !migration_request.is_pending() {
+                world.emit_event(@MigrationError {
+                    guest_address: caller,
+                    controller_address: migration_request.controller_address,
+                    status: 'Error',
+                    error_context: "Cancellation failed - request is not in pending state",
+                    error_message: "Can only cancel pending requests"
+                });
+                return;
+            }
 
             // Cancel the request
             migration_request.status = 2; // rejected
@@ -232,6 +382,15 @@ pub mod account_migration {
                 guest_address: caller,
                 controller_address: migration_request.controller_address,
                 cancelled_at: get_block_timestamp()
+            });
+            
+            // Emit success event
+            world.emit_event(@MigrationError {
+                guest_address: caller,
+                controller_address: migration_request.controller_address,
+                status: 'Success',
+                error_context: "Migration cancellation successful - request cancelled by guest",
+                error_message: "Migration cancelled successfully"
             });
         }
 
