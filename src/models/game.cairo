@@ -1,5 +1,5 @@
 use starknet::{ContractAddress};
-use evolute_duel::types::packing::{GameState, GameStatus, PlayerSide};
+use evolute_duel::types::packing::{GameState, GameStatus, PlayerSide, GameMode};
 
 /// Represents the game board, including tile states, players, scores, and game progression.
 ///
@@ -90,7 +90,7 @@ pub struct Rules {
 /// - `player`: The player associated with this game instance.
 /// - `status`: Current game status (active, completed, etc.).
 /// - `board_id`: Reference to the board associated with the game.
-/// - `snapshot_id`: ID of a game state snapshot if game was created from a snapshot.
+/// - `game_mode`: The mode of the game (Tutorial, Ranked, Casual).
 #[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::model]
 pub struct Game {
@@ -98,6 +98,7 @@ pub struct Game {
     pub player: ContractAddress,
     pub status: GameStatus,
     pub board_id: Option<felt252>,
+    pub game_mode: GameMode,
 }
 
 #[derive(Drop, Serde, Introspect, Debug)]
@@ -119,5 +120,25 @@ pub struct AvailableTiles {
     #[key]
     pub player: ContractAddress,
     pub available_tiles: Span<u8>,
+}
+
+/// Configuration for different game modes.
+///
+/// - `game_mode`: The game mode this configuration applies to.
+/// - `board_size`: Size of the game board (7 for tutorial, 10 for ranked/casual).
+/// - `deck_type`: Type of deck to use (0: tutorial, 1: full randomized).
+/// - `initial_jokers`: Number of joker tiles each player starts with.
+/// - `time_per_phase`: Time limit for each phase in seconds (0 = no limit).
+/// - `auto_match`: Whether to enable automatic matchmaking for this mode.
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct GameConfig {
+    #[key]
+    pub game_mode: GameMode,
+    pub board_size: u8,
+    pub deck_type: u8,
+    pub initial_jokers: u8,
+    pub time_per_phase: u64,
+    pub auto_match: bool,
 }
 

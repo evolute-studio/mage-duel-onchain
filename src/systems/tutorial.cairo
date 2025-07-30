@@ -15,7 +15,6 @@ pub trait ITutorial<T> {
     );
 
     fn skip_move(ref self: T);
-
 }   
 
 
