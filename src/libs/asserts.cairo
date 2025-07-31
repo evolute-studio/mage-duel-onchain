@@ -1,9 +1,14 @@
 use dojo::{world::WorldStorage, event::EventStorage};
 use evolute_duel::{
-    models::{game::Game},
-    events::{GameCreateFailed, GameJoinFailed, PlayerNotInGame, GameFinished},
-    types::{packing::GameStatus},
+    models::{
+        game::Game, 
+        player::{Player, PlayerTrait}, 
+        migration::{MigrationRequest, MigrationRequestTrait}
+    },
+    events::{GameCreateFailed, GameJoinFailed, PlayerNotInGame, GameFinished, MigrationError, ErrorEvent},
+    types::{packing::{GameStatus, GameMode}},
 };
+use starknet::ContractAddress;
 #[generate_trait]
 pub impl AssersImpl of AssertsTrait {
     fn assert_ready_to_create_game(self: @Game, mut world: WorldStorage) -> bool {
@@ -59,6 +64,269 @@ pub impl AssersImpl of AssertsTrait {
         }
         true
     }
+
+    // Migration validation functions
+    fn assert_guest_can_initiate_migration(
+        guest: @Player, 
+        controller_address: ContractAddress, 
+        mut world: WorldStorage
+    ) -> bool {
+        if !guest.is_guest() {
+            world.emit_event(@MigrationError {
+                guest_address: *guest.player_id,
+                controller_address,
+                status: 'Error',
+                error_context: "Guest validation failed - caller is not a guest account",
+                error_message: "Only guest can initiate migration"
+            });
+            return false;
+        }
+
+        if !*guest.tutorial_completed {
+            world.emit_event(@MigrationError {
+                guest_address: *guest.player_id,
+                controller_address,
+                status: 'Error',
+                error_context: "Guest validation failed - tutorial not completed",
+                error_message: "Tutorial not completed"
+            });
+            return false;
+        }
+
+        if *guest.migration_used {
+            world.emit_event(@MigrationError {
+                guest_address: *guest.player_id,
+                controller_address,
+                status: 'Error',
+                error_context: "Guest validation failed - migration already used",
+                error_message: "Migration already used"
+            });
+            return false;
+        }
+
+        true
+    }
+
+    fn assert_controller_can_receive_migration(
+        controller: @Player,
+        guest_address: ContractAddress,
+        mut world: WorldStorage
+    ) -> bool {
+        if !controller.is_controller() {
+            world.emit_event(@MigrationError {
+                guest_address,
+                controller_address: *controller.player_id,
+                status: 'Error',
+                error_context: "Controller validation failed - target is not a controller account",
+                error_message: "Target must be controller"
+            });
+            return false;
+        }
+
+        if *controller.tutorial_completed {
+            world.emit_event(@MigrationError {
+                guest_address,
+                controller_address: *controller.player_id,
+                status: 'Error',
+                error_context: "Controller validation failed - tutorial already completed",
+                error_message: "Controller completed tutorial"
+            });
+            return false;
+        }
+
+
+        if *controller.migration_used {
+            world.emit_event(@MigrationError {
+                guest_address,
+                controller_address: *controller.player_id,
+                status: 'Error',
+                error_context: "Controller validation failed - already received migration",
+                error_message: "Controller already received migration"
+            });
+            return false;
+        }
+
+        true
+    }
+
+    fn assert_no_pending_migration(
+        guest: @Player,
+        existing_request: @MigrationRequest,
+        current_time: u64,
+        controller_address: ContractAddress,
+        mut world: WorldStorage
+    ) -> bool {
+        if !existing_request.is_expired(current_time) && guest.has_pending_migration() {
+            world.emit_event(@MigrationError {
+                guest_address: *guest.player_id,
+                controller_address,
+                status: 'Error',
+                error_context: "Guest validation failed - already has pending migration",
+                error_message: "Migration already initiated"
+            });
+            return false;
+        }
+        true
+    }
+
+    fn assert_can_confirm_migration(
+        migration_request: @MigrationRequest,
+        caller_address: ContractAddress,
+        current_time: u64,
+        mut world: WorldStorage
+    ) -> bool {
+        if *migration_request.controller_address != caller_address {
+            world.emit_event(@MigrationError {
+                guest_address: *migration_request.guest_address,
+                controller_address: caller_address,
+                status: 'Error',
+                error_context: "Controller authorization failed - not the controller owner",
+                error_message: "Only controller owner can confirm"
+            });
+            return false;
+        }
+
+        if !migration_request.is_pending() {
+            world.emit_event(@MigrationError {
+                guest_address: *migration_request.guest_address,
+                controller_address: caller_address,
+                status: 'Error',
+                error_context: "Request status invalid - not in pending state",
+                error_message: "Request not pending"
+            });
+            return false;
+        }
+
+        if migration_request.is_expired(current_time) {
+            world.emit_event(@MigrationError {
+                guest_address: *migration_request.guest_address,
+                controller_address: caller_address,
+                status: 'Error',
+                error_context: "Request timeout - migration request has expired",
+                error_message: "Request expired"
+            });
+            return false;
+        }
+
+        true
+    }
+
+    fn assert_can_execute_migration(
+        migration_request: @MigrationRequest,
+        guest: @Player,
+        current_time: u64,
+        mut world: WorldStorage
+    ) -> bool {
+        if !migration_request.can_be_executed(current_time) {
+            world.emit_event(@MigrationError {
+                guest_address: *migration_request.guest_address,
+                controller_address: *migration_request.controller_address,
+                status: 'Error',
+                error_context: "Execution validation failed - migration cannot be executed at this time",
+                error_message: "Cannot execute migration"
+            });
+            return false;
+        }
+
+        if *guest.migration_target != *migration_request.controller_address {
+            world.emit_event(@MigrationError {
+                guest_address: *migration_request.guest_address,
+                controller_address: *migration_request.controller_address,
+                status: 'Error',
+                error_context: "Target validation failed - guest migration target does not match request",
+                error_message: "Target mismatch"
+            });
+            return false;
+        }
+
+        true
+    }
+
+    fn assert_can_cancel_migration(
+        migration_request: @MigrationRequest,
+        caller_address: ContractAddress,
+        mut world: WorldStorage
+    ) -> bool {
+        if !migration_request.is_pending() {
+            world.emit_event(@MigrationError {
+                guest_address: caller_address,
+                controller_address: *migration_request.controller_address,
+                status: 'Error',
+                error_context: "Cancellation failed - request is not in pending state",
+                error_message: "Can only cancel pending requests"
+            });
+            return false;
+        }
+
+        true
+    }
+
+    // GameMode access control functions
+    fn assert_game_mode_access(
+        game: @Game,
+        allowed_modes: Span<GameMode>,
+        caller: ContractAddress,
+        action: felt252,
+        mut world: WorldStorage
+    ) -> bool {
+        let current_mode = *game.game_mode;
+        
+        let mut is_allowed_mode = false;
+
+        for mode in allowed_modes {
+            if current_mode == *mode {
+                is_allowed_mode = true;
+                break;
+            }
+        };
+        
+        if is_allowed_mode {
+            return true;
+        }
+
+        world.emit_event(@ErrorEvent {
+            player_address: caller,
+            name: 'Access Denied',
+            message: format!("Action {} not allowed for GameMode {:?}", action, current_mode),
+        });
+        
+        false
+    }
+
+    fn assert_tutorial_game_access(
+        game: @Game,
+        caller: ContractAddress,
+        action: felt252,
+        mut world: WorldStorage
+    ) -> bool {
+        if *game.game_mode != GameMode::Tutorial {
+            world.emit_event(@ErrorEvent {
+                player_address: caller,
+                name: 'Invalid Game Mode',
+                message: format!("Tutorial action {} requires Tutorial mode, got {:?}", action, *game.game_mode),
+            });
+            return false;
+        }
+        true
+    }
+
+    fn assert_regular_game_access(
+        game: @Game,
+        caller: ContractAddress,
+        action: felt252,
+        mut world: WorldStorage
+    ) -> bool {
+        let current_mode = *game.game_mode;
+        if current_mode != GameMode::Ranked && current_mode != GameMode::Casual {
+            world.emit_event(@ErrorEvent {
+                player_address: caller,
+                name: 'Invalid Game Mode',
+                message: format!("Regular game action {} not allowed for GameMode {:?}", action, current_mode),
+            });
+            return false;
+        }
+        true
+    }
 }
 
 
@@ -67,10 +335,14 @@ mod tests {
     use super::*;
     use dojo::world::WorldStorage;
     use evolute_duel::{
-        models::game::{Game, m_Game},
-        types::packing::GameStatus,
+        models::{
+            game::{Game, m_Game},
+            player::{Player, m_Player},
+            migration::{MigrationRequest, m_MigrationRequest}
+        },
+        types::packing::{GameStatus, GameMode},
         events::{
-            e_GameCreateFailed, e_GameJoinFailed, e_PlayerNotInGame, e_GameFinished,
+            e_GameCreateFailed, e_GameJoinFailed, e_PlayerNotInGame, e_GameFinished, e_MigrationError,
         },
     };
     use dojo_cairo_test::{spawn_test_world, NamespaceDef, TestResource};
@@ -80,10 +352,13 @@ mod tests {
         let namespace_def = NamespaceDef {
             namespace: "evolute_duel", resources: [
                 TestResource::Model(m_Game::TEST_CLASS_HASH),
+                TestResource::Model(m_Player::TEST_CLASS_HASH),
+                TestResource::Model(m_MigrationRequest::TEST_CLASS_HASH),
                 TestResource::Event(e_GameCreateFailed::TEST_CLASS_HASH),
                 TestResource::Event(e_GameJoinFailed::TEST_CLASS_HASH),
                 TestResource::Event(e_PlayerNotInGame::TEST_CLASS_HASH),
                 TestResource::Event(e_GameFinished::TEST_CLASS_HASH),
+                TestResource::Event(e_MigrationError::TEST_CLASS_HASH),
             ].span()
         };
         spawn_test_world([namespace_def].span())
@@ -94,6 +369,7 @@ mod tests {
             player,
             status,
             board_id,
+            game_mode: GameMode::Tutorial,
         }
     }
 

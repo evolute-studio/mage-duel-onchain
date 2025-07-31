@@ -273,6 +273,18 @@ pub struct PhaseStarted {
 // Migration Events
 // --------------------------------------
 
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct MigrationError {
+    #[key]
+    pub guest_address: ContractAddress,
+    #[key]
+    pub controller_address: ContractAddress,
+    pub status: felt252, // 'Success' or 'Error'
+    pub error_context: ByteArray, // Details about guest/controller roles
+    pub error_message: ByteArray, // The error message from the failed assert
+}
+
 #[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
 pub struct MigrationInitiated {

@@ -11,7 +11,7 @@ use core::num::traits::Zero;
 /// - `balance`: Current balance of in-game currency or points.
 /// - `games_played`: Total number of games played by the player.
 /// - `active_skin`: The currently equipped skin or avatar.
-#[derive(Drop, Serde, Introspect, Debug)]
+#[derive(Drop, Serde, Copy, Introspect, Debug)]
 #[dojo::model]
 pub struct Player {
     #[key]

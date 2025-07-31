@@ -40,12 +40,13 @@ pub mod account_migration {
     use evolute_duel::{
         events::{
             MigrationInitiated, MigrationConfirmed, MigrationCompleted, MigrationCancelled,
-            EmergencyMigrationCancelled
+            EmergencyMigrationCancelled, MigrationError
         },
         models::{
             player::{Player, PlayerTrait}, 
             migration::{MigrationRequest, MigrationRequestTrait}
         },
+        libs::{asserts::AssertsTrait},
     };
     use openzeppelin_access::ownable::OwnableComponent;
 
@@ -88,24 +89,18 @@ pub mod account_migration {
             // Check for existing active requests
             let existing_request: MigrationRequest = world.read_model(caller);
 
-            // VALIDATION OF GUEST ACCOUNT:
-            assert!(guest_player.is_guest(), "Only guest can initiate migration");
-            assert!(guest_player.tutorial_completed, "Tutorial not completed");
-            assert!(existing_request.is_expired(current_time) || !guest_player.has_pending_migration(), "Migration already initiated");
-            assert!(!guest_player.migration_used, "Migration already used");
-
-            // VALIDATION OF TARGET ACCOUNT:
-            assert!(controller_player.is_controller(), "Target must be controller");
-            assert!(controller_player.games_played == 0, "Controller has existing progress");
-            assert!(!controller_player.tutorial_completed, "Controller completed tutorial");
-            assert!(!controller_player.migration_used, "Controller already received migration");
-
-            assert!(
-                existing_request.status == 0 || 
-                existing_request.is_expired(current_time) || 
-                existing_request.is_rejected(),
-                "Active migration request exists"
-            );
+            // VALIDATION USING ASSERTS TRAIT:
+            if !AssertsTrait::assert_guest_can_initiate_migration(@guest_player, target_controller, world) {
+                return;
+            }
+            
+            if !AssertsTrait::assert_controller_can_receive_migration(@controller_player, caller, world) {
+                return;
+            }
+            
+            if !AssertsTrait::assert_no_pending_migration(@guest_player, @existing_request, current_time, target_controller, world) {
+                return;
+            }
 
             // CREATE MIGRATION REQUEST:
             let migration_request = MigrationRequest {
@@ -138,13 +133,10 @@ pub mod account_migration {
 
             let mut migration_request: MigrationRequest = world.read_model(guest_address);
 
-            // CRITICAL CHECK: only controller owner can confirm
-            assert!(
-                migration_request.controller_address == caller,
-                "Only controller owner can confirm"
-            );
-            assert!(migration_request.is_pending(), "Request not pending");
-            assert!(!migration_request.is_expired(current_time), "Request expired");
+            // VALIDATION USING ASSERTS TRAIT:
+            if !AssertsTrait::assert_can_confirm_migration(@migration_request, caller, current_time, world) {
+                return;
+            }
 
             // Confirm the request
             migration_request.status = 1; // approved
@@ -165,19 +157,17 @@ pub mod account_migration {
             let guest_player: Player = world.read_model(guest_address);
             let mut controller_player: Player = world.read_model(migration_request.controller_address);
 
-            // FINAL VALIDATION:
-            assert!(migration_request.can_be_executed(current_time), "Cannot execute migration");
-            assert!(
-                guest_player.migration_target == migration_request.controller_address,
-                "Target mismatch"
-            );
+            // VALIDATION USING ASSERTS TRAIT:
+            if !AssertsTrait::assert_can_execute_migration(@migration_request, @guest_player, current_time, world) {
+                return;
+            }
 
             // EXECUTE MIGRATION:
             let balance_to_transfer = guest_player.balance;
             let games_to_transfer = guest_player.games_played;
 
             controller_player.balance += guest_player.balance;
-            controller_player.games_played = guest_player.games_played;
+            controller_player.games_played += guest_player.games_played;
             controller_player.tutorial_completed = true;
             controller_player.migration_used = true;
 
@@ -219,7 +209,10 @@ pub mod account_migration {
             let mut migration_request: MigrationRequest = world.read_model(caller);
             let mut guest_player: Player = world.read_model(caller);
 
-            assert!(migration_request.is_pending(), "Can only cancel pending requests");
+            // VALIDATION USING ASSERTS TRAIT:
+            if !AssertsTrait::assert_can_cancel_migration(@migration_request, caller, world) {
+                return;
+            }
 
             // Cancel the request
             migration_request.status = 2; // rejected

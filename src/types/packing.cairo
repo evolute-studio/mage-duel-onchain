@@ -169,3 +169,31 @@ impl U8ToPlayerSide of Into<u8, PlayerSide> {
     }
 }
 
+#[derive(Drop, Serde, Copy, Introspect, PartialEq, Debug)]
+pub enum GameMode {
+    Tutorial,
+    Ranked,
+    Casual,
+}
+
+impl GameModeToU8 of Into<GameMode, u8> {
+    fn into(self: GameMode) -> u8 {
+        match self {
+            GameMode::Tutorial => 0,
+            GameMode::Ranked => 1,
+            GameMode::Casual => 2,
+        }
+    }
+}
+
+impl U8ToGameMode of Into<u8, GameMode> {
+    fn into(self: u8) -> GameMode {
+        match self {
+            0 => GameMode::Tutorial,
+            1 => GameMode::Ranked,
+            2 => GameMode::Casual,
+            _ => panic!("Unsupported GameMode"),
+        }
+    }
+}
+

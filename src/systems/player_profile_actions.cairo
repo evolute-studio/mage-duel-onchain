@@ -162,8 +162,11 @@ pub mod player_profile_actions {
         fn become_bot(ref self: ContractState) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
-            self._check_if_empty_guest(player_id);
             let mut player: Player = world.read_model(player_id);
+            if player.is_bot() {
+                return; // Already a bot
+            }
+            self._check_if_empty_guest(player_id);
             player.role = 2;
             world.write_model(@player);
         }
@@ -171,8 +174,11 @@ pub mod player_profile_actions {
         fn become_controller(ref self: ContractState) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
-            self._check_if_empty_guest(player_id);
             let mut player: Player = world.read_model(player_id);
+            if player.is_controller() {
+                return; // Already a controller
+            }
+            self._check_if_empty_guest(player_id);
             player.role = 1;
             world.write_model(@player);
         }
