@@ -57,17 +57,57 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         player1_side: PlayerSide,
         blue_points: u16,
         red_points: u16,
+        add_points_to: u8, // 0 - both, 1 - blue only, 2 - red only
         mut world: dojo::world::WorldStorage,
     ) {
         let mut player1: Player = world.read_model(player1_address);
         let mut player2: Player = world.read_model(player2_address);
 
-        if player1_side == PlayerSide::Blue {
-            player1.balance += blue_points.into();
-            player2.balance += red_points.into();
-        } else {
-            player1.balance += red_points.into();
-            player2.balance += blue_points.into();
+        // Determine which players get points based on add_points_to parameter
+        match add_points_to {
+            0 => {
+                // Both players get their earned points (normal game completion)
+                if player1_side == PlayerSide::Blue {
+                    player1.balance += blue_points.into();
+                    player2.balance += red_points.into();
+                } else {
+                    player1.balance += red_points.into();
+                    player2.balance += blue_points.into();
+                }
+            },
+            1 => {
+                // Only blue player gets points (red player forfeited/timed out)
+                if player1_side == PlayerSide::Blue {
+                    player1.balance += blue_points.into();
+                    // player2 gets 0 points
+                } else {
+                    // player1 gets 0 points  
+                    player2.balance += blue_points.into();
+                }
+                println!("[PENALTY] Only blue player awarded points due to red player timeout/forfeit");
+            },
+            2 => {
+                // Only red player gets points (blue player forfeited/timed out)
+                if player1_side == PlayerSide::Blue {
+                    // player1 gets 0 points
+                    player2.balance += red_points.into();
+                } else {
+                    player1.balance += red_points.into();
+                    // player2 gets 0 points
+                }
+                println!("[PENALTY] Only red player awarded points due to blue player timeout/forfeit");
+            },
+            _ => {
+                // Fallback to normal scoring for invalid values
+                if player1_side == PlayerSide::Blue {
+                    player1.balance += blue_points.into();
+                    player2.balance += red_points.into();
+                } else {
+                    player1.balance += red_points.into();
+                    player2.balance += blue_points.into();
+                }
+                println!("[WARNING] Invalid add_points_to value: {}, using normal scoring", add_points_to);
+            }
         }
 
         player1.games_played += 1;
@@ -207,6 +247,7 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
             finalization_data.player1_side,
             blue_points,
             red_points,
+            add_points_to,
             world,
         );
 
