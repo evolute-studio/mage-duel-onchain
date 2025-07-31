@@ -31,22 +31,35 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         joker_number2: u8,
         joker_price: u16,
     ) -> (u16, u16) {
+        println!("[calculate_final_points] Starting calculation with joker_price: {}", joker_price);
+        
         let blue_joker_points = joker_number1.into() * joker_price.into();
         let red_joker_points = joker_number2.into() * joker_price.into();
+        println!("[calculate_final_points] Blue jokers: {} * {} = {}", joker_number1, joker_price, blue_joker_points);
+        println!("[calculate_final_points] Red jokers: {} * {} = {}", joker_number2, joker_price, red_joker_points);
+        
         let (blue_city_points, blue_road_points) = *board.blue_score;
         let blue_points = blue_city_points + blue_road_points + blue_joker_points;
+        println!("[calculate_final_points] Blue score: {} cities + {} roads + {} jokers = {}", blue_city_points, blue_road_points, blue_joker_points, blue_points);
+        
         let (red_city_points, red_road_points) = *board.red_score;
         let red_points = red_city_points + red_road_points + red_joker_points;
+        println!("[calculate_final_points] Red score: {} cities + {} roads + {} jokers = {}", red_city_points, red_road_points, red_joker_points, red_points);
         
         (blue_points, red_points)
     }
 
     fn determine_winner(blue_points: u16, red_points: u16) -> Option<u8> {
+        println!("[determine_winner] Comparing scores: Blue {} vs Red {}", blue_points, red_points);
+        
         if blue_points > red_points {
+            println!("[determine_winner] Blue wins!");
             Option::Some(1) // Blue wins
         } else if blue_points < red_points {
+            println!("[determine_winner] Red wins!");
             Option::Some(2) // Red wins
         } else {
+            println!("[determine_winner] It's a draw!");
             Option::Some(0) // Draw
         }
     }
@@ -59,22 +72,34 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         red_points: u16,
         mut world: dojo::world::WorldStorage,
     ) {
+        println!("[update_player_stats] Starting player stats update");
+        println!("[update_player_stats] Player1 side: {:?}, Blue points: {}, Red points: {}", player1_side, blue_points, red_points);
+        
         let mut player1: Player = world.read_model(player1_address);
         let mut player2: Player = world.read_model(player2_address);
+        
+        println!("[update_player_stats] Player1 current balance: {}, games_played: {}", player1.balance, player1.games_played);
+        println!("[update_player_stats] Player2 current balance: {}, games_played: {}", player2.balance, player2.games_played);
 
         if player1_side == PlayerSide::Blue {
             player1.balance += blue_points.into();
             player2.balance += red_points.into();
+            println!("[update_player_stats] Player1 (Blue) gets {} points, Player2 (Red) gets {} points", blue_points, red_points);
         } else {
             player1.balance += red_points.into();
             player2.balance += blue_points.into();
+            println!("[update_player_stats] Player1 (Red) gets {} points, Player2 (Blue) gets {} points", red_points, blue_points);
         }
 
         player1.games_played += 1;
         player2.games_played += 1;
+        
+        println!("[update_player_stats] Player1 new balance: {}, games_played: {}", player1.balance, player1.games_played);
+        println!("[update_player_stats] Player2 new balance: {}, games_played: {}", player2.balance, player2.games_played);
 
         world.write_model(@player1);
         world.write_model(@player2);
+        println!("[update_player_stats] Player stats updated and written to world");
     }
 
     fn update_game_status(
@@ -82,14 +107,20 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         player2_address: ContractAddress,
         mut world: dojo::world::WorldStorage,
     ) {
+        println!("[update_game_status] Updating game status to Finished");
+        
         let mut host_game: Game = world.read_model(player1_address);
         let mut guest_game: Game = world.read_model(player2_address);
+        
+        println!("[update_game_status] Host game current status: {:?}", host_game.status);
+        println!("[update_game_status] Guest game current status: {:?}", guest_game.status);
         
         host_game.status = GameStatus::Finished;
         guest_game.status = GameStatus::Finished;
 
         world.write_model(@host_game);
         world.write_model(@guest_game);
+        println!("[update_game_status] Both games marked as Finished and written to world");
     }
 
     fn emit_game_finished_events(
@@ -98,8 +129,13 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         board_id: felt252,
         mut world: dojo::world::WorldStorage,
     ) {
+        println!("[emit_game_finished_events] Emitting GameFinished events for board: {}", board_id);
+        
         world.emit_event(@GameFinished { player: player1_address, board_id });
+        println!("[emit_game_finished_events] GameFinished event emitted for player1: {:?}", player1_address);
+        
         world.emit_event(@GameFinished { player: player2_address, board_id });
+        println!("[emit_game_finished_events] GameFinished event emitted for player2: {:?}", player2_address);
     }
 
     fn update_board_final_state(
@@ -107,30 +143,41 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         mut world: dojo::world::WorldStorage,
     ) {
         let board_id = *board.id;
+        println!("[update_board_final_state] Updating board {} final state", board_id);
+        
+        let (blue_city, blue_road) = *board.blue_score;
+        let (red_city, red_road) = *board.red_score;
+        println!("[update_board_final_state] Final scores - Blue: ({}, {}), Red: ({}, {})", blue_city, blue_road, red_city, red_road);
         
         world.write_member(
             Model::<Board>::ptr_from_keys(board_id),
             selector!("blue_score"),
             *board.blue_score,
         );
+        println!("[update_board_final_state] Blue score written to board");
 
         world.write_member(
             Model::<Board>::ptr_from_keys(board_id),
             selector!("red_score"),
             *board.red_score,
         );
+        println!("[update_board_final_state] Red score written to board");
 
         world.write_member(
             Model::<Board>::ptr_from_keys(board_id),
             selector!("game_state"),
             GameState::Finished,
         );
+        println!("[update_board_final_state] Game state set to Finished");
     }
 
     fn emit_board_updated_event(
         board: @Board,
         mut world: dojo::world::WorldStorage,
     ) {
+        println!("[emit_board_updated_event] Emitting BoardUpdated event for board: {}", *board.id);
+        println!("[emit_board_updated_event] Moves done: {}, Last move ID: {}", *board.moves_done, *board.last_move_id);
+        
         world.emit_event(
             @BoardUpdated {
                 board_id: *board.id,
@@ -144,6 +191,7 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
                 game_state: GameState::Finished,
             },
         );
+        println!("[emit_board_updated_event] BoardUpdated event emitted with Finished state");
     }
 
     fn process_achievements(
@@ -152,13 +200,23 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         player2_address: ContractAddress,
         mut world: dojo::world::WorldStorage,
     ) {
+        println!("[process_achievements] Processing achievements for game completion");
+        println!("[process_achievements] Winner: {:?}", winner);
+        
         AchievementsTrait::play_game(world, player1_address);
+        println!("[process_achievements] Play game achievement processed for player1");
+        
         AchievementsTrait::play_game(world, player2_address);
+        println!("[process_achievements] Play game achievement processed for player2");
 
         if winner == Option::Some(1) {
             AchievementsTrait::win_game(world, player1_address);
+            println!("[process_achievements] Win game achievement processed for player1 (Blue)");
         } else if winner == Option::Some(2) {
             AchievementsTrait::win_game(world, player2_address);
+            println!("[process_achievements] Win game achievement processed for player2 (Red)");
+        } else {
+            println!("[process_achievements] No win achievement (draw or no winner)");
         }
     }
 
@@ -169,24 +227,32 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         add_points_to: u8, // 0 - both, 1 - blue, 2 - red
         mut world: dojo::world::WorldStorage,
     ) {
+        println!("[finalize_game] Starting finalization for board ID: {}", finalization_data.board_id);
+        println!("[finalize_game] Potential contests: {}, add_points_to: {}", potential_contests.len(), add_points_to);
+        
         ScoringTrait::calculate_final_scoring(
             potential_contests,
             ref board,
             world,
         );
+        println!("[finalize_game] Final scoring calculation completed");
 
-        println!("Finalizing game with board ID: {}", finalization_data.board_id);
+        println!("[finalize_game] Finalizing game with board ID: {}", finalization_data.board_id);
 
         let rules: Rules = world.read_model(0);
         let joker_price = rules.joker_price;
+        println!("[finalize_game] Retrieved joker price from rules: {}", joker_price);
         
         let (blue_points, red_points) = Self::calculate_final_points(
             @board, finalization_data.joker_number1, finalization_data.joker_number2, joker_price
         );
+        println!("[finalize_game] Final points calculated - Blue: {}, Red: {}", blue_points, red_points);
 
         let winner = Self::determine_winner(blue_points, red_points);
+        println!("[finalize_game] Winner determined: {:?}", winner);
 
         board.game_state = GameState::Finished;
+        println!("[finalize_game] Board game state set to Finished");
 
         Self::update_game_status(
             finalization_data.player1_address,
@@ -219,5 +285,7 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
             finalization_data.player2_address,
             world,
         );
+        
+        println!("[finalize_game] Game finalization completed successfully");
     }
 }

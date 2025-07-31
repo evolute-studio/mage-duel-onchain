@@ -374,9 +374,14 @@ pub mod tutorial {
             ref board: Board,
             potential_contests: Span<u32>,
         ) {
+            println!("[_finish_game] Starting game finalization for board ID: {}", board.id);
+            
             let mut world = self.world_default();
             let (player1_address, player1_side, joker_number1) = board.player1;
             let (player2_address, _player2_side, joker_number2) = board.player2;
+
+            println!("[_finish_game] Player1: {:?}, Side: {:?}, Jokers: {}", player1_address, player1_side, joker_number1);
+            println!("[_finish_game] Player2: {:?}, Jokers: {}", player2_address, joker_number2);
 
             let finalization_data = GameFinalizationData {
                 board_id: board.id,
@@ -387,6 +392,7 @@ pub mod tutorial {
                 joker_number2,
             };
 
+            println!("[_finish_game] Calling GameFinalizationTrait::finalize_game with {} potential contests", potential_contests.len());
             GameFinalizationTrait::finalize_game(
                 finalization_data,
                 ref board,
@@ -394,13 +400,18 @@ pub mod tutorial {
                 0, // Both
                 world,
             );
+            println!("[_finish_game] GameFinalizationTrait::finalize_game completed");
 
             // Auto-complete tutorial for guest players
             let current_time = get_block_timestamp();
+            println!("[_finish_game] Current timestamp: {}", current_time);
             
             // Check and complete tutorial for player1 if they are a guest
+            println!("[_finish_game] Reading player1 model for tutorial completion check");
             let mut player1: Player = world.read_model(player1_address);
+            println!("[_finish_game] Player1 is_guest: {}, tutorial_completed: {}", player1.is_guest(), player1.tutorial_completed);
             if player1.is_guest() && !player1.tutorial_completed {
+                println!("[_finish_game] Completing tutorial for player1");
                 player1.tutorial_completed = true;
                 world.write_model(@player1);
                 
@@ -408,11 +419,15 @@ pub mod tutorial {
                     player_id: player1_address,
                     completed_at: current_time
                 });
+                println!("[_finish_game] Tutorial completed event emitted for player1");
             }
             
             // Check and complete tutorial for player2 if they are a guest
+            println!("[_finish_game] Reading player2 model for tutorial completion check");
             let mut player2: Player = world.read_model(player2_address);
+            println!("[_finish_game] Player2 is_guest: {}, tutorial_completed: {}", player2.is_guest(), player2.tutorial_completed);
             if player2.is_guest() && !player2.tutorial_completed {
+                println!("[_finish_game] Completing tutorial for player2");
                 player2.tutorial_completed = true;
                 world.write_model(@player2);
                 
@@ -420,7 +435,10 @@ pub mod tutorial {
                     player_id: player2_address,
                     completed_at: current_time
                 });
+                println!("[_finish_game] Tutorial completed event emitted for player2");
             }
+            
+            println!("[_finish_game] Game finalization completed");
         }
 
     }
