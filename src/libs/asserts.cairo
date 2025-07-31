@@ -5,8 +5,8 @@ use evolute_duel::{
         player::{Player, PlayerTrait}, 
         migration::{MigrationRequest, MigrationRequestTrait}
     },
-    events::{GameCreateFailed, GameJoinFailed, PlayerNotInGame, GameFinished, MigrationError},
-    types::{packing::GameStatus},
+    events::{GameCreateFailed, GameJoinFailed, PlayerNotInGame, GameFinished, MigrationError, ErrorEvent},
+    types::{packing::{GameStatus, GameMode}},
 };
 use starknet::ContractAddress;
 #[generate_trait]
@@ -258,6 +258,73 @@ pub impl AssersImpl of AssertsTrait {
             return false;
         }
 
+        true
+    }
+
+    // GameMode access control functions
+    fn assert_game_mode_access(
+        game: @Game,
+        allowed_modes: Span<GameMode>,
+        caller: ContractAddress,
+        action: felt252,
+        mut world: WorldStorage
+    ) -> bool {
+        let current_mode = *game.game_mode;
+        
+        let mut is_allowed_mode = false;
+
+        for mode in allowed_modes {
+            if current_mode == *mode {
+                is_allowed_mode = true;
+                break;
+            }
+        };
+        
+        if is_allowed_mode {
+            return true;
+        }
+
+        world.emit_event(@ErrorEvent {
+            player_address: caller,
+            name: 'Access Denied',
+            message: format!("Action {} not allowed for GameMode {:?}", action, current_mode),
+        });
+        
+        false
+    }
+
+    fn assert_tutorial_game_access(
+        game: @Game,
+        caller: ContractAddress,
+        action: felt252,
+        mut world: WorldStorage
+    ) -> bool {
+        if *game.game_mode != GameMode::Tutorial {
+            world.emit_event(@ErrorEvent {
+                player_address: caller,
+                name: 'Invalid Game Mode',
+                message: format!("Tutorial action {} requires Tutorial mode, got {:?}", action, *game.game_mode),
+            });
+            return false;
+        }
+        true
+    }
+
+    fn assert_regular_game_access(
+        game: @Game,
+        caller: ContractAddress,
+        action: felt252,
+        mut world: WorldStorage
+    ) -> bool {
+        let current_mode = *game.game_mode;
+        if current_mode != GameMode::Ranked && current_mode != GameMode::Casual {
+            world.emit_event(@ErrorEvent {
+                player_address: caller,
+                name: 'Invalid Game Mode',
+                message: format!("Regular game action {} not allowed for GameMode {:?}", action, current_mode),
+            });
+            return false;
+        }
         true
     }
 }

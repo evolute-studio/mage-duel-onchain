@@ -15,6 +15,9 @@ pub trait ITutorial<T> {
     );
 
     fn skip_move(ref self: T);
+
+    /// Cancels a tutorial game - only the player (not bot) can cancel
+    fn cancel_game(ref self: T);
 }   
 
 
@@ -46,7 +49,7 @@ pub mod tutorial {
             scoring::{PotentialContests},
             player::{Player, PlayerTrait},
         },
-        events::{TutorialCompleted},
+        events::{TutorialCompleted, GameCanceled},
         types::{
             packing::{GameStatus, GameState, PlayerSide, GameMode},
         },
@@ -132,13 +135,10 @@ pub mod tutorial {
                 return;
             }
             
-            // Validate GameMode is Tutorial
-            println!("[make_move] Checking game mode: {:?}", game.game_mode);
-            assert!(
-                game.game_mode == GameMode::Tutorial,
-                "[ERROR] Invalid game mode for tutorial system: {:?}",
-                game.game_mode
-            );
+            // Validate GameMode access for tutorial make_move
+            if !AssertsTrait::assert_tutorial_game_access(@game, player, 'make_move', world) {
+                return;
+            }
             
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
@@ -252,13 +252,10 @@ pub mod tutorial {
                 return;
             }
             
-            // Validate GameMode is Tutorial
-            println!("[skip_move] Checking game mode: {:?}", game.game_mode);
-            assert!(
-                game.game_mode == GameMode::Tutorial,
-                "[ERROR] Invalid game mode for tutorial system: {:?}",
-                game.game_mode
-            );
+            // Validate GameMode access for tutorial skip_move
+            if !AssertsTrait::assert_tutorial_game_access(@game, player, 'skip_move', world) {
+                return;
+            }
 
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
@@ -316,6 +313,66 @@ pub mod tutorial {
                 board.commited_tile,
                 world,
             );
+        }
+
+        fn cancel_game(ref self: ContractState) {
+            let mut world = self.world_default();
+            let player = get_caller_address();
+
+            let mut game: Game = world.read_model(player);
+
+            // Validate this is a tutorial game
+            if !AssertsTrait::assert_tutorial_game_access(@game, player, 'cancel_game', world) {
+                return;
+            }
+
+            // Validate player can cancel (must be in Created or InProgress state)
+            if game.status != GameStatus::Created && game.status != GameStatus::InProgress {
+                println!("[ERROR] Cannot cancel tutorial game in status: {:?}", game.status);
+                return;
+            }
+
+            let board_id = game.board_id;
+            
+            // If game is in progress, we need to handle the board
+            if game.status == GameStatus::InProgress && board_id.is_some() {
+                let mut board: Board = world.read_model(board_id.unwrap());
+                let board_id_value = board.id.clone();
+                let (player1_address, _, _) = board.player1;
+                let (player2_address, _, _) = board.player2;
+
+                // Identify the bot (the one that's not the caller)
+                let bot_address = if player1_address == player {
+                    player2_address
+                } else {
+                    player1_address
+                };
+
+                // Update bot's game state
+                let mut bot_game: Game = world.read_model(bot_address);
+                bot_game.status = GameStatus::Canceled;
+                bot_game.board_id = Option::None;
+                world.write_model(@bot_game);
+
+                // Mark board as finished
+                world.write_member(
+                    Model::<Board>::ptr_from_keys(board_id_value),
+                    selector!("game_state"),
+                    GameState::Finished,
+                );
+            }
+
+            // Update player's game state
+            game.status = GameStatus::Canceled;
+            game.board_id = Option::None;
+            world.write_model(@game);
+
+            world.emit_event(@GameCanceled { 
+                host_player: player, 
+                status: GameStatus::Canceled 
+            });
+
+            println!("[TUTORIAL] Game canceled by player: {:?}", player);
         }
     }
 

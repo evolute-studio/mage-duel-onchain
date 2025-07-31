@@ -180,6 +180,7 @@ pub mod game {
 
             game.status = GameStatus::Created;
             game.board_id = Option::None;
+            game.game_mode = GameMode::Casual; // Default to Casual mode for direct game creation
 
             world.write_model(@game);
 
@@ -192,6 +193,12 @@ pub mod game {
             let host_player = get_caller_address();
 
             let mut game: Game = world.read_model(host_player);
+            
+            // Validate GameMode access for cancel_game (only Ranked/Casual games)
+            if !AssertsTrait::assert_regular_game_access(@game, host_player, 'cancel_game', world) {
+                return;
+            }
+            
             let status = game.status;
 
             if status == GameStatus::InProgress && game.board_id.is_some() {
@@ -534,13 +541,10 @@ pub mod game {
                 return;
             }
             
-            // Validate GameMode is Ranked or Casual (not Tutorial)
-            println!("[make_move] Checking game mode: {:?}", game.game_mode);
-            assert!(
-                game.game_mode == GameMode::Ranked || game.game_mode == GameMode::Casual,
-                "[ERROR] Invalid game mode for regular game system: {:?}",
-                game.game_mode
-            );
+            // Validate GameMode access for make_move
+            if !AssertsTrait::assert_regular_game_access(@game, player, 'make_move', world) {
+                return;
+            }
             
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
@@ -673,13 +677,10 @@ pub mod game {
                 return;
             }
             
-            // Validate GameMode is Ranked or Casual (not Tutorial)
-            println!("[skip_move] Checking game mode: {:?}", game.game_mode);
-            assert!(
-                game.game_mode == GameMode::Ranked || game.game_mode == GameMode::Casual,
-                "[ERROR] Invalid game mode for regular game system: {:?}",
-                game.game_mode
-            );
+            // Validate GameMode access for skip_move
+            if !AssertsTrait::assert_regular_game_access(@game, player, 'skip_move', world) {
+                return;
+            }
 
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
@@ -761,13 +762,10 @@ pub mod game {
                 return;
             }
             
-            // Validate GameMode is Ranked or Casual (not Tutorial)
-            println!("[finish_game] Checking game mode: {:?}", game.game_mode);
-            assert!(
-                game.game_mode == GameMode::Ranked || game.game_mode == GameMode::Casual,
-                "[ERROR] Invalid game mode for regular game system: {:?}",
-                game.game_mode
-            );
+            // Validate GameMode access for finish_game
+            if !AssertsTrait::assert_regular_game_access(@game, player, 'finish_game', world) {
+                return;
+            }
 
             let mut board: Board = world.read_model(board_id);
 

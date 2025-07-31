@@ -55,7 +55,7 @@ pub mod matchmaking {
         models::{
             game::{Game, GameConfig},
         },
-        events::{GameCreated, GameStarted},
+        events::{GameCreated, GameStarted, GameCanceled},
         types::{
             packing::{GameStatus, GameMode},
         },
@@ -92,6 +92,17 @@ pub mod matchmaking {
                     self._create_tutorial_game(caller, bot_address, config);
                 },
                 GameMode::Ranked | GameMode::Casual => {
+                    // Validate access to create regular games
+                    if !AssertsTrait::assert_game_mode_access(
+                        @game, 
+                        array![GameMode::Ranked, GameMode::Casual].span(), 
+                        caller, 
+                        'create_game', 
+                        world
+                    ) {
+                        return;
+                    }
+                    
                     // Regular games - create and wait for opponent
                     game.status = GameStatus::Created;
                     game.board_id = Option::None;
@@ -115,7 +126,18 @@ pub mod matchmaking {
             let mut guest_game: Game = world.read_model(guest_player);
             
             // Validate join conditions
-            if !AssertsTrait::assert_ready_to_join_game(@host_game, @guest_game, world) {
+            if !AssertsTrait::assert_ready_to_join_game(@guest_game, @host_game, world) {
+                return;
+            }
+            
+            // Validate guest can join this game mode
+            if !AssertsTrait::assert_game_mode_access(
+                @host_game, 
+                array![GameMode::Ranked, GameMode::Casual].span(), 
+                guest_player, 
+                'join_game', 
+                world
+            ) {
                 return;
             }
             
@@ -153,10 +175,31 @@ pub mod matchmaking {
             let caller = get_caller_address();
             
             let mut game: Game = world.read_model(caller);
+            
+            // Validate can cancel based on GameMode
+            match game.game_mode {
+                GameMode::Tutorial => {
+                    // Tutorial games should be canceled through tutorial contract only
+                    println!("[ERROR] Tutorial games must be canceled through tutorial contract");
+                    return;
+                },
+                GameMode::Ranked | GameMode::Casual => {
+                    // Regular games can be canceled through matchmaking
+                    if !AssertsTrait::assert_regular_game_access(@game, caller, 'cancel_game', world) {
+                        return;
+                    }
+                }
+            }
+            
             assert!(game.status == GameStatus::Created, "Can only cancel created games");
             
             game.status = GameStatus::Canceled;
             world.write_model(@game);
+
+            world.emit_event(@GameCanceled { 
+                host_player: caller, 
+                status: GameStatus::Canceled 
+            });
         }
         
         fn initialize_configs(ref self: ContractState) {
@@ -243,6 +286,18 @@ pub mod matchmaking {
                 return;
             }
             
+            // Validate player can access tutorial mode
+            let mut player_game: Game = world.read_model(player_address);
+            if !AssertsTrait::assert_game_mode_access(
+                @player_game, 
+                array![GameMode::Tutorial].span(), 
+                player_address, 
+                'create_tutorial', 
+                world
+            ) {
+                return;
+            }
+            
             // Create tutorial board
             let board = BoardTrait::create_tutorial_board(
                 world,
@@ -250,8 +305,7 @@ pub mod matchmaking {
                 bot_address,
             );
             
-            // Update player game state
-            let mut player_game: Game = world.read_model(player_address);
+            // Update player game state (use the one we already read and validated)
             player_game.status = GameStatus::InProgress;
             player_game.board_id = Option::Some(board.id);
             player_game.game_mode = GameMode::Tutorial;
