@@ -56,7 +56,7 @@ pub mod game {
             board::{BoardTrait},
         },
         types::{
-            packing::{GameStatus, GameState, PlayerSide},
+            packing::{GameStatus, GameState, PlayerSide, GameMode},
             trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait},
         },
         constants::{CREATING_TIME, REVEAL_TIME, MOVE_TIME},
@@ -533,6 +533,15 @@ pub mod game {
             if !AssertsTrait::assert_player_in_game(@game, Option::None, world) {
                 return;
             }
+            
+            // Validate GameMode is Ranked or Casual (not Tutorial)
+            println!("[make_move] Checking game mode: {:?}", game.game_mode);
+            assert!(
+                game.game_mode == GameMode::Ranked || game.game_mode == GameMode::Casual,
+                "[ERROR] Invalid game mode for regular game system: {:?}",
+                game.game_mode
+            );
+            
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
@@ -663,6 +672,14 @@ pub mod game {
             if !AssertsTrait::assert_player_in_game(@game, Option::None, world) {
                 return;
             }
+            
+            // Validate GameMode is Ranked or Casual (not Tutorial)
+            println!("[skip_move] Checking game mode: {:?}", game.game_mode);
+            assert!(
+                game.game_mode == GameMode::Ranked || game.game_mode == GameMode::Casual,
+                "[ERROR] Invalid game mode for regular game system: {:?}",
+                game.game_mode
+            );
 
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
@@ -743,6 +760,14 @@ pub mod game {
             if !AssertsTrait::assert_player_in_game(@game, Option::Some(board_id), world) {
                 return;
             }
+            
+            // Validate GameMode is Ranked or Casual (not Tutorial)
+            println!("[finish_game] Checking game mode: {:?}", game.game_mode);
+            assert!(
+                game.game_mode == GameMode::Ranked || game.game_mode == GameMode::Casual,
+                "[ERROR] Invalid game mode for regular game system: {:?}",
+                game.game_mode
+            );
 
             let mut board: Board = world.read_model(board_id);
 

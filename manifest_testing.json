@@ -1328,8 +1328,383 @@
   },
   "contracts": [
     {
-      "address": "0x43e1d378b4e8a393bcd982bda7752f77f0b0421fa8ddb9c30501b39e6c189f7",
-      "class_hash": "0x5575aaa4818023bf275965b2a4a95a0fd9652875bf480bdf43faba6d351d1cf",
+      "address": "0x4a6158ee517b91ff64960ddd9c201fac6b007036878f59fdf17306ca1c6f210",
+      "class_hash": "0x67fe671625684a1e96217f6546551ca6a4b33fe8f8f5c68f80c9d7ccf588222",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "account_migration__ContractImpl",
+          "interface_name": "dojo::contract::interface::IContract"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::interface::IContract",
+          "items": []
+        },
+        {
+          "type": "impl",
+          "name": "account_migration__DeployedContractImpl",
+          "interface_name": "dojo::meta::interface::IDeployedResource"
+        },
+        {
+          "type": "struct",
+          "name": "core::byte_array::ByteArray",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::bytes_31::bytes31>"
+            },
+            {
+              "name": "pending_word",
+              "type": "core::felt252"
+            },
+            {
+              "name": "pending_word_len",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::meta::interface::IDeployedResource",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "dojo_init",
+          "inputs": [
+            {
+              "name": "creator_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "impl",
+          "name": "AccountMigrationImpl",
+          "interface_name": "evolute_duel::systems::account_migration::IAccountMigration"
+        },
+        {
+          "type": "interface",
+          "name": "evolute_duel::systems::account_migration::IAccountMigration",
+          "items": [
+            {
+              "type": "function",
+              "name": "initiate_migration",
+              "inputs": [
+                {
+                  "name": "target_controller",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "confirm_migration",
+              "inputs": [
+                {
+                  "name": "guest_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "cancel_migration",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "execute_migration",
+              "inputs": [
+                {
+                  "name": "guest_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "emergency_cancel_migration",
+              "inputs": [
+                {
+                  "name": "guest_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "WorldProviderImpl",
+          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::iworld::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::world_provider::IWorldProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "world_dispatcher",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::world::iworld::IWorldDispatcher"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "UpgradeableImpl",
+          "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::upgradeable::IUpgradeable",
+          "items": [
+            {
+              "type": "function",
+              "name": "upgrade",
+              "inputs": [
+                {
+                  "name": "new_class_hash",
+                  "type": "core::starknet::class_hash::ClassHash"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "OwnableMixinImpl",
+          "interface_name": "openzeppelin_access::ownable::interface::OwnableABI"
+        },
+        {
+          "type": "interface",
+          "name": "openzeppelin_access::ownable::interface::OwnableABI",
+          "items": [
+            {
+              "type": "function",
+              "name": "owner",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "transfer_ownership",
+              "inputs": [
+                {
+                  "name": "new_owner",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "renounce_ownership",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "transferOwnership",
+              "inputs": [
+                {
+                  "name": "newOwner",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "renounceOwnership",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "constructor",
+          "name": "constructor",
+          "inputs": []
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "Upgraded",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "openzeppelin_access::ownable::ownable::OwnableComponent::OwnershipTransferred",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "previous_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "key"
+            },
+            {
+              "name": "new_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "key"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "openzeppelin_access::ownable::ownable::OwnableComponent::OwnershipTransferStarted",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "previous_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "key"
+            },
+            {
+              "name": "new_owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "kind": "key"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "openzeppelin_access::ownable::ownable::OwnableComponent::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "OwnershipTransferred",
+              "type": "openzeppelin_access::ownable::ownable::OwnableComponent::OwnershipTransferred",
+              "kind": "nested"
+            },
+            {
+              "name": "OwnershipTransferStarted",
+              "type": "openzeppelin_access::ownable::ownable::OwnableComponent::OwnershipTransferStarted",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "evolute_duel::systems::account_migration::account_migration::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "OwnableEvent",
+              "type": "openzeppelin_access::ownable::ownable::OwnableComponent::Event",
+              "kind": "flat"
+            }
+          ]
+        }
+      ],
+      "init_calldata": [
+        "0x0114c35624bf2Ed7cFc2C6AeB75a982c8263280BE47fefD1dE716D70A180B108"
+      ],
+      "tag": "evolute_duel-account_migration",
+      "selector": "0x5973cb679305763a898bdcefb7b8699346093ad050ef1ad9e6c89c4ed6da1f3",
+      "systems": [
+        "dojo_init",
+        "initiate_migration",
+        "confirm_migration",
+        "cancel_migration",
+        "execute_migration",
+        "emergency_cancel_migration",
+        "upgrade",
+        "transfer_ownership",
+        "renounce_ownership",
+        "transferOwnership",
+        "renounceOwnership"
+      ]
+    },
+    {
+      "address": "0x3880232c905b52ed37ead6d51a4cd2f562c62037317e88669a3ddf5f58f144d",
+      "class_hash": "0x39b8b20dbbae935e9496bd1f8e08a76ddbfb041056bbc95c792eb14b08d6170",
       "abi": [
         {
           "type": "impl",
@@ -1680,8 +2055,8 @@
       ]
     },
     {
-      "address": "0x53a2a410bb7186a18fbd3ad38cf8d20fdd1e86ec41ee1ae3fb544d5da75d36f",
-      "class_hash": "0x542ca216e789b0721290cc686e65718078d9a57e5d3bbdcb64b1c88dbb1693",
+      "address": "0x71773b31324b6e5e821a7f9ea0007b96c76cac2008a115c0563d7ffdd5dfcb6",
+      "class_hash": "0x1e37ac36b0d8f67b6454d5a584333d11b671d37c52c6d94813279cd36d1a95e",
       "abi": [
         {
           "type": "impl",
@@ -2068,6 +2443,253 @@
         "transferOwnership",
         "renounceOwnership"
       ]
+    },
+    {
+      "address": "0x150ac54d8f45750af80fcefc5fcb88cc8c36d89799dc6bfaa77ebc31aac948d",
+      "class_hash": "0x69ac1f384f7e60f31b2af68a6cfb9aaa68d55dcd6cae3716d5020d64f552267",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "tutorial__ContractImpl",
+          "interface_name": "dojo::contract::interface::IContract"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::interface::IContract",
+          "items": []
+        },
+        {
+          "type": "impl",
+          "name": "tutorial__DeployedContractImpl",
+          "interface_name": "dojo::meta::interface::IDeployedResource"
+        },
+        {
+          "type": "struct",
+          "name": "core::byte_array::ByteArray",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::bytes_31::bytes31>"
+            },
+            {
+              "name": "pending_word",
+              "type": "core::felt252"
+            },
+            {
+              "name": "pending_word_len",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::meta::interface::IDeployedResource",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "TutorialImpl",
+          "interface_name": "evolute_duel::systems::tutorial::ITutorial"
+        },
+        {
+          "type": "enum",
+          "name": "core::option::Option::<core::integer::u8>",
+          "variants": [
+            {
+              "name": "Some",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "None",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "evolute_duel::systems::tutorial::ITutorial",
+          "items": [
+            {
+              "type": "function",
+              "name": "create_tutorial_game",
+              "inputs": [
+                {
+                  "name": "bot_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "make_move",
+              "inputs": [
+                {
+                  "name": "joker_tile",
+                  "type": "core::option::Option::<core::integer::u8>"
+                },
+                {
+                  "name": "rotation",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "col",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "row",
+                  "type": "core::integer::u8"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "skip_move",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "dojo_init",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "view"
+        },
+        {
+          "type": "impl",
+          "name": "WorldProviderImpl",
+          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::iworld::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::world_provider::IWorldProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "world_dispatcher",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::world::iworld::IWorldDispatcher"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "UpgradeableImpl",
+          "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::upgradeable::IUpgradeable",
+          "items": [
+            {
+              "type": "function",
+              "name": "upgrade",
+              "inputs": [
+                {
+                  "name": "new_class_hash",
+                  "type": "core::starknet::class_hash::ClassHash"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "constructor",
+          "name": "constructor",
+          "inputs": []
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "Upgraded",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "evolute_duel::systems::tutorial::tutorial::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "nested"
+            }
+          ]
+        }
+      ],
+      "init_calldata": [],
+      "tag": "evolute_duel-tutorial",
+      "selector": "0xc1459904776212c8b7de02dc2bf94a023a77dcf3991d61aab18980d0aded3c",
+      "systems": [
+        "create_tutorial_game",
+        "make_move",
+        "skip_move",
+        "upgrade"
+      ]
     }
   ],
   "libraries": [],
@@ -2086,9 +2708,21 @@
     },
     {
       "members": [],
-      "class_hash": "0x2d23dc378b8371fc995f790edef24a393c35614c1a90a6a30a7e1c9e2b8d3d0",
+      "class_hash": "0x61c2a46c7d880303d04ca79171d1e8c407387cce65605971522c4201882df6b",
       "tag": "evolute_duel-Game",
       "selector": "0x50eb71734a5acf3d804e250ff9e59bb3566e8bf9d30d0587d38cc2cc032e232"
+    },
+    {
+      "members": [],
+      "class_hash": "0x5a7bc6fc0658a49c33ae3b02bd7bdadb94f7f40013cec1b488010ffb9c099b9",
+      "tag": "evolute_duel-GameConfig",
+      "selector": "0x2bf9a36804fcd7e5516280098bb34fd9bde6d9e8815a2e2da309a08bf4c4d5a"
+    },
+    {
+      "members": [],
+      "class_hash": "0x38777f14a857d07f7a5da68d7a3fe35c7c82615532ab08eb7df7ffff58d246a",
+      "tag": "evolute_duel-MigrationRequest",
+      "selector": "0x2998f71fff890dac471f5b1d7ca212e25f86734f68cc968990fce7d6f51de1a"
     },
     {
       "members": [],
@@ -2098,7 +2732,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x5fd1eaa566df50fc66c3e9f0511784da0981b7bb4b9b342436f5b8f3ae8b424",
+      "class_hash": "0x1e4cfe1dc16c533e3bf8a41108e5031f0982f182359a1cf4186182c1a2fed1a",
       "tag": "evolute_duel-Player",
       "selector": "0xd206bfcaacb44471c314c767d8bdf5b2c84b204fd362b85989b096baef7683"
     },
@@ -2154,6 +2788,12 @@
     },
     {
       "members": [],
+      "class_hash": "0x4687164b535ed0c91bbb56b146e0e46f96a00ff6d193f3e696bc0eb2eb40d9d",
+      "tag": "evolute_duel-EmergencyMigrationCancelled",
+      "selector": "0x803bd19a470281e2846951086c717e2a1058ad31d129e625dbf68c18d7dc42"
+    },
+    {
+      "members": [],
       "class_hash": "0x62b7b6f376d038e0d882309e85e06508ba0a184b3d76898fb149710990c2557",
       "tag": "evolute_duel-ErrorEvent",
       "selector": "0x8363df6566a5bd5eec42e11fc59c68b60a8a8994432ac4ac53f0e79509e915"
@@ -2205,6 +2845,36 @@
       "class_hash": "0x7081b674a7633c369121cec0a7eb034d1d3045d03edf57fec03d6d9b328f769",
       "tag": "evolute_duel-InvalidMove",
       "selector": "0x2961857ea4682513ae1586fb617e4bf12bdc163f7b35df10b043a4455ec18e1"
+    },
+    {
+      "members": [],
+      "class_hash": "0x639dc5a28d5098e2d09fd246f2bbc1023a84ecd813c70d40eb279b474e1a43c",
+      "tag": "evolute_duel-MigrationCancelled",
+      "selector": "0x1d206d67da813cb206f0419383bde9d6a1b64390d3f50573ac3415bbd53e9a2"
+    },
+    {
+      "members": [],
+      "class_hash": "0x61dd84e5512883294516ca197291d4590e1d2618818b91d210ebb7b14676ea5",
+      "tag": "evolute_duel-MigrationCompleted",
+      "selector": "0x334852ed416f12039c4da97a6dd51da94441d2621a6c6fd75f3765b1efc017d"
+    },
+    {
+      "members": [],
+      "class_hash": "0x536db0a819dd54f74f12252f06197bc9c1c0f77f42c0db1fb56dbde95ec1538",
+      "tag": "evolute_duel-MigrationConfirmed",
+      "selector": "0x7f11fb27ed5dca93dfbd4b21227055eb10b956bd6218cbcc60826dc0685bcce"
+    },
+    {
+      "members": [],
+      "class_hash": "0x3057a8c72d547cd9010b7310bd0146413366e61dc2ca63bb4dd15cd6814e272",
+      "tag": "evolute_duel-MigrationError",
+      "selector": "0xd3d99783b06e5622bd1a30f3bf0d2bf1b1e437e1a654d3a94d1ae74c271f0c"
+    },
+    {
+      "members": [],
+      "class_hash": "0x39490e32805dab11e1906ee72fcd08d915a1cd88b3f766f98a297f00391e9bb",
+      "tag": "evolute_duel-MigrationInitiated",
+      "selector": "0x65a0d3280c917d842642cef290c9e4ae6309229c1a80b22b56b8d4999183ab2"
     },
     {
       "members": [],
@@ -2295,6 +2965,12 @@
       "class_hash": "0x113e43bc604068a5811205b126a3e318b21e5c72746138efa6fb40277067f00",
       "tag": "evolute_duel-TrophyProgression",
       "selector": "0x5d087bb1cc662181d9fd66fe2145fcaafdadcb57f350bbad05a2d1e206e6e17"
+    },
+    {
+      "members": [],
+      "class_hash": "0x496043c8ecd7adbece1d6596c4e94306bd530945ca8f580abbd90cf14805986",
+      "tag": "evolute_duel-TutorialCompleted",
+      "selector": "0x2be0888193756d94797e44b30bf030f9337068403d5217850a01ac8cf49d9d2"
     }
   ],
   "external_contracts": []

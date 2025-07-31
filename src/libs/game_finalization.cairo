@@ -176,7 +176,7 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         mut world: dojo::world::WorldStorage,
     ) {
         println!("[emit_board_updated_event] Emitting BoardUpdated event for board: {}", *board.id);
-        println!("[emit_board_updated_event] Moves done: {}, Last move ID: {}", *board.moves_done, *board.last_move_id);
+        println!("[emit_board_updated_event] Moves done: {}, Last move ID: {:?}", *board.moves_done, *board.last_move_id);
         
         world.emit_event(
             @BoardUpdated {

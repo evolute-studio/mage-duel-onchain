@@ -48,7 +48,7 @@ pub mod tutorial {
         },
         events::{TutorialCompleted},
         types::{
-            packing::{GameStatus, GameState, PlayerSide},
+            packing::{GameStatus, GameState, PlayerSide, GameMode},
         },
         systems::helpers::{
             board::{BoardTrait},
@@ -131,6 +131,15 @@ pub mod tutorial {
             if !AssertsTrait::assert_player_in_game(@game, Option::None, world) {
                 return;
             }
+            
+            // Validate GameMode is Tutorial
+            println!("[make_move] Checking game mode: {:?}", game.game_mode);
+            assert!(
+                game.game_mode == GameMode::Tutorial,
+                "[ERROR] Invalid game mode for tutorial system: {:?}",
+                game.game_mode
+            );
+            
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
@@ -201,13 +210,17 @@ pub mod tutorial {
             self.move_id_generator.write(move_id + 1);
 
             let (updated_joker1, updated_joker2) = board.get_joker_numbers();
+            println!("[make_move] Game ending check: joker1={}, joker2={}, top_tile_exists={}", updated_joker1, updated_joker2, top_tile.is_some());
             
             if updated_joker1 == 0 && updated_joker2 == 0  && top_tile.is_none() {
+                println!("[make_move] GAME ENDING CONDITION MET: No jokers and no tiles left");
                 let potential_contests_model: PotentialContests = world.read_model(board_id);
+                println!("[make_move] About to call _finish_game with {} potential contests", potential_contests_model.potential_contests.len());
                 self._finish_game(
                     ref board,
                     potential_contests_model.potential_contests.span(),
                 );
+                println!("[make_move] _finish_game call completed, returning");
                 return;
             }
 
@@ -238,6 +251,14 @@ pub mod tutorial {
             if !AssertsTrait::assert_player_in_game(@game, Option::None, world) {
                 return;
             }
+            
+            // Validate GameMode is Tutorial
+            println!("[skip_move] Checking game mode: {:?}", game.game_mode);
+            assert!(
+                game.game_mode == GameMode::Tutorial,
+                "[ERROR] Invalid game mode for tutorial system: {:?}",
+                game.game_mode
+            );
 
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
@@ -265,20 +286,23 @@ pub mod tutorial {
 
             // Check if this will be two consecutive skips (game should end)
             let should_finish_game = TimingTrait::check_two_consecutive_skips(@board, world);
+            println!("[skip_move] Two consecutive skips check result: {}", should_finish_game);
 
             // Execute skip move
             self._skip_move(player, player_side, ref board, self.move_id_generator, true);
             
             // If two consecutive skips, finish the game
             if should_finish_game {
-                println!("Two consecutive skips detected, finishing the game");
+                println!("[skip_move] Two consecutive skips detected, finishing the game");
                 let potential_contests_model: PotentialContests = world.read_model(board_id);
+                println!("[skip_move] About to call _finish_game with {} potential contests", potential_contests_model.potential_contests.len());
                 
                 self._finish_game(
                     ref board,
                     potential_contests_model.potential_contests.span(),
                 );
                 
+                println!("[skip_move] _finish_game call completed, returning");
                 return;
             }
             
