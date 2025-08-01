@@ -628,12 +628,31 @@ pub mod game {
             board.last_move_id = Option::Some(move_id);
             self.move_id_generator.write(move_id + 1);
 
+            // Save the move record BEFORE checking game end conditions
+            MoveExecutionTrait::persist_board_updates(@board, move_record, top_tile, world);
+            println!("Board updates persisted, emitting move events");
+            MoveExecutionTrait::emit_move_events(move_record, @board, player, world);
+            println!("Move events emitted");
+
             let available_tiles_player1: AvailableTiles =
                 world.read_model((board_id, player1_address));
             let available_tiles_player2: AvailableTiles =
                 world.read_model((board_id, player2_address));
 
             let (updated_joker1, updated_joker2) = board.get_joker_numbers();
+            
+            // Check if board is full (all playable positions are occupied)
+            if MoveExecutionTrait::is_board_full(board.moves_done, 10) {
+                let potential_contests_model: PotentialContests = world.read_model(board_id);
+                self._finish_game(
+                    ref board,
+                    potential_contests_model.potential_contests.span(),
+                    0, // 0 - both players get points
+                );
+                return;
+            }
+            
+            // Check traditional end conditions (no tiles and no jokers)
             if MoveExecutionTrait::should_finish_game(
                 updated_joker1, 
                 updated_joker2, 
@@ -648,11 +667,6 @@ pub mod game {
                 );
                 return;
             }
-
-            MoveExecutionTrait::persist_board_updates(@board, move_record, top_tile, world);
-            println!("Board updates persisted, emitting move events");
-            MoveExecutionTrait::emit_move_events(move_record, @board, player, world);
-            println!("Move events emitted");
 
             PhaseManagementTrait::transition_after_move(
                 board_id,
@@ -858,7 +872,7 @@ pub mod game {
             };
 
             board.last_move_id = Option::Some(move_id);
-            board.moves_done = board.moves_done + 1;
+            // Don't increment moves_done for skips - only actual tile placements count
             move_id_generator.write(move_id + 1);
 
             world.write_model(@move);
@@ -870,12 +884,6 @@ pub mod game {
                     board.last_move_id,
                 );
 
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("moves_done"),
-                    board.moves_done,
-                );
             if emit_event {
                 world
                     .emit_event(
