@@ -195,9 +195,9 @@ pub mod game {
             let mut game: Game = world.read_model(host_player);
             
             // Validate GameMode access for cancel_game (only Ranked/Casual games)
-            if !AssertsTrait::assert_regular_game_access(@game, host_player, 'cancel_game', world) {
-                return;
-            }
+            // if !AssertsTrait::assert_regular_game_access(@game, host_player, 'cancel_game', world) {
+            //     return;
+            // }
             
             let status = game.status;
 
