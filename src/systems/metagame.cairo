@@ -25,6 +25,7 @@ pub mod metagame {
             helpers::{
                 validation::{is_valid_move},
                 prizes::prize_system::{has_prize_at},
+                mountains::game_integration::{is_position_mountain_for_nearby_prizes},
             },
         },
         types::packing::{PlayerSide},
@@ -125,6 +126,37 @@ pub mod metagame {
 
             let tile = *player_data.deck[tile_index];
             println!("[PLACE_TILE] Selected tile from deck[{}]: {:?}", tile_index, tile);
+
+            // Проверяем горы только если у игрока уже есть первый тайл (есть призы для проверки)
+            if player_data.first_tile_placed.is_some() {
+                match player_data.first_tile_placed {
+                    Option::Some(first_pos) => {
+                        println!("[PLACE_TILE] Checking for mountains at target position ({}, {})", col, row);
+                        
+                        // O(1) проверка: является ли позиция горой для любого ближайшего приза 
+                        let is_blocked_by_mountain = is_position_mountain_for_nearby_prizes(
+                            col,
+                            row,
+                            player_address,
+                            first_pos.col,
+                            first_pos.row,
+                            season_id
+                        );
+                        
+                        if is_blocked_by_mountain {
+                            println!("[PLACE_TILE] ERROR: Cannot place tile on mountain position");
+                            panic!("Cannot place tile on mountain");
+                        }
+                        
+                        println!("[PLACE_TILE] PASSED: Position is not blocked by mountains");
+                    },
+                    Option::None => {
+                        println!("[PLACE_TILE] No first tile yet, skipping mountain check");
+                    }
+                }
+            } else {
+                println!("[PLACE_TILE] First tile placement, skipping mountain check");
+            }
             
             println!("[PLACE_TILE] Preparing to call is_valid_move...");
             println!("[PLACE_TILE] is_valid_move parameters:");

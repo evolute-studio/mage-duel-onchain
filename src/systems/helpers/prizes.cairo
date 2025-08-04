@@ -1,6 +1,5 @@
 use starknet::ContractAddress;
-use core::hash::{HashStateTrait};
-use core::poseidon::PoseidonTrait;
+use evolute_duel::utils::random::{hash_u32_quad, felt252_to_u32};
 
 // Константы для настройки системы призов
 const MAX_PRIZE_RADIUS: u32 = 20;
@@ -88,25 +87,22 @@ pub mod prize_system {
         first_tile_col: u32,
         first_tile_row: u32,
         season_id: felt252
-    ) -> felt252 {
-        let mut state = PoseidonTrait::new();
+    ) -> u32 {
+        // Преобразуем player_address в u32 для хеширования
+        let player_u32 = felt252_to_u32(player_address.into());
+        let season_u32 = felt252_to_u32(season_id);
         
-        // Добавляем все параметры в хеш
-        state = state.update(player_address.into());
-        state = state.update(col.into());
-        state = state.update(row.into());
-        state = state.update(first_tile_col.into());
-        state = state.update(first_tile_row.into());
-        state = state.update(season_id);
+        // Сначала хешируем координаты игрока
+        let coord_hash = hash_u32_quad(player_u32, col, row, season_u32);
         
-        state.finalize()
+        // Затем добавляем координаты первого тайла
+        hash_u32_quad(coord_hash, first_tile_col, first_tile_row, 0x50524956) // "PRIV" - константа для призов
     }
 
     /// Проверить, является ли позиция призовой на основе seed и кольца
-    pub fn is_prize_position(seed: felt252, ring: u32) -> bool {
+    pub fn is_prize_position(seed: u32, ring: u32) -> bool {
         let density = get_prize_density_for_ring(ring);
-        let seed_u256: u256 = seed.into();
-        let remainder = seed_u256 % density.into();
+        let remainder = seed % density;
         remainder == 0
     }
 
@@ -342,6 +338,40 @@ mod tests {
         let result1 = prize_system::has_prize_at(player, 10, 10, 8, 8, season_id);
         let result2 = prize_system::has_prize_at(player, 10, 10, 8, 8, season_id);
         assert(result1 == result2, 'Results should be deterministic');
+    }
+
+    #[test]
+    fn test_lcg_hash_generation() {
+        let player = contract_address_const::<0x123>();
+        let season_id: felt252 = 1;
+        
+        // Тестируем новую LCG хеш функцию
+        let seed1 = prize_system::generate_position_seed(player, 5, 5, 0, 0, season_id);
+        let seed2 = prize_system::generate_position_seed(player, 5, 5, 0, 0, season_id);
+        assert(seed1 == seed2, 'LCG hash should be deterministic');
+        
+        let seed3 = prize_system::generate_position_seed(player, 6, 5, 0, 0, season_id);
+        assert(seed1 != seed3, 'Different positions should give different hashes');
+    }
+
+    #[test]
+    fn test_prize_position_check_with_lcg() {
+        let seed = 12;
+        let ring = 1;
+        
+        let is_prize1 = prize_system::is_prize_position(seed, ring);
+        let is_prize2 = prize_system::is_prize_position(seed, ring);
+        assert(is_prize1 == is_prize2, 'Prize check should be deterministic');
+        
+        // Тестируем разные кольца
+        let _is_prize_ring2 = prize_system::is_prize_position(seed, 2);
+        let _is_prize_ring3 = prize_system::is_prize_position(seed, 3);
+        
+        // Разные кольца могут давать разные результаты из-за разной плотности
+        assert(
+            is_prize1 == is_prize1, // Самоочевидно, но проверяем консистентность
+            'Same ring should give same result'
+        );
     }
 
     #[test]

@@ -15,6 +15,7 @@ pub mod systems {
         pub mod scoring;
         pub mod validation;
         pub mod prizes;
+        pub mod mountains;
     }
     pub mod tokens {
         pub mod evolute_coin;
@@ -58,6 +59,7 @@ pub mod components {
 
 pub mod utils {
     pub mod hash;
+    pub mod random;
 }
 
 pub mod interfaces {
