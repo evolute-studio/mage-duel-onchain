@@ -195,9 +195,9 @@ pub mod game {
             let mut game: Game = world.read_model(host_player);
             
             // Validate GameMode access for cancel_game (only Ranked/Casual games)
-            // if !AssertsTrait::assert_regular_game_access(@game, host_player, 'cancel_game', world) {
-            //     return;
-            // }
+            if !AssertsTrait::assert_regular_game_access(@game, host_player, 'cancel_game', world) {
+                return;
+            }
             
             let status = game.status;
 
@@ -248,6 +248,10 @@ pub mod game {
                 return;
             }
 
+            if !AssertsTrait::assert_regular_game_access(@host_game, host_player, 'join_game', world) {
+                return;
+            }
+
             let board_id: felt252 = {
                 let board = BoardTrait::create_board(
                     world, host_player, guest_player, self.board_id_generator,
@@ -263,6 +267,7 @@ pub mod game {
             guest_game.board_id = Option::Some(board_id);
             guest_game.status = GameStatus::InProgress;
             guest_game.status = GameStatus::InProgress;
+            guest_game.game_mode = host_game.game_mode; // Match game mode
 
             world.write_model(@host_game);
             world.write_model(@guest_game);
@@ -286,6 +291,10 @@ pub mod game {
 
             if game.board_id.is_none() {
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
+                return;
+            }
+
+            if !AssertsTrait::assert_regular_game_access(@game, player, 'commit_tiles', world) {
                 return;
             }
 
@@ -397,6 +406,10 @@ pub mod game {
                 return;
             }
 
+            if !AssertsTrait::assert_regular_game_access(@game, player, 'reveal_tile', world) {
+                return;
+            }
+
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
@@ -433,6 +446,10 @@ pub mod game {
 
             if game.board_id.is_none() {
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
+                return;
+            }
+
+            if !AssertsTrait::assert_regular_game_access(@game, player, 'request_next_tile', world) {
                 return;
             }
 
