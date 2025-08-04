@@ -5,7 +5,7 @@ use evolute_duel::{
         player::{Player},
     },
     events::{GameFinished, BoardUpdated},
-    types::packing::{GameState, GameStatus, PlayerSide},
+    types::packing::{GameState, GameStatus, PlayerSide, GameMode},
     libs::{
         scoring::{ScoringTrait}, 
         achievements::{AchievementsTrait}
@@ -154,7 +154,10 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         println!("[update_game_status] Guest game current status: {:?}", guest_game.status);
         
         host_game.status = GameStatus::Finished;
+        host_game.game_mode = GameMode::None; // Reset game mode to None
         guest_game.status = GameStatus::Finished;
+        guest_game.game_mode = GameMode::None; // Reset game mode to None
+
 
         world.write_model(@host_game);
         world.write_model(@guest_game);

@@ -94,11 +94,13 @@ pub mod tutorial {
 
             game.status = GameStatus::InProgress;
             game.board_id = Option::Some(board.id);
+            game.game_mode = GameMode::Tutorial;
             world.write_model(@game);
 
             
             bot_game.status = GameStatus::InProgress;
             bot_game.board_id = Option::Some(board.id);
+            bot_game.game_mode = GameMode::Tutorial;
             world.write_model(@bot_game);
 
 
