@@ -82,17 +82,6 @@ pub impl AssersImpl of AssertsTrait {
             return false;
         }
 
-        if !*guest.tutorial_completed {
-            world.emit_event(@MigrationError {
-                guest_address: *guest.player_id,
-                controller_address,
-                status: 'Error',
-                error_context: "Guest validation failed - tutorial not completed",
-                error_message: "Tutorial not completed"
-            });
-            return false;
-        }
-
         if *guest.migration_used {
             world.emit_event(@MigrationError {
                 guest_address: *guest.player_id,
@@ -123,18 +112,7 @@ pub impl AssersImpl of AssertsTrait {
             return false;
         }
 
-        if *controller.tutorial_completed {
-            world.emit_event(@MigrationError {
-                guest_address,
-                controller_address: *controller.player_id,
-                status: 'Error',
-                error_context: "Controller validation failed - tutorial already completed",
-                error_message: "Controller completed tutorial"
-            });
-            return false;
-        }
-
-
+        // YOU CAN ONLY MIGRATE ONCE
         if *controller.migration_used {
             world.emit_event(@MigrationError {
                 guest_address,

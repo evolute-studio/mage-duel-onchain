@@ -42,6 +42,7 @@ pub trait IGame<T> {
 pub mod game {
     use super::{IGame};
     use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
+    use core::num::traits::Zero;
     use evolute_duel::{
         models::{
             game::{Board, Rules, Move, Game, TileCommitments, AvailableTiles},
@@ -248,6 +249,10 @@ pub mod game {
                 return;
             }
 
+            if !AssertsTrait::assert_regular_game_access(@host_game, host_player, 'join_game', world) {
+                return;
+            }
+
             let board_id: felt252 = {
                 let board = BoardTrait::create_board(
                     world, host_player, guest_player, self.board_id_generator,
@@ -263,7 +268,7 @@ pub mod game {
             guest_game.board_id = Option::Some(board_id);
             guest_game.status = GameStatus::InProgress;
             guest_game.status = GameStatus::InProgress;
-            
+            guest_game.game_mode = host_game.game_mode; // Match game mode
 
             world.write_model(@host_game);
             world.write_model(@guest_game);
@@ -287,6 +292,10 @@ pub mod game {
 
             if game.board_id.is_none() {
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
+                return;
+            }
+
+            if !AssertsTrait::assert_regular_game_access(@game, player, 'commit_tiles', world) {
                 return;
             }
 
@@ -398,6 +407,10 @@ pub mod game {
                 return;
             }
 
+            if !AssertsTrait::assert_regular_game_access(@game, player, 'reveal_tile', world) {
+                return;
+            }
+
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
@@ -434,6 +447,10 @@ pub mod game {
 
             if game.board_id.is_none() {
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
+                return;
+            }
+
+            if !AssertsTrait::assert_regular_game_access(@game, player, 'request_next_tile', world) {
                 return;
             }
 
@@ -629,12 +646,31 @@ pub mod game {
             board.last_move_id = Option::Some(move_id);
             self.move_id_generator.write(move_id + 1);
 
+            // Save the move record BEFORE checking game end conditions
+            MoveExecutionTrait::persist_board_updates(@board, move_record, top_tile, world);
+            println!("Board updates persisted, emitting move events");
+            MoveExecutionTrait::emit_move_events(move_record, @board, player, world);
+            println!("Move events emitted");
+
             let available_tiles_player1: AvailableTiles =
                 world.read_model((board_id, player1_address));
             let available_tiles_player2: AvailableTiles =
                 world.read_model((board_id, player2_address));
 
             let (updated_joker1, updated_joker2) = board.get_joker_numbers();
+            
+            // Check if board is full (all playable positions are occupied)
+            if MoveExecutionTrait::is_board_full(board.moves_done, 10) {
+                let potential_contests_model: PotentialContests = world.read_model(board_id);
+                self._finish_game(
+                    ref board,
+                    potential_contests_model.potential_contests.span(),
+                    0, // 0 - both players get points
+                );
+                return;
+            }
+            
+            // Check traditional end conditions (no tiles and no jokers)
             if MoveExecutionTrait::should_finish_game(
                 updated_joker1, 
                 updated_joker2, 
@@ -649,11 +685,6 @@ pub mod game {
                 );
                 return;
             }
-
-            MoveExecutionTrait::persist_board_updates(@board, move_record, top_tile, world);
-            println!("Board updates persisted, emitting move events");
-            MoveExecutionTrait::emit_move_events(move_record, @board, player, world);
-            println!("Move events emitted");
 
             PhaseManagementTrait::transition_after_move(
                 board_id,
@@ -755,65 +786,28 @@ pub mod game {
 
         fn finish_game(ref self: ContractState, board_id: felt252) {
             let player = get_caller_address();
-
             let mut world = self.world_default();
             let game: Game = world.read_model(player);
 
-            if !AssertsTrait::assert_player_in_game(@game, Option::Some(board_id), world) {
-                return;
-            }
-            
-            // Validate GameMode access for finish_game
-            if !AssertsTrait::assert_regular_game_access(@game, player, 'finish_game', world) {
+            if !self._validate_finish_game_preconditions(@game, player, board_id, world) {
                 return;
             }
 
             let mut board: Board = world.read_model(board_id);
-
-            if !AssertsTrait::assert_game_is_in_progress(@game, world) {
+            let phase_timeout = TimingTrait::validate_phase_timeout(@board, CREATING_TIME, REVEAL_TIME, MOVE_TIME);
+            
+            if !phase_timeout {
+                println!("Cannot finish game: no phase timeout");
                 return;
             }
 
-            // Check if current phase has timed out OR if it's been too long since last update
-            let phase_timeout = TimingTrait::validate_phase_timeout(@board, CREATING_TIME, REVEAL_TIME, MOVE_TIME);
-            
-            if phase_timeout {
-                //FINISH THE GAME
-                let potential_contests_model: PotentialContests = world.read_model(board_id);
-                let last_move_id = board.last_move_id;
-                let add_points_to: u8 = match last_move_id {
-                    Option::Some(move_id) => {
-                        let move_record: Move = world.read_model(move_id);
-                        let player_side = move_record.player_side;
-                        let add_points_to = match player_side {
-                            PlayerSide::Blue => 1, // Add points only to blue player
-                            PlayerSide::Red => 2, // Add points only to red player
-                            _ => 0, // Add points to both players
-                        };
-                        add_points_to
-                    },
-                    Option::None => {
-                        world.emit_event(@ErrorEvent {
-                            player_address: player,
-                            name: 'Finish Game Error',
-                            message: "No last move found, cannot finish game",
-                        });
-                        println!("No last move found, cannot finish game");
-                        return;
-                    }
-                };
-
-                self
-                    ._finish_game(
-                        ref board,
-                        potential_contests_model.potential_contests.span(),
-                        add_points_to,
-                    );
-
-                return;
-            } else {
-                println!("Cannot finish game: no phase timeout");
-                return;
+            match board.game_state {
+                GameState::Creating => {
+                    self._handle_creating_phase_timeout(player, board_id, @board, world);
+                },
+                _ => {
+                    self._handle_game_phase_timeout(ref board, world);
+                }
             }
         }
     }
@@ -859,7 +853,7 @@ pub mod game {
             };
 
             board.last_move_id = Option::Some(move_id);
-            board.moves_done = board.moves_done + 1;
+            // Don't increment moves_done for skips - only actual tile placements count
             move_id_generator.write(move_id + 1);
 
             world.write_model(@move);
@@ -871,12 +865,6 @@ pub mod game {
                     board.last_move_id,
                 );
 
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("moves_done"),
-                    board.moves_done,
-                );
             if emit_event {
                 world
                     .emit_event(
@@ -884,6 +872,161 @@ pub mod game {
                             move_id, player, prev_move_id: move.prev_move_id, board_id, timestamp,
                         },
                     );
+            }
+        }
+
+        fn _validate_finish_game_preconditions(
+            self: @ContractState,
+            game: @Game,
+            player: ContractAddress,
+            board_id: felt252,
+            world: dojo::world::WorldStorage,
+        ) -> bool {
+            if !AssertsTrait::assert_player_in_game(game, Option::Some(board_id), world) {
+                return false;
+            }
+            
+            if !AssertsTrait::assert_regular_game_access(game, player, 'finish_game', world) {
+                return false;
+            }
+
+            if !AssertsTrait::assert_game_is_in_progress(game, world) {
+                return false;
+            }
+
+            true
+        }
+
+        fn _handle_creating_phase_timeout(
+            self: @ContractState,
+            player: ContractAddress,
+            board_id: felt252,
+            board: @Board,
+            mut world: dojo::world::WorldStorage,
+        ) {
+            let (player1_address, player2_address) = self._get_player_addresses(board, player, board_id, world);
+            if player2_address.is_zero() {
+                return;
+            }
+
+            self._cleanup_game_statuses(player, player2_address, world);
+            self._finalize_board_state(board_id, world);
+            self._emit_cancellation_events(player, player2_address, world);
+            
+            println!("[finish_game] Game in Creating phase finished due to timeout, statuses cleaned up");
+        }
+
+        fn _handle_game_phase_timeout(
+            self: @ContractState,
+            ref board: Board,
+            mut world: dojo::world::WorldStorage,
+        ) {
+            let add_points_to = self._determine_timeout_winner(@board, world);
+            
+            if add_points_to == 255 { // Special value indicating cleanup needed
+                return;
+            }
+            
+            let potential_contests_model: PotentialContests = world.read_model(board.id);
+            self._finish_game(
+                ref board,
+                potential_contests_model.potential_contests.span(),
+                add_points_to,
+            );
+        }
+
+        fn _get_player_addresses(
+            self: @ContractState,
+            board: @Board,
+            player: ContractAddress,
+            board_id: felt252,
+            mut world: dojo::world::WorldStorage,
+        ) -> (ContractAddress, ContractAddress) {
+            let (player1_address, _, _) = *board.player1;
+            let (player2_address, _, _) = *board.player2;
+
+            let another_player = if player == player1_address {
+                player2_address
+            } else if player == player2_address {
+                player1_address
+            } else {
+                world.emit_event(@PlayerNotInGame { player_id: player, board_id });
+                return (player1_address, Zero::zero());
+            };
+
+            (player, another_player)
+        }
+
+        fn _cleanup_game_statuses(
+            self: @ContractState,
+            player1: ContractAddress,
+            player2: ContractAddress,
+            mut world: dojo::world::WorldStorage,
+        ) {
+            let mut game1: Game = world.read_model(player1);
+            game1.status = GameStatus::Canceled;
+            game1.board_id = Option::None;
+            game1.game_mode = GameMode::None;
+            world.write_model(@game1);
+            
+            let mut game2: Game = world.read_model(player2);
+            game2.status = GameStatus::Canceled;
+            game2.board_id = Option::None;
+            game2.game_mode = GameMode::None;
+            world.write_model(@game2);
+        }
+
+        fn _finalize_board_state(
+            self: @ContractState,
+            board_id: felt252,
+            mut world: dojo::world::WorldStorage,
+        ) {
+            world.write_member(
+                Model::<Board>::ptr_from_keys(board_id),
+                selector!("game_state"),
+                GameState::Finished,
+            );
+        }
+
+        fn _emit_cancellation_events(
+            self: @ContractState,
+            player1: ContractAddress,
+            player2: ContractAddress,
+            mut world: dojo::world::WorldStorage,
+        ) {
+            let game1: Game = world.read_model(player1);
+            let game2: Game = world.read_model(player2);
+            
+            world.emit_event(@GameCanceled { host_player: player1, status: game1.status });
+            world.emit_event(@GameCanceled { host_player: player2, status: game2.status });
+        }
+
+        fn _determine_timeout_winner(
+            self: @ContractState,
+            board: @Board,
+            mut world: dojo::world::WorldStorage,
+        ) -> u8 {
+            match board.last_move_id {
+                Option::Some(move_id) => {
+                    let move_record: Move = world.read_model(*move_id);
+                    match move_record.player_side {
+                        PlayerSide::Blue => 1,
+                        PlayerSide::Red => 2,
+                        _ => 0,
+                    }
+                },
+                Option::None => {
+                    // No moves made, cleanup needed
+                    let (player1_address, _, _) = *board.player1;
+                    let (player2_address, _, _) = *board.player2;
+                    
+                    self._cleanup_game_statuses(player1_address, player2_address, world);
+                    self._finalize_board_state(*board.id, world);
+                    self._emit_cancellation_events(player1_address, player2_address, world);
+                    
+                    println!("[finish_game] Game in {:?} finished due to timeout, statuses cleaned up", board.game_state);
+                    255 // Special return value to indicate cleanup was done
+                }
             }
         }
 

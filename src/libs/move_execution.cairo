@@ -125,7 +125,7 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
                 );
             }
         }
-
+        // Only increment moves_done for actual tile placements (not skips)
         board.moves_done = board.moves_done + 1;
         board.top_tile = top_tile;
 
@@ -288,6 +288,11 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
         available_tiles_len_player2: u32
     ) -> bool {
         (available_tiles_len_player1 == 0 && available_tiles_len_player2 == 0 && joker_number1 == 0 && joker_number2 == 0)
+    }
+
+    fn is_board_full(moves_done: u8, board_size: u8) -> bool {
+        let playable_positions = (board_size - 2) * (board_size - 2);
+        moves_done >= playable_positions
     }
 
     fn create_skip_move_record(

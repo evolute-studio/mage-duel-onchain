@@ -94,11 +94,13 @@ pub mod tutorial {
 
             game.status = GameStatus::InProgress;
             game.board_id = Option::Some(board.id);
+            game.game_mode = GameMode::Tutorial;
             world.write_model(@game);
 
             
             bot_game.status = GameStatus::InProgress;
             bot_game.board_id = Option::Some(board.id);
+            bot_game.game_mode = GameMode::Tutorial;
             world.write_model(@bot_game);
 
 
@@ -214,11 +216,18 @@ pub mod tutorial {
             board.last_move_id = Option::Some(move_id);
             self.move_id_generator.write(move_id + 1);
 
+            // Save the move record BEFORE checking game end conditions
+            MoveExecutionTrait::persist_board_updates(@board, move_record, top_tile, world);
+            println!("Board updates persisted, emitting move events");
+            MoveExecutionTrait::emit_move_events(move_record, @board, player, world);
+            println!("Move events emitted");
+
             let (updated_joker1, updated_joker2) = board.get_joker_numbers();
-            println!("[make_move] Game ending check: joker1={}, joker2={}, top_tile_exists={}", updated_joker1, updated_joker2, top_tile.is_some());
+            println!("[make_move] Game ending check: joker1={}, joker2={}, top_tile_exists={}, moves_done={}", updated_joker1, updated_joker2, top_tile.is_some(), board.moves_done);
             
-            if updated_joker1 == 0 && updated_joker2 == 0  && top_tile.is_none() {
-                println!("[make_move] GAME ENDING CONDITION MET: No jokers and no tiles left");
+            // Check if board is full (all playable positions are occupied)
+            if MoveExecutionTrait::is_board_full(board.moves_done, 7) {
+                println!("[make_move] BOARD FULL CONDITION MET: moves_done={}", board.moves_done);
                 let potential_contests_model: PotentialContests = world.read_model(board_id);
                 println!("[make_move] About to call _finish_game with {} potential contests", potential_contests_model.potential_contests.len());
                 self._finish_game(
@@ -228,11 +237,19 @@ pub mod tutorial {
                 println!("[make_move] _finish_game call completed, returning");
                 return;
             }
-
-            MoveExecutionTrait::persist_board_updates(@board, move_record, top_tile, world);
-            println!("Board updates persisted, emitting move events");
-            MoveExecutionTrait::emit_move_events(move_record, @board, player, world);
-            println!("Move events emitted");
+            
+            // Check traditional end conditions (no jokers and no tiles left)
+            if updated_joker1 == 0 && updated_joker2 == 0  && top_tile.is_none() {
+                println!("[make_move] TRADITIONAL ENDING CONDITION MET: No jokers and no tiles left");
+                let potential_contests_model: PotentialContests = world.read_model(board_id);
+                println!("[make_move] About to call _finish_game with {} potential contests", potential_contests_model.potential_contests.len());
+                self._finish_game(
+                    ref board,
+                    potential_contests_model.potential_contests.span(),
+                );
+                println!("[make_move] _finish_game call completed, returning");
+                return;
+            }
 
             PhaseManagementTrait::transition_to_move_phase(
                 board.id,
@@ -421,7 +438,7 @@ pub mod tutorial {
             };
 
             board.last_move_id = Option::Some(move_id);
-            board.moves_done = board.moves_done + 1;
+            // Don't increment moves_done for skips - only actual tile placements count
             board.top_tile = MoveExecutionTrait::update_top_tile_in_tutorial(@board);
             move_id_generator.write(move_id + 1);
 
@@ -439,12 +456,6 @@ pub mod tutorial {
                     board.last_move_id,
                 );
 
-            world
-                .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("moves_done"),
-                    board.moves_done,
-                );
             if emit_event {
                 world
                     .emit_event(
