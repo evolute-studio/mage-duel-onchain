@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 use evolute_duel::utils::random::{hash_u32_quad, hash_u32_pair, felt252_to_u32};
 
 // Constants for prize system configuration
-const PRIZE_DISTANCE: u32 = 7;  // Fixed distance for all prizes
+const PRIZE_DISTANCE: u32 = 10;  // Fixed distance for all prizes
 const PRIZE_AMOUNT: u128 = 100; // Fixed prize amount
 
 pub mod prize_system {
@@ -53,7 +53,7 @@ pub mod prize_system {
         let selection_seed = generate_selection_seed(player_address, first_tile_col, first_tile_row, season_id);
         
         // Each side has 6 positions (excluding corner positions)
-        let positions_per_side = 6;
+        let positions_per_side = PRIZE_DISTANCE;
         
         // Check all 4 sides
         let mut side_id = 1;
@@ -74,13 +74,13 @@ pub mod prize_system {
                 (first_tile_col + PRIZE_DISTANCE - pos_idx, first_tile_row + pos_idx)
             } else if side_id == 2 {
                 // Side 2: (x₀ - i, y₀ + 7 - i)
-                (first_tile_col - pos_idx, first_tile_row + PRIZE_DISTANCE - pos_idx)
+                (first_tile_row + PRIZE_DISTANCE - pos_idx, first_tile_col - pos_idx)
             } else if side_id == 3 {
                 // Side 3: (x₀ - 7 + i, y₀ - i)
-                (first_tile_col - PRIZE_DISTANCE + pos_idx, first_tile_row - pos_idx)
+                (first_tile_col - PRIZE_DISTANCE + pos_idx, first_tile_row + pos_idx)
             } else {
                 // Side 4: (x₀ + i, y₀ - 7 + i)
-                (first_tile_col + pos_idx, first_tile_row - PRIZE_DISTANCE + pos_idx)
+                (first_tile_row - PRIZE_DISTANCE + pos_idx, first_tile_col - pos_idx)
             };
             
             // Check if current position matches this selected position
