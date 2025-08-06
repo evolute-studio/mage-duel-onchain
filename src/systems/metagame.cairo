@@ -127,13 +127,11 @@ pub mod metagame {
             let tile = *player_data.deck[tile_index];
             println!("[PLACE_TILE] Selected tile from deck[{}]: {:?}", tile_index, tile);
 
-            // Проверяем горы только если у игрока уже есть первый тайл (есть призы для проверки)
             if player_data.first_tile_placed.is_some() {
                 match player_data.first_tile_placed {
                     Option::Some(first_pos) => {
                         println!("[PLACE_TILE] Checking for mountains at target position ({}, {})", col, row);
                         
-                        // O(1) проверка: является ли позиция горой для любого ближайшего приза 
                         let is_blocked_by_mountain = is_position_mountain_for_nearby_prizes(
                             col,
                             row,

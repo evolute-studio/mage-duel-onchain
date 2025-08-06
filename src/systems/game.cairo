@@ -263,6 +263,7 @@ pub mod game {
             guest_game.board_id = Option::Some(board_id);
             guest_game.status = GameStatus::InProgress;
             guest_game.status = GameStatus::InProgress;
+            
 
             world.write_model(@host_game);
             world.write_model(@guest_game);

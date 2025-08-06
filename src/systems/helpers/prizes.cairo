@@ -1,14 +1,14 @@
 use starknet::ContractAddress;
 use evolute_duel::utils::random::{hash_u32_quad, felt252_to_u32};
 
-// Константы для настройки системы призов
+// Constants for prize system configuration
 const MAX_PRIZE_RADIUS: u32 = 20;
-const PRIZE_DENSITY_RING_1: u32 = 4;    // 1 из 4 позиций (25%)
-const PRIZE_DENSITY_RING_2: u32 = 6;    // 1 из 6 позиций (16.7%)
-const PRIZE_DENSITY_RING_3: u32 = 8;    // 1 из 8 позиций (12.5%)
-const DEFAULT_PRIZE_DENSITY: u32 = 10;  // 1 из 10 позиций (10%)
+const PRIZE_DENSITY_RING_1: u32 = 4;    // 1 out of 4 positions (25%)
+const PRIZE_DENSITY_RING_2: u32 = 6;    // 1 out of 6 positions (16.7%)
+const PRIZE_DENSITY_RING_3: u32 = 8;    // 1 out of 8 positions (12.5%)
+const DEFAULT_PRIZE_DENSITY: u32 = 10;  // 1 out of 10 positions (10%)
 
-// Размеры колец (граничные расстояния)
+// Ring sizes (boundary distances)
 const RING_1_MAX: u32 = 2;
 const RING_2_MAX: u32 = 5;
 const RING_3_MAX: u32 = 10;
@@ -16,7 +16,7 @@ const RING_3_MAX: u32 = 10;
 pub mod prize_system {
     use super::*;
 
-    /// Основная функция: получить размер приза в данной позиции
+    /// Main function: get prize amount at given position
     pub fn has_prize_at(
         player_address: ContractAddress,
         col: u32,
@@ -25,18 +25,18 @@ pub mod prize_system {
         first_tile_row: u32,
         season_id: felt252
     ) -> Option<u128> {
-        // Вычисляем расстояние от первого тайла
+        // Calculate distance from first tile
         let distance = calculate_distance(col, row, first_tile_col, first_tile_row);
         
-        // Проверяем, в допустимом ли радиусе
+        // Check if within allowed radius
         if !is_within_prize_radius(distance) {
             return Option::None;
         }
         
-        // Определяем номер кольца
+        // Determine ring number
         let ring = get_ring_number(distance);
         
-        // Генерируем seed для этой позиции
+        // Generate seed for this position
         let position_seed = generate_position_seed(
             player_address,
             col,
@@ -46,7 +46,7 @@ pub mod prize_system {
             season_id
         );
         
-        // Проверяем, является ли позиция призовой
+        // Check if position is a prize position
         if is_prize_position(position_seed, ring) {
             Option::Some(get_prize_amount_for_ring(ring))
         } else {
@@ -54,14 +54,14 @@ pub mod prize_system {
         }
     }
 
-    /// Вычислить Manhattan distance между двумя точками
+    /// Calculate Manhattan distance between two points
     pub fn calculate_distance(col1: u32, row1: u32, col2: u32, row2: u32) -> u32 {
         let col_diff = if col1 >= col2 { col1 - col2 } else { col2 - col1 };
         let row_diff = if row1 >= row2 { row1 - row2 } else { row2 - row1 };
         col_diff + row_diff
     }
 
-    /// Определить номер кольца по расстоянию
+    /// Determine ring number by distance
     pub fn get_ring_number(distance: u32) -> u32 {
         if distance <= RING_1_MAX {
             1
@@ -70,16 +70,16 @@ pub mod prize_system {
         } else if distance <= RING_3_MAX {
             3
         } else {
-            4 // Все остальные кольца
+            4 // All other rings
         }
     }
 
-    /// Проверить, находится ли позиция в допустимом радиусе призов
+    /// Check if position is within allowed prize radius
     pub fn is_within_prize_radius(distance: u32) -> bool {
         distance > 0 && distance <= MAX_PRIZE_RADIUS
     }
 
-    /// Генерировать детерминированный seed для конкретной позиции
+    /// Generate deterministic seed for specific position
     pub fn generate_position_seed(
         player_address: ContractAddress,
         col: u32,
@@ -88,25 +88,25 @@ pub mod prize_system {
         first_tile_row: u32,
         season_id: felt252
     ) -> u32 {
-        // Преобразуем player_address в u32 для хеширования
+        // Convert player_address to u32 for hashing
         let player_u32 = felt252_to_u32(player_address.into());
         let season_u32 = felt252_to_u32(season_id);
         
-        // Сначала хешируем координаты игрока
+        // First hash player coordinates
         let coord_hash = hash_u32_quad(player_u32, col, row, season_u32);
         
-        // Затем добавляем координаты первого тайла
-        hash_u32_quad(coord_hash, first_tile_col, first_tile_row, 0x50524956) // "PRIV" - константа для призов
+        // Then add first tile coordinates
+        hash_u32_quad(coord_hash, first_tile_col, first_tile_row, 0x50524956) // "PRIV" - constant for prizes
     }
 
-    /// Проверить, является ли позиция призовой на основе seed и кольца
+    /// Check if position is a prize position based on seed and ring
     pub fn is_prize_position(seed: u32, ring: u32) -> bool {
         let density = get_prize_density_for_ring(ring);
         let remainder = seed % density;
         remainder == 0
     }
 
-    /// Получить плотность призов для конкретного кольца
+    /// Get prize density for specific ring
     pub fn get_prize_density_for_ring(ring: u32) -> u32 {
         match ring {
             1 => PRIZE_DENSITY_RING_1,
@@ -116,44 +116,44 @@ pub mod prize_system {
         }
     }
 
-    /// Получить размер приза для конкретного кольца
+    /// Get prize amount for specific ring
     pub fn get_prize_amount_for_ring(ring: u32) -> u128 {
         match ring {
-            1 => 50,  // Кольцо 1: 50 токенов (близко к старту)
-            2 => 100, // Кольцо 2: 100 токенов
-            3 => 200, // Кольцо 3: 200 токенов
-            0 | _ => 300, // Дальние кольца: 300 токенов (максимальная награда)
+            1 => 50,  // Ring 1: 50 tokens (close to start)
+            2 => 100, // Ring 2: 100 tokens
+            3 => 200, // Ring 3: 200 tokens
+            0 | _ => 300, // Far rings: 300 tokens (maximum reward)
         }
     }
 
-    /// Получить процент призовых позиций для кольца (для UI)
+    /// Get percentage of prize positions for ring (for UI)
     pub fn get_prize_percentage_for_ring(ring: u32) -> u32 {
         let density = get_prize_density_for_ring(ring);
         100 / density
     }
 
-    /// Вычислить количество позиций в кольце (приблизительно)
+    /// Calculate number of positions in ring (approximately)
     pub fn get_ring_size_estimate(ring: u32) -> u32 {
         match ring {
-            1 => 8,   // Кольцо 1: примерно 8 позиций
-            2 => 16,  // Кольцо 2: примерно 16 позиций
-            3 => 28,  // Кольцо 3: примерно 28 позиций
+            1 => 8,   // Ring 1: approximately 8 positions
+            2 => 16,  // Ring 2: approximately 16 positions
+            3 => 28,  // Ring 3: approximately 28 positions
             0 | _ => {
-                // Для дальних колец: приблизительно 8 * радиус
+                // For far rings: approximately 8 * radius
                 let avg_radius = if ring == 4 { 15 } else { ring * 5 };
                 8 * avg_radius
             }
         }
     }
 
-    /// Оценить количество призов в кольце
+    /// Estimate number of prizes in ring
     pub fn estimate_prizes_in_ring(ring: u32) -> u32 {
         let ring_size = get_ring_size_estimate(ring);
         let density = get_prize_density_for_ring(ring);
         ring_size / density
     }
 
-    /// Получить все позиции в кольце с данным радиусом (для тестирования)
+    /// Get all positions in ring with given radius (for testing)
     pub fn get_ring_positions(
         center_col: u32,
         center_row: u32,
@@ -161,7 +161,7 @@ pub mod prize_system {
     ) -> Array<(u32, u32)> {
         let mut positions = ArrayTrait::new();
         
-        // Генерируем все позиции на точном расстоянии от центра
+        // Generate all positions at exact distance from center
         let max_offset = exact_distance;
         let mut col_offset: u32 = 0;
         
@@ -172,7 +172,7 @@ pub mod prize_system {
             
             let row_offset = exact_distance - col_offset;
             
-            // Добавляем все 4 квадранта (если они разные)
+            // Add all 4 quadrants (if they are different)
             let positions_to_add = array![
                 (center_col + col_offset, center_row + row_offset),
                 (center_col + col_offset, center_row - row_offset),
@@ -187,7 +187,7 @@ pub mod prize_system {
                 }
                 let pos = *positions_to_add[i];
                 
-                // Проверяем, что позиция уникальна и валидна
+                // Check that position is unique and valid
                 let mut contains = false;
                 for existing_pos in positions.span() {
                     if *existing_pos == pos {
@@ -208,7 +208,7 @@ pub mod prize_system {
         positions
     }
 
-    /// Проверить, сколько призов игрок может получить в радиусе
+    /// Check how many prizes player can get within radius
     pub fn count_potential_prizes(
         player_address: ContractAddress,
         first_tile_col: u32,
@@ -246,11 +246,11 @@ pub mod prize_system {
     }
 }
 
-// Утилиты для интеграции с основной игрой
+// Utilities for integration with main game
 pub mod game_integration {
     use super::*;
 
-    /// Проверить приз и вернуть награду (для интеграции с контрактом)
+    /// Check prize and return reward (for contract integration)
     pub fn check_and_claim_prize(
         player_address: ContractAddress,
         col: u32,
@@ -269,7 +269,7 @@ pub mod game_integration {
         )
     }
 
-    /// Получить информацию о призовой системе для UI
+    /// Get prize system information for UI
     pub fn get_prize_info_for_ui(ring: u32) -> (u32, u32, u32) {
         let density = prize_system::get_prize_density_for_ring(ring);
         let percentage = prize_system::get_prize_percentage_for_ring(ring);
@@ -278,14 +278,14 @@ pub mod game_integration {
         (density, percentage, estimated_count)
     }
 
-    /// Предварительная проверка валидности параметров
+    /// Preliminary validation of parameters
     pub fn validate_prize_check_params(
         col: u32,
         row: u32,
         first_tile_col: u32,
         first_tile_row: u32
     ) -> bool {
-        // Проверяем, что координаты в разумных пределах
+        // Check that coordinates are within reasonable limits
         let distance = prize_system::calculate_distance(col, row, first_tile_col, first_tile_row);
         distance > 0 && distance <= MAX_PRIZE_RADIUS
     }
@@ -334,7 +334,7 @@ mod tests {
         let player = contract_address_const::<0x123>();
         let season_id = 1;
         
-        // Одинаковые параметры должны давать одинаковый результат
+        // Same parameters should give same result
         let result1 = prize_system::has_prize_at(player, 10, 10, 8, 8, season_id);
         let result2 = prize_system::has_prize_at(player, 10, 10, 8, 8, season_id);
         assert(result1 == result2, 'Results should be deterministic');
@@ -345,7 +345,7 @@ mod tests {
         let player = contract_address_const::<0x123>();
         let season_id: felt252 = 1;
         
-        // Тестируем новую LCG хеш функцию
+        // Test new LCG hash function
         let seed1 = prize_system::generate_position_seed(player, 5, 5, 0, 0, season_id);
         let seed2 = prize_system::generate_position_seed(player, 5, 5, 0, 0, season_id);
         assert(seed1 == seed2, 'LCG hash should be deterministic');
@@ -363,13 +363,13 @@ mod tests {
         let is_prize2 = prize_system::is_prize_position(seed, ring);
         assert(is_prize1 == is_prize2, 'Prize check should be deterministic');
         
-        // Тестируем разные кольца
+        // Test different rings
         let _is_prize_ring2 = prize_system::is_prize_position(seed, 2);
         let _is_prize_ring3 = prize_system::is_prize_position(seed, 3);
         
-        // Разные кольца могут давать разные результаты из-за разной плотности
+        // Different rings may give different results due to different density
         assert(
-            is_prize1 == is_prize1, // Самоочевидно, но проверяем консистентность
+            is_prize1 == is_prize1, // Self-evident, but checking consistency
             'Same ring should give same result'
         );
     }
