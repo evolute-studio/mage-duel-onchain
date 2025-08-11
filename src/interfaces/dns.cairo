@@ -5,8 +5,8 @@ use dojo::meta::interface::{IDeployedResourceDispatcher, IDeployedResourceDispat
 pub use evolute_duel::systems::{
     // admin::{IAdminDispatcher, IAdminDispatcherTrait},
     // bank::{IBankDispatcher, IBankDispatcherTrait},
-    // game::{IGameDispatcher, IGameDispatcherTrait},
-    // tutorial::{ITutorialDispatcher, ITutorialDispatcherTrait},
+    game::{IGameDispatcher, IGameDispatcherTrait},
+    tutorial::{ITutorialDispatcher, ITutorialDispatcherTrait},
     // rng::{IRngDispatcher, IRngDispatcherTrait},
     // rng_mock::{IRngMockDispatcher, IRngMockDispatcherTrait},
     tokens::{
@@ -14,15 +14,17 @@ pub use evolute_duel::systems::{
         // duelist_token::{IDuelistTokenDispatcher, IDuelistTokenDispatcherTrait},
         // pack_token::{IPackTokenDispatcher, IPackTokenDispatcherTrait},
         // fame_coin::{IFameCoinDispatcher, IFameCoinDispatcherTrait},
-        evolute_coin::{IEvoluteCoinDispatcher, IEvoluteCoinDispatcherTrait},
+        // evolute_coin::{IEvoluteCoin, IEvoluteCoinDispatcher, IEvoluteCoinDispatcherTrait},
         // lords_mock::{ILordsMockDispatcher, ILordsMockDispatcherTrait},
+        tournament_token::{ITournamentTokenDispatcher, ITournamentTokenDispatcherTrait},
     },
-    rewards_manager::{IRewardsManagerDispatcher, IRewardsManagerDispatcherTrait},
+    // rewards_manager::{IRewardsManager, IRewardsManagerDispatcher, IRewardsManagerDispatcherTrait},
 };
 pub use evolute_duel::interfaces::{
     ierc20::{ierc20, Erc20Dispatcher, Erc20DispatcherTrait},
     vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source},
 };
+pub use tournaments::components::tournament::{ITournamentDispatcher, ITournamentDispatcherTrait};
 // pub use pistols::libs::store::{Store, StoreTrait};
 // pub use evolute_duel::models::config::{CONFIG, Config};
 // pub use pistols::utils::misc::{ZERO};
@@ -83,14 +85,19 @@ pub impl DnsImpl of DnsTrait {
         (self.find_contract_address(@"game"))
     }
    
-    #[inline(always)]
-    fn evolute_coin_address(self: @WorldStorage) -> ContractAddress {
-        (self.find_contract_address(@"evolute_coin"))
-    }
+    // #[inline(always)]
+    // fn evolute_coin_address(self: @WorldStorage) -> ContractAddress {
+    //     (self.find_contract_address(@"evolute_coin"))
+    // }
+
+    // #[inline(always)]
+    // fn rewards_manager_address(self: @WorldStorage) -> ContractAddress {
+    //     (self.find_contract_address(@"rewards_manager"))
+    // }
 
     #[inline(always)]
-    fn rewards_manager_address(self: @WorldStorage) -> ContractAddress {
-        (self.find_contract_address(@"rewards_manager"))
+    fn tournament_token_address(self: @WorldStorage) -> ContractAddress {
+        (self.find_contract_address(@"tournament_token"))
     }
     
 
@@ -155,15 +162,19 @@ pub impl DnsImpl of DnsTrait {
     // fn fame_coin_dispatcher(self: @WorldStorage) -> IFameCoinDispatcher {
     //     (IFameCoinDispatcher{ contract_address: self.fame_coin_address() })
     // }
-    #[inline(always)]
-    fn evolute_coin_dispatcher(self: @WorldStorage) -> IEvoluteCoinDispatcher {
-        (IEvoluteCoinDispatcher { contract_address: self.evolute_coin_address() })
-    }
+    // #[inline(always)]
+    // fn evolute_coin_dispatcher(self: @WorldStorage) -> IEvoluteCoinDispatcher {
+    //     (IEvoluteCoinDispatcher { contract_address: self.evolute_coin_address() })
+    // }
 
-    #[inline(always)]
-    fn rewards_manager_dispatcher(self: @WorldStorage) -> IRewardsManagerDispatcher {
-        (IRewardsManagerDispatcher { contract_address: self.rewards_manager_address() })
-    }
+    // #[inline(always)]
+    // fn rewards_manager_dispatcher(self: @WorldStorage) -> IRewardsManagerDispatcher {
+    //     (IRewardsManagerDispatcher { contract_address: self.rewards_manager_address() })
+    // }
+    // #[inline(always)]
+    // fn budokan_dispatcher_from_pass_id(self: @Store, pass_id: u64) -> ITournamentDispatcher {
+    //     (ITournamentDispatcher{ contract_address: self.world.read_member(Model::<TokenMetadata>::ptr_from_keys(pass_id), selector!("minted_by")) })
+    // }
     // need access to store...
     // #[inline(always)]
     // fn lords_dispatcher(self: @Store) -> Erc20Dispatcher {

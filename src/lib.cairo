@@ -16,9 +16,12 @@ pub mod systems {
         pub mod validation;
         // pub mod prizes;
     }
-    // pub mod tokens {
-    //     pub mod evolute_coin;
-    // }
+    pub mod tokens {
+        // pub mod evolute_coin;
+        pub mod tournament_token;
+    }
+
+    
 }
 
 pub mod models {
@@ -29,15 +32,29 @@ pub mod models {
     // pub mod metagame;
     // pub mod config;
     pub mod migration;
+    pub mod tournament;
+    pub mod challenge;
+    pub mod registration;
+    pub mod scoreboard;
+    pub mod pact;
 }
 
 pub mod events;
 pub mod constants;
 
 pub mod types {
+    pub mod errors {
+        pub mod duel;
+        pub mod tournament;
+        pub mod duelist;
+    }
     pub mod trophies;
     pub mod tasks;
     pub mod packing;
+    pub mod challenge_state;
+    pub mod constants;
+    pub mod timestamp;
+    pub mod shuffler;
 }
 
 pub mod libs {
@@ -50,6 +67,7 @@ pub mod libs {
     pub mod game_finalization;
     pub mod phase_management;
     pub mod player_data;
+    pub mod store;
 }
 
 // pub mod components {
@@ -58,14 +76,21 @@ pub mod libs {
 
 pub mod utils {
     pub mod hash;
+    pub mod math;
+    pub mod short_string;
+    pub mod bitwise;
+    pub mod byte_arrays;
+    pub mod bytemap;
+    pub mod misc;
+    pub mod nibblemap;
 }
 
-// pub mod interfaces {
-//     pub mod dns;
-//     pub mod ierc20;
-//     pub mod ierc721;
-//     pub mod vrf;
-// }
+pub mod interfaces {
+    pub mod dns;
+    pub mod ierc20;
+    pub mod ierc721;
+    pub mod vrf;
+}
 
 pub mod tests {
     pub mod test_helpers {

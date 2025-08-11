@@ -175,6 +175,7 @@ pub enum GameMode {
     Tutorial,
     Ranked,
     Casual,
+    Tournament,
 }
 
 impl GameModeToU8 of Into<GameMode, u8> {
@@ -184,6 +185,7 @@ impl GameModeToU8 of Into<GameMode, u8> {
             GameMode::Tutorial => 1,
             GameMode::Ranked => 2,
             GameMode::Casual => 3,
+            GameMode::Tournament => 4,
         }
     }
 }
@@ -195,6 +197,7 @@ impl U8ToGameMode of Into<u8, GameMode> {
             1 => GameMode::Tutorial,
             2 => GameMode::Ranked,
             3 => GameMode::Casual,
+            4 => GameMode::Tournament,
             _ => panic!("Unsupported GameMode"),
         }
     }

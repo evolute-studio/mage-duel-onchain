@@ -27,6 +27,16 @@ pub struct Player {
     pub migration_used: bool, // Prevents repeated migrations
 }
 
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct PlayerAssignment {
+    #[key]
+    pub player_address: ContractAddress,
+    //-----------------------
+    pub duel_id: felt252,      // current Duel a Player is in
+    pub pass_id: u64,       // current Tournament a Player is in
+}
+
 #[generate_trait]
 pub impl PlayerImpl of PlayerTrait {
     fn is_bot(self: @Player) -> bool {
@@ -47,6 +57,24 @@ pub impl PlayerImpl of PlayerTrait {
 
     fn has_pending_migration(self: @Player) -> bool {
         !(*self.migration_target).is_zero()
+    }
+
+    // Tournament methods
+    fn can_join_tournament(self: @Player) -> bool {
+        // Players can join tournaments if they are not guests or have completed tutorial
+        *self.role != 0 || *self.tutorial_completed
+    }
+
+    // Tournament integration - placeholder for now
+    // Implementation will be completed when Store is fixed
+    fn prepare_for_tournament(self: @Player) -> bool {
+        self.can_join_tournament()
+    }
+    
+    // Enter tournament method - static method for tournament entry
+    fn enter_tournament(ref store: evolute_duel::libs::store::Store, player_address: starknet::ContractAddress, pass_id: u64) {
+        // Simplified tournament entry logic
+        // TODO: Add any additional tournament entry logic here
     }
 }
 
