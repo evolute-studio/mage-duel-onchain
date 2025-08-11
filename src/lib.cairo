@@ -34,7 +34,6 @@ pub mod models {
     pub mod migration;
     pub mod tournament;
     pub mod challenge;
-    pub mod registration;
     pub mod scoreboard;
     pub mod pact;
 }

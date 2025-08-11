@@ -49,7 +49,6 @@ pub use evolute_duel::models::{
         Pact, PactTrait, PactValue,
     },
     scoreboard::{Scoreboard},
-    registration::{Registration}
 };
 pub use evolute_duel::events::{
     GameStarted, GameCanceled, GameFinished, GameCreated,
@@ -194,10 +193,6 @@ pub impl StoreImpl of StoreTrait {
     // }
     
     fn get_scoreboard(self: @Store, tournament_id: u64, player_address: ContractAddress) -> Scoreboard {
-        (self.world.read_model((tournament_id, player_address)))
-    }
-
-    fn get_registration(self: @Store, tournament_id: u64, player_address: ContractAddress) -> Registration {
         (self.world.read_model((tournament_id, player_address)))
     }
     
