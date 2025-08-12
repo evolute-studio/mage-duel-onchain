@@ -13,8 +13,11 @@ pub struct TournamentPass {
     pub tournament_id: u64,         // budokan tournament_id
     pub player_address: ContractAddress,           // enlisted duelist id
     pub entry_number: u8,           // entry position in tournament
-    // progress
-    pub score: u32,                 // budokan score (Fame less decimals)
+    // tournament rating data
+    pub rating: u32,                // current tournament rating (ELO-based)
+    pub games_played: u32,          // games played in tournament
+    pub wins: u32,                  // wins in tournament
+    pub losses: u32,                // losses in tournament
 }
 
 //------------------------------------

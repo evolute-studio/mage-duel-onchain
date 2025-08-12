@@ -48,6 +48,7 @@ dependencies = [
  "openzeppelin_introspection",
  "openzeppelin_token",
  "origami_random",
+ "origami_rating",
  "tournaments",
 ]
 
@@ -107,6 +108,11 @@ source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v1.0.0#755
 
 [[package]]
 name = "origami_random"
+version = "1.1.2"
+source = "git+https://github.com/dojoengine/origami#81e49e9db43e8528cbb5d914e4da3479a9f02fb8"
+
+[[package]]
+name = "origami_rating"
 version = "1.1.2"
 source = "git+https://github.com/dojoengine/origami#81e49e9db43e8528cbb5d914e4da3479a9f02fb8"
 

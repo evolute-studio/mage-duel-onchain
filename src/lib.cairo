@@ -67,6 +67,7 @@ pub mod libs {
     pub mod phase_management;
     pub mod player_data;
     pub mod store;
+    pub mod rating_system;
 }
 
 // pub mod components {

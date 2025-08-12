@@ -326,7 +326,6 @@ pub mod matchmaking {
                     game_mode: GameMode::None,
                     tournament_id: 0,
                     timestamp: 0,
-                    rating: 0,
                 };
                 world.write_model(@empty_opponent_mm);
                 
@@ -376,7 +375,6 @@ pub mod matchmaking {
                     game_mode: mode,
                     tournament_id: tid,
                     timestamp: starknet::get_block_timestamp(),
-                    rating: 1000, // default rating
                 };
                 world.write_model(@player_mm);
                 

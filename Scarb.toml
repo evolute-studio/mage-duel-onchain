@@ -52,6 +52,7 @@ make_tutorial_move1 = "sozo execute evolute_duel-tutorial make_move 1 2 3 5 --ac
 [dependencies]
 dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.6.0-alpha.2" }
 origami_random = { git = "https://github.com/dojoengine/origami" }
+origami_rating = { git = "https://github.com/dojoengine/origami" }
 openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v1.0.0" }
 openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
 achievement = { git = "https://github.com/evolute-studio/arcade" } # fork of arcade https://github.com/cartridge-gg/arcade 

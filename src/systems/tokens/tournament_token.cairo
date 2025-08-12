@@ -71,8 +71,6 @@ pub trait ITournamentToken<TState> {
     fn enlist_duelist(ref self: TState, pass_id: u64);
     fn can_join_duel(self: @TState, pass_id: u64) -> bool;
     fn join_duel(ref self: TState, pass_id: u64) -> felt252;
-    fn can_end_round(self: @TState, pass_id: u64) -> bool;
-    fn end_round(ref self: TState, pass_id: u64) -> Option<u8>;
 }
 
 // Exposed to clients
@@ -94,13 +92,6 @@ pub trait ITournamentTokenPublic<TState> {
     // // Phase 3 -- Join tournament (per player)
     fn can_join_duel(self: @TState, pass_id: u64) -> bool;
     fn join_duel(ref self: TState, pass_id: u64) -> felt252; // returns duel_id
-
-    // // Phase 4 -- End round (any contestant can end)
-    // // - will shuffle next bracket
-    // // - or close tournament
-    // // - requires VRF!
-    fn can_end_round(self: @TState, pass_id: u64) -> bool;
-    fn end_round(ref self: TState, pass_id: u64) -> Option<u8>; // returns next round number
 }
 
 // Exposed to world and admins
@@ -244,6 +235,7 @@ pub mod tournament_token {
     use tournaments::components::libs::{
         lifecycle::{LifecycleTrait},
     };
+    use evolute_duel::libs::rating_system::{RatingSystemTrait};
 
     //*******************************
     // erc721
@@ -310,11 +302,9 @@ pub mod tournament_token {
     #[abi(embed_v0)]
     impl GameDetailsImpl of IGameDetails<ContractState> {
         fn score(self: @ContractState, game_id: u64) -> u32 {
-            // let store: Store = StoreTrait::new(self.world_default());
-            // let entry: TournamentPassValue = store.get_tournament_pass_value(game_id);
-            // (entry.score)
-
-            0
+            let mut store: Store = StoreTrait::new(self.world_default());
+            let tournament_pass: TournamentPass = store.get_tournament_pass(game_id);
+            (tournament_pass.rating)
         }
     }
 
@@ -352,6 +342,10 @@ pub mod tournament_token {
                     entry.tournament_id = registration.tournament_id;
                     entry.entry_number = registration.entry_number.try_into().unwrap();
                     entry.player_address = caller;
+                    
+                    // Initialize tournament rating for new participant
+                    RatingSystemTrait::initialize_tournament_rating(ref entry);
+                    
                     store.set_tournament_pass(@entry);
                     // validate and create DuelistAssignment
                     //TODO: logic of entering tournament for game
@@ -459,61 +453,6 @@ pub mod tournament_token {
             // Return the result: board_id if match found, 0 if waiting in queue
             (result)
         }
-
-        //-----------------------------------
-        // Phase 4 -- End round
-        //
-        fn can_end_round(self: @ContractState, pass_id: u64) -> bool {
-            let token_owner = self.erc721.owner_of(pass_id.into());
-            if (token_owner != starknet::get_caller_address()) {
-                return false;
-            }
-            let store: Store = StoreTrait::new(self.world_default());
-            let token_metadata = store.get_budokan_token_metadata_value(pass_id);
-            let entry = store.get_tournament_pass_value(pass_id);
-            let tournament = store.get_tournament_value(entry.tournament_id);
-            
-            // Simplified tournament ending logic for rating-based tournaments
-            (
-                // owns entry
-                self._is_owner_of(starknet::get_caller_address(), pass_id.into()) &&
-                // tournament is active
-                tournament.state == TournamentState::InProgress &&
-                // tournament time has ended
-                !token_metadata.lifecycle.is_playable(starknet::get_block_timestamp())
-            )
-        }
-        fn end_round(ref self: ContractState, pass_id: u64) -> Option<u8> {
-            self.assert_token_ownership(pass_id);
-            let mut store: Store = StoreTrait::new(self.world_default());
-            
-            // validate ownership
-            let caller: ContractAddress = starknet::get_caller_address();
-            assert(self._is_owner_of(caller, pass_id.into()) == true, Errors::NOT_YOUR_ENTRY);
-            
-            // verify tournament state
-            let token_metadata = store.get_budokan_token_metadata_value(pass_id);
-            let entry = store.get_tournament_pass_value(pass_id);
-            let mut tournament = store.get_tournament(entry.tournament_id);
-            
-            assert(tournament.state != TournamentState::Finished, Errors::HAS_ENDED);
-            assert(tournament.state == TournamentState::InProgress, Errors::NOT_STARTED);
-            
-            // Simplified check - tournament must have ended
-            assert(
-                !token_metadata.lifecycle.is_playable(starknet::get_block_timestamp()),
-                Errors::STILL_PLAYABLE
-            );
-
-            // Simplified rating-based tournament: just end the tournament
-            tournament.state = TournamentState::Finished;
-            store.set_tournament(@tournament);
-
-            // Return None since we don't have rounds in rating tournaments
-            (Option::None)
-        }
-    }
-
 
     //-----------------------------------
     // Protected

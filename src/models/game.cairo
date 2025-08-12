@@ -163,6 +163,6 @@ pub struct PlayerMatchmaking {
     pub game_mode: GameMode,
     pub tournament_id: u64,
     pub timestamp: u64,
-    pub rating: u32, // for future rating-based algorithms
+    // rating moved to TournamentPass model
 }
 

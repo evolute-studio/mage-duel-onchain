@@ -1,0 +1,132 @@
+use starknet::ContractAddress;
+use dojo::model::ModelStorage;
+use origami_rating::elo::EloTrait;
+use evolute_duel::models::tournament::{TournamentPass};
+
+/// Default values for ELO rating system
+pub const INITIAL_RATING: u32 = 1200;
+pub const K_FACTOR: u8 = 32;
+
+#[generate_trait]
+pub impl RatingSystemImpl of RatingSystemTrait {
+    /// Calculate new ratings after a game using origami_rating ELO system
+    /// Returns (new_winner_rating, new_loser_rating)
+    fn calculate_rating_change(winner_rating: u32, loser_rating: u32, k_factor: u8) -> (u32, u32) {
+        // Calculate rating change for winner (outcome = 100 for win)
+        let (winner_change, winner_is_negative): (u64, bool) = EloTrait::rating_change(
+            winner_rating,  // Winner's current rating
+            loser_rating,   // Loser's current rating  
+            100_u16,               // Outcome: 100 = win
+            k_factor               // K-factor
+        );
+        
+        // Calculate rating change for loser (outcome = 0 for loss)
+        let (loser_change, loser_is_negative): (u64, bool) = EloTrait::rating_change(
+            loser_rating,   // Loser's current rating
+            winner_rating,  // Winner's current rating
+            0_u16,                 // Outcome: 0 = loss  
+            k_factor               // K-factor
+        );
+        
+        // Apply rating changes
+        let new_winner_rating = if winner_is_negative {
+            if winner_rating > winner_change.try_into().unwrap() {
+                winner_rating - winner_change.try_into().unwrap()
+            } else {
+                100 // Minimum rating
+            }
+        } else {
+            winner_rating + winner_change.try_into().unwrap()
+        };
+        
+        let new_loser_rating = if loser_is_negative {
+            if loser_rating > loser_change.try_into().unwrap() {
+                loser_rating - loser_change.try_into().unwrap()
+            } else {
+                100 // Minimum rating
+            }
+        } else {
+            loser_rating + loser_change.try_into().unwrap()
+        };
+        
+        (new_winner_rating, new_loser_rating)
+    }
+    
+    /// Update tournament ratings for both players after a game
+    fn update_tournament_ratings(
+        winner_address: ContractAddress,
+        loser_address: ContractAddress,
+        tournament_id: u64,
+        mut world: dojo::world::WorldStorage,
+    ) {
+        // Get tournament passes for both players
+        let winner_passes = Self::get_player_tournament_pass(winner_address, tournament_id, @world);
+        let loser_passes = Self::get_player_tournament_pass(loser_address, tournament_id, @world);
+        
+        match (winner_passes, loser_passes) {
+            (Option::Some(mut winner_pass), Option::Some(mut loser_pass)) => {
+                println!("[RATING] Before - Winner: {:?} ({}), Loser: {:?} ({})", 
+                    winner_address, winner_pass.rating, loser_address, loser_pass.rating);
+                
+                // Calculate new ratings using origami_rating
+                let (new_winner_rating, new_loser_rating) = Self::calculate_rating_change(
+                    winner_pass.rating,
+                    loser_pass.rating,
+                    K_FACTOR
+                );
+                
+                // Update winner stats
+                winner_pass.rating = new_winner_rating;
+                winner_pass.games_played += 1;
+                winner_pass.wins += 1;
+                
+                // Update loser stats
+                loser_pass.rating = new_loser_rating;
+                loser_pass.games_played += 1;
+                loser_pass.losses += 1;
+                
+                // Write updated passes back to world
+                world.write_model(@winner_pass);
+                world.write_model(@loser_pass);
+
+                println!("[RATING] After - Winner: {:?} ({}), Loser: {:?} ({})", 
+                    Into::<ContractAddress, felt252>::into(winner_address),
+                    new_winner_rating, Into::<ContractAddress,
+                    felt252>::into(loser_address), new_loser_rating
+                );
+            },
+            _ => {
+                // One or both players don't have tournament passes, skip rating update
+                println!("[RATING] Skipping rating update - missing tournament pass data for tournament {}", tournament_id);
+            }
+        }
+    }
+    
+    /// Helper function to find a player's tournament pass by scanning all passes
+    /// This is a simplified approach - in production, you'd want indexed lookups
+    fn get_player_tournament_pass(
+        player_address: ContractAddress,
+        tournament_id: u64,
+        world: @dojo::world::WorldStorage
+    ) -> Option<TournamentPass> {
+        // This is a simplified implementation
+        // In a real system, you would maintain an index of player -> pass_id mappings
+        // For now, we'll return None and let the caller handle initialization
+        // 
+        // TODO: Implement proper pass lookup by player address and tournament_id
+        // This would require either:
+        // 1. A separate index model: PlayerToPass { player, tournament_id -> pass_id }
+        // 2. Or iterate through passes (expensive)
+        Option::None
+    }
+    
+    /// Initialize a new tournament participant with default rating
+    fn initialize_tournament_rating(
+        ref tournament_pass: TournamentPass
+    ) {
+        tournament_pass.rating = INITIAL_RATING;
+        tournament_pass.games_played = 0;
+        tournament_pass.wins = 0;
+        tournament_pass.losses = 0;
+    }
+}

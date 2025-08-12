@@ -8,7 +8,8 @@ use evolute_duel::{
     types::packing::{GameState, GameStatus, PlayerSide, GameMode},
     libs::{
         scoring::{ScoringTrait}, 
-        achievements::{AchievementsTrait}
+        achievements::{AchievementsTrait},
+        rating_system::{RatingSystemTrait}
     },
 };
 use dojo::{model::{ModelStorage, Model}, event::EventStorage};
@@ -153,15 +154,42 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         println!("[update_game_status] Host game current status: {:?}", host_game.status);
         println!("[update_game_status] Guest game current status: {:?}", guest_game.status);
         
+        // Check if this was a tournament game before resetting game_mode
+        let was_tournament_game = host_game.game_mode == GameMode::Tournament && guest_game.game_mode == GameMode::Tournament;
+        
         host_game.status = GameStatus::Finished;
         host_game.game_mode = GameMode::None; // Reset game mode to None
         guest_game.status = GameStatus::Finished;
         guest_game.game_mode = GameMode::None; // Reset game mode to None
 
-
         world.write_model(@host_game);
         world.write_model(@guest_game);
         println!("[update_game_status] Both games marked as Finished and written to world");
+        
+        // Update tournament ratings if this was a tournament game
+        if was_tournament_game {
+            println!("[update_game_status] Tournament game detected - ratings will be updated by caller");
+            // Note: Rating updates will be handled by the caller who knows the winner/loser and tournament_id
+        }
+    }
+    
+    /// Update tournament ratings after a tournament game finishes
+    /// This should be called after determining the winner of the game
+    fn update_tournament_ratings(
+        winner_address: ContractAddress,
+        loser_address: ContractAddress,
+        tournament_id: u64,
+        mut world: dojo::world::WorldStorage,
+    ) {
+        println!("[update_tournament_ratings] Updating ratings for tournament {}", tournament_id);
+        
+        // Call the rating system to update both players' ratings
+        RatingSystemTrait::update_tournament_ratings(
+            winner_address,
+            loser_address, 
+            tournament_id,
+            world
+        );
     }
 
     fn emit_game_finished_events(
