@@ -7,6 +7,7 @@ pub use evolute_duel::systems::{
     // bank::{IBankDispatcher, IBankDispatcherTrait},
     game::{IGameDispatcher, IGameDispatcherTrait},
     tutorial::{ITutorialDispatcher, ITutorialDispatcherTrait},
+    matchmaking::{IMatchmakingDispatcher, IMatchmakingDispatcherTrait},
     // rng::{IRngDispatcher, IRngDispatcherTrait},
     // rng_mock::{IRngMockDispatcher, IRngMockDispatcherTrait},
     tokens::{
@@ -84,6 +85,11 @@ pub impl DnsImpl of DnsTrait {
     fn game_address(self: @WorldStorage) -> ContractAddress {
         (self.find_contract_address(@"game"))
     }
+    
+    #[inline(always)]
+    fn matchmaking_address(self: @WorldStorage) -> ContractAddress {
+        (self.find_contract_address(@"matchmaking"))
+    }
    
     // #[inline(always)]
     // fn evolute_coin_address(self: @WorldStorage) -> ContractAddress {
@@ -119,8 +125,17 @@ pub impl DnsImpl of DnsTrait {
         (contract_address == self.game_address())
     }
 
+    //--------------------------
+    // dispatchers
+    //
+    
+    #[inline(always)]
+    fn matchmaking_dispatcher(self: @WorldStorage) -> IMatchmakingDispatcher {
+        (IMatchmakingDispatcher{ contract_address: self.matchmaking_address() })
+    }
+
     // //--------------------------
-    // // dispatchers
+    // // legacy dispatchers (commented out)
     // //
     // #[inline(always)]
     // fn admin_dispatcher(self: @WorldStorage) -> IAdminDispatcher {

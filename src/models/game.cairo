@@ -142,3 +142,27 @@ pub struct GameConfig {
     pub auto_match: bool,
 }
 
+/// Represents the state of matchmaking queue for a specific game mode and tournament
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct MatchmakingState {
+    #[key]
+    pub game_mode: GameMode,
+    #[key]
+    pub tournament_id: u64, // 0 for non-tournament modes
+    pub waiting_players: Array<ContractAddress>,
+    pub queue_counter: u32, // for round-robin or other algorithms
+}
+
+/// Tracks individual player's matchmaking status
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct PlayerMatchmaking {
+    #[key]
+    pub player: ContractAddress,
+    pub game_mode: GameMode,
+    pub tournament_id: u64,
+    pub timestamp: u64,
+    pub rating: u32, // for future rating-based algorithms
+}
+

@@ -34,6 +34,12 @@ pub trait IMatchmaking<T> {
         time_per_phase: u64, 
         auto_match: bool
     );
+    
+    /// Automatic matchmaking - join queue and get matched automatically.
+    /// - `game_mode`: The mode of the game (Tournament, Ranked, Casual).
+    /// - `tournament_id`: Optional tournament ID for tournament mode.
+    /// Returns: board_id if match found, 0 if waiting in queue.
+    fn auto_match(ref self: T, game_mode: u8, tournament_id: Option<u64>) -> felt252;
 }
 
 // dojo decorator
@@ -44,6 +50,7 @@ pub mod matchmaking {
         ContractAddress,
         get_caller_address,
     };
+    use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use dojo::{
         event::EventStorage,
         model::{ModelStorage},
@@ -53,7 +60,7 @@ pub mod matchmaking {
             asserts::AssertsTrait,
         },
         models::{
-            game::{Game, GameConfig},
+            game::{Game, GameConfig, MatchmakingState, PlayerMatchmaking},
         },
         events::{GameCreated, GameStarted, GameCanceled},
         types::{
@@ -113,7 +120,10 @@ pub mod matchmaking {
                         host_player: caller,
                         status: GameStatus::Created,
                     });
-                }
+                },
+                _ => {
+                    // Handle other game modes if necessary
+                },
             }
         }
         
@@ -188,6 +198,9 @@ pub mod matchmaking {
                     if !AssertsTrait::assert_regular_game_access(@game, caller, 'cancel_game', world) {
                         return;
                     }
+                },
+                _ => {
+                    // Handle other game modes if necessary
                 }
             }
             
@@ -237,6 +250,17 @@ pub mod matchmaking {
                 auto_match: false,
             };
             world.write_model(@casual_config);
+            
+            // Tournament configuration
+            let tournament_config = GameConfig {
+                game_mode: GameMode::Tournament,
+                board_size: 10,
+                deck_type: 1, // Full randomized deck
+                initial_jokers: 2,
+                time_per_phase: 60, // 1 minute per phase
+                auto_match: true, // Enable automatic matchmaking for tournaments
+            };
+            world.write_model(@tournament_config);
         }
         
         fn update_config(
@@ -263,6 +287,108 @@ pub mod matchmaking {
                 auto_match,
             };
             world.write_model(@config);
+        }
+        
+        fn auto_match(ref self: ContractState, game_mode: u8, tournament_id: Option<u64>) -> felt252 {
+            let mut world = self.world_default();
+            let caller = get_caller_address();
+            let mode: GameMode = game_mode.into();
+            let tid = tournament_id.unwrap_or(0);
+            
+            // Validate caller's game state
+            let mut caller_game: Game = world.read_model(caller);
+            if !AssertsTrait::assert_ready_to_create_game(@caller_game, world) {
+                return 0;
+            }
+            
+            // Get or create matchmaking queue state
+            let mut queue_state: MatchmakingState = world.read_model((mode, tid));
+            
+            // Simple FIFO algorithm: check if there's a waiting player
+            if queue_state.waiting_players.len() > 0 {
+                // Match found! Get the first waiting player
+                let mut waiting_players_vec = queue_state.waiting_players.span();
+                let opponent = *waiting_players_vec[0];
+                
+                // Remove opponent from queue (create new array without first element)
+                let mut new_waiting_players: Array<ContractAddress> = ArrayTrait::new();
+                let mut i = 1;
+                while i < waiting_players_vec.len() {
+                    new_waiting_players.append(*waiting_players_vec[i]);
+                    i += 1;
+                };
+                queue_state.waiting_players = new_waiting_players;
+                world.write_model(@queue_state);
+                
+                // Remove opponent from PlayerMatchmaking
+                let empty_opponent_mm = PlayerMatchmaking {
+                    player: opponent,
+                    game_mode: GameMode::None,
+                    tournament_id: 0,
+                    timestamp: 0,
+                    rating: 0,
+                };
+                world.write_model(@empty_opponent_mm);
+                
+                // Get opponent game state
+                let mut opponent_game: Game = world.read_model(opponent);
+                
+                // Get game configuration
+                let config: GameConfig = world.read_model(mode);
+                
+                // Create board for the match
+                let board = self._create_board_for_mode(
+                    opponent, // host_player (first in queue)
+                    caller,   // guest_player (joining now)
+                    mode,
+                    config,
+                    world
+                );
+                
+                // Update both players' game states
+                opponent_game.status = GameStatus::InProgress;
+                opponent_game.board_id = Option::Some(board.id);
+                opponent_game.game_mode = mode;
+                world.write_model(@opponent_game);
+                
+                caller_game.status = GameStatus::InProgress;
+                caller_game.board_id = Option::Some(board.id);
+                caller_game.game_mode = mode;
+                world.write_model(@caller_game);
+                
+                // Emit events
+                world.emit_event(@GameStarted {
+                    host_player: opponent,
+                    guest_player: caller,
+                    board_id: board.id,
+                });
+                
+                // Return board_id
+                return board.id;
+            } else {
+                // No match found, add to queue
+                queue_state.waiting_players.append(caller);
+                world.write_model(@queue_state);
+                
+                // Create PlayerMatchmaking entry
+                let player_mm = PlayerMatchmaking {
+                    player: caller,
+                    game_mode: mode,
+                    tournament_id: tid,
+                    timestamp: starknet::get_block_timestamp(),
+                    rating: 1000, // default rating
+                };
+                world.write_model(@player_mm);
+                
+                // Update caller's game state to Created (waiting)
+                caller_game.status = GameStatus::Created;
+                caller_game.board_id = Option::None;
+                caller_game.game_mode = mode;
+                world.write_model(@caller_game);
+                
+                // Return 0 to indicate waiting in queue
+                return 0;
+            }
         }
     }
     
@@ -330,7 +456,7 @@ pub mod matchmaking {
         }
         
         fn _create_board_for_mode(
-            self: @ContractState,
+            ref self: ContractState,
             host_player: ContractAddress,
             guest_player: ContractAddress,
             game_mode: GameMode,
@@ -341,9 +467,10 @@ pub mod matchmaking {
                 GameMode::Tutorial => {
                     BoardTrait::create_tutorial_board(world, host_player, guest_player)
                 },
-                GameMode::Ranked | GameMode::Casual => {
+                GameMode::Ranked | GameMode::Casual | GameMode::Tournament => {
                     BoardTrait::create_board(world, host_player, guest_player, self.board_id_generator)
-                }
+                },
+                _ => panic!("Unsupported game mode")
             }
         }
     }

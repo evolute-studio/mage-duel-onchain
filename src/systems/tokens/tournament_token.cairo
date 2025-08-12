@@ -196,6 +196,7 @@ pub mod tournament_token {
         DnsTrait, SELECTORS, Source,
         ITournamentDispatcher, ITournamentDispatcherTrait,
         IGameDispatcherTrait, IVrfProviderDispatcherTrait,
+        IMatchmakingDispatcher, IMatchmakingDispatcherTrait,
         // IDuelProtectedDispatcherTrait,
     };
     // use evolute_duel::systems::rng::{RngWrap, RngWrapTrait};
@@ -232,6 +233,7 @@ pub mod tournament_token {
         timestamp::{Period, PeriodTrait, TIMESTAMP},
         constants::{METADATA},
         challenge_state::{ChallengeState, ChallengeStateTrait},
+        packing::{GameMode},
     };
 
     use tournaments::components::models::{
@@ -444,15 +446,18 @@ pub mod tournament_token {
             assert(tournament.state != TournamentState::Finished, Errors::HAS_ENDED);
             assert(tournament.state == TournamentState::InProgress, Errors::NOT_STARTED);
             
-            // Simplified rating-based tournament logic
-            // In rating tournaments, players can join duels against other participants
-            // TODO: Implement matchmaking logic based on ratings
-            let _rules = store.get_tournament_settings_rules(token_metadata.settings_id);
+            // Use matchmaking system to create/join tournaments
+            let world = self.world_default();
+            let matchmaking_dispatcher = world.matchmaking_dispatcher();
             
-            // For now, return a placeholder duel_id
-            // Later this will create actual duels through matchmaking
-            let duel_id: felt252 = 1; // Simplified implementation
-            (duel_id)
+            // Call auto_match with Tournament mode and tournament_id
+            let result = matchmaking_dispatcher.auto_match(
+                GameMode::Tournament.into(),
+                Option::Some(entry.tournament_id)
+            );
+            
+            // Return the result: board_id if match found, 0 if waiting in queue
+            (result)
         }
 
         //-----------------------------------
