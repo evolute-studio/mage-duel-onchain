@@ -32,6 +32,7 @@ pub use evolute_duel::models::{
         TournamentPass, TournamentPassValue,
         TournamentSettings, TournamentSettingsValue,
         TournamentChallenge,
+        PlayerTournamentIndex,
         TournamentType,
         TournamentRules,
         TournamentState,
@@ -328,6 +329,14 @@ pub impl StoreImpl of StoreTrait {
     fn set_tournament_challenge(ref self: Store, model: @TournamentChallenge) {
         self.world.write_model(model);
     }
+    
+    fn set_player_tournament_index(ref self: Store, model: @PlayerTournamentIndex) {
+        self.world.write_model(model);
+    }
+    
+    fn get_player_tournament_index(self: @Store, player_address: ContractAddress, tournament_id: u64) -> PlayerTournamentIndex {
+        (self.world.read_model((player_address, tournament_id)))
+    }
     fn set_move(ref self: Store, model: @Move) {
         self.world.write_model(model);
     }
@@ -374,6 +383,10 @@ pub impl StoreImpl of StoreTrait {
     }
     fn get_tournament_challenge(self: @Store, challenge_id: felt252) -> TournamentChallenge {
         (self.world.read_model(challenge_id))
+    }
+    
+    fn budokan_dispatcher_from_pass_id(self: @Store, pass_id: u64) -> ITournamentDispatcher {
+        (ITournamentDispatcher{ contract_address: self.world.read_member(Model::<TokenMetadata>::ptr_from_keys(pass_id), selector!("minted_by")) })
     }
 
     // // setters

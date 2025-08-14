@@ -44,6 +44,7 @@ pub mod SELECTORS {
     // pub const FAME_COIN: felt252 = selector_from_tag!("pistols-fame_coin");
     pub const EVOLUTE_COIN: felt252 = selector_from_tag!("evolute_duel-evolute_coin");
     pub const REWARDS_MANAGER: felt252 = selector_from_tag!("evolute_duel-rewards_manager");
+    pub const TOURNAMENT_TOKEN: felt252 = selector_from_tag!("evolute_duel-tournament_token");
     // // mocks
     // pub const LORDS_MOCK: felt252 = selector_from_tag!("pistols-lords_mock");
     // pub const VR_MOCK: felt252 = selector_from_tag!("pistols-vrf_mock");

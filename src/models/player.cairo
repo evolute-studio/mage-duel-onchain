@@ -37,6 +37,8 @@ pub struct PlayerAssignment {
     pub pass_id: u64,       // current Tournament a Player is in
 }
 
+use evolute_duel::libs::store::{Store, StoreTrait};
+
 #[generate_trait]
 pub impl PlayerImpl of PlayerTrait {
     fn is_bot(self: @Player) -> bool {
@@ -72,9 +74,16 @@ pub impl PlayerImpl of PlayerTrait {
     }
     
     // Enter tournament method - static method for tournament entry
-    fn enter_tournament(ref store: evolute_duel::libs::store::Store, player_address: starknet::ContractAddress, pass_id: u64) {
-        // Simplified tournament entry logic
-        // TODO: Add any additional tournament entry logic here
+    fn enter_tournament(ref store: Store, player_address: starknet::ContractAddress, pass_id: u64) {
+        // Create player assignment for this tournament pass
+        let player_assignment = PlayerAssignment {
+            player_address: player_address,
+            pass_id: pass_id,
+            duel_id: 0, // Will be set when matched in tournament
+        };
+        
+        // Save player assignment
+        store.set_player_challenge(@player_assignment);
     }
 }
 

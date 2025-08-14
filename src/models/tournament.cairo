@@ -52,6 +52,21 @@ pub struct TournamentChallenge {
     pub tournament_id: u64,
 }
 
+//------------------------------------
+// Player to Tournament Pass index  
+// Allows quick lookup of player's passes in tournaments
+//
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct PlayerTournamentIndex {
+    #[key]
+    pub player_address: ContractAddress,
+    #[key] 
+    pub tournament_id: u64,
+    //-------------------------
+    pub pass_id: u64,
+}
+
 
 
 //------------------------------------

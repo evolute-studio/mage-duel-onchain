@@ -1,7 +1,9 @@
 use starknet::ContractAddress;
 use dojo::model::ModelStorage;
 use origami_rating::elo::EloTrait;
-use evolute_duel::models::tournament::{TournamentPass};
+use evolute_duel::models::tournament::{TournamentPass, PlayerTournamentIndex};
+use evolute_duel::libs::store::{Store, StoreTrait};
+use core::num::traits::Zero;
 
 /// Default values for ELO rating system
 pub const INITIAL_RATING: u32 = 1200;
@@ -102,22 +104,25 @@ pub impl RatingSystemImpl of RatingSystemTrait {
         }
     }
     
-    /// Helper function to find a player's tournament pass by scanning all passes
-    /// This is a simplified approach - in production, you'd want indexed lookups
+    /// Helper function to find a player's tournament pass using the index
     fn get_player_tournament_pass(
         player_address: ContractAddress,
         tournament_id: u64,
         world: @dojo::world::WorldStorage
-    ) -> Option<TournamentPass> {
-        // This is a simplified implementation
-        // In a real system, you would maintain an index of player -> pass_id mappings
-        // For now, we'll return None and let the caller handle initialization
-        // 
-        // TODO: Implement proper pass lookup by player address and tournament_id
-        // This would require either:
-        // 1. A separate index model: PlayerToPass { player, tournament_id -> pass_id }
-        // 2. Or iterate through passes (expensive)
-        Option::None
+    ) -> Option<TournamentPass> {        
+        // Create store to access the index
+        let store: Store = StoreTrait::new(*world);
+        
+        // Try to get the index entry for this player and tournament
+        let index: PlayerTournamentIndex = store.get_player_tournament_index(player_address, tournament_id);
+        
+        // If pass_id is non-zero, we found an entry
+        if index.pass_id.is_zero() {
+            Option::None
+        } else {
+            let tournament_pass = store.get_tournament_pass(index.pass_id);
+            Option::Some(tournament_pass)
+        }
     }
     
     /// Initialize a new tournament participant with default rating

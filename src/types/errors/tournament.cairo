@@ -20,6 +20,7 @@ pub mod Errors {
     pub const DUELIST_IN_TOURNAMENT: felt252    = 'TOURNAMENT: In a tournament';
     pub const INVALID_ROUND: felt252            = 'TOURNAMENT: Invalid round';
     pub const STILL_PLAYABLE: felt252           = 'TOURNAMENT: Still playable';
+    pub const TOURNAMENT_NOT_ENDED: felt252     = 'TOURNAMENT: Not ended yet';
     pub const CALLER_NOT_OWNER: felt252         = 'TOURNAMENT: Caller not owner';
     pub const IMPOSSIBLE_ERROR: felt252         = 'TOURNAMENT: Impossible error';
 }
