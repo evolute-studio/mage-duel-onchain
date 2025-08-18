@@ -6,6 +6,7 @@ pub mod systems {
     pub mod tutorial;
     pub mod account_migration;
     pub mod matchmaking;
+    pub mod evlt_topup;
     pub mod helpers {
         pub mod board;
         pub mod union_find;
