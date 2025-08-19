@@ -243,6 +243,7 @@ pub mod tournament_token {
         lifecycle::{LifecycleTrait},
     };
     use evolute_duel::libs::rating_system::{RatingSystemTrait};
+    use evolute_duel::libs::asserts::{AssertsTrait};
 
     //*******************************
     // erc721
@@ -453,6 +454,17 @@ pub mod tournament_token {
             let tournament = store.get_tournament_value(entry.tournament_id);
             assert(tournament.state != TournamentState::Finished, Errors::HAS_ENDED);
             assert(tournament.state == TournamentState::InProgress, Errors::NOT_STARTED);
+
+            // Check and spend tokens for tournament entry (eEVLT or EVLT)
+            let world_storage = self.world_default();
+            assert(
+                AssertsTrait::assert_can_enter_tournament_game(
+                    caller, 
+                    entry.tournament_id, 
+                    world_storage
+                ), 
+                Errors::INSUFFICIENT_TOKENS
+            );
             
             // Use matchmaking system to create/join tournaments
             let world = self.world_default();

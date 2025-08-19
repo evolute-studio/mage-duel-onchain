@@ -36,6 +36,7 @@ pub mod models {
     pub mod config;
     pub mod migration;
     pub mod tournament;
+    pub mod tournament_balance;
     pub mod challenge;
     pub mod scoreboard;
     pub mod pact;

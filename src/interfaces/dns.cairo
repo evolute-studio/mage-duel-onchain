@@ -24,6 +24,7 @@ pub use evolute_duel::systems::{
 pub use evolute_duel::interfaces::{
     ierc20::{ierc20, Erc20Dispatcher, Erc20DispatcherTrait},
     vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source},
+    ievlt_token::{IEvltTokenDispatcher, IEvltTokenDispatcherTrait},
 };
 pub use tournaments::components::tournament::{ITournamentDispatcher, ITournamentDispatcherTrait};
 // pub use pistols::libs::store::{Store, StoreTrait};
@@ -43,6 +44,7 @@ pub mod SELECTORS {
     // pub const PACK_TOKEN: felt252 = selector_from_tag!("pistols-pack_token");
     // pub const FAME_COIN: felt252 = selector_from_tag!("pistols-fame_coin");
     pub const EVOLUTE_COIN: felt252 = selector_from_tag!("evolute_duel-evolute_coin");
+    pub const EVLT_TOKEN: felt252 = selector_from_tag!("evolute_duel-evlt_token");
     pub const REWARDS_MANAGER: felt252 = selector_from_tag!("evolute_duel-rewards_manager");
     pub const TOURNAMENT_TOKEN: felt252 = selector_from_tag!("evolute_duel-tournament_token");
     // // mocks
@@ -106,6 +108,11 @@ pub impl DnsImpl of DnsTrait {
     fn tournament_token_address(self: @WorldStorage) -> ContractAddress {
         (self.find_contract_address(@"tournament_token"))
     }
+
+    #[inline(always)]
+    fn evlt_token_address(self: @WorldStorage) -> ContractAddress {
+        (self.find_contract_address(@"evlt_token"))
+    }
     
 
     //--------------------------
@@ -133,6 +140,11 @@ pub impl DnsImpl of DnsTrait {
     #[inline(always)]
     fn matchmaking_dispatcher(self: @WorldStorage) -> IMatchmakingDispatcher {
         (IMatchmakingDispatcher{ contract_address: self.matchmaking_address() })
+    }
+
+    #[inline(always)]
+    fn evlt_token_dispatcher(self: @WorldStorage) -> IEvltTokenDispatcher {
+        (IEvltTokenDispatcher{ contract_address: self.evlt_token_address() })
     }
 
     // //--------------------------

@@ -2,20 +2,20 @@ use starknet::ContractAddress;
 use core::num::traits::Zero;
 
 pub use evolute_duel::systems::tokens::evlt_token::{
-    IEvltTokenDispatcher as EvltTokenDispatcher,
-    IEvltTokenDispatcherTrait as EvltTokenDispatcherTrait,
-    IEvltTokenProtectedDispatcher as EvltTokenProtectedDispatcher,
-    IEvltTokenProtectedDispatcherTrait as EvltTokenProtectedDispatcherTrait,
+    IEvltTokenDispatcher,
+    IEvltTokenDispatcherTrait,
+    IEvltTokenProtectedDispatcher,
+    IEvltTokenProtectedDispatcherTrait,
 };
 
 #[inline(always)]
-pub fn ievlt_token(contract_address: ContractAddress) -> EvltTokenDispatcher {
+pub fn ievlt_token(contract_address: ContractAddress) -> IEvltTokenDispatcher {
     assert(contract_address.is_non_zero(), 'ievlt_token(): null address');
-    (EvltTokenDispatcher{contract_address})
+    (IEvltTokenDispatcher{contract_address})
 }
 
 #[inline(always)]
-pub fn ievlt_token_protected(contract_address: ContractAddress) -> EvltTokenProtectedDispatcher {
+pub fn ievlt_token_protected(contract_address: ContractAddress) -> IEvltTokenProtectedDispatcher {
     assert(contract_address.is_non_zero(), 'ievlt_token_protected(): null');
-    (EvltTokenProtectedDispatcher{contract_address})
+    (IEvltTokenProtectedDispatcher{contract_address})
 }

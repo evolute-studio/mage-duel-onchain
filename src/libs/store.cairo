@@ -38,6 +38,9 @@ pub use evolute_duel::models::{
         TournamentState,
         TournamentTypeTrait
     },
+    tournament_balance::{
+        TournamentBalance, TournamentBalanceTrait
+    },
     // config::{
     //     CONFIG,
     //     Config, ConfigValue,
@@ -70,7 +73,8 @@ pub use evolute_duel::types::packing::{
 //     rules::{RewardValues},
 // };
 use tournaments::components::models::game::{TokenMetadata, TokenMetadataValue};
-use evolute_duel::interfaces::dns::{ITournamentDispatcher};
+use evolute_duel::interfaces::dns::{ITournamentDispatcher, DnsTrait};
+use evolute_duel::interfaces::ievlt_token::{IEvltTokenDispatcher, IEvltTokenDispatcherTrait};
 
 #[derive(Copy, Drop)]
 pub struct Store {
@@ -124,6 +128,9 @@ pub impl StoreImpl of StoreTrait {
         (self.world.read_value(tournament_id))
     }
 
+    fn get_tournament_balance(self: @Store, player_address: ContractAddress, tournament_id: u64) -> TournamentBalance {
+        (self.world.read_model((player_address, tournament_id)))
+    }
 
     fn get_budokan_token_metadata(self: @Store, pass_id: u64) -> TokenMetadata {
         (self.world.read_model(pass_id))
@@ -326,6 +333,10 @@ pub impl StoreImpl of StoreTrait {
         self.world.write_model(model);
     }
 
+    fn set_tournament_balance(ref self: Store, model: @TournamentBalance) {
+        self.world.write_model(model);
+    }
+
     fn set_tournament_challenge(ref self: Store, model: @TournamentChallenge) {
         self.world.write_model(model);
     }
@@ -387,6 +398,10 @@ pub impl StoreImpl of StoreTrait {
     
     fn budokan_dispatcher_from_pass_id(self: @Store, pass_id: u64) -> ITournamentDispatcher {
         (ITournamentDispatcher{ contract_address: self.world.read_member(Model::<TokenMetadata>::ptr_from_keys(pass_id), selector!("minted_by")) })
+    }
+
+    fn evlt_token_dispatcher(self: @Store) -> IEvltTokenDispatcher {
+        (IEvltTokenDispatcher{ contract_address: self.world.evlt_token_address() })
     }
 
     // // setters
