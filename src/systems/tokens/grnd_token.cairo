@@ -50,8 +50,11 @@ pub mod grnd_token {
     // ERC-20 Start
     //
     use openzeppelin_token::erc20::ERC20Component;
-    use evolute_duel::components::coin_component::{
-        CoinComponent,
+    use evolute_duel::{
+        components::coin_component::{
+            CoinComponent,
+        },
+        models::config::CoinConfig,
     };
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
@@ -187,8 +190,8 @@ pub mod grnd_token {
             // Game systems can burn, or user burning their own tokens
             let caller = starknet::get_caller_address();
             let mut world = self.world_default();
-            let is_game_system = world.dispatcher.is_owner(selector_from_tag!("evolute_duel-grnd_token"), caller);
-            
+            let coin_config: CoinConfig = world.read_model(starknet::get_contract_address());
+            let is_game_system = coin_config.minter_address == caller;
             assert(is_game_system || caller == from, Errors::UNAUTHORIZED_BURN);
             
             // Check balance

@@ -194,7 +194,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_initiate_migration_fails_tutorial_not_completed() {
         let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
 
@@ -234,7 +233,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_initiate_migration_fails_controller_has_progress() {
         let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
 

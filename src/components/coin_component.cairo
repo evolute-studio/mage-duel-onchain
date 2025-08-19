@@ -61,7 +61,7 @@ pub mod CoinComponent {
             faucet_amount: u128,
         ) {
             let mut world = DnsTrait::storage(self.get_contract().world_dispatcher(), @"evolute_duel");
-            let coin_config: CoinConfig = CoinConfig{
+            let coin_config: CoinConfig = CoinConfig {
                 coin_address: starknet::get_contract_address(),
                 minter_address,
                 faucet_amount,
@@ -72,7 +72,7 @@ pub mod CoinComponent {
         fn can_mint(self: @ComponentState<TContractState>,
             recipient: ContractAddress,
         ) -> bool {
-            let mut world = DnsTrait::storage(self.get_contract().world_dispatcher(), @"pistols");
+            let mut world = DnsTrait::storage(self.get_contract().world_dispatcher(), @"evolute_duel");
             let coin_config: CoinConfig = world.read_model(starknet::get_contract_address());
             (
                 coin_config.minter_address.is_zero() ||      // anyone can mint
@@ -98,7 +98,7 @@ pub mod CoinComponent {
         fn faucet(ref self: ComponentState<TContractState>,
             recipient: ContractAddress,
         ) {
-            let mut world = DnsTrait::storage(self.get_contract().world_dispatcher(), @"pistols");
+            let mut world = DnsTrait::storage(self.get_contract().world_dispatcher(), @"evolute_duel");
             let coin_config: CoinConfig = world.read_model(starknet::get_contract_address());
             assert(coin_config.faucet_amount > 0, Errors::FAUCET_UNAVAILABLE);
 
