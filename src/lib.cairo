@@ -5,8 +5,8 @@ pub mod systems {
     // pub mod rewards_manager;
     pub mod tutorial;
     pub mod account_migration;
-    pub mod matchmaking;
-    pub mod evlt_topup;
+    // pub mod matchmaking;
+    // pub mod evlt_topup;
     pub mod helpers {
         pub mod board;
         pub mod union_find;
@@ -19,9 +19,9 @@ pub mod systems {
     }
     pub mod tokens {
         // pub mod evolute_coin;
-        pub mod tournament_token;
-        pub mod evlt_token;
-        pub mod grnd_token;
+        // pub mod tournament_token;
+        // pub mod evlt_token;
+        // pub mod grnd_token;
     }
 
     
@@ -33,13 +33,13 @@ pub mod models {
     pub mod scoring;
     pub mod skins;
     // pub mod metagame;
-    pub mod config;
+    // pub mod config;
     pub mod migration;
-    pub mod tournament;
-    pub mod tournament_balance;
-    pub mod challenge;
+    // pub mod tournament;
+    // pub mod tournament_balance;
+    // pub mod challenge;
     pub mod scoreboard;
-    pub mod pact;
+    // pub mod pact;
 }
 
 pub mod events;
@@ -56,8 +56,8 @@ pub mod types {
     pub mod packing;
     pub mod challenge_state;
     pub mod constants;
-    pub mod timestamp;
-    pub mod shuffler;
+    // pub mod timestamp;
+    // pub mod shuffler;
 }
 
 pub mod libs {
@@ -70,13 +70,13 @@ pub mod libs {
     pub mod game_finalization;
     pub mod phase_management;
     pub mod player_data;
-    pub mod store;
-    pub mod rating_system;
+    // pub mod store;
+    // pub mod rating_system;
 }
 
-pub mod components {
-    pub mod coin_component;
-}
+// pub mod components {
+//     pub mod coin_component;
+// }
 
 pub mod utils {
     pub mod hash;
@@ -90,12 +90,12 @@ pub mod utils {
 }
 
 pub mod interfaces {
-    pub mod dns;
-    pub mod ierc20;
-    pub mod ierc721;
-    pub mod vrf;
-    pub mod ievlt_token;
-    pub mod igrnd_token;
+    // pub mod dns;
+    // pub mod ierc20;
+    // pub mod ierc721;
+    // pub mod vrf;
+    // pub mod ievlt_token;
+    // pub mod igrnd_token;
 }
 
 pub mod tests {
@@ -105,9 +105,9 @@ pub mod tests {
     }
     pub mod test_world;
     pub mod test_account_migration;
-    pub mod test_evlt_token;
-    pub mod test_grnd_token;
-    pub mod test_evlt_topup;
+    // pub mod test_evlt_token;
+    // pub mod test_grnd_token;
+    // pub mod test_evlt_topup;
     // pub mod test_scoring;
     // pub mod test_tile_reveal;
     // pub mod test_game_finalization;

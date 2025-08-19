@@ -4,12 +4,12 @@ use evolute_duel::{
         game::Game, 
         player::{Player, PlayerTrait}, 
         migration::{MigrationRequest, MigrationRequestTrait},
-        tournament_balance::{TournamentBalance, TournamentBalanceTrait, EevltBurned}
+        // tournament_balance::{TournamentBalance, TournamentBalanceTrait, EevltBurned}
     },
     events::{GameCreateFailed, GameJoinFailed, PlayerNotInGame, GameFinished, MigrationError, ErrorEvent},
     types::{packing::{GameStatus, GameMode}},
-    interfaces::{ievlt_token::{IEvltTokenDispatcher, IEvltTokenDispatcherTrait}},
-    libs::store::{Store, StoreTrait},
+    // interfaces::{ievlt_token::{IEvltTokenDispatcher, IEvltTokenDispatcherTrait}},
+    // libs::store::{Store, StoreTrait},
 };
 use starknet::ContractAddress;
 #[generate_trait]
@@ -309,53 +309,53 @@ pub impl AssersImpl of AssertsTrait {
         true
     }
 
-    // Tournament game access and payment validation
-    fn assert_can_enter_tournament_game(
-        player_address: ContractAddress,
-        tournament_id: u64,
-        mut world: WorldStorage
-    ) -> bool {
-        let mut store: Store = StoreTrait::new(world);
+    // // Tournament game access and payment validation
+    // fn assert_can_enter_tournament_game(
+    //     player_address: ContractAddress,
+    //     tournament_id: u64,
+    //     mut world: WorldStorage
+    // ) -> bool {
+    //     let mut store: Store = StoreTrait::new(world);
         
-        // Try to get existing tournament balance
-        let mut tournament_balance: TournamentBalance = store.get_tournament_balance(player_address, tournament_id);
+    //     // Try to get existing tournament balance
+    //     let mut tournament_balance: TournamentBalance = store.get_tournament_balance(player_address, tournament_id);
         
-        // Check if player has eEVLT tokens for this tournament
-        if tournament_balance.can_spend(1) {
-            // Spend 1 eEVLT for tournament game
-            tournament_balance.spend_balance(1);
-            store.set_tournament_balance(@tournament_balance);
+    //     // Check if player has eEVLT tokens for this tournament
+    //     if tournament_balance.can_spend(1) {
+    //         // Spend 1 eEVLT for tournament game
+    //         tournament_balance.spend_balance(1);
+    //         store.set_tournament_balance(@tournament_balance);
             
-            // Emit eEVLT burned event
-            world.emit_event(@EevltBurned {
-                player_address,
-                tournament_id,
-                amount: 1,
-            });
+    //         // Emit eEVLT burned event
+    //         world.emit_event(@EevltBurned {
+    //             player_address,
+    //             tournament_id,
+    //             amount: 1,
+    //         });
             
-            return true;
-        }
+    //         return true;
+    //     }
         
-        // No eEVLT available, try to spend EVLT token instead
-        let evlt_dispatcher = store.evlt_token_dispatcher();
-        let evlt_balance = evlt_dispatcher.balance_of(player_address);
+    //     // No eEVLT available, try to spend EVLT token instead
+    //     let evlt_dispatcher = store.evlt_token_dispatcher();
+    //     let evlt_balance = evlt_dispatcher.balance_of(player_address);
         
-        // Check if player has enough EVLT (1 EVLT = 1 tournament game)
-        if evlt_balance >= 1 {
-            // Burn 1 EVLT token
-            evlt_dispatcher.burn(player_address, 1);
-            return true;
-        }
+    //     // Check if player has enough EVLT (1 EVLT = 1 tournament game)
+    //     if evlt_balance >= 1 {
+    //         // Burn 1 EVLT token
+    //         evlt_dispatcher.burn(player_address, 1);
+    //         return true;
+    //     }
         
-        // Neither eEVLT nor EVLT available
-        world.emit_event(@ErrorEvent {
-            player_address,
-            name: 'Insufficient Tokens',
-            message: "Not enough eEVLT or EVLT tokens to enter tournament game",
-        });
+    //     // Neither eEVLT nor EVLT available
+    //     world.emit_event(@ErrorEvent {
+    //         player_address,
+    //         name: 'Insufficient Tokens',
+    //         message: "Not enough eEVLT or EVLT tokens to enter tournament game",
+    //     });
         
-        false
-    }
+    //     false
+    // }
 }
 
 
