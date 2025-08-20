@@ -418,7 +418,7 @@ pub mod matchmaking {
                     new_waiting_players.append(*waiting_players_vec[i]);
                     i += 1;
                 };
-                queue_state.waiting_players = new_waiting_players;
+                queue_state.waiting_players = new_waiting_players.clone();
                 world.write_model(@queue_state);
                 println!("[MATCHMAKING] auto_match: opponent removed from queue, new queue size={}", new_waiting_players.len());
                 
