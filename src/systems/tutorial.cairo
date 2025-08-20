@@ -369,6 +369,7 @@ pub mod tutorial {
                 let mut bot_game: Game = world.read_model(bot_address);
                 bot_game.status = GameStatus::Canceled;
                 bot_game.board_id = Option::None;
+                bot_game.game_mode = GameMode::None; // Reset game mode
                 world.write_model(@bot_game);
 
                 // Mark board as finished
@@ -382,6 +383,7 @@ pub mod tutorial {
             // Update player's game state
             game.status = GameStatus::Canceled;
             game.board_id = Option::None;
+            game.game_mode = GameMode::None; // Reset game mode
             world.write_model(@game);
 
             world.emit_event(@GameCanceled { 

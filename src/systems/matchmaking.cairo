@@ -204,15 +204,44 @@ pub mod matchmaking {
                 }
             }
             
-            assert!(game.status == GameStatus::Created, "Can only cancel created games");
-            
-            game.status = GameStatus::Canceled;
-            world.write_model(@game);
+            let status = game.status;
 
-            world.emit_event(@GameCanceled { 
-                host_player: caller, 
-                status: GameStatus::Canceled 
-            });
+            if status == GameStatus::InProgress && game.board_id.is_some() {
+                let mut board: evolute_duel::models::game::Board = world.read_model(game.board_id.unwrap());
+                let board_id = board.id;
+                let (player1_address, _, _) = board.player1;
+                let (player2_address, _, _) = board.player2;
+
+                let another_player = if player1_address == caller {
+                    player2_address
+                } else {
+                    player1_address
+                };
+
+                let mut another_game: Game = world.read_model(another_player);
+                let new_status = GameStatus::Canceled;
+                another_game.status = new_status;
+                another_game.board_id = Option::None;
+                another_game.game_mode = GameMode::None; // Reset game mode
+
+                world.write_model(@another_game);
+                world.emit_event(@GameCanceled { host_player: another_player, status: new_status });
+
+                world
+                    .write_member(
+                        dojo::model::Model::<evolute_duel::models::game::Board>::ptr_from_keys(board_id),
+                        selector!("game_state"),
+                        evolute_duel::types::packing::GameState::Finished,
+                    );
+            }
+
+            let new_status = GameStatus::Canceled;
+            game.status = new_status;
+            game.board_id = Option::None;
+            game.game_mode = GameMode::None; // Reset game mode
+
+            world.write_model(@game);
+            world.emit_event(@GameCanceled { host_player: caller, status: new_status });
         }
         
         fn initialize_configs(ref self: ContractState) {
