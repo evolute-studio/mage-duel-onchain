@@ -5,7 +5,7 @@ pub mod systems {
     // pub mod rewards_manager;
     pub mod tutorial;
     pub mod account_migration;
-    // pub mod matchmaking;
+    pub mod matchmaking;
     // pub mod evlt_topup;
     pub mod helpers {
         pub mod board;
