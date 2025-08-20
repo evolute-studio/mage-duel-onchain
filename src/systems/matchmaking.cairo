@@ -83,22 +83,35 @@ pub mod matchmaking {
             let caller = get_caller_address();
             let mode: GameMode = game_mode.into();
             
+            println!("[MATCHMAKING] create_game: caller={:?}, game_mode={}, mode={:?}", caller, game_mode, mode);
+            
             // Get game configuration for this mode
             let config: GameConfig = world.read_model(mode);
+            println!("[MATCHMAKING] create_game: config loaded - board_size={}, deck_type={}, jokers={}, time={}, auto_match={}", 
+                config.board_size, config.deck_type, config.initial_jokers, config.time_per_phase, config.auto_match);
             
             // Validate player can create game
             let mut game: Game = world.read_model(caller);
+            println!("[MATCHMAKING] create_game: current game state - status={:?}, game_mode={:?}, board_id={:?}", 
+                game.status, game.game_mode, game.board_id);
+                
             if !AssertsTrait::assert_ready_to_create_game(@game, world) {
+                println!("[MATCHMAKING] create_game: FAILED - player not ready to create game");
                 return;
             }
             
+            println!("[MATCHMAKING] create_game: player validation passed");
+            
             match mode {
                 GameMode::Tutorial => {
+                    println!("[MATCHMAKING] create_game: entering Tutorial mode");
                     // Tutorial requires bot opponent
                     let bot_address = opponent.expect('Bot address required');
+                    println!("[MATCHMAKING] create_game: Tutorial bot_address={:?}", bot_address);
                     self._create_tutorial_game(caller, bot_address, config);
                 },
                 GameMode::Ranked | GameMode::Casual => {
+                    println!("[MATCHMAKING] create_game: entering Ranked/Casual mode");
                     // Validate access to create regular games
                     if !AssertsTrait::assert_game_mode_access(
                         @game, 
@@ -107,8 +120,11 @@ pub mod matchmaking {
                         'create_game', 
                         world
                     ) {
+                        println!("[MATCHMAKING] create_game: FAILED - no access to game mode");
                         return;
                     }
+                    
+                    println!("[MATCHMAKING] create_game: game mode access granted");
                     
                     // Regular games - create and wait for opponent
                     game.status = GameStatus::Created;
@@ -116,29 +132,43 @@ pub mod matchmaking {
                     game.game_mode = mode;
                     world.write_model(@game);
                     
+                    println!("[MATCHMAKING] create_game: game created successfully - waiting for opponent");
+                    
                     world.emit_event(@GameCreated { 
                         host_player: caller,
                         status: GameStatus::Created,
                     });
                 },
                 _ => {
-                    // Handle other game modes if necessary
+                    println!("[MATCHMAKING] create_game: unsupported game mode");
                 },
             }
+            
+            println!("[MATCHMAKING] create_game: function completed");
         }
         
         fn join_game(ref self: ContractState, host_player: ContractAddress) {
             let mut world = self.world_default();
             let guest_player = get_caller_address();
             
+            println!("[MATCHMAKING] join_game: guest={:?}, host={:?}", guest_player, host_player);
+            
             // Get host game info
             let mut host_game: Game = world.read_model(host_player);
             let mut guest_game: Game = world.read_model(guest_player);
             
+            println!("[MATCHMAKING] join_game: host_game - status={:?}, mode={:?}, board_id={:?}", 
+                host_game.status, host_game.game_mode, host_game.board_id);
+            println!("[MATCHMAKING] join_game: guest_game - status={:?}, mode={:?}, board_id={:?}", 
+                guest_game.status, guest_game.game_mode, guest_game.board_id);
+            
             // Validate join conditions
             if !AssertsTrait::assert_ready_to_join_game(@guest_game, @host_game, world) {
+                println!("[MATCHMAKING] join_game: FAILED - guest not ready to join game");
                 return;
             }
+            
+            println!("[MATCHMAKING] join_game: join conditions validated");
             
             // Validate guest can join this game mode
             if !AssertsTrait::assert_game_mode_access(
@@ -148,13 +178,18 @@ pub mod matchmaking {
                 'join_game', 
                 world
             ) {
+                println!("[MATCHMAKING] join_game: FAILED - guest has no access to game mode");
                 return;
             }
             
+            println!("[MATCHMAKING] join_game: game mode access granted");
+            
             // Get configuration for this game mode
             let config: GameConfig = world.read_model(host_game.game_mode);
+            println!("[MATCHMAKING] join_game: config loaded for mode={:?}", host_game.game_mode);
             
             // Create board based on game mode configuration
+            println!("[MATCHMAKING] join_game: creating board for game mode");
             let board = self._create_board_for_mode(
                 host_player, 
                 guest_player, 
@@ -162,63 +197,83 @@ pub mod matchmaking {
                 config,
                 world
             );
+            println!("[MATCHMAKING] join_game: board created with id={}", board.id);
             
             // Update both players' game state
             host_game.status = GameStatus::InProgress;
             host_game.board_id = Option::Some(board.id);
             world.write_model(@host_game);
+            println!("[MATCHMAKING] join_game: host game updated to InProgress");
             
             guest_game.status = GameStatus::InProgress;
             guest_game.board_id = Option::Some(board.id);
             guest_game.game_mode = host_game.game_mode;
             world.write_model(@guest_game);
+            println!("[MATCHMAKING] join_game: guest game updated to InProgress");
             
             world.emit_event(@GameStarted {
                 host_player,
                 guest_player,
                 board_id: board.id,
             });
+            
+            println!("[MATCHMAKING] join_game: GameStarted event emitted, function completed");
         }
         
         fn cancel_game(ref self: ContractState) {
             let mut world = self.world_default();
             let caller = get_caller_address();
             
+            println!("[MATCHMAKING] cancel_game: caller={:?}", caller);
+            
             let mut game: Game = world.read_model(caller);
+            println!("[MATCHMAKING] cancel_game: current game - status={:?}, mode={:?}, board_id={:?}", 
+                game.status, game.game_mode, game.board_id);
             
             // Validate can cancel based on GameMode
             match game.game_mode {
                 GameMode::Tutorial => {
                     // Tutorial games should be canceled through tutorial contract only
-                    println!("[ERROR] Tutorial games must be canceled through tutorial contract");
+                    println!("[MATCHMAKING] cancel_game: FAILED - Tutorial games must be canceled through tutorial contract");
                     return;
                 },
                 GameMode::Ranked | GameMode::Casual => {
+                    println!("[MATCHMAKING] cancel_game: validating regular game access");
                     // Regular games can be canceled through matchmaking
                     if !AssertsTrait::assert_regular_game_access(@game, caller, 'cancel_game', world) {
+                        println!("[MATCHMAKING] cancel_game: FAILED - no regular game access");
                         return;
                     }
+                    println!("[MATCHMAKING] cancel_game: regular game access validated");
                 },
                 _ => {
-                    // Handle other game modes if necessary
+                    println!("[MATCHMAKING] cancel_game: unsupported game mode");
                 }
             }
             
             let status = game.status;
+            println!("[MATCHMAKING] cancel_game: current status={:?}", status);
 
             if status == GameStatus::InProgress && game.board_id.is_some() {
+                println!("[MATCHMAKING] cancel_game: canceling active game with board");
                 let mut board: evolute_duel::models::game::Board = world.read_model(game.board_id.unwrap());
                 let board_id = board.id;
                 let (player1_address, _, _) = board.player1;
                 let (player2_address, _, _) = board.player2;
+                
+                println!("[MATCHMAKING] cancel_game: board_id={}, player1={:?}, player2={:?}", 
+                    board_id, player1_address, player2_address);
 
                 let another_player = if player1_address == caller {
                     player2_address
                 } else {
                     player1_address
                 };
+                println!("[MATCHMAKING] cancel_game: another_player={:?}", another_player);
 
                 let mut another_game: Game = world.read_model(another_player);
+                println!("[MATCHMAKING] cancel_game: another_game before cancel - status={:?}", another_game.status);
+                
                 let new_status = GameStatus::Canceled;
                 another_game.status = new_status;
                 another_game.board_id = Option::None;
@@ -226,6 +281,7 @@ pub mod matchmaking {
 
                 world.write_model(@another_game);
                 world.emit_event(@GameCanceled { host_player: another_player, status: new_status });
+                println!("[MATCHMAKING] cancel_game: another player game canceled and event emitted");
 
                 world
                     .write_member(
@@ -233,6 +289,9 @@ pub mod matchmaking {
                         selector!("game_state"),
                         evolute_duel::types::packing::GameState::Finished,
                     );
+                println!("[MATCHMAKING] cancel_game: board game_state set to Finished");
+            } else {
+                println!("[MATCHMAKING] cancel_game: canceling created game (no board)");
             }
 
             let new_status = GameStatus::Canceled;
@@ -242,6 +301,8 @@ pub mod matchmaking {
 
             world.write_model(@game);
             world.emit_event(@GameCanceled { host_player: caller, status: new_status });
+            
+            println!("[MATCHMAKING] cancel_game: caller game canceled, function completed");
         }
         
         fn initialize_configs(ref self: ContractState) {
@@ -324,20 +385,31 @@ pub mod matchmaking {
             let mode: GameMode = game_mode.into();
             let tid = tournament_id.unwrap_or(0);
             
+            println!("[MATCHMAKING] auto_match: caller={:?}, mode={:?}, tournament_id={:?}", caller, mode, tournament_id);
+            
             // Validate caller's game state
             let mut caller_game: Game = world.read_model(caller);
+            println!("[MATCHMAKING] auto_match: caller_game - status={:?}, mode={:?}, board_id={:?}", 
+                caller_game.status, caller_game.game_mode, caller_game.board_id);
+                
             if !AssertsTrait::assert_ready_to_create_game(@caller_game, world) {
+                println!("[MATCHMAKING] auto_match: FAILED - caller not ready to create game, returning 0");
                 return 0;
             }
             
+            println!("[MATCHMAKING] auto_match: caller validation passed");
+            
             // Get or create matchmaking queue state
             let mut queue_state: MatchmakingState = world.read_model((mode, tid));
+            println!("[MATCHMAKING] auto_match: queue state - waiting_players.len()={}", queue_state.waiting_players.len());
             
             // Simple FIFO algorithm: check if there's a waiting player
             if queue_state.waiting_players.len() > 0 {
+                println!("[MATCHMAKING] auto_match: MATCH FOUND! Processing existing waiting player");
                 // Match found! Get the first waiting player
                 let mut waiting_players_vec = queue_state.waiting_players.span();
                 let opponent = *waiting_players_vec[0];
+                println!("[MATCHMAKING] auto_match: opponent={:?}", opponent);
                 
                 // Remove opponent from queue (create new array without first element)
                 let mut new_waiting_players: Array<ContractAddress> = ArrayTrait::new();
@@ -348,6 +420,7 @@ pub mod matchmaking {
                 };
                 queue_state.waiting_players = new_waiting_players;
                 world.write_model(@queue_state);
+                println!("[MATCHMAKING] auto_match: opponent removed from queue, new queue size={}", new_waiting_players.len());
                 
                 // Remove opponent from PlayerMatchmaking
                 let empty_opponent_mm = PlayerMatchmaking {
@@ -357,14 +430,19 @@ pub mod matchmaking {
                     timestamp: 0,
                 };
                 world.write_model(@empty_opponent_mm);
+                println!("[MATCHMAKING] auto_match: opponent PlayerMatchmaking cleared");
                 
                 // Get opponent game state
                 let mut opponent_game: Game = world.read_model(opponent);
+                println!("[MATCHMAKING] auto_match: opponent_game - status={:?}, mode={:?}", 
+                    opponent_game.status, opponent_game.game_mode);
                 
                 // Get game configuration
                 let config: GameConfig = world.read_model(mode);
+                println!("[MATCHMAKING] auto_match: config loaded for mode={:?}", mode);
                 
                 // Create board for the match
+                println!("[MATCHMAKING] auto_match: creating board for match");
                 let board = self._create_board_for_mode(
                     opponent, // host_player (first in queue)
                     caller,   // guest_player (joining now)
@@ -372,17 +450,20 @@ pub mod matchmaking {
                     config,
                     world
                 );
+                println!("[MATCHMAKING] auto_match: board created with id={}", board.id);
                 
                 // Update both players' game states
                 opponent_game.status = GameStatus::InProgress;
                 opponent_game.board_id = Option::Some(board.id);
                 opponent_game.game_mode = mode;
                 world.write_model(@opponent_game);
+                println!("[MATCHMAKING] auto_match: opponent game updated to InProgress");
                 
                 caller_game.status = GameStatus::InProgress;
                 caller_game.board_id = Option::Some(board.id);
                 caller_game.game_mode = mode;
                 world.write_model(@caller_game);
+                println!("[MATCHMAKING] auto_match: caller game updated to InProgress");
                 
                 // Emit events
                 world.emit_event(@GameStarted {
@@ -390,13 +471,17 @@ pub mod matchmaking {
                     guest_player: caller,
                     board_id: board.id,
                 });
+                println!("[MATCHMAKING] auto_match: GameStarted event emitted");
                 
                 // Return board_id
+                println!("[MATCHMAKING] auto_match: MATCH SUCCESSFUL! Returning board_id={}", board.id);
                 return board.id;
             } else {
+                println!("[MATCHMAKING] auto_match: NO MATCH FOUND, adding caller to queue");
                 // No match found, add to queue
                 queue_state.waiting_players.append(caller);
                 world.write_model(@queue_state);
+                println!("[MATCHMAKING] auto_match: caller added to queue, queue size={}", queue_state.waiting_players.len());
                 
                 // Create PlayerMatchmaking entry
                 let player_mm = PlayerMatchmaking {
@@ -406,14 +491,17 @@ pub mod matchmaking {
                     timestamp: starknet::get_block_timestamp(),
                 };
                 world.write_model(@player_mm);
+                println!("[MATCHMAKING] auto_match: PlayerMatchmaking entry created");
                 
                 // Update caller's game state to Created (waiting)
                 caller_game.status = GameStatus::Created;
                 caller_game.board_id = Option::None;
                 caller_game.game_mode = mode;
                 world.write_model(@caller_game);
+                println!("[MATCHMAKING] auto_match: caller game state updated to Created (waiting)");
                 
                 // Return 0 to indicate waiting in queue
+                println!("[MATCHMAKING] auto_match: returning 0 (waiting in queue)");
                 return 0;
             }
         }
@@ -433,14 +521,25 @@ pub mod matchmaking {
         ) {
             let mut world = self.world_default();
             
+            println!("[MATCHMAKING] _create_tutorial_game: player={:?}, bot={:?}", player_address, bot_address);
+            
             // Validate bot can also create game
             let mut bot_game: Game = world.read_model(bot_address);
+            println!("[MATCHMAKING] _create_tutorial_game: bot_game - status={:?}, mode={:?}", 
+                bot_game.status, bot_game.game_mode);
+                
             if !AssertsTrait::assert_ready_to_create_game(@bot_game, world) {
+                println!("[MATCHMAKING] _create_tutorial_game: FAILED - bot not ready to create game");
                 return;
             }
             
+            println!("[MATCHMAKING] _create_tutorial_game: bot validation passed");
+            
             // Validate player can access tutorial mode
             let mut player_game: Game = world.read_model(player_address);
+            println!("[MATCHMAKING] _create_tutorial_game: player_game - status={:?}, mode={:?}", 
+                player_game.status, player_game.game_mode);
+                
             if !AssertsTrait::assert_game_mode_access(
                 @player_game, 
                 array![GameMode::Tutorial].span(), 
@@ -448,38 +547,47 @@ pub mod matchmaking {
                 'create_tutorial', 
                 world
             ) {
+                println!("[MATCHMAKING] _create_tutorial_game: FAILED - player has no access to tutorial mode");
                 return;
             }
             
+            println!("[MATCHMAKING] _create_tutorial_game: player tutorial access validated");
+            
             // Create tutorial board
+            println!("[MATCHMAKING] _create_tutorial_game: creating tutorial board");
             let board = BoardTrait::create_tutorial_board(
                 world,
                 player_address,
                 bot_address,
             );
+            println!("[MATCHMAKING] _create_tutorial_game: tutorial board created with id={}", board.id);
             
             // Update player game state (use the one we already read and validated)
             player_game.status = GameStatus::InProgress;
             player_game.board_id = Option::Some(board.id);
             player_game.game_mode = GameMode::Tutorial;
             world.write_model(@player_game);
+            println!("[MATCHMAKING] _create_tutorial_game: player game updated to InProgress");
             
             // Update bot game state
             bot_game.status = GameStatus::InProgress;
             bot_game.board_id = Option::Some(board.id);
             bot_game.game_mode = GameMode::Tutorial;
             world.write_model(@bot_game);
+            println!("[MATCHMAKING] _create_tutorial_game: bot game updated to InProgress");
             
             world.emit_event(@GameCreated { 
                 host_player: player_address,
                 status: GameStatus::Created,
             });
+            println!("[MATCHMAKING] _create_tutorial_game: GameCreated event emitted");
 
             world.emit_event(@GameStarted {
                 host_player: player_address,
                 guest_player: bot_address,
                 board_id: board.id,
             });
+            println!("[MATCHMAKING] _create_tutorial_game: GameStarted event emitted, function completed");
         }
         
         fn _create_board_for_mode(
@@ -490,14 +598,26 @@ pub mod matchmaking {
             config: GameConfig,
             world: dojo::world::WorldStorage,
         ) -> evolute_duel::models::game::Board {
+            println!("[MATCHMAKING] _create_board_for_mode: mode={:?}, host={:?}, guest={:?}", 
+                game_mode, host_player, guest_player);
+                
             match game_mode {
                 GameMode::Tutorial => {
-                    BoardTrait::create_tutorial_board(world, host_player, guest_player)
+                    println!("[MATCHMAKING] _create_board_for_mode: creating tutorial board");
+                    let board = BoardTrait::create_tutorial_board(world, host_player, guest_player);
+                    println!("[MATCHMAKING] _create_board_for_mode: tutorial board created with id={}", board.id);
+                    board
                 },
                 GameMode::Ranked | GameMode::Casual | GameMode::Tournament => {
-                    BoardTrait::create_board(world, host_player, guest_player, self.board_id_generator)
+                    println!("[MATCHMAKING] _create_board_for_mode: creating regular board for mode={:?}", game_mode);
+                    let board = BoardTrait::create_board(world, host_player, guest_player, self.board_id_generator);
+                    println!("[MATCHMAKING] _create_board_for_mode: regular board created with id={}", board.id);
+                    board
                 },
-                _ => panic!("Unsupported game mode")
+                _ => {
+                    println!("[MATCHMAKING] _create_board_for_mode: PANIC - unsupported game mode={:?}", game_mode);
+                    panic!("Unsupported game mode")
+                }
             }
         }
     }
