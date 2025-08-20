@@ -101,6 +101,19 @@ pub mod matchmaking {
             }
             
             println!("[MATCHMAKING] create_game: player validation passed");
+
+            if !AssertsTrait::assert_game_mode_access(
+                @game, 
+                array![GameMode::None].span(), 
+                caller, 
+                'create_game', 
+                world
+            ) {
+                println!("[MATCHMAKING] create_game: FAILED - no access to game mode");
+                return;
+            }
+
+            println!("[MATCHMAKING] create_game: game mode access granted");
             
             match mode {
                 GameMode::Tutorial => {
@@ -113,19 +126,6 @@ pub mod matchmaking {
                 GameMode::Ranked | GameMode::Casual => {
                     println!("[MATCHMAKING] create_game: entering Ranked/Casual mode");
                     // Validate access to create regular games
-                    if !AssertsTrait::assert_game_mode_access(
-                        @game, 
-                        array![GameMode::Ranked, GameMode::Casual].span(), 
-                        caller, 
-                        'create_game', 
-                        world
-                    ) {
-                        println!("[MATCHMAKING] create_game: FAILED - no access to game mode");
-                        return;
-                    }
-                    
-                    println!("[MATCHMAKING] create_game: game mode access granted");
-                    
                     // Regular games - create and wait for opponent
                     game.status = GameStatus::Created;
                     game.board_id = Option::None;
