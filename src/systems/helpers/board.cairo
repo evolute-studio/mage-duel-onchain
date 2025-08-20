@@ -6,8 +6,8 @@ use origami_random::{
 };
 
 use evolute_duel::{
-    models::{scoring::{UnionNode}, game::{Board, Rules, AvailableTiles}},
-    types::packing::{GameState, TEdge, Tile, PlayerSide},
+    models::{scoring::{UnionNode}, game::{Board, GameConfig, AvailableTiles}},
+    types::packing::{GameState, TEdge, Tile, PlayerSide, GameMode},
     systems::helpers::{
     },
     events::{PlayerNotInGame},
@@ -24,6 +24,7 @@ pub impl BoardImpl of BoardTrait {
         mut world: WorldStorage,
         player1: ContractAddress,
         player2: ContractAddress,
+        game_mode: GameMode,
         mut board_id_generator: core::starknet::storage::StorageBase::<
             core::starknet::storage::Mutable<core::felt252>,
         >,
@@ -31,8 +32,9 @@ pub impl BoardImpl of BoardTrait {
         let board_id = board_id_generator.read();
         board_id_generator.write(board_id + 1);
 
-        let rules: Rules = world.read_model(0);
-        let mut deck_rules_flat = Self::flatten_deck_rules(rules.deck);
+        let config: GameConfig = world.read_model(game_mode);
+        assert!(config.deck.len() != 0, "[BoardTrait] Deck config is empty");
+        let mut deck_rules_flat = Self::flatten_deck_rules(config.deck);
 
         let last_move_id = Option::None;
         let game_state = GameState::Creating;
@@ -41,8 +43,8 @@ pub impl BoardImpl of BoardTrait {
             id: board_id,
             available_tiles_in_deck: deck_rules_flat,
             top_tile: Option::None,
-            player1: (player1, PlayerSide::Blue, rules.joker_number),
-            player2: (player2, PlayerSide::Red, rules.joker_number),
+            player1: (player1, PlayerSide::Blue, config.initial_jokers),
+            player2: (player2, PlayerSide::Red, config.initial_jokers),
             blue_score: (0, 0),
             red_score: (0, 0),
             last_move_id,
@@ -54,10 +56,10 @@ pub impl BoardImpl of BoardTrait {
 
         world.write_model(@board);
 
-        // Initialize edges
-        let (cities_on_edges, roads_on_edges) = rules.edges;
+        // Initialize edges using config.board_size
+        let (cities_on_edges, roads_on_edges) = config.edges;
         Self::generate_initial_board_state(
-            cities_on_edges, roads_on_edges, board_id, world
+            cities_on_edges, roads_on_edges, board_id, config.board_size, world
         );
 
         // Create player available tiles.
@@ -101,16 +103,19 @@ pub impl BoardImpl of BoardTrait {
     }
 
     fn generate_initial_board_state(
-        cities_on_edges: u8, roads_on_edges: u8, board_id: felt252, mut world: WorldStorage,
+        cities_on_edges: u8, roads_on_edges: u8, board_id: felt252, board_size: u8, mut world: WorldStorage,
     ){
+        let board_size_i32: i32 = board_size.into();
+        let max_coord = (board_size - 1).into();
+        
         let bases = array![
             0,
-            9 * 10 * 4 + 3,
-            (9 * 10 + 9) * 4 + 2,
-            9 * 4 + 1,
+            max_coord * board_size_i32 * 4 + 3,
+            (max_coord * board_size_i32 + max_coord) * 4 + 2,
+            max_coord * 4 + 1,
         ].span();
 
-        let steps: Span<i32> = array![10 * 4, 4, -10 * 4, -4].span();
+        let steps: Span<i32> = array![board_size_i32 * 4, 4, -board_size_i32 * 4, -4].span();
 
         for side in 0..4_u8 {
             let mut deck = DeckTrait::new(
@@ -177,11 +182,15 @@ pub impl BoardImpl of BoardTrait {
         mut world: WorldStorage,
         player_address: ContractAddress,
         bot_address: ContractAddress,
+        mut board_id_generator: core::starknet::storage::StorageBase::<
+            core::starknet::storage::Mutable<core::felt252>,
+        >,
     ) -> Board {
-        let board_id = player_address.into();
+        let board_id = board_id_generator.read();
+        board_id_generator.write(board_id + 1);
 
-        let rules: Rules = world.read_model(0);
-        let mut deck_rules_flat = Self::tutorial_deck(rules.deck);
+        let config: GameConfig = world.read_model(GameMode::Tutorial);
+        let mut deck_rules_flat = Self::tutorial_deck(config.deck);
 
         let last_move_id = Option::None;
         let game_state = GameState::Move;
@@ -190,8 +199,8 @@ pub impl BoardImpl of BoardTrait {
             id: board_id,
             available_tiles_in_deck: deck_rules_flat,
             top_tile: Option::Some(0),
-            player1: (player_address, PlayerSide::Blue, 3),
-            player2: (bot_address, PlayerSide::Red, 3),
+            player1: (player_address, PlayerSide::Blue, config.initial_jokers),
+            player2: (bot_address, PlayerSide::Red, config.initial_jokers),
             blue_score: (0, 0),
             red_score: (0, 0),
             last_move_id,

@@ -153,17 +153,17 @@ pub impl GameCallerImpl of GameCallerTrait {
         }
     }
 
-    fn create_game(ref self: GameCaller) {
-        let host_player_address = self.host_player_data.address;
-        testing::set_contract_address(host_player_address);
-        self.game_system.create_game();
-    }
+    // fn create_game(ref self: GameCaller) {
+    //     let host_player_address = self.host_player_data.address;
+    //     testing::set_contract_address(host_player_address);
+    //     self.game_system.create_game();
+    // }
 
 
-    fn join_game(ref self: GameCaller) {
-        testing::set_contract_address(self.guest_player_data.address);
-        self.game_system.join_game(self.host_player_data.address);
-    }
+    // fn join_game(ref self: GameCaller) {
+    //     testing::set_contract_address(self.guest_player_data.address);
+    //     self.game_system.join_game(self.host_player_data.address);
+    // }
 
     fn commit_tiles(ref self: GameCaller) {
         // Generate a random permutation of tiles and nonces

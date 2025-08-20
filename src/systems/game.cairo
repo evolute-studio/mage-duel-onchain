@@ -3,14 +3,14 @@ use starknet::ContractAddress;
 /// Interface defining core game actions and player interactions.
 #[starknet::interface]
 pub trait IGame<T> {
-    /// Creates a new game session.
-    fn create_game(ref self: T);
+    // /// Creates a new game session.
+    // fn create_game(ref self: T);
 
-    /// Cancels an ongoing or pending game session.
-    fn cancel_game(ref self: T);
+    // /// Cancels an ongoing or pending game session.
+    // fn cancel_game(ref self: T);
 
-    /// Allows a player to join an existing game hosted by another player.
-    fn join_game(ref self: T, host_player: ContractAddress);
+    // /// Allows a player to join an existing game hosted by another player.
+    // fn join_game(ref self: T, host_player: ContractAddress);
 
     /// Commits tiles to the game state.
     /// - `commitments`: A span of tile commitments to be added to the game state.
@@ -105,41 +105,41 @@ pub mod game {
 
     fn dojo_init(self: @ContractState) {
         let mut world = self.world_default();
-        let id = 0;
-        let deck: Span<u8> = array![
-            2, // CCCC
-            0, // FFFF
-            0, // RRRR - not in the deck
-            4, // CCCF
-            3, // CCCR
-            6, // CCRR
-            4, // CFFF
-            0, // FFFR - not in the deck
-            0, // CRRR - not in the deck
-            4, // FRRR
-            7, // CCFF 
-            6, // CFCF
-            0, // CRCR - not in the deck
-            9, // FFRR
-            8, // FRFR
-            0, // CCFR - not in the deck
-            0, // CCRF - not in the deck
-            0, // CFCR - not in the deck
-            0, // CFFR - not in the deck
-            0, // CFRF - not in the deck
-            0, // CRFF - not in the deck
-            3, // CRRF
-            4, // CRFR
-            4 // CFRR
-        ]
-            .span();
-        let edges = (1, 1);
-        let joker_number = 3;
-        let joker_price = 5;
+        // let id = 0;
+        // let deck: Span<u8> = array![
+        //     2, // CCCC
+        //     0, // FFFF
+        //     0, // RRRR - not in the deck
+        //     4, // CCCF
+        //     3, // CCCR
+        //     6, // CCRR
+        //     4, // CFFF
+        //     0, // FFFR - not in the deck
+        //     0, // CRRR - not in the deck
+        //     4, // FRRR
+        //     7, // CCFF 
+        //     6, // CFCF
+        //     0, // CRCR - not in the deck
+        //     9, // FFRR
+        //     8, // FRFR
+        //     0, // CCFR - not in the deck
+        //     0, // CCRF - not in the deck
+        //     0, // CFCR - not in the deck
+        //     0, // CFFR - not in the deck
+        //     0, // CFRF - not in the deck
+        //     0, // CRFF - not in the deck
+        //     3, // CRRF
+        //     4, // CRFR
+        //     4 // CFRR
+        // ]
+        //     .span();
+        // let edges = (1, 1);
+        // let joker_number = 3;
+        // let joker_price = 5;
 
-        let rules = Rules { id, deck, edges, joker_number, joker_price };
+        // let rules = Rules { id, deck, edges, joker_number, joker_price };
 
-        world.write_model(@rules);
+        // world.write_model(@rules);
 
         let mut trophy_id: u8 = TROPHY_COUNT;
         while trophy_id > 0 {
@@ -168,121 +168,121 @@ pub mod game {
 
     #[abi(embed_v0)]
     impl GameImpl of IGame<ContractState> {
-        fn create_game(ref self: ContractState) {
-            let mut world = self.world_default();
+        // fn create_game(ref self: ContractState) {
+        //     let mut world = self.world_default();
 
-            let host_player = get_caller_address();
+        //     let host_player = get_caller_address();
 
-            let mut game: Game = world.read_model(host_player);
+        //     let mut game: Game = world.read_model(host_player);
 
-            if !AssertsTrait::assert_ready_to_create_game(@game, world) {
-                return;
-            }
+        //     if !AssertsTrait::assert_ready_to_create_game(@game, world) {
+        //         return;
+        //     }
 
-            game.status = GameStatus::Created;
-            game.board_id = Option::None;
-            game.game_mode = GameMode::Casual; // Default to Casual mode for direct game creation
+        //     game.status = GameStatus::Created;
+        //     game.board_id = Option::None;
+        //     game.game_mode = GameMode::Casual; // Default to Casual mode for direct game creation
 
-            world.write_model(@game);
+        //     world.write_model(@game);
 
-            world.emit_event(@GameCreated { host_player, status: game.status });
-        }
+        //     world.emit_event(@GameCreated { host_player, status: game.status });
+        // }
 
-        fn cancel_game(ref self: ContractState) {
-            let mut world = self.world_default();
+        // fn cancel_game(ref self: ContractState) {
+        //     let mut world = self.world_default();
 
-            let host_player = get_caller_address();
+        //     let host_player = get_caller_address();
 
-            let mut game: Game = world.read_model(host_player);
+        //     let mut game: Game = world.read_model(host_player);
             
-            // Validate GameMode access for cancel_game (only Ranked/Casual games)
-            if !AssertsTrait::assert_regular_game_access(@game, host_player, 'cancel_game', world) {
-                return;
-            }
+        //     // Validate GameMode access for cancel_game (only Ranked/Casual games)
+        //     if !AssertsTrait::assert_regular_game_access(@game, host_player, 'cancel_game', world) {
+        //         return;
+        //     }
             
-            let status = game.status;
+        //     let status = game.status;
 
-            if status == GameStatus::InProgress && game.board_id.is_some() {
-                let mut board: Board = world.read_model(game.board_id.unwrap());
-                let board_id = board.id.clone();
-                let (player1_address, _, _) = board.player1;
-                let (player2_address, _, _) = board.player2;
+        //     if status == GameStatus::InProgress && game.board_id.is_some() {
+        //         let mut board: Board = world.read_model(game.board_id.unwrap());
+        //         let board_id = board.id.clone();
+        //         let (player1_address, _, _) = board.player1;
+        //         let (player2_address, _, _) = board.player2;
 
-                let another_player = if player1_address == host_player {
-                    player2_address
-                } else {
-                    player1_address
-                };
+        //         let another_player = if player1_address == host_player {
+        //             player2_address
+        //         } else {
+        //             player1_address
+        //         };
 
-                let mut game: Game = world.read_model(another_player);
-                let new_status = GameStatus::Canceled;
-                game.status = new_status;
-                game.board_id = Option::None;
+        //         let mut game: Game = world.read_model(another_player);
+        //         let new_status = GameStatus::Canceled;
+        //         game.status = new_status;
+        //         game.board_id = Option::None;
 
-                world.write_model(@game);
-                world.emit_event(@GameCanceled { host_player: another_player, status: new_status });
+        //         world.write_model(@game);
+        //         world.emit_event(@GameCanceled { host_player: another_player, status: new_status });
 
-                world
-                    .write_member(
-                        Model::<Board>::ptr_from_keys(board_id),
-                        selector!("game_state"),
-                        GameState::Finished,
-                    );
-            }
+        //         world
+        //             .write_member(
+        //                 Model::<Board>::ptr_from_keys(board_id),
+        //                 selector!("game_state"),
+        //                 GameState::Finished,
+        //             );
+        //     }
 
-            let new_status = GameStatus::Canceled;
-            game.status = new_status;
-            game.board_id = Option::None;
+        //     let new_status = GameStatus::Canceled;
+        //     game.status = new_status;
+        //     game.board_id = Option::None;
 
-            world.write_model(@game);
-            world.emit_event(@GameCanceled { host_player, status: new_status });
-        }
+        //     world.write_model(@game);
+        //     world.emit_event(@GameCanceled { host_player, status: new_status });
+        // }
 
-        fn join_game(ref self: ContractState, host_player: ContractAddress) {
-            let mut world = self.world_default();
-            let guest_player = get_caller_address();
+        // fn join_game(ref self: ContractState, host_player: ContractAddress) {
+        //     let mut world = self.world_default();
+        //     let guest_player = get_caller_address();
 
-            let mut host_game: Game = world.read_model(host_player);
-            let mut guest_game: Game = world.read_model(guest_player);
+        //     let mut host_game: Game = world.read_model(host_player);
+        //     let mut guest_game: Game = world.read_model(guest_player);
 
-            if !AssertsTrait::assert_ready_to_join_game(@guest_game, @host_game, world) {
-                return;
-            }
+        //     if !AssertsTrait::assert_ready_to_join_game(@guest_game, @host_game, world) {
+        //         return;
+        //     }
 
-            if !AssertsTrait::assert_regular_game_access(@host_game, host_player, 'join_game', world) {
-                return;
-            }
+        //     if !AssertsTrait::assert_regular_game_access(@host_game, host_player, 'join_game', world) {
+        //         return;
+        //     }
 
-            let board_id: felt252 = {
-                let board = BoardTrait::create_board(
-                    world, host_player, guest_player, self.board_id_generator,
-                );
-                board.id
-            };
+        //     let board_id: felt252 = {
+        //         let board = BoardTrait::create_board(
+        //             world, host_player, guest_player, self.board_id_generator,
+        //         );
+        //         board.id
+        //     };
 
-            println!("Board created with ID: {:?}", board_id);
+        //     println!("Board created with ID: {:?}", board_id);
 
-            host_game.board_id = Option::Some(board_id);
-            host_game.status = GameStatus::InProgress;
-            host_game.status = GameStatus::InProgress;
-            guest_game.board_id = Option::Some(board_id);
-            guest_game.status = GameStatus::InProgress;
-            guest_game.status = GameStatus::InProgress;
-            guest_game.game_mode = host_game.game_mode; // Match game mode
+        //     host_game.board_id = Option::Some(board_id);
+        //     host_game.status = GameStatus::InProgress;
+        //     host_game.status = GameStatus::InProgress;
+        //     guest_game.board_id = Option::Some(board_id);
+        //     guest_game.status = GameStatus::InProgress;
+        //     guest_game.status = GameStatus::InProgress;
+        //     guest_game.game_mode = host_game.game_mode; // Match game mode
 
-            world.write_model(@host_game);
-            world.write_model(@guest_game);
-            world.emit_event(@GameStarted { host_player, guest_player, board_id });
+        //     world.write_model(@host_game);
+        //     world.write_model(@guest_game);
+        //     world.emit_event(@GameStarted { host_player, guest_player, board_id });
 
-            let mut board: Board = world.read_model(board_id);
+        //     let mut board: Board = world.read_model(board_id);
 
-            PhaseManagementTrait::transition_to_creating_phase(
-                board_id,
-                board.top_tile,
-                board.commited_tile,
-                world,
-            );
-        }
+        //     PhaseManagementTrait::transition_to_creating_phase(
+        //         board_id,
+        //         board.top_tile,
+        //         board.commited_tile,
+        //         world,
+        //     );
+        // }
 
         fn commit_tiles(ref self: ContractState, commitments: Span<u32>) {
             let mut world = self.world_default();

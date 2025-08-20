@@ -15,8 +15,6 @@ pub trait IMatchmaking<T> {
     /// Cancel a created game that hasn't been joined yet.
     fn cancel_game(ref self: T);
     
-    /// Initialize default game configurations for all modes.
-    fn initialize_configs(ref self: T);
     
     /// Update configuration for a specific game mode (admin only).
     /// - `game_mode`: The game mode to update.
@@ -25,6 +23,9 @@ pub trait IMatchmaking<T> {
     /// - `initial_jokers`: Number of joker tiles per player.
     /// - `time_per_phase`: Time limit per phase in seconds.
     /// - `auto_match`: Whether to enable automatic matchmaking.
+    /// - `deck`: Defines the number of each tile type in the deck.
+    /// - `edges`: Initial setup of city and road elements on the board edges.
+    /// - `joker_price`: Cost of using a joker tile.
     fn update_config(
         ref self: T, 
         game_mode: u8, 
@@ -32,7 +33,10 @@ pub trait IMatchmaking<T> {
         deck_type: u8, 
         initial_jokers: u8, 
         time_per_phase: u64, 
-        auto_match: bool
+        auto_match: bool,
+        deck: Span<u8>,
+        edges: (u8, u8),
+        joker_price: u16
     );
     
     /// Automatic matchmaking - join queue and get matched automatically.
@@ -53,11 +57,12 @@ pub mod matchmaking {
     use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use dojo::{
         event::EventStorage,
-        model::{ModelStorage},
+        model::{ModelStorage, Model},
     };
     use evolute_duel::{
         libs::{
             asserts::AssertsTrait,
+            phase_management::{PhaseManagementTrait},
         },
         models::{
             game::{Game, GameConfig, MatchmakingState, PlayerMatchmaking},
@@ -76,6 +81,102 @@ pub mod matchmaking {
         board_id_generator: felt252,
     }
     
+    
+    fn dojo_init(ref self: ContractState) {
+        self.board_id_generator.write(1);
+
+        let mut world = self.world_default();
+        
+        // Standard deck configuration
+        let deck: Span<u8> = array![
+            2, // CCCC
+            0, // FFFF
+            0, // RRRR - not in the deck
+            4, // CCCF
+            3, // CCCR
+            6, // CCRR
+            4, // CFFF
+            0, // FFFR - not in the deck
+            0, // CRRR - not in the deck
+            4, // FRRR
+            7, // CCFF 
+            6, // CFCF
+            0, // CRCR - not in the deck
+            9, // FFRR
+            8, // FRFR
+            0, // CCFR - not in the deck
+            0, // CCRF - not in the deck
+            0, // CFCR - not in the deck
+            0, // CFFR - not in the deck
+            0, // CFRF - not in the deck
+            0, // CRFF - not in the deck
+            3, // CRRF
+            4, // CRFR
+            4 // CFRR
+        ].span();
+        
+        let edges = (1_u8, 1_u8);
+        let joker_price = 5_u16;
+        
+        // Initialize default game configurations for all modes
+        // Tutorial configuration
+        let tutorial_config = GameConfig {
+            game_mode: GameMode::Tutorial,
+            board_size: 7,
+            deck_type: 0, // Tutorial deck
+            initial_jokers: 3,
+            time_per_phase: 0, // No time limit
+            auto_match: false,
+            deck,
+            edges,
+            joker_price,
+        };
+        world.write_model(@tutorial_config);
+        
+        // Ranked configuration
+        let ranked_config = GameConfig {
+            game_mode: GameMode::Ranked,
+            board_size: 10,
+            deck_type: 1, // Full randomized deck
+            initial_jokers: 2,
+            time_per_phase: 60, // 1 minute per phase
+            auto_match: true,
+            deck,
+            edges,
+            joker_price,
+        };
+        world.write_model(@ranked_config);
+        
+        // Casual configuration
+        let casual_config = GameConfig {
+            game_mode: GameMode::Casual,
+            board_size: 10,
+            deck_type: 1, // Full randomized deck
+            initial_jokers: 2,
+            time_per_phase: 0, // No time limit
+            auto_match: false,
+            deck,
+            edges,
+            joker_price,
+        };
+        world.write_model(@casual_config);
+        
+        // Tournament configuration
+        let tournament_config = GameConfig {
+            game_mode: GameMode::Tournament,
+            board_size: 10,
+            deck_type: 1, // Full randomized deck
+            initial_jokers: 2,
+            time_per_phase: 60, // 1 minute per phase
+            auto_match: true, // Enable automatic matchmaking for tournaments
+            deck,
+            edges,
+            joker_price,
+        };
+        world.write_model(@tournament_config);
+    }
+   
+
     #[abi(embed_v0)]
     impl MatchmakingImpl of IMatchmaking<ContractState> {
         fn create_game(ref self: ContractState, game_mode: u8, opponent: Option<ContractAddress>) {
@@ -305,53 +406,6 @@ pub mod matchmaking {
             println!("[MATCHMAKING] cancel_game: caller game canceled, function completed");
         }
         
-        fn initialize_configs(ref self: ContractState) {
-            let mut world = self.world_default();
-            
-            // Tutorial configuration
-            let tutorial_config = GameConfig {
-                game_mode: GameMode::Tutorial,
-                board_size: 7,
-                deck_type: 0, // Tutorial deck
-                initial_jokers: 3,
-                time_per_phase: 0, // No time limit
-                auto_match: false,
-            };
-            world.write_model(@tutorial_config);
-            
-            // Ranked configuration
-            let ranked_config = GameConfig {
-                game_mode: GameMode::Ranked,
-                board_size: 10,
-                deck_type: 1, // Full randomized deck
-                initial_jokers: 2,
-                time_per_phase: 60, // 1 minute per phase
-                auto_match: true,
-            };
-            world.write_model(@ranked_config);
-            
-            // Casual configuration
-            let casual_config = GameConfig {
-                game_mode: GameMode::Casual,
-                board_size: 10,
-                deck_type: 1, // Full randomized deck
-                initial_jokers: 2,
-                time_per_phase: 0, // No time limit
-                auto_match: false,
-            };
-            world.write_model(@casual_config);
-            
-            // Tournament configuration
-            let tournament_config = GameConfig {
-                game_mode: GameMode::Tournament,
-                board_size: 10,
-                deck_type: 1, // Full randomized deck
-                initial_jokers: 2,
-                time_per_phase: 60, // 1 minute per phase
-                auto_match: true, // Enable automatic matchmaking for tournaments
-            };
-            world.write_model(@tournament_config);
-        }
         
         fn update_config(
             ref self: ContractState, 
@@ -360,7 +414,10 @@ pub mod matchmaking {
             deck_type: u8, 
             initial_jokers: u8, 
             time_per_phase: u64, 
-            auto_match: bool
+            auto_match: bool,
+            deck: Span<u8>,
+            edges: (u8, u8),
+            joker_price: u16
         ) {
             let mut world = self.world_default();
             let mode: GameMode = game_mode.into();
@@ -375,6 +432,9 @@ pub mod matchmaking {
                 initial_jokers,
                 time_per_phase,
                 auto_match,
+                deck,
+                edges,
+                joker_price,
             };
             world.write_model(@config);
         }
@@ -514,7 +574,7 @@ pub mod matchmaking {
         }
         
         fn _create_tutorial_game(
-            self: @ContractState,
+            ref self: ContractState,
             player_address: ContractAddress,
             bot_address: ContractAddress,
             config: GameConfig,
@@ -539,17 +599,6 @@ pub mod matchmaking {
             let mut player_game: Game = world.read_model(player_address);
             println!("[MATCHMAKING] _create_tutorial_game: player_game - status={:?}, mode={:?}", 
                 player_game.status, player_game.game_mode);
-                
-            if !AssertsTrait::assert_game_mode_access(
-                @player_game, 
-                array![GameMode::Tutorial].span(), 
-                player_address, 
-                'create_tutorial', 
-                world
-            ) {
-                println!("[MATCHMAKING] _create_tutorial_game: FAILED - player has no access to tutorial mode");
-                return;
-            }
             
             println!("[MATCHMAKING] _create_tutorial_game: player tutorial access validated");
             
@@ -559,6 +608,7 @@ pub mod matchmaking {
                 world,
                 player_address,
                 bot_address,
+                self.board_id_generator,
             );
             println!("[MATCHMAKING] _create_tutorial_game: tutorial board created with id={}", board.id);
             
@@ -587,7 +637,16 @@ pub mod matchmaking {
                 guest_player: bot_address,
                 board_id: board.id,
             });
-            println!("[MATCHMAKING] _create_tutorial_game: GameStarted event emitted, function completed");
+            println!("[MATCHMAKING] _create_tutorial_game: GameStarted event emitted");
+
+            // Transition to move phase for tutorial game
+            PhaseManagementTrait::transition_to_move_phase(
+                board.id,
+                board.top_tile,
+                board.commited_tile,
+                world,
+            );
+            println!("[MATCHMAKING] _create_tutorial_game: Transitioned to move phase, function completed");
         }
         
         fn _create_board_for_mode(
@@ -604,13 +663,13 @@ pub mod matchmaking {
             match game_mode {
                 GameMode::Tutorial => {
                     println!("[MATCHMAKING] _create_board_for_mode: creating tutorial board");
-                    let board = BoardTrait::create_tutorial_board(world, host_player, guest_player);
+                    let board = BoardTrait::create_tutorial_board(world, host_player, guest_player, self.board_id_generator);
                     println!("[MATCHMAKING] _create_board_for_mode: tutorial board created with id={}", board.id);
                     board
                 },
                 GameMode::Ranked | GameMode::Casual | GameMode::Tournament => {
                     println!("[MATCHMAKING] _create_board_for_mode: creating regular board for mode={:?}", game_mode);
-                    let board = BoardTrait::create_board(world, host_player, guest_player, self.board_id_generator);
+                    let board = BoardTrait::create_board(world, host_player, guest_player, game_mode, self.board_id_generator);
                     println!("[MATCHMAKING] _create_board_for_mode: regular board created with id={}", board.id);
                     board
                 },

@@ -105,6 +105,7 @@ pub mod tests {
     }
     pub mod test_world;
     pub mod test_account_migration;
+    pub mod test_matchmaking;
     // pub mod test_evlt_token;
     // pub mod test_grnd_token;
     // pub mod test_evlt_topup;
