@@ -35,42 +35,42 @@ pub trait IGrndTokenProtected<TState> {
     fn burn(ref self: TState, from: ContractAddress, amount: u256);
     fn reward_player(ref self: TState, player_address: ContractAddress, amount: u128);
     fn set_minter(ref self: TState, minter_address: ContractAddress);
-    fn set_faucet_amount(ref self: TState, faucet_amount: u128);
-    fn faucet(ref self: TState, recipient: ContractAddress);
+    fn set_burner(ref self: TState, burner_address: ContractAddress);
 }
 
 #[dojo::contract]
 pub mod grnd_token {
     use starknet::{ContractAddress};
     use dojo::world::{WorldStorage, IWorldDispatcherTrait};
-    use dojo::model::{ModelStorage};
     use core::num::traits::Zero;
 
     //-----------------------------------
     // ERC-20 Start
     //
     use openzeppelin_token::erc20::ERC20Component;
-    use evolute_duel::{
-        components::coin_component::{
-            CoinComponent,
-        },
-        models::config::CoinConfig,
-    };
+    use openzeppelin_access::accesscontrol::AccessControlComponent;
+    use openzeppelin_introspection::src5::SRC5Component;
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
-    component!(path: CoinComponent, storage: coin, event: CoinEvent);
+    component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
     #[abi(embed_v0)]
     impl ERC20MixinImpl = ERC20Component::ERC20MixinImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl AccessControlMixinImpl = AccessControlComponent::AccessControlMixinImpl<ContractState>;
+
     impl ERC20InternalImpl = ERC20Component::InternalImpl<ContractState>;
-    impl CoinComponentInternalImpl = CoinComponent::CoinComponentInternalImpl<ContractState>;
+    impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
         #[substorage(v0)]
         erc20: ERC20Component::Storage,
         #[substorage(v0)]
-        coin: CoinComponent::Storage,
+        accesscontrol: AccessControlComponent::Storage,
+        #[substorage(v0)]
+        src5: SRC5Component::Storage,
     }
 
     #[event]
@@ -79,11 +79,12 @@ pub mod grnd_token {
         #[flat]
         ERC20Event: ERC20Component::Event,
         #[flat]
-        CoinEvent: CoinComponent::Event,
+        AccessControlEvent: AccessControlComponent::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
         Minted: Minted,
         Burned: Burned,
         PlayerRewarded: PlayerRewarded,
-        FaucetUsed: FaucetUsed,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -109,13 +110,6 @@ pub mod grnd_token {
         amount: u128,
         source: ContractAddress,
     }
-
-    #[derive(Drop, starknet::Event)]
-    struct FaucetUsed {
-        #[key]
-        recipient: ContractAddress,
-        amount: u128,
-    }
     //
     // ERC-20 End
     //-----------------------------------
@@ -129,7 +123,6 @@ pub mod grnd_token {
         pub const INSUFFICIENT_BALANCE: felt252 = 'GRND: Insufficient balance';
         pub const ZERO_ADDRESS: felt252 = 'GRND: Zero address';
         pub const ZERO_AMOUNT: felt252 = 'GRND: Zero amount';
-        pub const FAUCET_DISABLED: felt252 = 'GRND: Faucet disabled';
         pub const TRANSFERS_DISABLED: felt252 = 'GRND: Transfers disabled';
     }
 
@@ -137,19 +130,37 @@ pub mod grnd_token {
     fn TOKEN_NAME() -> ByteArray {("Grind Token")}
     fn TOKEN_SYMBOL() -> ByteArray {("GRND")}
     fn TOKEN_DECIMALS() -> u8 { 18 }
-    const DEFAULT_FAUCET_AMOUNT: u128 = 100000000000000000000; // 100 GRND tokens (18 decimals)
     //*******************************************
 
-    fn dojo_init(ref self: ContractState, game_system_address: ContractAddress) {
+    // Access Control Roles
+    use openzeppelin_access::accesscontrol::DEFAULT_ADMIN_ROLE;
+    pub const MINTER_ROLE: felt252 = 'MINTER_ROLE';
+    pub const BURNER_ROLE: felt252 = 'BURNER_ROLE';
+
+    fn dojo_init(ref self: ContractState, admin_address: ContractAddress) {
         let mut world = self.world_default();
+        
+        // Initialize ERC20
         self.erc20.initializer(
             TOKEN_NAME(),
             TOKEN_SYMBOL(),
         );
-        self.coin.initialize(
-            game_system_address,  // Game systems can mint
-            faucet_amount: DEFAULT_FAUCET_AMOUNT,  // Allow faucet for grindable token
-        );
+        
+        // Initialize access control with admin
+        self.accesscontrol.initializer();
+        self.accesscontrol._grant_role(DEFAULT_ADMIN_ROLE, admin_address);
+        
+        // Get game system address from DNS and grant minter role
+        let game_address = world.find_contract_address(@"game");
+        if !game_address.is_zero() {
+            self.accesscontrol._grant_role(MINTER_ROLE, game_address);
+        }
+        
+        // Get rewards_manager address from DNS and grant minter role
+        let rewards_manager_address = world.find_contract_address(@"rewards_manager");
+        if !rewards_manager_address.is_zero() {
+            self.accesscontrol._grant_role(MINTER_ROLE, rewards_manager_address);
+        }
     }
     
     #[generate_trait]
@@ -169,8 +180,9 @@ pub mod grnd_token {
             assert(!recipient.is_zero(), Errors::ZERO_ADDRESS);
             assert(amount > 0, Errors::ZERO_AMOUNT);
             
-            // Validate caller is authorized minter (game systems or admin)
-            let minter_address: ContractAddress = self.coin.assert_caller_is_minter();
+            // Validate caller has MINTER_ROLE
+            self.accesscontrol.assert_only_role(MINTER_ROLE);
+            let minter_address = starknet::get_caller_address();
             
             // Mint tokens
             self.erc20.mint(recipient, amount);
@@ -187,12 +199,12 @@ pub mod grnd_token {
             assert(!from.is_zero(), Errors::ZERO_ADDRESS);
             assert(amount > 0, Errors::ZERO_AMOUNT);
             
-            // Game systems can burn, or user burning their own tokens
+            // Only admin, burner role, or user burning their own tokens
             let caller = starknet::get_caller_address();
-            let mut world = self.world_default();
-            let coin_config: CoinConfig = world.read_model(starknet::get_contract_address());
-            let is_game_system = coin_config.minter_address == caller;
-            assert(is_game_system || caller == from, Errors::UNAUTHORIZED_BURN);
+            let is_admin = self.accesscontrol.has_role(DEFAULT_ADMIN_ROLE, caller);
+            let is_burner = self.accesscontrol.has_role(BURNER_ROLE, caller);
+            
+            assert(is_admin || is_burner || caller == from, Errors::UNAUTHORIZED_BURN);
             
             // Check balance
             let balance = self.erc20.balance_of(from);
@@ -213,8 +225,9 @@ pub mod grnd_token {
             assert(!player_address.is_zero(), Errors::ZERO_ADDRESS);
             assert(amount > 0, Errors::ZERO_AMOUNT);
             
-            // Validate caller is authorized minter
-            let minter_address: ContractAddress = self.coin.assert_caller_is_minter();
+            // Validate caller has MINTER_ROLE
+            self.accesscontrol.assert_only_role(MINTER_ROLE);
+            let minter_address = starknet::get_caller_address();
             
             // Mint tokens as reward
             self.erc20.mint(player_address, amount.into());
@@ -228,39 +241,19 @@ pub mod grnd_token {
         }
 
         fn set_minter(ref self: ContractState, minter_address: ContractAddress) {
-            // Only world admin can change minter
-            let mut world = self.world_default();
-            assert(world.caller_is_world_contract(), Errors::INVALID_CALLER);
+            // Only admin can change minter
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
             
-            // Update minter in coin config while preserving faucet amount
-            let coin_config = evolute_duel::models::config::CoinConfig {
-                coin_address: starknet::get_contract_address(),
-                minter_address,
-                faucet_amount: DEFAULT_FAUCET_AMOUNT,
-            };
-            world.write_model(@coin_config);
+            // Grant minter role to new address
+            self.accesscontrol._grant_role(MINTER_ROLE, minter_address);
         }
 
-        fn set_faucet_amount(ref self: ContractState, faucet_amount: u128) {
-            // Only admin can change faucet amount
-            let mut world = self.world_default();
-            assert(world.caller_is_world_contract(), Errors::INVALID_CALLER);
+        fn set_burner(ref self: ContractState, burner_address: ContractAddress) {
+            // Only admin can change burner
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
             
-            // Update faucet amount
-            self.coin.initialize(starknet::get_caller_address(), faucet_amount);
-        }
-
-        fn faucet(ref self: ContractState, recipient: ContractAddress) {
-            assert(!recipient.is_zero(), Errors::ZERO_ADDRESS);
-            
-            // Use faucet from coin component
-            self.coin.faucet(recipient);
-            
-            // Emit faucet event
-            self.emit(FaucetUsed {
-                recipient,
-                amount: DEFAULT_FAUCET_AMOUNT,
-            });
+            // Grant burner role to new address
+            self.accesscontrol._grant_role(BURNER_ROLE, burner_address);
         }
     }
 

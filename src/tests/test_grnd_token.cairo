@@ -16,6 +16,7 @@ mod tests {
         systems::tokens::grnd_token::{grnd_token, IGrndTokenDispatcher, IGrndTokenDispatcherTrait, IGrndTokenProtectedDispatcher, IGrndTokenProtectedDispatcherTrait},
     };
 
+    const ADMIN_ADDRESS: felt252 = 0x111;
     const GAME_SYSTEM_ADDRESS: felt252 = 0x123;
     const USER_ADDRESS: felt252 = 0x456;
     const UNAUTHORIZED_ADDRESS: felt252 = 0x789;
@@ -38,13 +39,17 @@ mod tests {
             ContractDefTrait::new(@"evolute_duel", @"grnd_token")
                 .with_writer_of([dojo::utils::bytearray_hash(@"evolute_duel")].span())
                 .with_init_calldata(
-                    [GAME_SYSTEM_ADDRESS].span()
+                    [ADMIN_ADDRESS].span()
                 ),
         ]
             .span()
     }
 
     fn deploy_grnd_token() -> (IGrndTokenDispatcher, IGrndTokenProtectedDispatcher) {
+        // Set admin as the caller during deployment so they become the admin
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
+        testing::set_contract_address(admin_address);
+        
         let mut world = spawn_test_world([namespace_def()].span());
         world.sync_perms_and_inits(contract_defs());
         
@@ -69,8 +74,13 @@ mod tests {
     #[test]
     fn test_mint_by_game_system() {
         let (grnd_token, grnd_token_protected) = deploy_grnd_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let game_system_address = contract_address_const::<GAME_SYSTEM_ADDRESS>();
         let user_address = contract_address_const::<USER_ADDRESS>();
+        
+        // Set caller as admin and grant minter role to game system
+        testing::set_contract_address(admin_address);
+        grnd_token_protected.set_minter(game_system_address);
         
         // Set caller as game system
         testing::set_contract_address(game_system_address);
@@ -99,8 +109,13 @@ mod tests {
     #[test]
     fn test_reward_player() {
         let (grnd_token, grnd_token_protected) = deploy_grnd_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let game_system_address = contract_address_const::<GAME_SYSTEM_ADDRESS>();
         let user_address = contract_address_const::<USER_ADDRESS>();
+        
+        // Set caller as admin and grant minter role to game system
+        testing::set_contract_address(admin_address);
+        grnd_token_protected.set_minter(game_system_address);
         
         // Set caller as game system
         testing::set_contract_address(game_system_address);
@@ -116,7 +131,12 @@ mod tests {
     #[should_panic]
     fn test_reward_player_zero_address() {
         let (_grnd_token, grnd_token_protected) = deploy_grnd_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let game_system_address = contract_address_const::<GAME_SYSTEM_ADDRESS>();
+        
+        // Set caller as admin and grant minter role to game system
+        testing::set_contract_address(admin_address);
+        grnd_token_protected.set_minter(game_system_address);
         
         testing::set_contract_address(game_system_address);
         
@@ -128,8 +148,13 @@ mod tests {
     #[should_panic]
     fn test_reward_player_zero_amount() {
         let (_grnd_token, grnd_token_protected) = deploy_grnd_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let game_system_address = contract_address_const::<GAME_SYSTEM_ADDRESS>();
         let user_address = contract_address_const::<USER_ADDRESS>();
+        
+        // Set caller as admin and grant minter role to game system
+        testing::set_contract_address(admin_address);
+        grnd_token_protected.set_minter(game_system_address);
         
         testing::set_contract_address(game_system_address);
         
@@ -138,10 +163,16 @@ mod tests {
     }
 
     #[test]
-    fn test_burn_by_game_system() {
+    fn test_burn_by_burner() {
         let (grnd_token, grnd_token_protected) = deploy_grnd_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let game_system_address = contract_address_const::<GAME_SYSTEM_ADDRESS>();
         let user_address = contract_address_const::<USER_ADDRESS>();
+        
+        // Set caller as admin and grant minter role to game system
+        testing::set_contract_address(admin_address);
+        grnd_token_protected.set_minter(game_system_address);
+        grnd_token_protected.set_burner(game_system_address);
         
         // Set caller as game system and mint tokens first
         testing::set_contract_address(game_system_address);
@@ -157,8 +188,13 @@ mod tests {
     #[test]
     fn test_burn_own_tokens() {
         let (grnd_token, grnd_token_protected) = deploy_grnd_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let game_system_address = contract_address_const::<GAME_SYSTEM_ADDRESS>();
         let user_address = contract_address_const::<USER_ADDRESS>();
+        
+        // Set caller as admin and grant minter role to game system
+        testing::set_contract_address(admin_address);
+        grnd_token_protected.set_minter(game_system_address);
         
         // Mint tokens first
         testing::set_contract_address(game_system_address);
@@ -171,36 +207,19 @@ mod tests {
         
         assert(grnd_token.balance_of(user_address) == MINT_AMOUNT - burn_amount, 'Wrong balance after self burn');
     }
-
-    #[test]
-    fn test_faucet() {
-        let (grnd_token, grnd_token_protected) = deploy_grnd_token();
-        let user_address = contract_address_const::<USER_ADDRESS>();
-        
-        // Use faucet
-        grnd_token_protected.faucet(user_address);
-        
-        // Default faucet amount should be 100 GRND (100 * 10^18)
-        let expected_faucet_amount = 100000000000000000000_u256;
-        assert(grnd_token.balance_of(user_address) == expected_faucet_amount, 'Wrong faucet amount');
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_faucet_zero_address() {
-        let (_grnd_token, grnd_token_protected) = deploy_grnd_token();
-        
-        // This should panic
-        grnd_token_protected.faucet(Zero::zero());
-    }
-
+    
     #[test]
     #[should_panic]
     fn test_transfer_disabled() {
         let (grnd_token, grnd_token_protected) = deploy_grnd_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let game_system_address = contract_address_const::<GAME_SYSTEM_ADDRESS>();
         let user1_address = contract_address_const::<USER_ADDRESS>();
         let user2_address = contract_address_const::<UNAUTHORIZED_ADDRESS>();
+        
+        // Set caller as admin and grant minter role to game system
+        testing::set_contract_address(admin_address);
+        grnd_token_protected.set_minter(game_system_address);
         
         // Mint tokens to user1
         testing::set_contract_address(game_system_address);
@@ -218,9 +237,14 @@ mod tests {
     #[test]
     fn test_approve_works_but_transfer_from_disabled() {
         let (grnd_token, grnd_token_protected) = deploy_grnd_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let game_system_address = contract_address_const::<GAME_SYSTEM_ADDRESS>();
         let owner_address = contract_address_const::<USER_ADDRESS>();
         let spender_address = contract_address_const::<UNAUTHORIZED_ADDRESS>();
+        
+        // Set caller as admin and grant minter role to game system
+        testing::set_contract_address(admin_address);
+        grnd_token_protected.set_minter(game_system_address);
         
         // Mint tokens to owner
         testing::set_contract_address(game_system_address);
@@ -239,9 +263,14 @@ mod tests {
     #[should_panic]
     fn test_transfer_from_disabled() {
         let (grnd_token, grnd_token_protected) = deploy_grnd_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let game_system_address = contract_address_const::<GAME_SYSTEM_ADDRESS>();
         let owner_address = contract_address_const::<USER_ADDRESS>();
         let spender_address = contract_address_const::<UNAUTHORIZED_ADDRESS>();
+        
+        // Set caller as admin and grant minter role to game system
+        testing::set_contract_address(admin_address);
+        grnd_token_protected.set_minter(game_system_address);
         
         // Mint tokens to owner
         testing::set_contract_address(game_system_address);
@@ -261,8 +290,13 @@ mod tests {
     #[test]
     fn test_multiple_rewards_accumulate() {
         let (grnd_token, grnd_token_protected) = deploy_grnd_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let game_system_address = contract_address_const::<GAME_SYSTEM_ADDRESS>();
         let user_address = contract_address_const::<USER_ADDRESS>();
+        
+        // Set caller as admin and grant minter role to game system
+        testing::set_contract_address(admin_address);
+        grnd_token_protected.set_minter(game_system_address);
         
         testing::set_contract_address(game_system_address);
         
@@ -290,9 +324,14 @@ mod tests {
     #[should_panic]
     fn test_camel_case_transfer_from_disabled() {
         let (grnd_token, grnd_token_protected) = deploy_grnd_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let game_system_address = contract_address_const::<GAME_SYSTEM_ADDRESS>();
         let owner_address = contract_address_const::<USER_ADDRESS>();
         let spender_address = contract_address_const::<UNAUTHORIZED_ADDRESS>();
+        
+        // Set caller as admin and grant minter role to game system
+        testing::set_contract_address(admin_address);
+        grnd_token_protected.set_minter(game_system_address);
         
         // Mint tokens to owner
         testing::set_contract_address(game_system_address);
@@ -305,25 +344,5 @@ mod tests {
         // Attempt transferFrom (camel case) - this should panic
         testing::set_contract_address(spender_address);
         grnd_token.transferFrom(owner_address, spender_address, MINT_AMOUNT / 2);
-    }
-
-    #[test] 
-    #[should_panic]
-    fn test_faucet_then_transfer_disabled() {
-        let (grnd_token, grnd_token_protected) = deploy_grnd_token();
-        let user1_address = contract_address_const::<USER_ADDRESS>();
-        let user2_address = contract_address_const::<UNAUTHORIZED_ADDRESS>();
-        
-        // User1 gets tokens from faucet
-        grnd_token_protected.faucet(user1_address);
-        let faucet_amount = 100000000000000000000_u256; // 100 GRND
-        
-        // Verify tokens were received from faucet
-        assert(grnd_token.balance_of(user1_address) == faucet_amount, 'Wrong faucet balance');
-        
-        // User1 attempts to transfer some tokens to user2 - this should panic
-        testing::set_contract_address(user1_address);
-        let transfer_amount = faucet_amount / 4; // 25 GRND
-        grnd_token.transfer(user2_address, transfer_amount);
     }
 }

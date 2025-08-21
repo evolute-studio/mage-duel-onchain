@@ -13,7 +13,11 @@ mod tests {
 
     use evolute_duel::{
         models::config::{CoinConfig, m_CoinConfig},
-        systems::tokens::evlt_token::{evlt_token, IEvltTokenDispatcher, IEvltTokenDispatcherTrait, IEvltTokenProtectedDispatcher, IEvltTokenProtectedDispatcherTrait},
+        systems::{
+            tokens::evlt_token::{evlt_token, IEvltTokenDispatcher, IEvltTokenDispatcherTrait, IEvltTokenProtectedDispatcher, IEvltTokenProtectedDispatcherTrait},
+            evlt_topup::{evlt_topup, ITopUpDispatcher, ITopUpDispatcherTrait, ITopUpAdminDispatcher, ITopUpAdminDispatcherTrait},
+        },
+
     };
 
     const ADMIN_ADDRESS: felt252 = 0x123;
@@ -28,6 +32,7 @@ mod tests {
             resources: [
                 TestResource::Model(m_CoinConfig::TEST_CLASS_HASH),
                 TestResource::Contract(evlt_token::TEST_CLASS_HASH),
+                TestResource::Contract(evlt_topup::TEST_CLASS_HASH),
             ].span()
         };
         ndef
@@ -35,10 +40,15 @@ mod tests {
 
     fn contract_defs() -> Span<ContractDef> {
         [
+            ContractDefTrait::new(@"evolute_duel", @"evlt_topup")
+                .with_writer_of([dojo::utils::bytearray_hash(@"evolute_duel")].span())
+                .with_init_calldata(
+                    [ADMIN_ADDRESS].span()
+                ),
             ContractDefTrait::new(@"evolute_duel", @"evlt_token")
                 .with_writer_of([dojo::utils::bytearray_hash(@"evolute_duel")].span())
                 .with_init_calldata(
-                    [ADMIN_ADDRESS, MINTER_ADDRESS].span()
+                    [ADMIN_ADDRESS].span()
                 ),
         ]
             .span()
@@ -69,8 +79,13 @@ mod tests {
     #[test]
     fn test_mint_by_minter() {
         let (evlt_token, evlt_token_protected) = deploy_evlt_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let minter_address = contract_address_const::<MINTER_ADDRESS>();
         let user_address = contract_address_const::<USER_ADDRESS>();
+        
+        // Set caller as admin and grant minter role
+        testing::set_contract_address(admin_address);
+        evlt_token_protected.set_minter(minter_address);
         
         // Set caller as minter
         testing::set_contract_address(minter_address);
@@ -128,6 +143,10 @@ mod tests {
         let minter_address = contract_address_const::<MINTER_ADDRESS>();
         let user_address = contract_address_const::<USER_ADDRESS>();
         
+        // Set caller as admin and grant minter role
+        testing::set_contract_address(admin_address);
+        evlt_token_protected.set_minter(minter_address);
+        
         // Set caller as minter and mint tokens first
         testing::set_contract_address(minter_address);
         evlt_token_protected.mint(user_address, MINT_AMOUNT);
@@ -144,8 +163,13 @@ mod tests {
     #[test]
     fn test_burn_own_tokens() {
         let (evlt_token, evlt_token_protected) = deploy_evlt_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let minter_address = contract_address_const::<MINTER_ADDRESS>();
         let user_address = contract_address_const::<USER_ADDRESS>();
+        
+        // Set caller as admin and grant minter role
+        testing::set_contract_address(admin_address);
+        evlt_token_protected.set_minter(minter_address);
         
         // Mint tokens first
         testing::set_contract_address(minter_address);
@@ -163,9 +187,14 @@ mod tests {
     #[should_panic]
     fn test_burn_others_tokens_unauthorized() {
         let (_evlt_token, evlt_token_protected) = deploy_evlt_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let minter_address = contract_address_const::<MINTER_ADDRESS>();
         let user_address = contract_address_const::<USER_ADDRESS>();
         let unauthorized_address = contract_address_const::<UNAUTHORIZED_ADDRESS>();
+        
+        // Set caller as admin and grant minter role
+        testing::set_contract_address(admin_address);
+        evlt_token_protected.set_minter(minter_address);
         
         // Mint tokens first
         testing::set_contract_address(minter_address);
@@ -193,9 +222,14 @@ mod tests {
     #[should_panic]
     fn test_transfer_disabled() {
         let (evlt_token, evlt_token_protected) = deploy_evlt_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let minter_address = contract_address_const::<MINTER_ADDRESS>();
         let user1_address = contract_address_const::<USER_ADDRESS>();
         let user2_address = contract_address_const::<UNAUTHORIZED_ADDRESS>();
+        
+        // Set caller as admin and grant minter role
+        testing::set_contract_address(admin_address);
+        evlt_token_protected.set_minter(minter_address);
         
         // Mint tokens to user1
         testing::set_contract_address(minter_address);
@@ -213,9 +247,14 @@ mod tests {
     #[test]
     fn test_approve_works_but_transfer_from_disabled() {
         let (evlt_token, evlt_token_protected) = deploy_evlt_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let minter_address = contract_address_const::<MINTER_ADDRESS>();
         let owner_address = contract_address_const::<USER_ADDRESS>();
         let spender_address = contract_address_const::<UNAUTHORIZED_ADDRESS>();
+        
+        // Set caller as admin and grant minter role
+        testing::set_contract_address(admin_address);
+        evlt_token_protected.set_minter(minter_address);
         
         // Mint tokens to owner
         testing::set_contract_address(minter_address);
@@ -234,9 +273,14 @@ mod tests {
     #[should_panic]
     fn test_transfer_from_disabled() {
         let (evlt_token, evlt_token_protected) = deploy_evlt_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let minter_address = contract_address_const::<MINTER_ADDRESS>();
         let owner_address = contract_address_const::<USER_ADDRESS>();
         let spender_address = contract_address_const::<UNAUTHORIZED_ADDRESS>();
+        
+        // Set caller as admin and grant minter role
+        testing::set_contract_address(admin_address);
+        evlt_token_protected.set_minter(minter_address);
         
         // Mint tokens to owner
         testing::set_contract_address(minter_address);
@@ -267,9 +311,14 @@ mod tests {
     #[should_panic]
     fn test_camel_case_transfer_from_disabled() {
         let (evlt_token, evlt_token_protected) = deploy_evlt_token();
+        let admin_address = contract_address_const::<ADMIN_ADDRESS>();
         let minter_address = contract_address_const::<MINTER_ADDRESS>();
         let owner_address = contract_address_const::<USER_ADDRESS>();
         let spender_address = contract_address_const::<UNAUTHORIZED_ADDRESS>();
+        
+        // Set caller as admin and grant minter role
+        testing::set_contract_address(admin_address);
+        evlt_token_protected.set_minter(minter_address);
         
         // Mint tokens to owner
         testing::set_contract_address(minter_address);

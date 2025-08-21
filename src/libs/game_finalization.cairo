@@ -9,7 +9,7 @@ use evolute_duel::{
     libs::{
         scoring::{ScoringTrait}, 
         achievements::{AchievementsTrait},
-        // rating_system::{RatingSystemTrait}
+        rating_system::{RatingSystemTrait}
     },
 };
 use dojo::{model::{ModelStorage, Model}, event::EventStorage};
@@ -173,24 +173,24 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         }
     }
     
-    // /// Update tournament ratings after a tournament game finishes
-    // /// This should be called after determining the winner of the game
-    // fn update_tournament_ratings(
-    //     winner_address: ContractAddress,
-    //     loser_address: ContractAddress,
-    //     tournament_id: u64,
-    //     mut world: dojo::world::WorldStorage,
-    // ) {
-    //     println!("[update_tournament_ratings] Updating ratings for tournament {}", tournament_id);
+    /// Update tournament ratings after a tournament game finishes
+    /// This should be called after determining the winner of the game
+    fn update_tournament_ratings(
+        winner_address: ContractAddress,
+        loser_address: ContractAddress,
+        tournament_id: u64,
+        mut world: dojo::world::WorldStorage,
+    ) {
+        println!("[update_tournament_ratings] Updating ratings for tournament {}", tournament_id);
         
-    //     // Call the rating system to update both players' ratings
-    //     RatingSystemTrait::update_tournament_ratings(
-    //         winner_address,
-    //         loser_address, 
-    //         tournament_id,
-    //         world
-    //     );
-    // }
+        // Call the rating system to update both players' ratings
+        RatingSystemTrait::update_tournament_ratings(
+            winner_address,
+            loser_address, 
+            tournament_id,
+            world
+        );
+    }
 
     fn emit_game_finished_events(
         player1_address: ContractAddress,

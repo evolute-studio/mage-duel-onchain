@@ -3,9 +3,6 @@ use dojo::world::IWorldDispatcher;
 
 #[starknet::interface]
 pub trait IEvltToken<TState> {
-    // IWorldProvider
-    fn world_dispatcher(self: @TState) -> IWorldDispatcher;
-
     // IERC20
     fn total_supply(self: @TState) -> u256;
     fn balance_of(self: @TState, account: ContractAddress) -> u256;
@@ -33,6 +30,7 @@ pub trait IEvltTokenProtected<TState> {
     fn mint(ref self: TState, recipient: ContractAddress, amount: u256);
     fn burn(ref self: TState, from: ContractAddress, amount: u256);
     fn set_minter(ref self: TState, minter_address: ContractAddress);
+    fn set_burner(ref self: TState, burner_address: ContractAddress);
 }
 
 #[dojo::contract]
@@ -49,12 +47,8 @@ pub mod evlt_token {
     };
     use openzeppelin_access::accesscontrol::AccessControlComponent;
     use openzeppelin_introspection::src5::SRC5Component;
-    use evolute_duel::components::coin_component::{
-        CoinComponent,
-    };
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
-    component!(path: CoinComponent, storage: coin, event: CoinEvent);
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
@@ -65,15 +59,12 @@ pub mod evlt_token {
 
     //Internal
     impl ERC20InternalImpl = ERC20Component::InternalImpl<ContractState>;
-    impl CoinComponentInternalImpl = CoinComponent::CoinComponentInternalImpl<ContractState>;
     impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
         #[substorage(v0)]
         erc20: ERC20Component::Storage,
-        #[substorage(v0)]
-        coin: CoinComponent::Storage,
         #[substorage(v0)]
         accesscontrol: AccessControlComponent::Storage,
         #[substorage(v0)]
@@ -85,8 +76,6 @@ pub mod evlt_token {
     enum Event {
         #[flat]
         ERC20Event: ERC20Component::Event,
-        #[flat]
-        CoinEvent: CoinComponent::Event,
         #[flat]
         AccessControlEvent: AccessControlComponent::Event,
         Minted: Minted,
@@ -122,6 +111,7 @@ pub mod evlt_token {
         pub const UNAUTHORIZED_BURN: felt252 = 'EVLT: Unauthorized burn';
         pub const INSUFFICIENT_BALANCE: felt252 = 'EVLT: Insufficient balance';
         pub const ZERO_ADDRESS: felt252 = 'EVLT: Zero address';
+        pub const TOP_UP_NOT_FOUND: felt252 = 'EVLT: Top-up contract not found';
         pub const ZERO_AMOUNT: felt252 = 'EVLT: Zero amount';
         pub const TRANSFERS_DISABLED: felt252 = 'EVLT: Transfers disabled';
     }
@@ -135,21 +125,33 @@ pub mod evlt_token {
     // Access Control Roles
     use openzeppelin_access::accesscontrol::DEFAULT_ADMIN_ROLE;
     pub const MINTER_ROLE: felt252 = 'MINTER_ROLE';
+    pub const BURNER_ROLE: felt252 = 'BURNER_ROLE';
 
-    fn dojo_init(ref self: ContractState, admin_address: ContractAddress, minter_address: ContractAddress) {
+    fn dojo_init(ref self: ContractState, admin_address: ContractAddress) {
         let mut world = self.world_default();
+        
+        // Initialize ERC20
         self.erc20.initializer(
             TOKEN_NAME(),
             TOKEN_SYMBOL(),
         );
-        self.coin.initialize(
-            admin_address,  // Only admin can mint initially
-            faucet_amount: 0,  // No faucet for premium token
-        );
+        
         // Initialize access control with admin
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(DEFAULT_ADMIN_ROLE, admin_address);
-        self.accesscontrol._grant_role(MINTER_ROLE, minter_address);
+        
+        // Get evlt_topup address from DNS and grant minter role
+        let evlt_topup_address = world.find_contract_address(@"evlt_topup");
+        assert(!evlt_topup_address.is_zero(), Errors::TOP_UP_NOT_FOUND);
+        if !evlt_topup_address.is_zero() {
+            self.accesscontrol._grant_role(MINTER_ROLE, evlt_topup_address);
+        }
+        
+        // Get tournament_token address from DNS and grant burner role
+        let tournament_token_address = world.find_contract_address(@"tournament_token");
+        if !tournament_token_address.is_zero() {
+            self.accesscontrol._grant_role(BURNER_ROLE, tournament_token_address);
+        }
     }
     
     #[generate_trait]
@@ -188,11 +190,12 @@ pub mod evlt_token {
             assert(!from.is_zero(), Errors::ZERO_ADDRESS);
             assert(amount > 0, Errors::ZERO_AMOUNT);
             
-            // Only admin can burn or user burning their own tokens
+            // Only admin, burner role, or user burning their own tokens
             let caller = starknet::get_caller_address();
             let is_admin = self.accesscontrol.has_role(DEFAULT_ADMIN_ROLE, caller);
+            let is_burner = self.accesscontrol.has_role(BURNER_ROLE, caller);
             
-            assert(is_admin || caller == from, Errors::UNAUTHORIZED_BURN);
+            assert(is_admin || is_burner || caller == from, Errors::UNAUTHORIZED_BURN);
             
             // Check balance
             let balance = self.erc20.balance_of(from);
@@ -215,6 +218,14 @@ pub mod evlt_token {
             
             // Grant minter role to new address
             self.accesscontrol._grant_role(MINTER_ROLE, minter_address);
+        }
+
+        fn set_burner(ref self: ContractState, burner_address: ContractAddress) {
+            // Only admin can change burner
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            
+            // Grant burner role to new address
+            self.accesscontrol._grant_role(BURNER_ROLE, burner_address);
         }
     }
 

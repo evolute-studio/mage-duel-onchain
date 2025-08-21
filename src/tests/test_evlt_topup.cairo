@@ -48,12 +48,12 @@ mod tests {
             ContractDefTrait::new(@"evolute_duel", @"evlt_token")
                 .with_writer_of([dojo::utils::bytearray_hash(@"evolute_duel")].span())
                 .with_init_calldata(
-                    [ADMIN_ADDRESS, MINTER_ADDRESS].span()
+                    [ADMIN_ADDRESS].span()
                 ),
             ContractDefTrait::new(@"evolute_duel", @"evlt_topup")
                 .with_writer_of([dojo::utils::bytearray_hash(@"evolute_duel")].span())
                 .with_init_calldata(
-                    [ADMIN_ADDRESS, 0].span() // Will set EVLT token address later
+                    [ADMIN_ADDRESS].span()
                 ),
         ]
             .span()
@@ -71,12 +71,9 @@ mod tests {
         let topup = ITopUpDispatcher { contract_address: topup_address };
         let topup_admin = ITopUpAdminDispatcher { contract_address: topup_address };
         
-        // Set the EVLT token address in the topup contract
-        testing::set_contract_address(contract_address_const::<ADMIN_ADDRESS>());
-        topup_admin.set_evlt_token_address(evlt_token_address);
-        
-        // Grant minter role to topup contract
-        evlt_token_protected.set_minter(topup_address);
+        // // Grant minter role to topup contract
+        // testing::set_contract_address(contract_address_const::<ADMIN_ADDRESS>());
+        // evlt_token_protected.set_minter(topup_address);
         
         (topup, evlt_token, evlt_token_protected, topup_admin)
     }

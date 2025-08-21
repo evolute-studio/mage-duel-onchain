@@ -6,8 +6,7 @@ pub struct CoinConfig {
     #[key]
     pub coin_address: ContractAddress,
     //------
-    pub minter_address: ContractAddress,
-    pub faucet_amount: u128, // zero if faucet is closed
+    pub admin_address: ContractAddress,
 }
 
 #[derive(Copy, Drop, Serde)]

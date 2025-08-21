@@ -16,7 +16,6 @@ pub trait ITopUp<TState> {
 
 #[starknet::interface]
 pub trait ITopUpAdmin<TState> {
-    fn set_evlt_token_address(ref self: TState, token_address: ContractAddress);
     fn grant_minter_role(ref self: TState, account: ContractAddress);
     fn revoke_minter_role(ref self: TState, account: ContractAddress);
 }
@@ -32,6 +31,7 @@ pub mod evlt_topup {
 
     use super::{ITopUp, ITopUpAdmin};
     use evolute_duel::systems::tokens::evlt_token::{IEvltTokenProtectedDispatcher, IEvltTokenProtectedDispatcherTrait};
+    use evolute_duel::interfaces::dns::{DnsTrait};
 
     //-----------------------------------
     // Access Control
@@ -56,7 +56,6 @@ pub mod evlt_topup {
         accesscontrol: AccessControlComponent::Storage,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
-        evlt_token_address: ContractAddress,
         user_topup_history: starknet::storage::Map<(ContractAddress, u32), (u256, u64)>, // (user, index) -> (amount, timestamp)
         user_topup_count: starknet::storage::Map<ContractAddress, u32>, // user -> number of topups
         user_total_topups: starknet::storage::Map<ContractAddress, u256>, // user -> total amount topped up
@@ -104,7 +103,7 @@ pub mod evlt_topup {
         pub const ZERO_AMOUNT: felt252 = 'TOPUP: Zero amount';
         pub const ZERO_ADDRESS: felt252 = 'TOPUP: Zero address';
         pub const ARRAY_LENGTH_MISMATCH: felt252 = 'TOPUP: Array length mismatch';
-        pub const EVLT_TOKEN_NOT_SET: felt252 = 'TOPUP: EVLT token not set';
+        pub const EVLT_TOKEN_NOT_FOUND: felt252 = 'TOPUP: EVLT token not found';
         pub const EMPTY_ARRAYS: felt252 = 'TOPUP: Empty arrays';
     }
 
@@ -116,14 +115,11 @@ pub mod evlt_topup {
     //-----------------------------------
     // Constructor
     //
-    fn dojo_init(ref self: ContractState, admin_address: ContractAddress, evlt_token_address: ContractAddress) {
+    fn dojo_init(ref self: ContractState, admin_address: ContractAddress) {
         // Initialize access control
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(DEFAULT_ADMIN_ROLE, admin_address);
         self.accesscontrol._grant_role(MINTER_ROLE, admin_address);
-        
-        // Set EVLT token address
-        self.evlt_token_address.write(evlt_token_address);
     }
 
     #[generate_trait]
@@ -159,8 +155,9 @@ pub mod evlt_topup {
         }
 
         fn _get_evlt_token(self: @ContractState) -> IEvltTokenProtectedDispatcher {
-            let token_address = self.evlt_token_address.read();
-            assert(!token_address.is_zero(), Errors::EVLT_TOKEN_NOT_SET);
+            let mut world = self.world_default();
+            let token_address = world.find_contract_address(@"evlt_token");
+            assert(!token_address.is_zero(), Errors::EVLT_TOKEN_NOT_FOUND);
             IEvltTokenProtectedDispatcher { contract_address: token_address }
         }
     }
@@ -280,12 +277,6 @@ pub mod evlt_topup {
     //
     #[abi(embed_v0)]
     impl AdminImpl of super::ITopUpAdmin<ContractState> {
-        fn set_evlt_token_address(ref self: ContractState, token_address: ContractAddress) {
-            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
-            assert(!token_address.is_zero(), Errors::ZERO_ADDRESS);
-            self.evlt_token_address.write(token_address);
-        }
-
         fn grant_minter_role(ref self: ContractState, account: ContractAddress) {
             self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
             self.accesscontrol._grant_role(MINTER_ROLE, account);

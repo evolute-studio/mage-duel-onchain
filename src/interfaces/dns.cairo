@@ -114,6 +114,20 @@ pub impl DnsImpl of DnsTrait {
         (self.find_contract_address(@"evlt_token"))
     }
     
+    #[inline(always)]
+    fn grnd_token_address(self: @WorldStorage) -> ContractAddress {
+        (self.find_contract_address(@"grnd_token"))
+    }
+    
+    #[inline(always)]
+    fn evlt_topup_address(self: @WorldStorage) -> ContractAddress {
+        (self.find_contract_address(@"evlt_topup"))
+    }
+    
+    #[inline(always)]
+    fn rewards_manager_address(self: @WorldStorage) -> ContractAddress {
+        (self.find_contract_address(@"rewards_manager"))
+    }
 
     //--------------------------
     // address validators
@@ -146,6 +160,9 @@ pub impl DnsImpl of DnsTrait {
     fn evlt_token_dispatcher(self: @WorldStorage) -> IEvltTokenDispatcher {
         (IEvltTokenDispatcher{ contract_address: self.evlt_token_address() })
     }
+    
+    // Add missing dispatchers for the new addresses we added
+    // Note: We would need to import the appropriate dispatcher traits for these
 
     // //--------------------------
     // // legacy dispatchers (commented out)
