@@ -73,6 +73,12 @@ mod tests {
                 TestResource::Model(m_PlayerTournamentIndex::TEST_CLASS_HASH),
                 TestResource::Model(m_TournamentBalance::TEST_CLASS_HASH),
                 TestResource::Model(m_Player::TEST_CLASS_HASH),
+                //Budokan models
+                TestResource::Model(m_BudokanTournament::TEST_CLASS_HASH),
+                TestResource::Model(m_Registration::TEST_CLASS_HASH),
+                TestResource::Model(m_TokenMetadata::TEST_CLASS_HASH),
+                TestResource::Model(m_GameMetadata::TEST_CLASS_HASH),
+                TestResource::Model(m_GameCounter::TEST_CLASS_HASH),
                 // Contracts
                 TestResource::Contract(tournament_mock::TEST_CLASS_HASH),
                 TestResource::Contract(tournament_token::TEST_CLASS_HASH),

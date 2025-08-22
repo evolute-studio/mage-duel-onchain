@@ -81,8 +81,8 @@ pub mod tournament_budokan_test {
         TournamentEvent: tournament_component::Event,
     }
 
-    fn dojo_init(ref self: ContractState, safe_mode: bool, test_mode: bool) {
-        self.tournament.initialize(safe_mode, test_mode);
+    fn dojo_init(ref self: ContractState) {
+        self.tournament.initialize(false, false);
     }
 
 }
