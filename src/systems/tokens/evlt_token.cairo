@@ -22,6 +22,7 @@ pub trait IEvltToken<TState> {
     // IEvltTokenProtected
     fn mint(ref self: TState, recipient: ContractAddress, amount: u256);
     fn burn(ref self: TState, from: ContractAddress, amount: u256);
+    fn set_transfer_allowed(ref self: TState, allowed_address: ContractAddress);
 }
 
 // Exposed to world and admins only
@@ -31,6 +32,7 @@ pub trait IEvltTokenProtected<TState> {
     fn burn(ref self: TState, from: ContractAddress, amount: u256);
     fn set_minter(ref self: TState, minter_address: ContractAddress);
     fn set_burner(ref self: TState, burner_address: ContractAddress);
+    fn set_transfer_allowed(ref self: TState, allowed_address: ContractAddress);
 }
 
 #[dojo::contract]
@@ -126,6 +128,7 @@ pub mod evlt_token {
     use openzeppelin_access::accesscontrol::DEFAULT_ADMIN_ROLE;
     pub const MINTER_ROLE: felt252 = 'MINTER_ROLE';
     pub const BURNER_ROLE: felt252 = 'BURNER_ROLE';
+    pub const TRANSFER_ROLE: felt252 = 'TRANSFER_ROLE';
 
     fn dojo_init(ref self: ContractState, admin_address: ContractAddress) {
         let mut world = self.world_default();
@@ -151,6 +154,12 @@ pub mod evlt_token {
         let tournament_token_address = world.find_contract_address(@"tournament_token");
         if !tournament_token_address.is_zero() {
             self.accesscontrol._grant_role(BURNER_ROLE, tournament_token_address);
+        }
+        
+        // Get budokan tournament address from DNS and grant transfer role
+        let budokan_address = world.find_contract_address(@"tournament_budokan_test");
+        if !budokan_address.is_zero() {
+            self.accesscontrol._grant_role(TRANSFER_ROLE, budokan_address);
         }
     }
     
@@ -227,6 +236,14 @@ pub mod evlt_token {
             // Grant burner role to new address
             self.accesscontrol._grant_role(BURNER_ROLE, burner_address);
         }
+
+        fn set_transfer_allowed(ref self: ContractState, allowed_address: ContractAddress) {
+            // Only admin can change transfer permissions
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            
+            // Grant transfer role to new address
+            self.accesscontrol._grant_role(TRANSFER_ROLE, allowed_address);
+        }
     }
 
     impl ERC20HooksImpl of ERC20Component::ERC20HooksTrait<ContractState> {
@@ -237,10 +254,20 @@ pub mod evlt_token {
             amount: u256
         ) {
             // Allow minting (from zero address) and burning (to zero address)
-            // Block all transfers between non-zero addresses
-            if !from.is_zero() && !recipient.is_zero() {
-                panic(array![Errors::TRANSFERS_DISABLED]);
+            if from.is_zero() || recipient.is_zero() {
+                return;
             }
+            
+            // Allow transfers initiated by addresses with TRANSFER_ROLE (like budokan tournaments)
+            let caller = starknet::get_caller_address();
+            let contract_state = self.get_contract();
+            
+            if contract_state.accesscontrol.has_role(TRANSFER_ROLE, caller) {
+                return;
+            }
+            
+            // Block all other transfers between non-zero addresses
+            panic(array![Errors::TRANSFERS_DISABLED]);
         }
 
         fn after_update(

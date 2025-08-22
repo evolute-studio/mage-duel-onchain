@@ -44,6 +44,14 @@ pub trait IMatchmaking<T> {
     /// - `tournament_id`: Optional tournament ID for tournament mode.
     /// Returns: board_id if match found, 0 if waiting in queue.
     fn auto_match(ref self: T, game_mode: u8, tournament_id: Option<u64>) -> felt252;
+    
+    /// Admin function to cancel any game (admin only).
+    /// - `player_address`: Address of the player whose game should be canceled.
+    fn admin_cancel_game(ref self: T, player_address: ContractAddress);
+    
+    /// Set the admin address (current admin only).
+    /// - `new_admin`: Address of the new admin.
+    fn admin_set_admin(ref self: T, new_admin: ContractAddress);
 }
 
 // dojo decorator
@@ -75,15 +83,32 @@ pub mod matchmaking {
             board::{BoardTrait},
         },
     };
+    use openzeppelin_access::ownable::OwnableComponent;
+    
+    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
+    
+    // Ownable Mixin
+    #[abi(embed_v0)]
+    impl OwnableMixinImpl = OwnableComponent::OwnableMixinImpl<ContractState>;
+    impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
     
     #[storage]
     struct Storage {
         board_id_generator: felt252,
+        #[substorage(v0)]
+        ownable: OwnableComponent::Storage,
     }
     
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        OwnableEvent: OwnableComponent::Event,
+    }
     
-    fn dojo_init(ref self: ContractState) {
+    fn dojo_init(ref self: ContractState, initial_owner: ContractAddress) {
         self.board_id_generator.write(1);
+        self.ownable.initializer(initial_owner);
 
         let mut world = self.world_default();
         
@@ -322,88 +347,12 @@ pub mod matchmaking {
         }
         
         fn cancel_game(ref self: ContractState) {
-            let mut world = self.world_default();
             let caller = get_caller_address();
             
             println!("[MATCHMAKING] cancel_game: caller={:?}", caller);
             
-            let mut game: Game = world.read_model(caller);
-            println!("[MATCHMAKING] cancel_game: current game - status={:?}, mode={:?}, board_id={:?}", 
-                game.status, game.game_mode, game.board_id);
-            
-            // Validate can cancel based on GameMode
-            match game.game_mode {
-                GameMode::Tutorial => {
-                    // Tutorial games should be canceled through tutorial contract only
-                    println!("[MATCHMAKING] cancel_game: FAILED - Tutorial games must be canceled through tutorial contract");
-                    return;
-                },
-                GameMode::Ranked | GameMode::Casual => {
-                    println!("[MATCHMAKING] cancel_game: validating regular game access");
-                    // Regular games can be canceled through matchmaking
-                    if !AssertsTrait::assert_regular_game_access(@game, caller, 'cancel_game', world) {
-                        println!("[MATCHMAKING] cancel_game: FAILED - no regular game access");
-                        return;
-                    }
-                    println!("[MATCHMAKING] cancel_game: regular game access validated");
-                },
-                _ => {
-                    println!("[MATCHMAKING] cancel_game: unsupported game mode");
-                }
-            }
-            
-            let status = game.status;
-            println!("[MATCHMAKING] cancel_game: current status={:?}", status);
-
-            if status == GameStatus::InProgress && game.board_id.is_some() {
-                println!("[MATCHMAKING] cancel_game: canceling active game with board");
-                let mut board: evolute_duel::models::game::Board = world.read_model(game.board_id.unwrap());
-                let board_id = board.id;
-                let (player1_address, _, _) = board.player1;
-                let (player2_address, _, _) = board.player2;
-                
-                println!("[MATCHMAKING] cancel_game: board_id={}, player1={:?}, player2={:?}", 
-                    board_id, player1_address, player2_address);
-
-                let another_player = if player1_address == caller {
-                    player2_address
-                } else {
-                    player1_address
-                };
-                println!("[MATCHMAKING] cancel_game: another_player={:?}", another_player);
-
-                let mut another_game: Game = world.read_model(another_player);
-                println!("[MATCHMAKING] cancel_game: another_game before cancel - status={:?}", another_game.status);
-                
-                let new_status = GameStatus::Canceled;
-                another_game.status = new_status;
-                another_game.board_id = Option::None;
-                another_game.game_mode = GameMode::None; // Reset game mode
-
-                world.write_model(@another_game);
-                world.emit_event(@GameCanceled { host_player: another_player, status: new_status });
-                println!("[MATCHMAKING] cancel_game: another player game canceled and event emitted");
-
-                world
-                    .write_member(
-                        dojo::model::Model::<evolute_duel::models::game::Board>::ptr_from_keys(board_id),
-                        selector!("game_state"),
-                        evolute_duel::types::packing::GameState::Finished,
-                    );
-                println!("[MATCHMAKING] cancel_game: board game_state set to Finished");
-            } else {
-                println!("[MATCHMAKING] cancel_game: canceling created game (no board)");
-            }
-
-            let new_status = GameStatus::Canceled;
-            game.status = new_status;
-            game.board_id = Option::None;
-            game.game_mode = GameMode::None; // Reset game mode
-
-            world.write_model(@game);
-            world.emit_event(@GameCanceled { host_player: caller, status: new_status });
-            
-            println!("[MATCHMAKING] cancel_game: caller game canceled, function completed");
+            // Use internal function with permission checks enabled
+            self._cancel_game(caller);
         }
         
         
@@ -565,6 +514,23 @@ pub mod matchmaking {
                 return 0;
             }
         }
+
+         /// Admin function to cancel any player's game
+        fn admin_cancel_game(ref self: ContractState, player_address: ContractAddress) {
+            // Check that caller is the owner
+            self.ownable.assert_only_owner();
+            
+            println!("[MATCHMAKING] admin_cancel_game: admin canceling game for player={:?}", player_address);
+            
+            // Use internal function with permission checks disabled
+            self._cancel_game(player_address);
+        }
+        
+        /// Transfer ownership to a new admin  
+        fn admin_set_admin(ref self: ContractState, new_admin: ContractAddress) {
+            // Transfer ownership using OpenZeppelin's transfer_ownership
+            self.ownable.transfer_ownership(new_admin);
+        }
     }
     
     #[generate_trait]
@@ -678,6 +644,66 @@ pub mod matchmaking {
                     panic!("Unsupported game mode")
                 }
             }
+        }
+
+        /// Internal function to cancel a player's game
+        /// skip_checks: if true, skip game mode and access checks (for admin use)
+        fn _cancel_game(ref self: ContractState, player_address: ContractAddress) {
+            let mut world = self.world_default();
+            let mut game: Game = world.read_model(player_address);
+            println!("[MATCHMAKING] _cancel_game: current game - status={:?}, mode={:?}, board_id={:?}", 
+                game.status, game.game_mode, game.board_id);
+            
+            let status = game.status;
+            println!("[MATCHMAKING] _cancel_game: current status={:?}", status);
+            
+            if status == GameStatus::InProgress && game.board_id.is_some() {
+                println!("[MATCHMAKING] _cancel_game: canceling active game with board");
+                let mut board: evolute_duel::models::game::Board = world.read_model(game.board_id.unwrap());
+                let board_id = board.id;
+                let (player1_address, _, _) = board.player1;
+                let (player2_address, _, _) = board.player2;
+                
+                println!("[MATCHMAKING] _cancel_game: board_id={}, player1={:?}, player2={:?}", 
+                    board_id, player1_address, player2_address);
+                
+                let another_player = if player1_address == player_address {
+                    player2_address
+                } else {
+                    player1_address
+                };
+                
+                println!("[MATCHMAKING] _cancel_game: another_player={:?}", another_player);
+                let mut another_game: Game = world.read_model(another_player);
+                println!("[MATCHMAKING] _cancel_game: another_game before cancel - status={:?}", another_game.status);
+                
+                let new_status = GameStatus::Canceled;
+                another_game.status = new_status;
+                another_game.board_id = Option::None;
+                another_game.game_mode = GameMode::None;
+                world.write_model(@another_game);
+                world.emit_event(@GameCanceled { host_player: another_player, status: new_status });
+                println!("[MATCHMAKING] _cancel_game: another player game canceled and event emitted");
+                
+                world
+                    .write_member(
+                        dojo::model::Model::<evolute_duel::models::game::Board>::ptr_from_keys(board_id),
+                        selector!("game_state"),
+                        evolute_duel::types::packing::GameState::Finished,
+                    );
+                println!("[MATCHMAKING] _cancel_game: board game_state set to Finished");
+            } else {
+                println!("[MATCHMAKING] _cancel_game: canceling created game (no board)");
+            }
+            
+            let new_status = GameStatus::Canceled;
+            game.status = new_status;
+            game.board_id = Option::None;
+            game.game_mode = GameMode::None;
+            world.write_model(@game);
+            world.emit_event(@GameCanceled { host_player: player_address, status: new_status });
+            
+            println!("[MATCHMAKING] _cancel_game: player game canceled, function completed");
         }
     }
 }

@@ -30,6 +30,7 @@ world_address = "0x456df5dd00562b48529c589de80c70d0c2a7a73bbfbab6dd2bac7524b332b
 [init_call_args]
 "evolute_duel-player_profile_actions" = ["0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"]
 "evolute_duel-account_migration" = ["0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"]
+"evolute_duel-matchmaking" = ["0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"]
 "evolute_duel-evlt_topup" = ["0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"]
 "evolute_duel-evlt_token" = ["0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"]
 "evolute_duel-grnd_token" = ["0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"]
