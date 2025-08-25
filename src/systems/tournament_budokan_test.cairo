@@ -60,7 +60,11 @@ pub trait ITournament<TState> {
 
 #[dojo::contract]
 pub mod tournament_budokan_test {
+    use dojo::world::{WorldStorage};
     use tournaments::components::tournament::tournament_component;
+    use evolute_duel::systems::tokens::evlt_token::evlt_token;
+    use evolute_duel::interfaces::dns::{DnsTrait};
+
 
     component!(path: tournament_component, storage: tournament, event: TournamentEvent);
     #[abi(embed_v0)]
@@ -83,6 +87,16 @@ pub mod tournament_budokan_test {
 
     fn dojo_init(ref self: ContractState) {
         self.tournament.initialize(false, false);
+        // let world_storage = self.world_default();
+        // let evlt_token_address = world_storage.evlt_token_address();
+        // self.tournament.initialize_erc20(evlt_token_address, evlt_token::TOKEN_NAME(), evlt_token::TOKEN_SYMBOL());
     }
 
-}
+    #[generate_trait]
+    impl WorldDefaultImpl of WorldDefaultTrait {
+        #[inline(always)]
+        fn world_default(self: @ContractState) -> WorldStorage {
+            (self.world(@"evolute_duel"))
+        }
+    }
+} 

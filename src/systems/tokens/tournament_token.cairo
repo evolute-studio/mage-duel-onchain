@@ -207,7 +207,7 @@ pub mod tournament_token {
             TournamentSettings,
             TournamentType, TournamentTypeTrait,
             TournamentRules,
-            Tournament,
+            TournamentStateModel,
             TournamentState,
             PlayerTournamentIndex,
         
@@ -405,7 +405,7 @@ pub mod tournament_token {
             assert(token_metadata.lifecycle.can_start(starknet::get_block_timestamp()), Errors::BUDOKAN_NOT_STARTABLE);
             // verify tournament not started
             let (budokan_dispatcher, tournament_id): (ITournamentDispatcher, u64) = self._get_budokan_tournament_id(@store, pass_id);
-            let mut tournament: Tournament = store.get_tournament(tournament_id);
+            let mut tournament: TournamentStateModel = store.get_tournament(tournament_id);
             assert(tournament.state == TournamentState::Undefined, Errors::ALREADY_STARTED);
             tournament.state = TournamentState::InProgress;
             // store!
@@ -525,7 +525,7 @@ pub mod tournament_token {
             let can_end: bool = self.can_end_tournament(pass_id);
             assert(can_end == true, Errors::TOURNAMENT_NOT_ENDED);
             
-            let mut tournament: Tournament = store.get_tournament(entry.tournament_id);
+            let mut tournament: TournamentStateModel = store.get_tournament(entry.tournament_id);
             assert(tournament.state == TournamentState::InProgress, Errors::NOT_STARTED);
             
             // Mark tournament as finished

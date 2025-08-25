@@ -25,7 +25,7 @@ pub struct TournamentPass {
 //
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-pub struct Tournament {
+pub struct TournamentStateModel {
     #[key]
     pub tournament_id: u64,         // budokan id
     //------

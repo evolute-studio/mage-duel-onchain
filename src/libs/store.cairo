@@ -28,7 +28,7 @@ pub use evolute_duel::models::{
         // Snapshot, SnapshotValue
     },
     tournament::{
-        Tournament, TournamentValue,
+        TournamentStateModel, TournamentStateModelValue,
         TournamentPass, TournamentPassValue,
         TournamentSettings, TournamentSettingsValue,
         TournamentChallenge,
@@ -121,10 +121,10 @@ pub impl StoreImpl of StoreTrait {
         (self.world.read_value(settings_id))
     }
 
-    fn get_tournament(self: @Store, tournament_id: u64) -> Tournament {
+    fn get_tournament(self: @Store, tournament_id: u64) -> TournamentStateModel {
         (self.world.read_model(tournament_id))
     }
-    fn get_tournament_value(self: @Store, tournament_id: u64) -> TournamentValue {
+    fn get_tournament_value(self: @Store, tournament_id: u64) -> TournamentStateModelValue {
         (self.world.read_value(tournament_id))
     }
 
@@ -329,7 +329,7 @@ pub impl StoreImpl of StoreTrait {
         self.world.write_model(model);
     }
 
-    fn set_tournament(ref self: Store, model: @Tournament) {
+    fn set_tournament(ref self: Store, model: @TournamentStateModel) {
         self.world.write_model(model);
     }
 

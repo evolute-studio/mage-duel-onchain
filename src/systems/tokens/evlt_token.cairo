@@ -119,9 +119,9 @@ pub mod evlt_token {
     }
 
     //*******************************************
-    fn TOKEN_NAME() -> ByteArray {("Evolute Premium Token")}
-    fn TOKEN_SYMBOL() -> ByteArray {("EVLT")}
-    fn TOKEN_DECIMALS() -> u8 { 18 }
+    pub fn TOKEN_NAME() -> ByteArray {("Evolute Premium Token")}
+    pub fn TOKEN_SYMBOL() -> ByteArray {("EVLT")}
+    pub fn TOKEN_DECIMALS() -> u8 { 18 }
     //*******************************************
 
     // Access Control Roles
