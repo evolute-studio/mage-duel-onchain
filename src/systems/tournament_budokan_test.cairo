@@ -1,25 +1,43 @@
-use dojo::world::IWorldDispatcher;
 use starknet::ContractAddress;
-use tournaments::components::models::schedule::{Phase, Schedule};
 use tournaments::components::models::tournament::{
-    EntryFee, EntryRequirement, GameConfig, Metadata, PrizeType, QualificationProof, TokenType,
-    Tournament as TournamentModel, Registration,
+    Tournament as TournamentModel, TokenType, Registration, Prize, PrizeType, Metadata, GameConfig,
+    QualificationProof, EntryFee, EntryRequirement,
 };
+use tournaments::components::models::schedule::{Schedule, Phase};
 
 #[starknet::interface]
-pub trait ITournament<TState> {
-    fn world_dispatcher(self: @TState) -> IWorldDispatcher;
+pub trait ITournamentMock<TState> {
+    // IERC721
+    fn balance_of(self: @TState, account: ContractAddress) -> u64;
+    fn owner_of(self: @TState, token_id: u64) -> ContractAddress;
+    fn safe_transfer_from(
+        ref self: TState,
+        from: ContractAddress,
+        to: ContractAddress,
+        token_id: u64,
+        data: Span<felt252>,
+    );
+    fn transfer_from(ref self: TState, from: ContractAddress, to: ContractAddress, token_id: u64);
+    fn approve(ref self: TState, to: ContractAddress, token_id: u64);
+    fn set_approval_for_all(ref self: TState, operator: ContractAddress, approved: bool);
+    fn get_approved(self: @TState, token_id: u64) -> ContractAddress;
+    fn is_approved_for_all(
+        self: @TState, owner: ContractAddress, operator: ContractAddress,
+    ) -> bool;
 
+    // ITournament
     fn total_tournaments(self: @TState) -> u64;
     fn tournament(self: @TState, tournament_id: u64) -> TournamentModel;
+    fn get_registration(
+        self: @TState, game_address: ContractAddress, token_id: u64,
+    ) -> Registration;
+    fn get_prize(self: @TState, prize_id: u64) -> Prize;
     fn tournament_entries(self: @TState, tournament_id: u64) -> u64;
     fn get_leaderboard(self: @TState, tournament_id: u64) -> Array<u64>;
     fn current_phase(self: @TState, tournament_id: u64) -> Phase;
-    fn top_scores(self: @TState, tournament_id: u64) -> Array<u64>;
     fn is_token_registered(self: @TState, token: ContractAddress) -> bool;
-    fn get_registration(self: @TState, game_address: ContractAddress, token_id: u64) -> Registration;
-    fn get_tournament_id_for_token_id(self: @TState, game_address: ContractAddress, token_id: u64) -> u64;
-    
+    // TODO: add for V2 (only ERC721 tokens)
+    // fn register_tokens(ref self: TState, tokens: Array<Token>);
     fn create_tournament(
         ref self: TState,
         creator_rewards_address: ContractAddress,
@@ -44,13 +62,21 @@ pub trait ITournament<TState> {
         token_address: ContractAddress,
         token_type: TokenType,
         position: u8,
-    );
+    ) -> u64;
 
     fn initializer(
         ref self: TState,
-        name: ByteArray,
-        symbol: ByteArray,
-        base_uri: ByteArray,
+        safe_mode: bool,
+        test_mode: bool,
+        test_erc20: ContractAddress,
+        test_erc721: ContractAddress,
+    );
+}
+
+#[starknet::interface]
+trait ITournamentMockInit<TState> {
+    fn initializer(
+        ref self: TState,
         safe_mode: bool,
         test_mode: bool,
         test_erc20: ContractAddress,
@@ -59,23 +85,31 @@ pub trait ITournament<TState> {
 }
 
 #[dojo::contract]
-pub mod tournament_budokan_test {
-    use dojo::world::{WorldStorage};
+pub mod tournament_mock {
+    use starknet::ContractAddress;
     use tournaments::components::tournament::tournament_component;
-    use evolute_duel::systems::tokens::evlt_token::evlt_token;
-    use evolute_duel::interfaces::dns::{DnsTrait};
-
+    use openzeppelin_introspection::src5::SRC5Component;
+    use openzeppelin_token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
 
     component!(path: tournament_component, storage: tournament, event: TournamentEvent);
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+
     #[abi(embed_v0)]
-    impl TournamentComponentImpl =
-        tournament_component::TournamentImpl<ContractState>;
-    impl TournamentComponentInternalImpl = tournament_component::InternalImpl<ContractState>;
+    impl TournamentImpl = tournament_component::TournamentImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC721MixinImpl = ERC721Component::ERC721MixinImpl<ContractState>;
+
+    impl TournamentInternalImpl = tournament_component::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
         #[substorage(v0)]
         tournament: tournament_component::Storage,
+        #[substorage(v0)]
+        erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        src5: SRC5Component::Storage,
     }
 
     #[event]
@@ -83,20 +117,40 @@ pub mod tournament_budokan_test {
     enum Event {
         #[flat]
         TournamentEvent: tournament_component::Event,
+        #[flat]
+        ERC721Event: ERC721Component::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
     }
 
-    fn dojo_init(ref self: ContractState) {
-        self.tournament.initialize(false, false);
-        // let world_storage = self.world_default();
-        // let evlt_token_address = world_storage.evlt_token_address();
-        // self.tournament.initialize_erc20(evlt_token_address, evlt_token::TOKEN_NAME(), evlt_token::TOKEN_SYMBOL());
-    }
-
-    #[generate_trait]
-    impl WorldDefaultImpl of WorldDefaultTrait {
-        #[inline(always)]
-        fn world_default(self: @ContractState) -> WorldStorage {
-            (self.world(@"evolute_duel"))
+    #[abi(embed_v0)]
+    impl TournamentInitializerImpl of super::ITournamentMockInit<ContractState> {
+        fn initializer(
+            ref self: ContractState,
+            safe_mode: bool,
+            test_mode: bool,
+            test_erc20: ContractAddress,
+            test_erc721: ContractAddress,
+        ) {
+            println!("[initializer] Starting initialization");
+            println!("[initializer] safe_mode = {}", safe_mode);
+            println!("[initializer] test_mode = {}", test_mode);
+            println!("[initializer] test_erc20 = {:?}", test_erc20);
+            println!("[initializer] test_erc721 = {:?}", test_erc721);
+            
+            println!("[initializer] Calling self.tournament.initialize()");
+            self.tournament.initialize(safe_mode, test_mode);
+            println!("[initializer] Successfully executed self.tournament.initialize()");
+            
+            println!("[initializer] Calling self.tournament.initialize_erc20()");
+            self.tournament.initialize_erc20(test_erc20, "Test ERC20", "TERC20");
+            println!("[initializer] Successfully executed self.tournament.initialize_erc20()");
+            
+            println!("[initializer] Calling self.tournament.initialize_erc721()");
+            self.tournament.initialize_erc721(test_erc721, "Test ERC721", "TERC721");
+            println!("[initializer] Successfully executed self.tournament.initialize_erc721()");
+            
+            println!("[initializer] Initialization completed successfully");
         }
     }
-} 
+}

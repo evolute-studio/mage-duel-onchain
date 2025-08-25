@@ -73,7 +73,7 @@ pub mod matchmaking {
             phase_management::{PhaseManagementTrait},
         },
         models::{
-            game::{Game, GameConfig, MatchmakingState, PlayerMatchmaking},
+            game::{Game, GameModeConfig, MatchmakingState, PlayerMatchmaking},
         },
         events::{GameCreated, GameStarted, GameCanceled},
         types::{
@@ -145,7 +145,7 @@ pub mod matchmaking {
         
         // Initialize default game configurations for all modes
         // Tutorial configuration
-        let tutorial_config = GameConfig {
+        let tutorial_config = GameModeConfig {
             game_mode: GameMode::Tutorial,
             board_size: 7,
             deck_type: 0, // Tutorial deck
@@ -159,7 +159,7 @@ pub mod matchmaking {
         world.write_model(@tutorial_config);
         
         // Ranked configuration
-        let ranked_config = GameConfig {
+        let ranked_config = GameModeConfig {
             game_mode: GameMode::Ranked,
             board_size: 10,
             deck_type: 1, // Full randomized deck
@@ -173,7 +173,7 @@ pub mod matchmaking {
         world.write_model(@ranked_config);
         
         // Casual configuration
-        let casual_config = GameConfig {
+        let casual_config = GameModeConfig {
             game_mode: GameMode::Casual,
             board_size: 10,
             deck_type: 1, // Full randomized deck
@@ -187,7 +187,7 @@ pub mod matchmaking {
         world.write_model(@casual_config);
         
         // Tournament configuration
-        let tournament_config = GameConfig {
+        let tournament_config = GameModeConfig {
             game_mode: GameMode::Tournament,
             board_size: 10,
             deck_type: 1, // Full randomized deck
@@ -212,7 +212,7 @@ pub mod matchmaking {
             println!("[MATCHMAKING] create_game: caller={:?}, game_mode={}, mode={:?}", caller, game_mode, mode);
             
             // Get game configuration for this mode
-            let config: GameConfig = world.read_model(mode);
+            let config: GameModeConfig = world.read_model(mode);
             println!("[MATCHMAKING] create_game: config loaded - board_size={}, deck_type={}, jokers={}, time={}, auto_match={}", 
                 config.board_size, config.deck_type, config.initial_jokers, config.time_per_phase, config.auto_match);
             
@@ -311,7 +311,7 @@ pub mod matchmaking {
             println!("[MATCHMAKING] join_game: game mode access granted");
             
             // Get configuration for this game mode
-            let config: GameConfig = world.read_model(host_game.game_mode);
+            let config: GameModeConfig = world.read_model(host_game.game_mode);
             println!("[MATCHMAKING] join_game: config loaded for mode={:?}", host_game.game_mode);
             
             // Create board based on game mode configuration
@@ -374,7 +374,7 @@ pub mod matchmaking {
             // TODO: Add admin check here
             // assert!(is_admin(get_caller_address()), "Only admin can update configs");
             
-            let config = GameConfig {
+            let config = GameModeConfig {
                 game_mode: mode,
                 board_size,
                 deck_type,
@@ -447,7 +447,7 @@ pub mod matchmaking {
                     opponent_game.status, opponent_game.game_mode);
                 
                 // Get game configuration
-                let config: GameConfig = world.read_model(mode);
+                let config: GameModeConfig = world.read_model(mode);
                 println!("[MATCHMAKING] auto_match: config loaded for mode={:?}", mode);
                 
                 // Create board for the match
@@ -543,7 +543,7 @@ pub mod matchmaking {
             ref self: ContractState,
             player_address: ContractAddress,
             bot_address: ContractAddress,
-            config: GameConfig,
+            config: GameModeConfig,
         ) {
             let mut world = self.world_default();
             
@@ -620,7 +620,7 @@ pub mod matchmaking {
             host_player: ContractAddress,
             guest_player: ContractAddress,
             game_mode: GameMode,
-            config: GameConfig,
+            config: GameModeConfig,
             world: dojo::world::WorldStorage,
         ) -> evolute_duel::models::game::Board {
             println!("[MATCHMAKING] _create_board_for_mode: mode={:?}, host={:?}, guest={:?}", 

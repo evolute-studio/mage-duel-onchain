@@ -300,10 +300,25 @@ pub mod tournament_token {
     #[abi(embed_v0)]
     impl SettingsImpl of ISettings<ContractState> {
         fn setting_exists(self: @ContractState, settings_id: u32) -> bool {
+            println!("[setting_exists] Starting settings existence check");
+            println!("[setting_exists] settings_id = {}", settings_id);
+            
+            println!("[setting_exists] Creating Store from world");
             let store: Store = StoreTrait::new(self.world_default());
+            println!("[setting_exists] Successfully created Store");
+            
+            println!("[setting_exists] Getting tournament settings for ID {}", settings_id);
             let settings = store.get_tournament_settings(settings_id);
-            // Check if tournament type is valid (not Undefined)
-            (settings.tournament_type != TournamentType::Undefined)
+            println!("[setting_exists] Successfully retrieved tournament settings");
+            
+            println!("[setting_exists] Checking tournament type validity");
+            println!("[setting_exists] settings.tournament_type = {:?}", settings.tournament_type);
+            
+            let exists = settings.tournament_type != TournamentType::Undefined;
+            println!("[setting_exists] Tournament type is not Undefined: {}", exists);
+            
+            println!("[setting_exists] Settings existence check completed, result: {}", exists);
+            exists
         }
     }
     #[abi(embed_v0)]

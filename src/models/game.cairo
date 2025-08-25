@@ -135,7 +135,7 @@ pub struct AvailableTiles {
 /// - `joker_price`: Cost of using a joker tile.
 #[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::model]
-pub struct GameConfig {
+pub struct GameModeConfig {
     #[key]
     pub game_mode: GameMode,
     pub board_size: u8,

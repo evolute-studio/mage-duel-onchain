@@ -14,7 +14,7 @@ mod tests {
     use evolute_duel::{
         models::{
             game::{
-                Game, m_Game, Board, m_Board, GameConfig, m_GameConfig,
+                Game, m_Game, Board, m_Board, GameModeConfig, m_GameModeConfig,
                 MatchmakingState, m_MatchmakingState, PlayerMatchmaking, m_PlayerMatchmaking,
                 Move, m_Move, Rules, m_Rules, TileCommitments, m_TileCommitments, 
                 AvailableTiles, m_AvailableTiles,
@@ -50,7 +50,7 @@ mod tests {
             resources: [
                 TestResource::Model(m_Game::TEST_CLASS_HASH),
                 TestResource::Model(m_Board::TEST_CLASS_HASH),
-                TestResource::Model(m_GameConfig::TEST_CLASS_HASH),
+                TestResource::Model(m_GameModeConfig::TEST_CLASS_HASH),
                 TestResource::Model(m_MatchmakingState::TEST_CLASS_HASH),
                 TestResource::Model(m_PlayerMatchmaking::TEST_CLASS_HASH),
                 TestResource::Model(m_Player::TEST_CLASS_HASH),
@@ -481,10 +481,10 @@ mod tests {
         let (dispatcher, mut world) = deploy_matchmaking();
         
         // Check that configs are created for all game modes via dojo_init
-        let tutorial_config: GameConfig = world.read_model(GameMode::Tutorial);
-        let ranked_config: GameConfig = world.read_model(GameMode::Ranked);
-        let casual_config: GameConfig = world.read_model(GameMode::Casual);
-        let tournament_config: GameConfig = world.read_model(GameMode::Tournament);
+        let tutorial_config: GameModeConfig = world.read_model(GameMode::Tutorial);
+        let ranked_config: GameModeConfig = world.read_model(GameMode::Ranked);
+        let casual_config: GameModeConfig = world.read_model(GameMode::Casual);
+        let tournament_config: GameModeConfig = world.read_model(GameMode::Tournament);
         
         assert!(tutorial_config.game_mode == GameMode::Tutorial, "Tutorial config should exist");
         assert!(ranked_config.game_mode == GameMode::Ranked, "Ranked config should exist");
@@ -507,7 +507,7 @@ mod tests {
         let (dispatcher, mut world) = deploy_matchmaking();
                 
         // Get current deck config to reuse
-        let current_config: GameConfig = world.read_model(GameMode::Casual);
+        let current_config: GameModeConfig = world.read_model(GameMode::Casual);
         
         // Update casual config
         dispatcher.update_config(
@@ -522,7 +522,7 @@ mod tests {
             current_config.joker_price // keep existing joker_price
         );
         
-        let config: GameConfig = world.read_model(GameMode::Casual);
+        let config: GameModeConfig = world.read_model(GameMode::Casual);
         assert!(config.board_size == 8, "Board size should be updated");
         assert!(config.deck_type == 2, "Deck type should be updated");
         assert!(config.initial_jokers == 1, "Initial jokers should be updated");

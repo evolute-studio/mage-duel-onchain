@@ -6,7 +6,7 @@ use origami_random::{
 };
 
 use evolute_duel::{
-    models::{scoring::{UnionNode}, game::{Board, GameConfig, AvailableTiles}},
+    models::{scoring::{UnionNode}, game::{Board, GameModeConfig, AvailableTiles}},
     types::packing::{GameState, TEdge, Tile, PlayerSide, GameMode},
     systems::helpers::{
     },
@@ -32,7 +32,7 @@ pub impl BoardImpl of BoardTrait {
         let board_id = board_id_generator.read();
         board_id_generator.write(board_id + 1);
 
-        let config: GameConfig = world.read_model(game_mode);
+        let config: GameModeConfig = world.read_model(game_mode);
         assert!(config.deck.len() != 0, "[BoardTrait] Deck config is empty");
         let mut deck_rules_flat = Self::flatten_deck_rules(config.deck);
 
@@ -189,7 +189,7 @@ pub impl BoardImpl of BoardTrait {
         let board_id = board_id_generator.read();
         board_id_generator.write(board_id + 1);
 
-        let config: GameConfig = world.read_model(GameMode::Tutorial);
+        let config: GameModeConfig = world.read_model(GameMode::Tutorial);
         let mut deck_rules_flat = Self::tutorial_deck(config.deck);
 
         let last_move_id = Option::None;

@@ -7,6 +7,54 @@ edition = "2024_07"
 [cairo]
 sierra-replace-ids = true
 
+[dependencies]
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.6.0-alpha.2" }
+origami_random = { git = "https://github.com/dojoengine/origami" }
+origami_rating = { git = "https://github.com/dojoengine/origami" }
+openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v1.0.0" }
+openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
+achievement = { git = "https://github.com/evolute-studio/arcade" } # fork of arcade https://github.com/cartridge-gg/arcade 
+alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.4.0" }
+tournaments = { git = "https://github.com/evolute-studio/budokan-tournaments" } # fork of tournaments https://github.com/Provable-Games/tournaments
+openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
+nft_combo = { git = "https://github.com/underware-gg/cairo-nft-combo", tag = "v1.0.0"}
+
+[[target.starknet-contract]]
+build-external-contracts = [
+    "dojo::world::world_contract::world",
+    "tournaments::components::models::game::m_GameMetadata",
+    "tournaments::components::models::game::m_TokenMetadata",
+    "tournaments::components::models::game::m_GameCounter",
+    "tournaments::components::models::game::m_Score",
+    "tournaments::components::models::game::m_Settings",
+    "tournaments::components::models::game::m_SettingsDetails",
+    "tournaments::components::models::game::m_SettingsCounter",
+    "tournaments::components::models::tournament::m_Tournament",
+    "tournaments::components::models::tournament::m_Registration",
+    "tournaments::components::models::tournament::m_Leaderboard",
+    "tournaments::components::models::tournament::m_PlatformMetrics",
+    "tournaments::components::models::tournament::m_TournamentTokenMetrics",
+    "tournaments::components::models::tournament::m_PrizeMetrics",
+    "tournaments::components::models::tournament::m_EntryCount",
+    "tournaments::components::models::tournament::m_Prize",
+    "tournaments::components::models::tournament::m_Token",
+    "tournaments::components::models::tournament::m_TournamentConfig",
+    "tournaments::components::models::tournament::m_PrizeClaim",
+    "tournaments::components::models::tournament::m_QualificationEntries",
+    "achievement::events::index::e_TrophyCreation", 
+    "achievement::events::index::e_TrophyProgression", 
+]
+
+[dev-dependencies]
+cairo_test = "=2.10.1"
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.6.0-alpha.2" }
+assert_macros = "2.10.1"
+
+[profile.provable]
+
+[profile.testing]
+
+
 [scripts]
 
 upadate_achievements = "sozo execute evolute_duel-game upadate_achievements --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
@@ -49,37 +97,5 @@ cancel_game1 = "sozo --release execute evolute_duel-game cancel_game --account-a
 create_tutorial_game = "sozo execute evolute_duel-tutorial create_tutorial_game 0x13d9ee239f33fea4f8785b9e3870ade909e20a9599ae7cd62c1c292b73af1b7 --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
 make_tutorial_move1 = "sozo execute evolute_duel-tutorial make_move 1 2 3 5 --account-address=0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec --private-key=0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912 --wait"
 
-[dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.6.0-alpha.2" }
-origami_random = { git = "https://github.com/dojoengine/origami" }
-origami_rating = { git = "https://github.com/dojoengine/origami" }
-openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v1.0.0" }
-openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
-achievement = { git = "https://github.com/evolute-studio/arcade" } # fork of arcade https://github.com/cartridge-gg/arcade 
-alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.4.0" }
-tournaments = { git = "https://github.com/evolute-studio/budokan-tournaments" } # fork of tournaments https://github.com/Provable-Games/tournaments
-openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
-nft_combo = { git = "https://github.com/underware-gg/cairo-nft-combo", tag = "v1.0.0"}
-
-[[target.starknet-contract]]
-build-external-contracts = [
-    "dojo::world::world_contract::world",
-    "tournaments::components::models::game::m_GameMetadata",
-    "tournaments::components::models::game::m_TokenMetadata",
-    "tournaments::components::models::game::m_GameCounter",
-    "tournaments::components::models::game::m_Score",
-    "tournaments::components::models::game::m_Settings",
-    "tournaments::components::models::game::m_SettingsDetails",
-    "tournaments::components::models::game::m_SettingsCounter",
-    "achievement::events::index::e_TrophyCreation", 
-    "achievement::events::index::e_TrophyProgression", 
-]
-
-[dev-dependencies]
-cairo_test = "=2.10.1"
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.6.0-alpha.2" }
-assert_macros = "2.10.1"
-
-[profile.provable]
-
-[profile.testing]
+turnament_initializer = "sozo execute evolute_duel-tournament_mock initializer 0 0 0x05b09b36012fa3e07f04d3d89198c80f093e117cb449ae8d5656f1b610c0b737 1"
+create_tournament = "sozo execute evolute_duel-tournament_mock create_tournament 0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec sstr:'Tournament' str:'Tournament Description' 1 20000 31104000 1000 0x039d4aff9853032b24026898960ba0d73616ab5e9b925a756b2624bb76a8d03f 1 3 0 0x05b09b36012fa3e07f04d3d89198c80f093e117cb449ae8d5656f1b610c0b737 10 arr:50,20,10 0 10 0 10 1"
