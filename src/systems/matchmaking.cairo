@@ -63,7 +63,7 @@ pub mod matchmaking {
     use dojo::{event::EventStorage, model::{ModelStorage}};
     use evolute_duel::{
         libs::{asserts::AssertsTrait, phase_management::{PhaseManagementTrait}},
-        models::{game::{Game, GameModeConfig, MatchmakingState, PlayerMatchmaking}},
+        models::{game::{Game, GameModeConfig, MatchmakingState, PlayerMatchmaking, BoardCounter}},
         events::{GameCreated, GameStarted, GameCanceled}, types::{packing::{GameStatus, GameMode}},
         systems::helpers::{board::{BoardTrait}},
     };
@@ -78,7 +78,6 @@ pub mod matchmaking {
 
     #[storage]
     struct Storage {
-        board_id_generator: felt252,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
     }
@@ -91,7 +90,6 @@ pub mod matchmaking {
     }
 
     fn dojo_init(ref self: ContractState, initial_owner: ContractAddress) {
-        self.board_id_generator.write(1);
         self.ownable.initializer(initial_owner);
 
         let mut world = self.world_default();
@@ -614,7 +612,7 @@ pub mod matchmaking {
             // Create tutorial board
             println!("[MATCHMAKING] _create_tutorial_game: creating tutorial board");
             let board = BoardTrait::create_tutorial_board(
-                world, player_address, bot_address, self.board_id_generator,
+                world, player_address, bot_address,
             );
             println!(
                 "[MATCHMAKING] _create_tutorial_game: tutorial board created with id={}", board.id,
@@ -676,7 +674,7 @@ pub mod matchmaking {
                 GameMode::Tutorial => {
                     println!("[MATCHMAKING] _create_board_for_mode: creating tutorial board");
                     let board = BoardTrait::create_tutorial_board(
-                        world, host_player, guest_player, self.board_id_generator,
+                        world, host_player, guest_player,
                     );
                     println!(
                         "[MATCHMAKING] _create_board_for_mode: tutorial board created with id={}",
@@ -691,7 +689,7 @@ pub mod matchmaking {
                         game_mode,
                     );
                     let board = BoardTrait::create_board(
-                        world, host_player, guest_player, game_mode, self.board_id_generator,
+                        world, host_player, guest_player, game_mode,
                     );
                     println!(
                         "[MATCHMAKING] _create_board_for_mode: regular board created with id={}",

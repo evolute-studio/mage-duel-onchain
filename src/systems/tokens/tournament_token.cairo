@@ -195,7 +195,7 @@ pub mod tournament_token {
     // };
     use evolute_duel::interfaces::dns::{
         DnsTrait, SELECTORS, ITournamentDispatcher, ITournamentDispatcherTrait,
-        IMatchmakingDispatcherTrait,
+        IMatchmakingDispatcherTrait, IMatchmakingLibraryDispatcher
         // IDuelProtectedDispatcherTrait,
     };
     // use evolute_duel::systems::rng::{RngWrap, RngWrapTrait};
@@ -331,27 +331,48 @@ pub mod tournament_token {
                 store.get_tournament_pass_value(pass_id).player_address.is_zero())
         }
         fn enlist_duelist(ref self: ContractState, pass_id: u64) {
+            println!("[enlist_duelist] Starting enlist_duelist for pass_id: {}", pass_id);
             let mut store: Store = StoreTrait::new(self.world_default());
+            println!("[enlist_duelist] Store created successfully");
+            
             // validate entry ownership
             let caller: ContractAddress = starknet::get_caller_address();
-            assert(self._is_owner_of(caller, pass_id.into()) == true, Errors::NOT_YOUR_ENTRY);
+            println!("[enlist_duelist] Caller address: {:?}", caller);
+            
+            let is_owner = self._is_owner_of(caller, pass_id.into());
+            println!("[enlist_duelist] Ownership check - is_owner: {}", is_owner);
+            assert(is_owner == true, Errors::NOT_YOUR_ENTRY);
 
             // enlist duelist in this tournament
+            println!("[enlist_duelist] Getting budokan registration for pass_id: {}", pass_id);
             let registration: Option<Registration> = self
                 ._get_budokan_registration(@store, pass_id);
+            println!("[enlist_duelist] Registration retrieved: {:?}", registration.is_some());
+            
             match registration {
                 Option::Some(registration) => {
+                    println!("[enlist_duelist] Registration found - tournament_id: {}, entry_number: {}", registration.tournament_id, registration.entry_number);
                     let mut entry: TournamentPass = store.get_tournament_pass(pass_id);
+                    println!("[enlist_duelist] Current tournament pass - tournament_id: {}, player_address: {:?}", entry.tournament_id, entry.player_address);
+                    
                     assert(entry.player_address.is_zero(), Errors::ALREADY_ENLISTED);
+                    println!("[enlist_duelist] Player address is zero - proceeding");
+                    
                     assert(registration.entry_number.is_non_zero(), Errors::INVALID_ENTRY_NUMBER);
+                    println!("[enlist_duelist] Entry number is valid: {}", registration.entry_number);
+                    
                     entry.tournament_id = registration.tournament_id;
                     entry.entry_number = registration.entry_number.try_into().unwrap();
                     entry.player_address = caller;
+                    println!("[enlist_duelist] Tournament pass updated - tournament_id: {}, entry_number: {}, player_address: {:?}", entry.tournament_id, entry.entry_number, entry.player_address);
 
                     // Initialize tournament rating for new participant
+                    println!("[enlist_duelist] Initializing tournament rating");
                     RatingSystemTrait::initialize_tournament_rating(ref entry);
+                    println!("[enlist_duelist] Tournament rating initialized");
 
                     store.set_tournament_pass(@entry);
+                    println!("[enlist_duelist] Tournament pass saved to store");
 
                     // Create index for fast player -> pass lookup
                     let player_index = PlayerTournamentIndex {
@@ -360,15 +381,21 @@ pub mod tournament_token {
                         pass_id: pass_id,
                     };
                     store.set_player_tournament_index(@player_index);
+                    println!("[enlist_duelist] Player tournament index created - player: {:?}, tournament_id: {}, pass_id: {}", caller, registration.tournament_id, pass_id);
+                    
                     // validate and create DuelistAssignment
                     //TODO: logic of entering tournament for game
+                    println!("[enlist_duelist] Calling PlayerTrait::enter_tournament");
                     PlayerTrait::enter_tournament(ref store, caller, pass_id);
+                    println!("[enlist_duelist] PlayerTrait::enter_tournament completed successfully");
                 },
                 Option::None => {
                     // should never get here since entry is owned and exists
+                    println!("[enlist_duelist] ERROR: Registration not found for pass_id: {}", pass_id);
                     assert(false, Errors::INVALID_ENTRY);
                 },
             }
+            println!("[enlist_duelist] enlist_duelist completed successfully");
         }
 
         //-----------------------------------
@@ -470,7 +497,7 @@ pub mod tournament_token {
 
             // Use matchmaking system to create/join tournaments
             let world = self.world_default();
-            let matchmaking_dispatcher = world.matchmaking_dispatcher();
+            let matchmaking_dispatcher: IMatchmakingLibraryDispatcher = world.matchmaking_library_dispatcher();
 
             // Call auto_match with Tournament mode and tournament_id
             let result = matchmaking_dispatcher
@@ -583,13 +610,18 @@ pub mod tournament_token {
         fn _get_budokan_registration(
             self: @ContractState, store: @Store, pass_id: u64,
         ) -> Option<Registration> {
+            println!("[_get_budokan_registration] Getting budokan dispatcher for pass_id: {}", pass_id);
             let budokan_dispatcher: ITournamentDispatcher = store
                 .budokan_dispatcher_from_pass_id(pass_id);
+            println!("[_get_budokan_registration] Budokan dispatcher address: {:?}", budokan_dispatcher.contract_address);
+            
             (if (budokan_dispatcher.contract_address.is_non_zero()) {
-                Option::Some(
-                    budokan_dispatcher.get_registration(starknet::get_contract_address(), pass_id),
-                )
+                println!("[_get_budokan_registration] Dispatcher address is valid, getting registration");
+                let registration = budokan_dispatcher.get_registration(starknet::get_contract_address(), pass_id);
+                println!("[_get_budokan_registration] Registration retrieved - tournament_id: {}, entry_number: {}", registration.tournament_id, registration.entry_number);
+                Option::Some(registration)
             } else {
+                println!("[_get_budokan_registration] ERROR: Dispatcher address is zero");
                 Option::None
             })
         }

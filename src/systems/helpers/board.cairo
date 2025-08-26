@@ -3,12 +3,11 @@ use starknet::{ContractAddress};
 use origami_random::{deck::{DeckTrait}};
 
 use evolute_duel::{
-    models::{scoring::{UnionNode}, game::{Board, GameModeConfig, AvailableTiles}},
+    models::{scoring::{UnionNode}, game::{Board, GameModeConfig, AvailableTiles, BoardCounter}},
     types::packing::{GameState, TEdge, Tile, PlayerSide, GameMode}, systems::helpers::{},
     events::{PlayerNotInGame},
 };
 
-use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
 use core::starknet::get_block_timestamp;
 
@@ -20,12 +19,21 @@ pub impl BoardImpl of BoardTrait {
         player1: ContractAddress,
         player2: ContractAddress,
         game_mode: GameMode,
-        mut board_id_generator: core::starknet::storage::StorageBase::<
-            core::starknet::storage::Mutable<core::felt252>,
-        >,
     ) -> Board {
-        let board_id = board_id_generator.read();
-        board_id_generator.write(board_id + 1);
+        println!("[BoardTrait::create_board] Creating board for players: {:?} vs {:?}", player1, player2);
+        
+        // Get current board counter from world storage
+        const BOARD_COUNTER_KEY: felt252 = 'BOARD_COUNTER';
+        let mut board_counter: BoardCounter = world.read_model(BOARD_COUNTER_KEY);
+        println!("[BoardTrait::create_board] Current board counter: {}", board_counter.current_count);
+        
+        // Use current count as board_id and increment for next use
+        let board_id = board_counter.current_count + 1;
+        board_counter.current_count = board_counter.current_count + 1;
+        
+        // Save updated counter back to world storage
+        world.write_model(@board_counter);
+        println!("[BoardTrait::create_board] Board ID assigned: {}, counter updated to: {}", board_id, board_counter.current_count);
 
         let config: GameModeConfig = world.read_model(game_mode);
         assert!(config.deck.len() != 0, "[BoardTrait] Deck config is empty");
@@ -191,12 +199,21 @@ pub impl BoardImpl of BoardTrait {
         mut world: WorldStorage,
         player_address: ContractAddress,
         bot_address: ContractAddress,
-        mut board_id_generator: core::starknet::storage::StorageBase::<
-            core::starknet::storage::Mutable<core::felt252>,
-        >,
     ) -> Board {
-        let board_id = board_id_generator.read();
-        board_id_generator.write(board_id + 1);
+        println!("[BoardTrait::create_tutorial_board] Creating tutorial board for player: {:?} vs bot: {:?}", player_address, bot_address);
+        
+        // Get current board counter from world storage
+        const BOARD_COUNTER_KEY: felt252 = 'BOARD_COUNTER';
+        let mut board_counter: BoardCounter = world.read_model(BOARD_COUNTER_KEY);
+        println!("[BoardTrait::create_tutorial_board] Current board counter: {}", board_counter.current_count);
+        
+        // Use current count as board_id and increment for next use
+        let board_id = board_counter.current_count + 1;
+        board_counter.current_count = board_counter.current_count + 1;
+        
+        // Save updated counter back to world storage
+        world.write_model(@board_counter);
+        println!("[BoardTrait::create_tutorial_board] Board ID assigned: {}, counter updated to: {}", board_id, board_counter.current_count);
 
         let config: GameModeConfig = world.read_model(GameMode::Tutorial);
         let mut deck_rules_flat = Self::tutorial_deck(config.deck);

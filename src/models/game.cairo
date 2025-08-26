@@ -172,3 +172,12 @@ pub struct PlayerMatchmaking {
     // rating moved to TournamentPass model
 }
 
+/// Global counter for generating unique board IDs
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct BoardCounter {
+    #[key]
+    pub key: felt252, // constant key for singleton instance
+    pub current_count: felt252, // current board count
+}
+

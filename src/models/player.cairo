@@ -78,15 +78,19 @@ pub impl PlayerImpl of PlayerTrait {
 
     // Enter tournament method - static method for tournament entry
     fn enter_tournament(ref store: Store, player_address: starknet::ContractAddress, pass_id: u64) {
+        println!("[PlayerTrait::enter_tournament] Starting enter_tournament for player: {:?}, pass_id: {}", player_address, pass_id);
+        
         // Create player assignment for this tournament pass
         let player_assignment = PlayerAssignment {
             player_address: player_address,
             pass_id: pass_id,
             duel_id: 0 // Will be set when matched in tournament
         };
+        println!("[PlayerTrait::enter_tournament] Player assignment created - player: {:?}, pass_id: {}, duel_id: {}", player_address, pass_id, 0);
 
         // Save player assignment
         store.set_player_challenge(@player_assignment);
+        println!("[PlayerTrait::enter_tournament] Player assignment saved to store successfully");
     }
 }
 

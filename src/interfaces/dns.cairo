@@ -1,4 +1,4 @@
-use starknet::{ContractAddress};
+use starknet::{ContractAddress, ClassHash};
 use dojo::world::{WorldStorage, WorldStorageTrait, IWorldDispatcher};
 use dojo::meta::interface::{IDeployedResourceDispatcher, IDeployedResourceDispatcherTrait};
 
@@ -7,7 +7,7 @@ pub use evolute_duel::systems::{
     // bank::{IBankDispatcher, IBankDispatcherTrait},
     game::{IGameDispatcher, IGameDispatcherTrait},
     tutorial::{ITutorialDispatcher, ITutorialDispatcherTrait},
-    matchmaking::{IMatchmakingDispatcher, IMatchmakingDispatcherTrait},
+    matchmaking::{IMatchmakingDispatcher, IMatchmakingDispatcherTrait, IMatchmakingLibraryDispatcher},
     // rng::{IRngDispatcher, IRngDispatcherTrait},
     // rng_mock::{IRngMockDispatcher, IRngMockDispatcherTrait},
     tokens::{// duel_token::{IDuelTokenDispatcher, IDuelTokenDispatcherTrait},
@@ -69,6 +69,16 @@ pub impl DnsImpl of DnsTrait {
         }
     }
 
+    fn find_contract_class_hash(self: @WorldStorage, contract_name: @ByteArray) -> ClassHash {
+        // let (contract_address, _) = self.dns(contract_name).unwrap(); // will panic if not found
+        match self.dns_class_hash(contract_name) {
+            Option::Some(class_hash) => { (class_hash) },
+            Option::None => {
+                (starknet::class_hash::class_hash_const::<0x0>()) // return zero address if not found
+            },
+        }
+    }
+
     // Create a Store from a dispatcher
     // https://github.com/dojoengine/dojo/blob/main/crates/dojo/core/src/contract/components/world_provider.cairo
     // https://github.com/dojoengine/dojo/blob/main/crates/dojo/core/src/world/storage.cairo
@@ -89,6 +99,11 @@ pub impl DnsImpl of DnsTrait {
     #[inline(always)]
     fn matchmaking_address(self: @WorldStorage) -> ContractAddress {
         (self.find_contract_address(@"matchmaking"))
+    }
+
+    #[inline(always)]
+    fn matchmaking_class_hash(self: @WorldStorage) -> ClassHash {
+        (self.find_contract_class_hash(@"matchmaking"))
     }
 
     // #[inline(always)]
@@ -149,6 +164,11 @@ pub impl DnsImpl of DnsTrait {
     #[inline(always)]
     fn matchmaking_dispatcher(self: @WorldStorage) -> IMatchmakingDispatcher {
         (IMatchmakingDispatcher { contract_address: self.matchmaking_address() })
+    }
+
+    #[inline(always)]
+    fn matchmaking_library_dispatcher(self: @WorldStorage) -> IMatchmakingLibraryDispatcher {
+        (IMatchmakingLibraryDispatcher { class_hash: self.matchmaking_class_hash() })
     }
 
     #[inline(always)]
