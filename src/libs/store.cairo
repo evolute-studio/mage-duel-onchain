@@ -16,12 +16,13 @@ pub use evolute_duel::models::{
     // },
     player::{Player, PlayerValue, PlayerAssignment, PlayerAssignmentValue},
     skins::{Shop, ShopValue},
-    game::{Board, BoardValue, Game, GameValue, Move, MoveValue, Rules, RulesValue// Snapshot, SnapshotValue
+    game::{
+        Board, BoardValue, Game, GameValue, Move, MoveValue,
+        GameModeConfig, GameModeConfigValue,
     },
     tournament::{
         TournamentStateModel, TournamentStateModelValue, TournamentPass, TournamentPassValue,
-        TournamentSettings, TournamentSettingsValue, TournamentChallenge, PlayerTournamentIndex,
-        TournamentType, TournamentRules, TournamentState, TournamentTypeTrait,
+        TournamentChallenge, PlayerTournamentIndex, TournamentState,
     },
     tournament_balance::{TournamentBalance, TournamentBalanceTrait},
     // config::{
@@ -91,11 +92,13 @@ pub impl StoreImpl of StoreTrait {
         (self.world.read_value(pass_id))
     }
 
-    fn get_tournament_settings(self: @Store, settings_id: u32) -> TournamentSettings {
-        (self.world.read_model(settings_id))
-    }
-    fn get_tournament_settings_value(self: @Store, settings_id: u32) -> TournamentSettingsValue {
-        (self.world.read_value(settings_id))
+    fn get_tournament_settings(self: @Store, settings_id: u32) -> GameModeConfig {
+        let tournament_config: GameModeConfig = self
+            .world
+            .read_model(
+                GameMode::Tournament
+            );
+        (tournament_config)
     }
 
     fn get_tournament(self: @Store, tournament_id: u64) -> TournamentStateModel {
@@ -150,10 +153,6 @@ pub impl StoreImpl of StoreTrait {
     //     (self.world.read_model((duel_type, pair),))
     // }
 
-    fn get_rules(self: @Store) -> Rules {
-        (self.world.read_model(0))
-    }
-
     fn get_move(self: @Store, move_id: felt252) -> Move {
         (self.world.read_model(move_id))
     }
@@ -189,10 +188,6 @@ pub impl StoreImpl of StoreTrait {
     //----------------------------------
     // Model Setters
     //
-
-    fn set_rules(ref self: Store, model: @Rules) {
-        self.world.write_model(model);
-    }
 
     fn set_player(ref self: Store, model: @Player) {
         self.world.write_model(model);
@@ -307,10 +302,6 @@ pub impl StoreImpl of StoreTrait {
         self.world.write_model(model);
     }
 
-    fn set_tournament_settings(ref self: Store, model: @TournamentSettings) {
-        self.world.write_model(model);
-    }
-
     fn set_tournament(ref self: Store, model: @TournamentStateModel) {
         self.world.write_model(model);
     }
@@ -374,14 +365,13 @@ pub impl StoreImpl of StoreTrait {
     //     selector!("rules")))
     // }
 
-    fn get_tournament_settings_rules(self: @Store, settings_id: u32) -> TournamentRules {
-        let tournament_type: TournamentType = self
+    fn get_tournament_settings_rules(self: @Store, settings_id: u32) -> GameModeConfig {
+        let tournament_config: GameModeConfig = self
             .world
-            .read_member(
-                Model::<TournamentSettings>::ptr_from_keys(settings_id),
-                selector!("tournament_type"),
+            .read_model(
+                GameMode::Tournament
             );
-        (tournament_type.rules())
+        (tournament_config)
     }
     fn get_tournament_pass_minter_address(self: @Store, pass_id: u64) -> ContractAddress {
         (self

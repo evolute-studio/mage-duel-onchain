@@ -205,10 +205,11 @@ pub mod tournament_token {
 
     use evolute_duel::models::{
         tournament::{
-            TournamentPass, TournamentType, TournamentTypeTrait, TournamentStateModel,
+            TournamentPass, TournamentStateModel,
             TournamentState, PlayerTournamentIndex,
         },
         player::{PlayerTrait},
+        game::{GameModeConfig},
     };
 
     use evolute_duel::utils::{short_string::{ShortStringTrait}};
@@ -264,7 +265,6 @@ pub mod tournament_token {
                 SCORE_ATTRIBUTE(),
                 SETTINGS_MODEL(),
             );
-        self._create_settings();
     }
 
     #[generate_trait]
@@ -290,13 +290,15 @@ pub mod tournament_token {
             println!("[setting_exists] Successfully created Store");
 
             println!("[setting_exists] Getting tournament settings for ID {}", settings_id);
-            let settings = store.get_tournament_settings(settings_id);
+            let settings: GameModeConfig = store.get_tournament_settings(settings_id);
             println!("[setting_exists] Successfully retrieved tournament settings");
 
             println!("[setting_exists] Checking tournament type validity");
-            println!("[setting_exists] settings.tournament_type = {:?}", settings.tournament_type);
+            println!("[setting_exists] settings.game_mode = {:?}", settings.game_mode);
 
-            let exists = settings.tournament_type != TournamentType::Undefined;
+            let exists = settings.game_mode == GameMode::Tournament
+                && settings.board_size != 0;
+
             println!("[setting_exists] Tournament type is not Undefined: {}", exists);
 
             println!("[setting_exists] Settings existence check completed, result: {}", exists);
@@ -562,11 +564,6 @@ pub mod tournament_token {
                     .is_owner(SELECTORS::TOURNAMENT_TOKEN, starknet::get_caller_address()) == true,
                 Errors::CALLER_NOT_OWNER,
             );
-        }
-
-        fn _create_settings(ref self: ContractState) {
-            let mut store: Store = StoreTrait::new(self.world_default());
-            store.set_tournament_settings(TournamentType::LastManStanding.tournament_settings());
         }
 
         fn _get_budokan_tournament_id(
