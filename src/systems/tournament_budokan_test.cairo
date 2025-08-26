@@ -74,7 +74,7 @@ pub trait ITournamentMock<TState> {
 }
 
 #[starknet::interface]
-trait ITournamentMockInit<TState> {
+pub trait ITournamentMockInit<TState> {
     fn initializer(
         ref self: TState,
         safe_mode: bool,
