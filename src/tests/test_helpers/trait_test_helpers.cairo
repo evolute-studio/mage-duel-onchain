@@ -3,12 +3,8 @@ use dojo::world::{WorldStorage, IWorldDispatcher};
 use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 
 use evolute_duel::{
-    models::{
-        game::{Board, Game, TileCommitments, AvailableTiles, Rules},
-        player::{Player},
-    },
-    types::packing::{GameState, GameStatus, PlayerSide},
-    utils::hash::{hash_values},
+    models::{game::{Board, Game, TileCommitments, AvailableTiles, Rules}, player::{Player}},
+    types::packing::{GameState, GameStatus, PlayerSide}, utils::hash::{hash_values},
 };
 
 // Test constants
@@ -22,16 +18,13 @@ const TILE_TYPE: u8 = 42;
 #[generate_trait]
 pub impl TraitTestHelpersImpl of TraitTestHelpersTrait {
     fn create_test_player_addresses() -> (ContractAddress, ContractAddress) {
-        (
-            contract_address_const::<PLAYER1_ADDRESS>(),
-            contract_address_const::<PLAYER2_ADDRESS>()
-        )
+        (contract_address_const::<PLAYER1_ADDRESS>(), contract_address_const::<PLAYER2_ADDRESS>())
     }
 
     fn create_test_board() -> Board {
         let (player1, player2) = Self::create_test_player_addresses();
         let available_tiles = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].span();
-        
+
         Board {
             id: BOARD_ID,
             available_tiles_in_deck: available_tiles,
@@ -63,11 +56,7 @@ pub impl TraitTestHelpersImpl of TraitTestHelpersTrait {
     }
 
     fn create_test_game(player: ContractAddress, status: GameStatus) -> Game {
-        Game {
-            player,
-            status,
-            board_id: Option::Some(BOARD_ID),
-        }
+        Game { player, status, board_id: Option::Some(BOARD_ID) }
     }
 
     fn create_test_player(address: ContractAddress) -> Player {
@@ -77,40 +66,27 @@ pub impl TraitTestHelpersImpl of TraitTestHelpersTrait {
             games_played: 5,
             username: 'TestPlayer',
             active_skin: 1,
-            role: 1, // Controller
+            role: 1 // Controller
         }
     }
 
     fn create_test_tile_commitments(player: ContractAddress) -> TileCommitments {
         let commitment = hash_values([TILE_INDEX.into(), NONCE, TILE_TYPE.into()].span());
         let commitments = array![commitment, 111, 222, 333, 444];
-        
-        TileCommitments {
-            board_id: BOARD_ID,
-            player,
-            tile_commitments: commitments.span(),
-        }
+
+        TileCommitments { board_id: BOARD_ID, player, tile_commitments: commitments.span() }
     }
 
     fn create_test_available_tiles(player: ContractAddress) -> AvailableTiles {
         let tiles = array![TILE_TYPE, 10, 20, 30, 40];
-        
-        AvailableTiles {
-            board_id: BOARD_ID,
-            player,
-            available_tiles: tiles.span(),
-        }
+
+        AvailableTiles { board_id: BOARD_ID, player, available_tiles: tiles.span() }
     }
 
     fn create_test_rules() -> Rules {
-        let deck = array![2, 0, 0, 4, 3, 6, 4, 0, 0, 4, 7, 6, 0, 9, 8, 0, 0, 0, 0, 0, 0, 3, 4, 4].span();
-        Rules {
-            id: 0,
-            deck,
-            edges: (1, 1),
-            joker_number: 3,
-            joker_price: 5,
-        }
+        let deck = array![2, 0, 0, 4, 3, 6, 4, 0, 0, 4, 7, 6, 0, 9, 8, 0, 0, 0, 0, 0, 0, 3, 4, 4]
+            .span();
+        Rules { id: 0, deck, edges: (1, 1), joker_number: 3, joker_price: 5 }
     }
 
     fn create_test_union_find() -> UnionFind {
@@ -130,39 +106,39 @@ pub impl TraitTestHelpersImpl of TraitTestHelpersTrait {
 
     fn setup_world_with_models(mut world: WorldStorage) {
         let (player1, player2) = Self::create_test_player_addresses();
-        
+
         // Setup board
         let board = Self::create_test_board();
         world.write_model(@board);
-        
+
         // Setup games
         let game1 = Self::create_test_game(player1, GameStatus::InProgress);
         let game2 = Self::create_test_game(player2, GameStatus::InProgress);
         world.write_model(@game1);
         world.write_model(@game2);
-        
+
         // Setup players
         let player1_model = Self::create_test_player(player1);
         let player2_model = Self::create_test_player(player2);
         world.write_model(@player1_model);
         world.write_model(@player2_model);
-        
+
         // Setup tile commitments
         let commitments1 = Self::create_test_tile_commitments(player1);
         let commitments2 = Self::create_test_tile_commitments(player2);
         world.write_model(@commitments1);
         world.write_model(@commitments2);
-        
+
         // Setup available tiles
         let available1 = Self::create_test_available_tiles(player1);
         let available2 = Self::create_test_available_tiles(player2);
         world.write_model(@available1);
         world.write_model(@available2);
-        
+
         // Setup rules
         let rules = Self::create_test_rules();
         world.write_model(@rules);
-        
+
         // Setup union find
         let union_find = Self::create_test_union_find();
         world.write_model(@union_find);

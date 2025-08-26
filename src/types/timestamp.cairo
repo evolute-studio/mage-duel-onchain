@@ -3,21 +3,20 @@
 //
 
 pub mod TIMESTAMP {
-    pub const ONE_MINUTE: u64   = 60;
-    pub const ONE_HOUR: u64     = 60 * 60;
-    pub const ONE_DAY: u64      = 60 * 60 * 24;
-    pub const ONE_WEEK: u64     = 60 * 60 * 24 * 7;
-    pub const TWO_WEEKS: u64    = 60 * 60 * 24 * 14;
-    pub const THREE_WEEKS: u64  = 60 * 60 * 24 * 21;
-    pub const FOUR_WEEKS: u64   = 60 * 60 * 24 * 28;
+    pub const ONE_MINUTE: u64 = 60;
+    pub const ONE_HOUR: u64 = 60 * 60;
+    pub const ONE_DAY: u64 = 60 * 60 * 24;
+    pub const ONE_WEEK: u64 = 60 * 60 * 24 * 7;
+    pub const TWO_WEEKS: u64 = 60 * 60 * 24 * 14;
+    pub const THREE_WEEKS: u64 = 60 * 60 * 24 * 21;
+    pub const FOUR_WEEKS: u64 = 60 * 60 * 24 * 28;
 }
 
 #[derive(Copy, Drop, Serde, PartialEq, IntrospectPacked)]
 pub struct Period {
-    pub start: u64,     // seconds since epoch, started
-    pub end: u64,       // seconds since epoch, ended
+    pub start: u64, // seconds since epoch, started
+    pub end: u64, // seconds since epoch, ended
 }
-
 
 
 // ----------------------------------------
@@ -41,11 +40,10 @@ pub impl TimestampImpl of TimestampTrait {
             (false)
         } else {
             let timestamp: u64 = starknet::get_block_timestamp();
-            (
-                timestamp > self ||
-                // tournament lifecycle cannot be extended
-                (*challenge.duel_type == DuelType::Tournament && timestamp > *challenge.timestamps.end)
-            )
+            (timestamp > self
+                ||// tournament lifecycle cannot be extended
+                (*challenge.duel_type == DuelType::Tournament
+                    && timestamp > *challenge.timestamps.end))
         }
     }
     #[inline(always)]
@@ -83,49 +81,52 @@ mod unit {
         assert_eq!(TimestampTrait::from_days(14), TIMESTAMP::TWO_WEEKS, "TWO_WEEKS");
         assert_eq!(TimestampTrait::from_days(21), TIMESTAMP::THREE_WEEKS, "THREE_WEEKS");
         assert_eq!(TimestampTrait::from_days(28), TIMESTAMP::FOUR_WEEKS, "FOUR_WEEKS");
-        assert_eq!(TimestampTrait::from_datetime(1, 1, 1), TIMESTAMP::ONE_DAY + TIMESTAMP::ONE_HOUR + TIMESTAMP::ONE_MINUTE, "from_datetime");
+        assert_eq!(
+            TimestampTrait::from_datetime(1, 1, 1),
+            TIMESTAMP::ONE_DAY + TIMESTAMP::ONE_HOUR + TIMESTAMP::ONE_MINUTE,
+            "from_datetime",
+        );
     }
-
     // // test if "free" starknet::get_block_timestamp() is really free...
-    // // spoiler.. it is not!
-    // #[test]
-    // fn test_timestamp_once() { // 12,200
-    //     // let timestamp: u64 = starknet::get_block_timestamp();
-    //     starknet::get_block_timestamp();
-    // }
-    // #[test]
-    // fn test_timestamp_twice() { // 24,000
-    //     // let timestamp: u64 = starknet::get_block_timestamp();
-    //     starknet::get_block_timestamp();
-    //     starknet::get_block_timestamp();
-    // }
-    // #[test]
-    // fn test_timestamp_multi() { // 118,400
-    //     starknet::get_block_timestamp();
-    //     starknet::get_block_timestamp();
-    //     starknet::get_block_timestamp();
-    //     starknet::get_block_timestamp();
-    //     starknet::get_block_timestamp();
-    //     starknet::get_block_timestamp();
-    //     starknet::get_block_timestamp();
-    //     starknet::get_block_timestamp();
-    //     starknet::get_block_timestamp();
-    //     starknet::get_block_timestamp();
-    // }
-    // #[test]
-    // fn test_timestamp_call_pass() { // 13,280
-    //     let timestamp: u64 = starknet::get_block_timestamp();
-    //     _call_pass(timestamp);
-    // }
-    // fn _call_pass(timestamp: u64) -> bool {
-    //     (timestamp > 0)
-    // }
-    // #[test]
-    // fn test_timestamp_call_no_pass() { // 25,080
-    //     let _timestamp: u64 = starknet::get_block_timestamp();
-    //     _call_no_pass();
-    // }
-    // fn _call_no_pass() -> bool {
-    //     (starknet::get_block_timestamp() > 0)
-    // }
+// // spoiler.. it is not!
+// #[test]
+// fn test_timestamp_once() { // 12,200
+//     // let timestamp: u64 = starknet::get_block_timestamp();
+//     starknet::get_block_timestamp();
+// }
+// #[test]
+// fn test_timestamp_twice() { // 24,000
+//     // let timestamp: u64 = starknet::get_block_timestamp();
+//     starknet::get_block_timestamp();
+//     starknet::get_block_timestamp();
+// }
+// #[test]
+// fn test_timestamp_multi() { // 118,400
+//     starknet::get_block_timestamp();
+//     starknet::get_block_timestamp();
+//     starknet::get_block_timestamp();
+//     starknet::get_block_timestamp();
+//     starknet::get_block_timestamp();
+//     starknet::get_block_timestamp();
+//     starknet::get_block_timestamp();
+//     starknet::get_block_timestamp();
+//     starknet::get_block_timestamp();
+//     starknet::get_block_timestamp();
+// }
+// #[test]
+// fn test_timestamp_call_pass() { // 13,280
+//     let timestamp: u64 = starknet::get_block_timestamp();
+//     _call_pass(timestamp);
+// }
+// fn _call_pass(timestamp: u64) -> bool {
+//     (timestamp > 0)
+// }
+// #[test]
+// fn test_timestamp_call_no_pass() { // 25,080
+//     let _timestamp: u64 = starknet::get_block_timestamp();
+//     _call_no_pass();
+// }
+// fn _call_no_pass() -> bool {
+//     (starknet::get_block_timestamp() > 0)
+// }
 }

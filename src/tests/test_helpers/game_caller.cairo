@@ -3,16 +3,9 @@ use dojo::world::WorldStorage;
 
 
 use evolute_duel::{
-    models::{
-        game::{
-            Game, Board,
-        },
-    },
-    systems::{
-        game::{IGameDispatcher, IGameDispatcherTrait},
-    },
+    models::{game::{Game, Board}}, systems::{game::{IGameDispatcher, IGameDispatcherTrait}},
     utils::hash::{hash_values, hash_values_with_sha256},
-    systems::helpers::tile_helpers::{create_extended_tile}
+    systems::helpers::tile_helpers::{create_extended_tile},
 };
 
 use starknet::{testing, ContractAddress};
@@ -159,7 +152,6 @@ pub impl GameCallerImpl of GameCallerTrait {
     //     self.game_system.create_game();
     // }
 
-
     // fn join_game(ref self: GameCaller) {
     //     testing::set_contract_address(self.guest_player_data.address);
     //     self.game_system.join_game(self.host_player_data.address);
@@ -208,8 +200,13 @@ pub impl GameCallerImpl of GameCallerTrait {
                         selector!("board_id"),
                     );
                 let mut board: Board = self.world.read_model(board_id.unwrap());
-                let tile_type = *board.available_tiles_in_deck.at(tile_index.into());                
-                println!("Host player revealed tile: {:?}, at index: {}, and type: {}", create_extended_tile(tile_type.into(), 0), tile_index, tile_type);
+                let tile_type = *board.available_tiles_in_deck.at(tile_index.into());
+                println!(
+                    "Host player revealed tile: {:?}, at index: {}, and type: {}",
+                    create_extended_tile(tile_type.into(), 0),
+                    tile_index,
+                    tile_type,
+                );
             },
             Turn::Guest => {
                 println!("Guest player is revealing tile with c: {}", c);
@@ -225,7 +222,12 @@ pub impl GameCallerImpl of GameCallerTrait {
                     );
                 let mut board: Board = self.world.read_model(board_id.unwrap());
                 let tile_type = *board.available_tiles_in_deck.at(tile_index.into());
-                println!("Guest player revealed tile: {:?}, at index: {}, and type: {}", create_extended_tile(tile_type.into(), 0), tile_index, tile_type);
+                println!(
+                    "Guest player revealed tile: {:?}, at index: {}, and type: {}",
+                    create_extended_tile(tile_type.into(), 0),
+                    tile_index,
+                    tile_type,
+                );
             },
         }
 
@@ -267,16 +269,26 @@ pub impl GameCallerImpl of GameCallerTrait {
         }
     }
 
-    fn process_move(ref self: GameCaller, joker_tile: Option<u8>, rotation: u8, col: u32, row: u32) {
+    fn process_move(
+        ref self: GameCaller, joker_tile: Option<u8>, rotation: u8, col: u32, row: u32,
+    ) {
         match self.turn {
             Turn::Host => {
                 testing::set_contract_address(self.host_player_data.address);
-                self.game_system.make_move(joker_tile, rotation, col.try_into().unwrap(), row.try_into().unwrap());
+                self
+                    .game_system
+                    .make_move(
+                        joker_tile, rotation, col.try_into().unwrap(), row.try_into().unwrap(),
+                    );
                 self.turn = Turn::Guest;
             },
             Turn::Guest => {
                 testing::set_contract_address(self.guest_player_data.address);
-                self.game_system.make_move(joker_tile, rotation, col.try_into().unwrap(), row.try_into().unwrap());
+                self
+                    .game_system
+                    .make_move(
+                        joker_tile, rotation, col.try_into().unwrap(), row.try_into().unwrap(),
+                    );
                 self.turn = Turn::Host;
             },
         }
@@ -288,14 +300,15 @@ pub impl GameCallerImpl of GameCallerTrait {
         for (joker_tile, rotation, col, row) in moves {
             println!("{}", i);
             self.commited_tile = self.process_reveal_phase(self.commited_tile).unwrap();
-            self.process_move(joker_tile, rotation, col.try_into().unwrap(), row.try_into().unwrap());
+            self
+                .process_move(
+                    joker_tile, rotation, col.try_into().unwrap(), row.try_into().unwrap(),
+                );
             i += 1;
         }
     }
 
-    fn process_auto_multiple_moves(
-        ref self: GameCaller, moves: u8,
-    ) {
+    fn process_auto_multiple_moves(ref self: GameCaller, moves: u8) {
         self.update_commited_tile();
         for i in 0..moves {
             println!("{}", i);
@@ -307,7 +320,9 @@ pub impl GameCallerImpl of GameCallerTrait {
                     selector!("board_id"),
                 );
             let mut board: Board = self.world.read_model(board_id.unwrap());
-            let (joker_tile, rotation, col, row) = MoveFinderTrait::find_move(ref board, self.world);
+            let (joker_tile, rotation, col, row) = MoveFinderTrait::find_move(
+                ref board, self.world,
+            );
             self.process_move(joker_tile, rotation, col, row);
         };
     }

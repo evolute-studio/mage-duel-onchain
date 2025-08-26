@@ -11,11 +11,11 @@ pub use evolute_duel::systems::tokens::grnd_token::{
 #[inline(always)]
 pub fn igrnd_token(contract_address: ContractAddress) -> GrndTokenDispatcher {
     assert(contract_address.is_non_zero(), 'igrnd_token(): null address');
-    (GrndTokenDispatcher{contract_address})
+    (GrndTokenDispatcher { contract_address })
 }
 
 #[inline(always)]
 pub fn igrnd_token_protected(contract_address: ContractAddress) -> GrndTokenProtectedDispatcher {
     assert(contract_address.is_non_zero(), 'igrnd_token_protected(): null');
-    (GrndTokenProtectedDispatcher{contract_address})
+    (GrndTokenProtectedDispatcher { contract_address })
 }

@@ -10,16 +10,15 @@ pub use evolute_duel::systems::{
     matchmaking::{IMatchmakingDispatcher, IMatchmakingDispatcherTrait},
     // rng::{IRngDispatcher, IRngDispatcherTrait},
     // rng_mock::{IRngMockDispatcher, IRngMockDispatcherTrait},
-    tokens::{
-        // duel_token::{IDuelTokenDispatcher, IDuelTokenDispatcherTrait},
-        // duelist_token::{IDuelistTokenDispatcher, IDuelistTokenDispatcherTrait},
-        // pack_token::{IPackTokenDispatcher, IPackTokenDispatcherTrait},
-        // fame_coin::{IFameCoinDispatcher, IFameCoinDispatcherTrait},
-        // evolute_coin::{IEvoluteCoin, IEvoluteCoinDispatcher, IEvoluteCoinDispatcherTrait},
-        // lords_mock::{ILordsMockDispatcher, ILordsMockDispatcherTrait},
-        tournament_token::{ITournamentTokenDispatcher, ITournamentTokenDispatcherTrait},
-    },
-    // rewards_manager::{IRewardsManager, IRewardsManagerDispatcher, IRewardsManagerDispatcherTrait},
+    tokens::{// duel_token::{IDuelTokenDispatcher, IDuelTokenDispatcherTrait},
+    // duelist_token::{IDuelistTokenDispatcher, IDuelistTokenDispatcherTrait},
+    // pack_token::{IPackTokenDispatcher, IPackTokenDispatcherTrait},
+    // fame_coin::{IFameCoinDispatcher, IFameCoinDispatcherTrait},
+    // evolute_coin::{IEvoluteCoin, IEvoluteCoinDispatcher, IEvoluteCoinDispatcherTrait},
+    // lords_mock::{ILordsMockDispatcher, ILordsMockDispatcherTrait},
+    tournament_token::{ITournamentTokenDispatcher, ITournamentTokenDispatcherTrait}},
+    // rewards_manager::{IRewardsManager, IRewardsManagerDispatcher,
+// IRewardsManagerDispatcherTrait},
 };
 pub use evolute_duel::interfaces::{
     ierc20::{ierc20, Erc20Dispatcher, Erc20DispatcherTrait},
@@ -58,14 +57,12 @@ pub mod SELECTORS {
 pub impl DnsImpl of DnsTrait {
     #[inline(always)]
     fn find_contract_name(self: @WorldStorage, contract_address: ContractAddress) -> ByteArray {
-        (IDeployedResourceDispatcher{contract_address}.dojo_name())
+        (IDeployedResourceDispatcher { contract_address }.dojo_name())
     }
     fn find_contract_address(self: @WorldStorage, contract_name: @ByteArray) -> ContractAddress {
         // let (contract_address, _) = self.dns(contract_name).unwrap(); // will panic if not found
         match self.dns_address(contract_name) {
-            Option::Some(contract_address) => {
-                (contract_address)
-            },
+            Option::Some(contract_address) => { (contract_address) },
             Option::None => {
                 (starknet::contract_address_const::<0x0>()) // return zero address if not found
             },
@@ -83,17 +80,17 @@ pub impl DnsImpl of DnsTrait {
     //--------------------------
     // system addresses
     //
-    
+
     #[inline(always)]
     fn game_address(self: @WorldStorage) -> ContractAddress {
         (self.find_contract_address(@"game"))
     }
-    
+
     #[inline(always)]
     fn matchmaking_address(self: @WorldStorage) -> ContractAddress {
         (self.find_contract_address(@"matchmaking"))
     }
-   
+
     // #[inline(always)]
     // fn evolute_coin_address(self: @WorldStorage) -> ContractAddress {
     //     (self.find_contract_address(@"evolute_coin"))
@@ -113,17 +110,17 @@ pub impl DnsImpl of DnsTrait {
     fn evlt_token_address(self: @WorldStorage) -> ContractAddress {
         (self.find_contract_address(@"evlt_token"))
     }
-    
+
     #[inline(always)]
     fn grnd_token_address(self: @WorldStorage) -> ContractAddress {
         (self.find_contract_address(@"grnd_token"))
     }
-    
+
     #[inline(always)]
     fn evlt_topup_address(self: @WorldStorage) -> ContractAddress {
         (self.find_contract_address(@"evlt_topup"))
     }
-    
+
     #[inline(always)]
     fn rewards_manager_address(self: @WorldStorage) -> ContractAddress {
         (self.find_contract_address(@"rewards_manager"))
@@ -134,9 +131,7 @@ pub impl DnsImpl of DnsTrait {
     //
     #[inline(always)]
     fn is_world_contract(self: @WorldStorage, contract_address: ContractAddress) -> bool {
-        (contract_address == self.find_contract_address(
-            @self.find_contract_name(contract_address)
-        ))
+        (contract_address == self.find_contract_address(@self.find_contract_name(contract_address)))
     }
     #[inline(always)]
     fn caller_is_world_contract(self: @WorldStorage) -> bool {
@@ -150,99 +145,99 @@ pub impl DnsImpl of DnsTrait {
     //--------------------------
     // dispatchers
     //
-    
+
     #[inline(always)]
     fn matchmaking_dispatcher(self: @WorldStorage) -> IMatchmakingDispatcher {
-        (IMatchmakingDispatcher{ contract_address: self.matchmaking_address() })
+        (IMatchmakingDispatcher { contract_address: self.matchmaking_address() })
     }
 
     #[inline(always)]
     fn evlt_token_dispatcher(self: @WorldStorage) -> IEvltTokenDispatcher {
-        (IEvltTokenDispatcher{ contract_address: self.evlt_token_address() })
+        (IEvltTokenDispatcher { contract_address: self.evlt_token_address() })
     }
-    
     // Add missing dispatchers for the new addresses we added
-    // Note: We would need to import the appropriate dispatcher traits for these
+// Note: We would need to import the appropriate dispatcher traits for these
 
     // //--------------------------
-    // // legacy dispatchers (commented out)
-    // //
-    // #[inline(always)]
-    // fn admin_dispatcher(self: @WorldStorage) -> IAdminDispatcher {
-    //     (IAdminDispatcher{ contract_address: self.admin_address() })
-    // }
-    // #[inline(always)]
-    // fn bank_dispatcher(self: @WorldStorage) -> IBankDispatcher {
-    //     (IBankDispatcher{ contract_address: self.bank_address() })
-    // }
-    // #[inline(always)]
-    // fn game_dispatcher(self: @WorldStorage) -> IGameDispatcher {
-    //     (IGameDispatcher{ contract_address: self.game_address() })
-    // }
-    // #[inline(always)]
-    // fn tutorial_dispatcher(self: @WorldStorage) -> ITutorialDispatcher {
-    //     (ITutorialDispatcher{ contract_address: self.tutorial_address() })
-    // }
-    // #[inline(always)]
-    // fn rng_dispatcher(self: @WorldStorage) -> IRngDispatcher {
-    //     (IRngDispatcher{ contract_address: self.rng_address() })
-    // }
-    // #[inline(always)]
-    // fn rng_mock_dispatcher(self: @WorldStorage) -> IRngMockDispatcher {
-    //     (IRngMockDispatcher{ contract_address: self.rng_mock_address() })
-    // }
-    // #[inline(always)]
-    // fn duel_token_dispatcher(self: @WorldStorage) -> IDuelTokenDispatcher {
-    //     (IDuelTokenDispatcher{ contract_address: self.duel_token_address() })
-    // }
-    // #[inline(always)]
-    // fn duelist_token_dispatcher(self: @WorldStorage) -> IDuelistTokenDispatcher {
-    //     (IDuelistTokenDispatcher{ contract_address: self.duelist_token_address() })
-    // }   
-    // #[inline(always)]
-    // fn pack_token_dispatcher(self: @WorldStorage) -> IPackTokenDispatcher {
-    //     (IPackTokenDispatcher{ contract_address: self.pack_token_address() })
-    // }
-    // #[inline(always)]
-    // fn fame_coin_dispatcher(self: @WorldStorage) -> IFameCoinDispatcher {
-    //     (IFameCoinDispatcher{ contract_address: self.fame_coin_address() })
-    // }
-    // #[inline(always)]
-    // fn evolute_coin_dispatcher(self: @WorldStorage) -> IEvoluteCoinDispatcher {
-    //     (IEvoluteCoinDispatcher { contract_address: self.evolute_coin_address() })
-    // }
+// // legacy dispatchers (commented out)
+// //
+// #[inline(always)]
+// fn admin_dispatcher(self: @WorldStorage) -> IAdminDispatcher {
+//     (IAdminDispatcher{ contract_address: self.admin_address() })
+// }
+// #[inline(always)]
+// fn bank_dispatcher(self: @WorldStorage) -> IBankDispatcher {
+//     (IBankDispatcher{ contract_address: self.bank_address() })
+// }
+// #[inline(always)]
+// fn game_dispatcher(self: @WorldStorage) -> IGameDispatcher {
+//     (IGameDispatcher{ contract_address: self.game_address() })
+// }
+// #[inline(always)]
+// fn tutorial_dispatcher(self: @WorldStorage) -> ITutorialDispatcher {
+//     (ITutorialDispatcher{ contract_address: self.tutorial_address() })
+// }
+// #[inline(always)]
+// fn rng_dispatcher(self: @WorldStorage) -> IRngDispatcher {
+//     (IRngDispatcher{ contract_address: self.rng_address() })
+// }
+// #[inline(always)]
+// fn rng_mock_dispatcher(self: @WorldStorage) -> IRngMockDispatcher {
+//     (IRngMockDispatcher{ contract_address: self.rng_mock_address() })
+// }
+// #[inline(always)]
+// fn duel_token_dispatcher(self: @WorldStorage) -> IDuelTokenDispatcher {
+//     (IDuelTokenDispatcher{ contract_address: self.duel_token_address() })
+// }
+// #[inline(always)]
+// fn duelist_token_dispatcher(self: @WorldStorage) -> IDuelistTokenDispatcher {
+//     (IDuelistTokenDispatcher{ contract_address: self.duelist_token_address() })
+// }
+// #[inline(always)]
+// fn pack_token_dispatcher(self: @WorldStorage) -> IPackTokenDispatcher {
+//     (IPackTokenDispatcher{ contract_address: self.pack_token_address() })
+// }
+// #[inline(always)]
+// fn fame_coin_dispatcher(self: @WorldStorage) -> IFameCoinDispatcher {
+//     (IFameCoinDispatcher{ contract_address: self.fame_coin_address() })
+// }
+// #[inline(always)]
+// fn evolute_coin_dispatcher(self: @WorldStorage) -> IEvoluteCoinDispatcher {
+//     (IEvoluteCoinDispatcher { contract_address: self.evolute_coin_address() })
+// }
 
     // #[inline(always)]
-    // fn rewards_manager_dispatcher(self: @WorldStorage) -> IRewardsManagerDispatcher {
-    //     (IRewardsManagerDispatcher { contract_address: self.rewards_manager_address() })
-    // }
-    // #[inline(always)]
-    // fn budokan_dispatcher_from_pass_id(self: @Store, pass_id: u64) -> ITournamentDispatcher {
-    //     (ITournamentDispatcher{ contract_address: self.world.read_member(Model::<TokenMetadata>::ptr_from_keys(pass_id), selector!("minted_by")) })
-    // }
-    // need access to store...
-    // #[inline(always)]
-    // fn lords_dispatcher(self: @Store) -> Erc20Dispatcher {
-    //     (Erc20Dispatcher{ contract_address: self.get_config_lords_address() })
-    //     // (ierc20(self.get_config_lords_address()))
-    // }
-    // #[inline(always)]
-    // fn vrf_dispatcher(self: @Store) -> IVrfProviderDispatcher {
-    //     (IVrfProviderDispatcher{ contract_address: self.get_config_vrf_address() })
-    // }
-
+// fn rewards_manager_dispatcher(self: @WorldStorage) -> IRewardsManagerDispatcher {
+//     (IRewardsManagerDispatcher { contract_address: self.rewards_manager_address() })
+// }
+// #[inline(always)]
+// fn budokan_dispatcher_from_pass_id(self: @Store, pass_id: u64) -> ITournamentDispatcher {
+//     (ITournamentDispatcher{ contract_address:
+//     self.world.read_member(Model::<TokenMetadata>::ptr_from_keys(pass_id),
+//     selector!("minted_by")) })
+// }
+// need access to store...
+// #[inline(always)]
+// fn lords_dispatcher(self: @Store) -> Erc20Dispatcher {
+//     (Erc20Dispatcher{ contract_address: self.get_config_lords_address() })
+//     // (ierc20(self.get_config_lords_address()))
+// }
+// #[inline(always)]
+// fn vrf_dispatcher(self: @Store) -> IVrfProviderDispatcher {
+//     (IVrfProviderDispatcher{ contract_address: self.get_config_vrf_address() })
+// }
 
     //--------------------------
-    // test dispatchers
-    // (use only in tests)
-    //
-    // #[inline(always)]
-    // fn lords_mock_dispatcher(self: @WorldStorage) -> ILordsMockDispatcher {
-    //     (ILordsMockDispatcher{ contract_address: self.lords_mock_address() })
-    // }
-    // #[inline(always)]
-    // fn vrf_mock_dispatcher(self: @WorldStorage) -> IVrfProviderDispatcher {
-    //     (IVrfProviderDispatcher{ contract_address: self.vrf_mock_address() })
-    // }
+// test dispatchers
+// (use only in tests)
+//
+// #[inline(always)]
+// fn lords_mock_dispatcher(self: @WorldStorage) -> ILordsMockDispatcher {
+//     (ILordsMockDispatcher{ contract_address: self.lords_mock_address() })
+// }
+// #[inline(always)]
+// fn vrf_mock_dispatcher(self: @WorldStorage) -> IVrfProviderDispatcher {
+//     (IVrfProviderDispatcher{ contract_address: self.vrf_mock_address() })
+// }
 
 }

@@ -8,13 +8,13 @@ use evolute_duel::models::challenge::{DuelType};
 #[dojo::model]
 pub struct Pact {
     #[key]
-    pub pair: u128,                     // packed pair of duelist ids
+    pub pair: u128, // packed pair of duelist ids
     #[key]
-    pub duel_type: DuelType,            // type of challenge
+    pub duel_type: DuelType, // type of challenge
     //------
-    pub player_a: ContractAddress,      // player A
-    pub player_b: ContractAddress,      // player B  
-    pub timestamp: u64,                 // pact timestamp
+    pub player_a: ContractAddress, // player A
+    pub player_b: ContractAddress, // player B  
+    pub timestamp: u64, // pact timestamp
 }
 
 #[generate_trait]
@@ -30,7 +30,7 @@ pub impl PactImpl of PactTrait {
         }
     }
 
-    #[inline(always)]  
+    #[inline(always)]
     fn exists(self: @Pact) -> bool {
         (*self.pair != 0)
     }

@@ -137,19 +137,19 @@ pub mod tournament_mock {
             println!("[initializer] test_mode = {}", test_mode);
             println!("[initializer] test_erc20 = {:?}", test_erc20);
             println!("[initializer] test_erc721 = {:?}", test_erc721);
-            
+
             println!("[initializer] Calling self.tournament.initialize()");
             self.tournament.initialize(safe_mode, test_mode);
             println!("[initializer] Successfully executed self.tournament.initialize()");
-            
+
             println!("[initializer] Calling self.tournament.initialize_erc20()");
             self.tournament.initialize_erc20(test_erc20, "Test ERC20", "TERC20");
             println!("[initializer] Successfully executed self.tournament.initialize_erc20()");
-            
+
             println!("[initializer] Calling self.tournament.initialize_erc721()");
             self.tournament.initialize_erc721(test_erc721, "Test ERC721", "TERC721");
             println!("[initializer] Successfully executed self.tournament.initialize_erc721()");
-            
+
             println!("[initializer] Initialization completed successfully");
         }
     }

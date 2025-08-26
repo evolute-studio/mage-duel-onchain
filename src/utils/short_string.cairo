@@ -37,14 +37,13 @@ pub impl ShortString of ShortStringTrait {
 }
 
 
-
 //----------------------------------------
 // Unit  tests
 //
 #[cfg(test)]
 mod unit {
     use super::{ShortString};
-    
+
     #[test]
     fn test_concat() {
         assert_eq!(ShortString::concat('ABC', '123'), 'ABC123', "ABC123");
@@ -52,17 +51,25 @@ mod unit {
         assert_eq!(ShortString::concat('Hey', ' World'), 'Hey World', "Hey 2");
         assert_eq!(ShortString::concat(' Hey', 'World '), ' HeyWorld ', "Hey 3");
         assert_eq!(ShortString::concat(' Hey ', ' World '), ' Hey  World ', "Hey 4");
-        assert_eq!(ShortString::concat('123456789012345678901234567890', '1'), '1234567890123456789012345678901', "1234567890123456789012345678901");
-        assert_eq!(ShortString::concat('1', '123456789012345678901234567890'), '1123456789012345678901234567890', "1123456789012345678901234567890");
+        assert_eq!(
+            ShortString::concat('123456789012345678901234567890', '1'),
+            '1234567890123456789012345678901',
+            "1234567890123456789012345678901",
+        );
+        assert_eq!(
+            ShortString::concat('1', '123456789012345678901234567890'),
+            '1123456789012345678901234567890',
+            "1123456789012345678901234567890",
+        );
         assert_eq!(ShortString::join('Hey', 'World'), 'Hey_World', "Hey_World");
     }
-    
+
     #[test]
-    #[should_panic(expected:('short_string::concat() Overflow',))]
+    #[should_panic(expected: ('short_string::concat() Overflow',))]
     fn test_concat_overflow() {
         ShortString::concat('1234567890123456789012345678901', '2');
     }
-    
+
     #[test]
     fn test_strlen() {
         assert_eq!(0.strlen(), 0, "0");
@@ -72,7 +79,7 @@ mod unit {
         assert_eq!('Hey World'.strlen(), 9, "not 9");
         assert_eq!('1234567890123456789012345678901'.strlen(), 31, "not 31");
     }
-    
+
     #[test]
     fn test_string() {
         assert_eq!(0.to_string(), "", "not 0");
@@ -80,6 +87,10 @@ mod unit {
         assert_eq!('1'.to_string(), "1", "not 1");
         assert_eq!('Hey'.to_string(), "Hey", "not Hey");
         assert_eq!('Hey World'.to_string(), "Hey World", "not Hey World");
-        assert_eq!('1234567890123456789012345678901'.to_string(), "1234567890123456789012345678901", "not 31");
+        assert_eq!(
+            '1234567890123456789012345678901'.to_string(),
+            "1234567890123456789012345678901",
+            "not 31",
+        );
     }
 }

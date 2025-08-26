@@ -1,6 +1,4 @@
 use starknet::{ContractAddress};
-use dojo::world::IWorldDispatcher;
-
 #[starknet::interface]
 pub trait IEvltToken<TState> {
     // IERC20
@@ -8,7 +6,9 @@ pub trait IEvltToken<TState> {
     fn balance_of(self: @TState, account: ContractAddress) -> u256;
     fn allowance(self: @TState, owner: ContractAddress, spender: ContractAddress) -> u256;
     fn transfer(ref self: TState, recipient: ContractAddress, amount: u256) -> bool;
-    fn transfer_from(ref self: TState, sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool;
+    fn transfer_from(
+        ref self: TState, sender: ContractAddress, recipient: ContractAddress, amount: u256,
+    ) -> bool;
     fn approve(ref self: TState, spender: ContractAddress, amount: u256) -> bool;
     // IERC20Metadata
     fn name(self: @TState) -> ByteArray;
@@ -17,8 +17,10 @@ pub trait IEvltToken<TState> {
     // IERC20CamelOnly
     fn totalSupply(self: @TState) -> u256;
     fn balanceOf(self: @TState, account: ContractAddress) -> u256;
-    fn transferFrom(ref self: TState, sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool;
-    
+    fn transferFrom(
+        ref self: TState, sender: ContractAddress, recipient: ContractAddress, amount: u256,
+    ) -> bool;
+
     // IEvltTokenProtected
     fn mint(ref self: TState, recipient: ContractAddress, amount: u256);
     fn burn(ref self: TState, from: ContractAddress, amount: u256);
@@ -38,15 +40,13 @@ pub trait IEvltTokenProtected<TState> {
 #[dojo::contract]
 pub mod evlt_token {
     use starknet::{ContractAddress};
-    use dojo::world::{WorldStorage, IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{WorldStorage};
     use core::num::traits::Zero;
 
     //-----------------------------------
     // ERC-20 Start
     //
-    use openzeppelin_token::erc20::{
-        ERC20Component,
-    };
+    use openzeppelin_token::erc20::{ERC20Component};
     use openzeppelin_access::accesscontrol::AccessControlComponent;
     use openzeppelin_introspection::src5::SRC5Component;
 
@@ -57,7 +57,8 @@ pub mod evlt_token {
     #[abi(embed_v0)]
     impl ERC20MixinImpl = ERC20Component::ERC20MixinImpl<ContractState>;
     #[abi(embed_v0)]
-    impl AccessControlMixinImpl = AccessControlComponent::AccessControlMixinImpl<ContractState>;
+    impl AccessControlMixinImpl =
+        AccessControlComponent::AccessControlMixinImpl<ContractState>;
 
     //Internal
     impl ERC20InternalImpl = ERC20Component::InternalImpl<ContractState>;
@@ -70,7 +71,7 @@ pub mod evlt_token {
         #[substorage(v0)]
         accesscontrol: AccessControlComponent::Storage,
         #[substorage(v0)]
-        src5: SRC5Component::Storage
+        src5: SRC5Component::Storage,
     }
 
     #[event]
@@ -83,7 +84,7 @@ pub mod evlt_token {
         Minted: Minted,
         Burned: Burned,
         #[flat]
-        SRC5Event: SRC5Component::Event
+        SRC5Event: SRC5Component::Event,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -119,9 +120,15 @@ pub mod evlt_token {
     }
 
     //*******************************************
-    pub fn TOKEN_NAME() -> ByteArray {("Evolute Premium Token")}
-    pub fn TOKEN_SYMBOL() -> ByteArray {("EVLT")}
-    pub fn TOKEN_DECIMALS() -> u8 { 18 }
+    pub fn TOKEN_NAME() -> ByteArray {
+        ("Evolute Premium Token")
+    }
+    pub fn TOKEN_SYMBOL() -> ByteArray {
+        ("EVLT")
+    }
+    pub fn TOKEN_DECIMALS() -> u8 {
+        18
+    }
     //*******************************************
 
     // Access Control Roles
@@ -132,37 +139,34 @@ pub mod evlt_token {
 
     fn dojo_init(ref self: ContractState, admin_address: ContractAddress) {
         let mut world = self.world_default();
-        
+
         // Initialize ERC20
-        self.erc20.initializer(
-            TOKEN_NAME(),
-            TOKEN_SYMBOL(),
-        );
-        
+        self.erc20.initializer(TOKEN_NAME(), TOKEN_SYMBOL());
+
         // Initialize access control with admin
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(DEFAULT_ADMIN_ROLE, admin_address);
-        
+
         // Get evlt_topup address from DNS and grant minter role
         let evlt_topup_address = world.find_contract_address(@"evlt_topup");
         assert(!evlt_topup_address.is_zero(), Errors::TOP_UP_NOT_FOUND);
         if !evlt_topup_address.is_zero() {
             self.accesscontrol._grant_role(MINTER_ROLE, evlt_topup_address);
         }
-        
+
         // Get tournament_token address from DNS and grant burner role
         let tournament_token_address = world.find_contract_address(@"tournament_token");
         if !tournament_token_address.is_zero() {
             self.accesscontrol._grant_role(BURNER_ROLE, tournament_token_address);
         }
-        
+
         // Get budokan tournament address from DNS and grant transfer role
         let budokan_address = world.find_contract_address(@"tournament_budokan_test");
         if !budokan_address.is_zero() {
             self.accesscontrol._grant_role(TRANSFER_ROLE, budokan_address);
         }
     }
-    
+
     #[generate_trait]
     impl WorldDefaultImpl of WorldDefaultTrait {
         #[inline(always)]
@@ -179,52 +183,44 @@ pub mod evlt_token {
         fn mint(ref self: ContractState, recipient: ContractAddress, amount: u256) {
             assert(!recipient.is_zero(), Errors::ZERO_ADDRESS);
             assert(amount > 0, Errors::ZERO_AMOUNT);
-            
+
             // Validate caller has MINTER_ROLE
             self.accesscontrol.assert_only_role(MINTER_ROLE);
             let minter_address = starknet::get_caller_address();
-            
+
             // Mint tokens
             self.erc20.mint(recipient, amount);
-            
+
             // Emit custom event
-            self.emit(Minted {
-                recipient,
-                amount,
-                minter: minter_address,
-            });
+            self.emit(Minted { recipient, amount, minter: minter_address });
         }
 
         fn burn(ref self: ContractState, from: ContractAddress, amount: u256) {
             assert(!from.is_zero(), Errors::ZERO_ADDRESS);
             assert(amount > 0, Errors::ZERO_AMOUNT);
-            
+
             // Only admin, burner role, or user burning their own tokens
             let caller = starknet::get_caller_address();
             let is_admin = self.accesscontrol.has_role(DEFAULT_ADMIN_ROLE, caller);
             let is_burner = self.accesscontrol.has_role(BURNER_ROLE, caller);
-            
+
             assert(is_admin || is_burner || caller == from, Errors::UNAUTHORIZED_BURN);
-            
+
             // Check balance
             let balance = self.erc20.balance_of(from);
             assert(balance >= amount, Errors::INSUFFICIENT_BALANCE);
-            
+
             // Burn tokens
             self.erc20.burn(from, amount);
-            
+
             // Emit custom event
-            self.emit(Burned {
-                from,
-                amount,
-                burner: caller,
-            });
+            self.emit(Burned { from, amount, burner: caller });
         }
 
         fn set_minter(ref self: ContractState, minter_address: ContractAddress) {
             // Only admin can change minter
             self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
-            
+
             // Grant minter role to new address
             self.accesscontrol._grant_role(MINTER_ROLE, minter_address);
         }
@@ -232,7 +228,7 @@ pub mod evlt_token {
         fn set_burner(ref self: ContractState, burner_address: ContractAddress) {
             // Only admin can change burner
             self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
-            
+
             // Grant burner role to new address
             self.accesscontrol._grant_role(BURNER_ROLE, burner_address);
         }
@@ -240,7 +236,7 @@ pub mod evlt_token {
         fn set_transfer_allowed(ref self: ContractState, allowed_address: ContractAddress) {
             // Only admin can change transfer permissions
             self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
-            
+
             // Grant transfer role to new address
             self.accesscontrol._grant_role(TRANSFER_ROLE, allowed_address);
         }
@@ -251,21 +247,21 @@ pub mod evlt_token {
             ref self: ERC20Component::ComponentState<ContractState>,
             from: ContractAddress,
             recipient: ContractAddress,
-            amount: u256
+            amount: u256,
         ) {
             // Allow minting (from zero address) and burning (to zero address)
             if from.is_zero() || recipient.is_zero() {
                 return;
             }
-            
+
             // Allow transfers initiated by addresses with TRANSFER_ROLE (like budokan tournaments)
             let caller = starknet::get_caller_address();
             let contract_state = self.get_contract();
-            
+
             if contract_state.accesscontrol.has_role(TRANSFER_ROLE, caller) {
                 return;
             }
-            
+
             // Block all other transfers between non-zero addresses
             panic(array![Errors::TRANSFERS_DISABLED]);
         }
@@ -274,7 +270,7 @@ pub mod evlt_token {
             ref self: ERC20Component::ComponentState<ContractState>,
             from: ContractAddress,
             recipient: ContractAddress,
-            amount: u256
+            amount: u256,
         ) {
             // No additional logic needed after update
             let _ = (from, recipient, amount);

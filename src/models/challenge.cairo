@@ -12,43 +12,50 @@ pub struct Challenge {
     pub duel_id: felt252,
     //-------------------------
     // settings
-    pub duel_type: DuelType,        // duel type
+    pub duel_type: DuelType, // duel type
     // duelists
-    pub address_a: ContractAddress, 
+    pub address_a: ContractAddress,
     pub address_b: ContractAddress, // Challenged wallet
     // progress and results
-    pub state: ChallengeState,      // current state
-    pub winner: u8,                 // 0:draw, 1:duelist_a, 2:duelist_b
+    pub state: ChallengeState, // current state
+    pub winner: u8, // 0:draw, 1:duelist_a, 2:duelist_b
     // timestamps in unix epoch
     pub timestamps: Period,
 }
 
 #[derive(Serde, Copy, Drop, PartialEq, Introspect)]
 pub enum DuelType {
-    Undefined,      // 0
-    Regular,       // 1
-    Tournament,     // 2
+    Undefined, // 0
+    Regular, // 1
+    Tournament // 2
     // Practice,       // 3
 }
 
 //------------------------------------
 // Traits
 //
-use core::num::traits::Zero;
 
 #[generate_trait]
 pub impl ChallengeImpl of ChallengeTrait {
     #[inline(always)]
     fn duelist_number(self: @Challenge, player_address: ContractAddress) -> u8 {
-        (if (player_address == *self.address_a) {(1)}
-        else if (player_address == *self.address_b) {(2)}
-        else {(0)})
+        (if (player_address == *self.address_a) {
+            (1)
+        } else if (player_address == *self.address_b) {
+            (2)
+        } else {
+            (0)
+        })
     }
     #[inline(always)]
     fn winner_address(self: @Challenge) -> ContractAddress {
-        (if (*self.winner == 1) {*self.address_a}
-        else if (*self.winner == 2) {*self.address_b}
-        else {starknet::contract_address_const::<0>()})
+        (if (*self.winner == 1) {
+            *self.address_a
+        } else if (*self.winner == 2) {
+            *self.address_b
+        } else {
+            starknet::contract_address_const::<0>()
+        })
     }
     #[inline(always)]
     fn exists(self: @Challenge) -> bool {
@@ -59,7 +66,6 @@ pub impl ChallengeImpl of ChallengeTrait {
         (*self.duel_type == DuelType::Tournament)
     }
 }
-
 // #[generate_trait]
 // pub impl RoundImpl of RoundTrait {
 //     #[inline(always)]
@@ -104,11 +110,13 @@ pub impl ChallengeImpl of ChallengeTrait {
 //     }
 //     #[inline(always)]
 //     fn set_commit_timeout(ref self: Moves, rules: Rules, current_timestamp: u64) {
-//         self.timeout = if (!self.has_comitted()) {(current_timestamp + rules.get_reply_timeout())} else {(0)};
+//         self.timeout = if (!self.has_comitted()) {(current_timestamp +
+//         rules.get_reply_timeout())} else {(0)};
 //     }
 //     #[inline(always)]
 //     fn set_reveal_timeout(ref self: Moves, rules: Rules, current_timestamp: u64) {
-//         self.timeout = if (!self.has_revealed()) {(current_timestamp + rules.get_reply_timeout())} else {(0)};
+//         self.timeout = if (!self.has_revealed()) {(current_timestamp +
+//         rules.get_reply_timeout())} else {(0)};
 //     }
 //     #[inline(always)]
 //     fn has_timed_out(ref self: Moves, challenge: @Challenge) -> bool {
@@ -135,7 +143,6 @@ pub impl ChallengeImpl of ChallengeTrait {
 //         self.chances.clampi(0, 100);
 //     }
 // }
-
 
 // //---------------------------
 // // Converters
@@ -166,3 +173,4 @@ pub impl ChallengeImpl of ChallengeTrait {
 //         Result::Ok(())
 //     }
 // }
+

@@ -1,13 +1,13 @@
 use starknet::{ContractAddress};
-use dojo::world::IWorldDispatcher;
-
 #[starknet::interface]
 pub trait ITopUp<TState> {
     // --- single top-up ---
     fn mint_evlt(ref self: TState, user: ContractAddress, amount: u256, source: felt252);
 
     // --- batch top-up ---
-    fn mint_evlt_batch(ref self: TState, users: Span<ContractAddress>, amounts: Span<u256>, source: felt252);
+    fn mint_evlt_batch(
+        ref self: TState, users: Span<ContractAddress>, amounts: Span<u256>, source: felt252,
+    );
 
     // --- views ---
     fn get_topup_history(self: @TState, user: ContractAddress) -> (Span<u256>, Span<u64>);
@@ -23,14 +23,14 @@ pub trait ITopUpAdmin<TState> {
 #[dojo::contract]
 pub mod evlt_topup {
     use starknet::{
-        ContractAddress, get_caller_address, get_block_timestamp, 
-        storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess}
+        ContractAddress, get_caller_address, get_block_timestamp,
+        storage::{StorageMapReadAccess, StorageMapWriteAccess},
     };
-    use dojo::world::{WorldStorage, IWorldDispatcherTrait};
+    use dojo::world::{WorldStorage};
     use core::num::traits::Zero;
-
-    use super::{ITopUp, ITopUpAdmin};
-    use evolute_duel::systems::tokens::evlt_token::{IEvltTokenProtectedDispatcher, IEvltTokenProtectedDispatcherTrait};
+    use evolute_duel::systems::tokens::evlt_token::{
+        IEvltTokenProtectedDispatcher, IEvltTokenProtectedDispatcherTrait,
+    };
     use evolute_duel::interfaces::dns::{DnsTrait};
 
     //-----------------------------------
@@ -44,7 +44,8 @@ pub mod evlt_topup {
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
 
     #[abi(embed_v0)]
-    impl AccessControlMixinImpl = AccessControlComponent::AccessControlMixinImpl<ContractState>;
+    impl AccessControlMixinImpl =
+        AccessControlComponent::AccessControlMixinImpl<ContractState>;
     impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
 
     //-----------------------------------
@@ -56,9 +57,13 @@ pub mod evlt_topup {
         accesscontrol: AccessControlComponent::Storage,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
-        user_topup_history: starknet::storage::Map<(ContractAddress, u32), (u256, u64)>, // (user, index) -> (amount, timestamp)
+        user_topup_history: starknet::storage::Map<
+            (ContractAddress, u32), (u256, u64),
+        >, // (user, index) -> (amount, timestamp)
         user_topup_count: starknet::storage::Map<ContractAddress, u32>, // user -> number of topups
-        user_total_topups: starknet::storage::Map<ContractAddress, u256>, // user -> total amount topped up
+        user_total_topups: starknet::storage::Map<
+            ContractAddress, u256,
+        > // user -> total amount topped up
     }
 
     //-----------------------------------
@@ -135,15 +140,17 @@ pub mod evlt_topup {
     //
     #[generate_trait]
     impl InternalImpl of InternalTrait {
-        fn _record_topup(ref self: ContractState, user: ContractAddress, amount: u256, timestamp: u64) {
+        fn _record_topup(
+            ref self: ContractState, user: ContractAddress, amount: u256, timestamp: u64,
+        ) {
             let current_count = self.user_topup_count.read(user);
-            
+
             // Store the topup record
             self.user_topup_history.write((user, current_count), (amount, timestamp));
-            
+
             // Update counters
             self.user_topup_count.write(user, current_count + 1);
-            
+
             // Update total topups
             let current_total = self.user_total_topups.read(user);
             self.user_total_topups.write(user, current_total + amount);
@@ -167,103 +174,104 @@ pub mod evlt_topup {
     //
     #[abi(embed_v0)]
     impl TopUpImpl of super::ITopUp<ContractState> {
-        fn mint_evlt(ref self: ContractState, user: ContractAddress, amount: u256, source: felt252) {
+        fn mint_evlt(
+            ref self: ContractState, user: ContractAddress, amount: u256, source: felt252,
+        ) {
             // Only admin/minter can call this
             self.accesscontrol.assert_only_role(MINTER_ROLE);
-            
+
             // Validate parameters
             self._validate_mint_params(user, amount);
-            
+
             let caller = get_caller_address();
             let timestamp = get_block_timestamp();
-            
+
             // Get EVLT token dispatcher and mint
             let evlt_token = self._get_evlt_token();
             evlt_token.mint(user, amount);
-            
+
             // Record the topup
             self._record_topup(user, amount, timestamp);
-            
+
             // Emit event
-            self.emit(EVLTMinted {
-                user,
-                amount,
-                source,
-                timestamp,
-                admin: caller,
-            });
+            self.emit(EVLTMinted { user, amount, source, timestamp, admin: caller });
         }
 
-        fn mint_evlt_batch(ref self: ContractState, users: Span<ContractAddress>, amounts: Span<u256>, source: felt252) {
+        fn mint_evlt_batch(
+            ref self: ContractState,
+            users: Span<ContractAddress>,
+            amounts: Span<u256>,
+            source: felt252,
+        ) {
             // Only admin/minter can call this
             self.accesscontrol.assert_only_role(MINTER_ROLE);
-            
+
             // Validate arrays
             assert(users.len() > 0, Errors::EMPTY_ARRAYS);
             assert(users.len() == amounts.len(), Errors::ARRAY_LENGTH_MISMATCH);
-            
+
             let caller = get_caller_address();
             let timestamp = get_block_timestamp();
             let evlt_token = self._get_evlt_token();
-            
+
             let mut total_amount: u256 = 0;
             let mut i: u32 = 0;
-            
+
             // Process each user
             loop {
                 if i >= users.len() {
                     break;
                 }
-                
+
                 let user = *users.at(i);
                 let amount = *amounts.at(i);
-                
+
                 // Validate each mint
                 self._validate_mint_params(user, amount);
-                
+
                 // Mint tokens
                 evlt_token.mint(user, amount);
-                
+
                 // Record the topup
                 self._record_topup(user, amount, timestamp);
-                
+
                 total_amount += amount;
                 i += 1;
             };
-            
+
             // Emit batch event
-            self.emit(EVLTBatchMinted {
-                users,
-                amounts,
-                source,
-                timestamp,
-                admin: caller,
-                total_amount,
-            });
+            self
+                .emit(
+                    EVLTBatchMinted {
+                        users, amounts, source, timestamp, admin: caller, total_amount,
+                    },
+                );
         }
 
-        fn get_topup_history(self: @ContractState, user: ContractAddress) -> (Span<u256>, Span<u64>) {
+        fn get_topup_history(
+            self: @ContractState, user: ContractAddress,
+        ) -> (Span<u256>, Span<u64>) {
             let count = self.user_topup_count.read(user);
-            
+
             if count == 0 {
                 return (array![].span(), array![].span());
             }
-            
+
             let mut amounts: Array<u256> = array![];
             let mut timestamps: Array<u64> = array![];
             let mut i: u32 = 0;
-            
+
             loop {
                 if i >= count {
                     break;
                 }
-                
+
                 let (amount, timestamp) = self.user_topup_history.read((user, i));
                 amounts.append(amount);
                 timestamps.append(timestamp);
                 i += 1;
             };
-            
+
             (amounts.span(), timestamps.span())
         }
 

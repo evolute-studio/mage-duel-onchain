@@ -17,9 +17,13 @@ pub trait ITournamentMock<TState> {
     fn current_phase(self: @TState, tournament_id: u64) -> Phase;
     fn top_scores(self: @TState, tournament_id: u64) -> Array<u64>;
     fn is_token_registered(self: @TState, token: ContractAddress) -> bool;
-    fn get_registration(self: @TState, game_address: ContractAddress, token_id: u64) -> Registration;
-    fn get_tournament_id_for_token_id(self: @TState, game_address: ContractAddress, token_id: u64) -> u64;
-    
+    fn get_registration(
+        self: @TState, game_address: ContractAddress, token_id: u64,
+    ) -> Registration;
+    fn get_tournament_id_for_token_id(
+        self: @TState, game_address: ContractAddress, token_id: u64,
+    ) -> u64;
+
     fn create_tournament(
         ref self: TState,
         creator_rewards_address: ContractAddress,
@@ -80,14 +84,12 @@ pub mod tournament_mock {
                 created_by: starknet::contract_address_const::<0x111>(),
                 creator_token_id: 1,
                 metadata: Metadata {
-                    name: 'Mock Tournament',
-                    description: "Mock tournament for testing"
+                    name: 'Mock Tournament', description: "Mock tournament for testing",
                 },
                 schedule: Schedule {
                     registration: Option::None,
                     game: Period {
-                        start: get_block_timestamp(),
-                        end: get_block_timestamp() + 3600,
+                        start: get_block_timestamp(), end: get_block_timestamp() + 3600,
                     },
                     submission_duration: 300,
                 },
@@ -121,7 +123,9 @@ pub mod tournament_mock {
             true
         }
 
-        fn get_registration(self: @ContractState, game_address: ContractAddress, token_id: u64) -> Registration {
+        fn get_registration(
+            self: @ContractState, game_address: ContractAddress, token_id: u64,
+        ) -> Registration {
             Registration {
                 game_address,
                 game_token_id: token_id,
@@ -131,7 +135,9 @@ pub mod tournament_mock {
             }
         }
 
-        fn get_tournament_id_for_token_id(self: @ContractState, game_address: ContractAddress, token_id: u64) -> u64 {
+        fn get_tournament_id_for_token_id(
+            self: @ContractState, game_address: ContractAddress, token_id: u64,
+        ) -> u64 {
             1
         }
 
@@ -171,12 +177,10 @@ pub mod tournament_mock {
             (1, 1)
         }
 
-        fn submit_score(ref self: ContractState, tournament_id: u64, token_id: u64, position: u8) {
-            // Mock implementation - do nothing
+        fn submit_score(ref self: ContractState, tournament_id: u64, token_id: u64, position: u8) {// Mock implementation - do nothing
         }
 
-        fn claim_prize(ref self: ContractState, tournament_id: u64, prize_type: PrizeType) {
-            // Mock implementation - do nothing
+        fn claim_prize(ref self: ContractState, tournament_id: u64, prize_type: PrizeType) {// Mock implementation - do nothing
         }
 
         fn add_prize(
@@ -185,8 +189,7 @@ pub mod tournament_mock {
             token_address: ContractAddress,
             token_type: TokenType,
             position: u8,
-        ) {
-            // Mock implementation - do nothing
+        ) {// Mock implementation - do nothing
         }
     }
 }

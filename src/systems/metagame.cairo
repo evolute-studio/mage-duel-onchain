@@ -9,33 +9,20 @@ pub trait IMetaGame<T> {
 #[dojo::contract]
 pub mod metagame {
     use super::super::rewards_manager::IRewardsManagerDispatcherTrait;
-const CENTER_BOARD_COL: u32 = 16384;
+    const CENTER_BOARD_COL: u32 = 16384;
     const CENTER_BOARD_ROW: u32 = 16384;
     const BOARD_SIZE: u32 = 32768; // Assuming a board size of 32768x32768 for the metagame
 
     use super::IMetaGame;
     use evolute_duel::{
         models::metagame::{MetagameBoardBounds, MetagamePlayerData, Position},
-        systems::helpers::{
-            validation::{is_valid_move},
-            prizes::prize_system::{has_prize_at},
-        },
-        types::packing::{PlayerSide},
-        libs::{
-            scoring::{ScoringImpl},
-        },
-        interfaces::dns::{DnsTrait}, 
+        systems::helpers::{validation::{is_valid_move}, prizes::prize_system::{has_prize_at}},
+        types::packing::{PlayerSide}, libs::{scoring::{ScoringImpl}}, interfaces::dns::{DnsTrait},
     };
 
-    use dojo::{
-        world::{WorldStorage},
-        model::{ModelStorage},
-    };
-    use starknet::{
-        {get_caller_address},
-        storage::{StoragePointerReadAccess},
-    };
-    
+    use dojo::{world::{WorldStorage}, model::{ModelStorage}};
+    use starknet::{{get_caller_address}, storage::{StoragePointerReadAccess}};
+
     #[storage]
     struct Storage {
         current_season_id: felt252,
@@ -46,11 +33,11 @@ const CENTER_BOARD_COL: u32 = 16384;
         // Initialize the metagame board bounds
         let board_bounds = MetagameBoardBounds {
             season_id: 0, // Default season ID
-            min_col: CENTER_BOARD_COL, 
+            min_col: CENTER_BOARD_COL,
             max_col: CENTER_BOARD_COL,
             min_row: CENTER_BOARD_ROW,
             max_row: CENTER_BOARD_ROW,
-            gap_size: 10, // Default gap size between tiles
+            gap_size: 10 // Default gap size between tiles
         };
         world.write_model(@board_bounds);
     }
@@ -62,10 +49,12 @@ const CENTER_BOARD_COL: u32 = 16384;
             let season_id = self.current_season_id.read();
             // Retrieve the current board bounds
             let mut board_bounds: MetagameBoardBounds = world.read_model(season_id);
-            
+
             // Check if the tile placement is within bounds
-            if col < board_bounds.min_col || col > board_bounds.max_col ||
-               row < board_bounds.min_row || row > board_bounds.max_row {
+            if col < board_bounds.min_col
+                || col > board_bounds.max_col
+                || row < board_bounds.min_row
+                || row > board_bounds.max_row {
                 panic!("Tile placement out of bounds");
             }
 
@@ -77,7 +66,7 @@ const CENTER_BOARD_COL: u32 = 16384;
             }
 
             let tile = *player_data.deck[tile_index];
-            
+
             if !is_valid_move(
                 self.current_season_id.read(), // Assuming board_id is not used in this context
                 tile.into(),
@@ -89,8 +78,9 @@ const CENTER_BOARD_COL: u32 = 16384;
                 board_bounds.min_row,
                 board_bounds.max_col,
                 board_bounds.max_row,
-                player_data.tiles_placed == 0, // Allow placing not adjacent tiles only for the first tile
-                world.clone()
+                player_data
+                    .tiles_placed == 0, // Allow placing not adjacent tiles only for the first tile
+                world.clone(),
             ) {
                 panic!("Invalid move");
             }
@@ -101,11 +91,11 @@ const CENTER_BOARD_COL: u32 = 16384;
                 rotation,
                 col,
                 row,
-                PlayerSide::None,  // TODO: Think about player side
+                PlayerSide::None, // TODO: Think about player side
                 player_address,
                 self.current_season_id.read(),
                 BOARD_SIZE,
-                world.clone()
+                world.clone(),
             );
 
             let mut new_player_deck = array![];
@@ -117,12 +107,7 @@ const CENTER_BOARD_COL: u32 = 16384;
             player_data.deck = new_player_deck.span();
             player_data.tiles_placed += 1;
             if player_data.first_tile_placed.is_none() {
-                player_data.first_tile_placed = Option::Some(
-                    Position {
-                        col,
-                        row
-                    }
-                );
+                player_data.first_tile_placed = Option::Some(Position { col, row });
             }
             world.write_model(@player_data);
 
@@ -131,7 +116,7 @@ const CENTER_BOARD_COL: u32 = 16384;
                 board_bounds.min_col = col - board_bounds.gap_size;
             }
             if col + board_bounds.gap_size > board_bounds.max_col {
-                board_bounds.max_col = col + board_bounds.gap_size; 
+                board_bounds.max_col = col + board_bounds.gap_size;
             }
             if row - board_bounds.gap_size < board_bounds.min_row {
                 board_bounds.min_row = row - board_bounds.gap_size;
@@ -139,35 +124,24 @@ const CENTER_BOARD_COL: u32 = 16384;
             if row + board_bounds.gap_size > board_bounds.max_row {
                 board_bounds.max_row = row + board_bounds.gap_size;
             }
-            
+
             world.write_model(@board_bounds);
             // Check if the placed tile has a prize
             match player_data.first_tile_placed {
                 Option::Some(position) => {
                     match has_prize_at(
-                        player_address,
-                        col,
-                        row,
-                        position.col,
-                        position.row,
-                        season_id,
+                        player_address, col, row, position.col, position.row, season_id,
                     ) {
                         Option::Some(prize) => {
                             let rewards_manager_dispatcher = world.rewards_manager_dispatcher();
-                            rewards_manager_dispatcher
-                                .transfer_rewards(
-                                    player_address,
-                                    prize
-                                );
+                            rewards_manager_dispatcher.transfer_rewards(player_address, prize);
                         },
-                        Option::None => {
-                            // No prize at this position, do nothing
-                        }
+                        Option::None => {// No prize at this position, do nothing
+                        },
                     }
                 },
-                Option::None => {
-                    // If no first tile placed, do nothing
-                }
+                Option::None => {// If no first tile placed, do nothing
+                },
             }
         }
     }

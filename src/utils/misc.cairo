@@ -32,7 +32,9 @@ pub fn ZERO() -> ContractAddress {
 }
 
 pub impl ContractAddressDefault of Default<ContractAddress> {
-    fn default() -> ContractAddress {(ZERO())}
+    fn default() -> ContractAddress {
+        (ZERO())
+    }
 }
 
 // for println! format! (core::fmt::Display<>) assert! (core::fmt::Debug<>)

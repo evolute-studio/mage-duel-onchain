@@ -16,9 +16,7 @@ pub impl TimingImpl of TimingTrait {
         Self::validate_current_player_turn(board, player, player_side, world)
     }
 
-    fn validate_phase_timing(
-        board: @Board, timeout_duration: u64
-    ) -> bool {
+    fn validate_phase_timing(board: @Board, timeout_duration: u64) -> bool {
         get_block_timestamp() <= *board.phase_started_at + timeout_duration
     }
 
@@ -41,11 +39,13 @@ pub impl TimingImpl of TimingTrait {
         }
         true
     }
-    
-    fn validate_phase_timeout(board: @Board, creating_time: u64, reveal_time: u64, move_time: u64) -> bool {
+
+    fn validate_phase_timeout(
+        board: @Board, creating_time: u64, reveal_time: u64, move_time: u64,
+    ) -> bool {
         let current_timestamp = get_block_timestamp();
         let phase_started_at = *board.phase_started_at;
-        
+
         match *board.game_state {
             evolute_duel::types::packing::GameState::Creating => {
                 current_timestamp > phase_started_at + creating_time
@@ -63,9 +63,7 @@ pub impl TimingImpl of TimingTrait {
         }
     }
 
-    fn check_two_consecutive_skips(
-        board: @Board, mut world: dojo::world::WorldStorage,
-    ) -> bool {
+    fn check_two_consecutive_skips(board: @Board, mut world: dojo::world::WorldStorage) -> bool {
         let prev_move_id = *board.last_move_id;
         if prev_move_id.is_some() {
             let prev_move_id = prev_move_id.unwrap();

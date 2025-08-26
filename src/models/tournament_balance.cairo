@@ -11,7 +11,7 @@ pub struct TournamentBalance {
     #[key]
     pub tournament_id: u64,
     //------
-    pub eevlt_balance: u32,  // Number of tournament games available for this specific tournament
+    pub eevlt_balance: u32, // Number of tournament games available for this specific tournament
 }
 
 //------------------------------------
@@ -45,11 +45,7 @@ pub struct EevltBurned {
 #[generate_trait]
 pub impl TournamentBalanceImpl of TournamentBalanceTrait {
     fn new(player_address: ContractAddress, tournament_id: u64) -> TournamentBalance {
-        TournamentBalance {
-            player_address,
-            tournament_id,
-            eevlt_balance: 0
-        }
+        TournamentBalance { player_address, tournament_id, eevlt_balance: 0 }
     }
 
     fn add_balance(ref self: TournamentBalance, amount: u32) {

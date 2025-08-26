@@ -1,11 +1,10 @@
-
 pub mod CONST {
     // // number of rounds per duel
     // pub const ROUND_COUNT: u8 = 1;
-    
+
     // // the hard max duelist id (max supply)
     // pub const MAX_DUELIST_ID: u128 = 0xffffff; // 24 bits (16,777,215)
-    
+
     // // duelist health & damage
     // pub const FULL_HEALTH: u8 = 3;      // initial health
     // pub const DOUBLE_DAMAGE: u8 = 2;
@@ -52,13 +51,13 @@ pub mod METADATA {
         ("https://mageduel.evolute.network/")
     }
     // pub fn CONTRACT_IMAGE(base_uri: ByteArray) -> ByteArray {
-    //     format!("{}/pistols/logo.png", base_uri)
-    // }
-    // pub fn CONTRACT_BANNER_IMAGE(base_uri: ByteArray) -> ByteArray {
-    //     format!("{}/pistols/splash.png", base_uri)
-    // }
-    // pub fn CONTRACT_FEATURED_IMAGE(base_uri: ByteArray) -> ByteArray {
-    //     format!("{}/pistols/splash_og.png", base_uri)
-    // }
+//     format!("{}/pistols/logo.png", base_uri)
+// }
+// pub fn CONTRACT_BANNER_IMAGE(base_uri: ByteArray) -> ByteArray {
+//     format!("{}/pistols/splash.png", base_uri)
+// }
+// pub fn CONTRACT_FEATURED_IMAGE(base_uri: ByteArray) -> ByteArray {
+//     format!("{}/pistols/splash_og.png", base_uri)
+// }
 
 }

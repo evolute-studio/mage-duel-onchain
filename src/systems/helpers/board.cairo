@@ -1,15 +1,10 @@
 use dojo::{model::{ModelStorage}, world::{WorldStorage}, event::EventStorage};
 use starknet::{ContractAddress};
-use origami_random::{
-    deck::{DeckTrait},
-    dice::{DiceTrait},
-};
+use origami_random::{deck::{DeckTrait}};
 
 use evolute_duel::{
     models::{scoring::{UnionNode}, game::{Board, GameModeConfig, AvailableTiles}},
-    types::packing::{GameState, TEdge, Tile, PlayerSide, GameMode},
-    systems::helpers::{
-    },
+    types::packing::{GameState, TEdge, Tile, PlayerSide, GameMode}, systems::helpers::{},
     events::{PlayerNotInGame},
 };
 
@@ -59,7 +54,7 @@ pub impl BoardImpl of BoardTrait {
         // Initialize edges using config.board_size
         let (cities_on_edges, roads_on_edges) = config.edges;
         Self::generate_initial_board_state(
-            cities_on_edges, roads_on_edges, board_id, config.board_size, world
+            cities_on_edges, roads_on_edges, board_id, config.board_size, world,
         );
 
         // Create player available tiles.
@@ -103,41 +98,55 @@ pub impl BoardImpl of BoardTrait {
     }
 
     fn generate_initial_board_state(
-        cities_on_edges: u8, roads_on_edges: u8, board_id: felt252, board_size: u8, mut world: WorldStorage,
-    ){
+        cities_on_edges: u8,
+        roads_on_edges: u8,
+        board_id: felt252,
+        board_size: u8,
+        mut world: WorldStorage,
+    ) {
         let board_size_i32: i32 = board_size.into();
         let max_coord = (board_size - 1).into();
-        
+
         let bases = array![
             0,
             max_coord * board_size_i32 * 4 + 3,
             (max_coord * board_size_i32 + max_coord) * 4 + 2,
             max_coord * 4 + 1,
-        ].span();
+        ]
+            .span();
 
         let steps: Span<i32> = array![board_size_i32 * 4, 4, -board_size_i32 * 4, -4].span();
 
         for side in 0..4_u8 {
             let mut deck = DeckTrait::new(
-            ('SEED' + side.into() + get_block_timestamp().into() + board_id).into()
-            , 8);
+                ('SEED' + side.into() + get_block_timestamp().into() + board_id).into(), 8,
+            );
             for i in 0..cities_on_edges + roads_on_edges {
                 let step_nums = deck.draw().into();
-                let position = (*bases.at(side.into()) + (*steps.at(side.into())) * step_nums).try_into().unwrap();
+                let position = (*bases.at(side.into()) + (*steps.at(side.into())) * step_nums)
+                    .try_into()
+                    .unwrap();
                 println!("Position while generating initial_edge_state: {}", position);
-                let node_type = if i < cities_on_edges {TEdge::C.into()} else {TEdge::R.into()};
-                world.write_model(@UnionNode {
-                    board_id,
-                    position,
-                    parent: position,
-                    rank: 0,
-                    blue_points: 0,
-                    red_points: 0,
-                    open_edges: 1,
-                    contested: false,
-                    node_type,
-                    player_side: PlayerSide::None, // No player assigned yet
-                });
+                let node_type = if i < cities_on_edges {
+                    TEdge::C.into()
+                } else {
+                    TEdge::R.into()
+                };
+                world
+                    .write_model(
+                        @UnionNode {
+                            board_id,
+                            position,
+                            parent: position,
+                            rank: 0,
+                            blue_points: 0,
+                            red_points: 0,
+                            open_edges: 1,
+                            contested: false,
+                            node_type,
+                            player_side: PlayerSide::None // No player assigned yet
+                        },
+                    );
             };
         };
     }
@@ -218,9 +227,7 @@ pub impl BoardImpl of BoardTrait {
         return board;
     }
 
-    fn replace_tile_in_deck(
-        ref self: Board, tile_index: u8, tile: Tile, world: WorldStorage,
-    ) {
+    fn replace_tile_in_deck(ref self: Board, tile_index: u8, tile: Tile, world: WorldStorage) {
         let mut new_avaliable_tiles = array![];
         for i in 0..self.available_tiles_in_deck.len() {
             let current_tile = *self.available_tiles_in_deck.at(i.into());
@@ -233,9 +240,7 @@ pub impl BoardImpl of BoardTrait {
         self.available_tiles_in_deck = new_avaliable_tiles.span();
     }
 
-    fn tutorial_deck(
-        deck_rules: Span<u8>,
-    ) -> Span<u8> {
+    fn tutorial_deck(deck_rules: Span<u8>) -> Span<u8> {
         // Example deck for tutorial
         let mut deck_rules_flat = ArrayTrait::new();
         deck_rules_flat.append(Tile::FFRR.into());
@@ -247,8 +252,7 @@ pub impl BoardImpl of BoardTrait {
         let mut i: u8 = 4;
         let flatten_deck_rules = Self::flatten_deck_rules(deck_rules);
         let mut random_deck = DeckTrait::new(
-            ('TUTORIAL_DECK' + get_block_timestamp().into()),
-            flatten_deck_rules.len(),
+            ('TUTORIAL_DECK' + get_block_timestamp().into()), flatten_deck_rules.len(),
         );
         while i < 25 {
             let tile_index = random_deck.draw().into() - 1;
@@ -259,15 +263,8 @@ pub impl BoardImpl of BoardTrait {
         return deck_rules_flat.span();
     }
 
-    fn generate_tutorial_initial_board_state(
-        board_id: felt252, mut world: WorldStorage,
-    ) {
-        let bases = array![
-            0,
-            6 * 7 * 4 + 3,
-            (6 * 7 + 6) * 4 + 2,
-            6 * 4 + 1,
-        ].span();
+    fn generate_tutorial_initial_board_state(board_id: felt252, mut world: WorldStorage) {
+        let bases = array![0, 6 * 7 * 4 + 3, (6 * 7 + 6) * 4 + 2, 6 * 4 + 1].span();
 
         let steps: Span<i32> = array![7 * 4, 4, -7 * 4, -4].span();
 
@@ -276,20 +273,24 @@ pub impl BoardImpl of BoardTrait {
         let edges_types = array![TEdge::R, TEdge::C, TEdge::R, TEdge::C].span();
 
         for side in 0..4_u8 {
-            let position = (*bases.at(side.into()) + (*steps.at(side.into())) * (*edges_positions.at(side.into())));
+            let position = (*bases.at(side.into())
+                + (*steps.at(side.into())) * (*edges_positions.at(side.into())));
             let node_type = *edges_types.at(side.into());
-            world.write_model(@UnionNode {
-                board_id,
-                position: position.try_into().unwrap(),
-                parent: position.try_into().unwrap(),
-                rank: 0,
-                blue_points: 0,
-                red_points: 0,
-                open_edges: 1,
-                contested: false,
-                node_type: node_type.into(),
-                player_side: PlayerSide::None, // No player assigned yet
-            });
+            world
+                .write_model(
+                    @UnionNode {
+                        board_id,
+                        position: position.try_into().unwrap(),
+                        parent: position.try_into().unwrap(),
+                        rank: 0,
+                        blue_points: 0,
+                        red_points: 0,
+                        open_edges: 1,
+                        contested: false,
+                        node_type: node_type.into(),
+                        player_side: PlayerSide::None // No player assigned yet
+                    },
+                );
         };
     }
 }

@@ -8,8 +8,7 @@ use evolute_duel::{
             create_extended_tile, convert_board_position_to_node_position, tile_city_number,
         },
     },
-    types::packing::{TEdge, PlayerSide},
-    models::scoring::{UnionNode},
+    types::packing::{TEdge, PlayerSide}, models::scoring::{UnionNode},
 };
 use dojo::world::{WorldStorage};
 use core::dict::Felt252Dict;
@@ -57,7 +56,7 @@ pub fn connect_city_edges_in_tile(
                 red_points,
                 open_edges,
                 contested: false,
-                node_type: TEdge::C,// 0: City, 1: Road, 2: None
+                node_type: TEdge::C, // 0: City, 1: Road, 2: None
                 player_side: side.into(),
             };
             world.write_model(@city_node);
