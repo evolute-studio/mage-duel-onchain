@@ -154,10 +154,11 @@ pub mod evlt_token {
             self.accesscontrol._grant_role(MINTER_ROLE, evlt_topup_address);
         }
 
-        // Get tournament_token address from DNS and grant burner role
+        // Get tournament_token address from DNS and grant burner and transfer roles
         let tournament_token_address = world.find_contract_address(@"tournament_token");
         if !tournament_token_address.is_zero() {
             self.accesscontrol._grant_role(BURNER_ROLE, tournament_token_address);
+            self.accesscontrol._grant_role(TRANSFER_ROLE, tournament_token_address);
         }
 
         // Get budokan tournament address from DNS and grant transfer role

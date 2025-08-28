@@ -81,6 +81,16 @@ mod tests {
     const PLAYER1_ADDRESS: felt252 = 0x123;
     const PLAYER2_ADDRESS: felt252 = 0x456;
 
+    // EVLT token constants (18 decimals)
+    const ONE_EVLT: u256 = 1000000000000000000; // 1 * 10^18
+    const HUNDRED_EVLT: u256 = 100000000000000000000; // 100 * 10^18  
+    const THOUSAND_EVLT: u256 = 1000000000000000000000; // 1000 * 10^18
+    const NINE_HUNDRED_EVLT: u256 = 900000000000000000000; // 900 * 10^18 (1000 - 100)
+    const EIGHT_NINETY_NINE_EVLT: u256 = 899000000000000000000; // 899 * 10^18 (900 - 1)
+    
+    // For EntryFee (u128 type)
+    const HUNDRED_EVLT_U128: u128 = 100000000000000000000; // 100 * 10^18 as u128
+
     fn namespace_def() -> NamespaceDef {
         let ndef = NamespaceDef {
             namespace: "evolute_duel",
@@ -291,7 +301,7 @@ mod tests {
 
             // Mint EVLT tokens to player1
         println!("[test_create_tournament_with_evlt_entry_fee] Minting 1000 EVLT tokens to player1");
-        evlt_protected.mint(player1_address, 1000); // Give player 1000 EVLT
+        evlt_protected.mint(player1_address, THOUSAND_EVLT); // Give player 1000 EVLT with decimals
         println!("[test_create_tournament_with_evlt_entry_fee] EVLT tokens minted successfully");
 
             // Allow budokan tournament to transfer EVLT tokens
@@ -336,7 +346,7 @@ mod tests {
         println!("[test_create_tournament_with_evlt_entry_fee] Creating entry fee configuration");
         let entry_fee = EntryFee {
             token_address: evlt_token_address,
-            amount: 100, // 100 EVLT entry fee
+            amount: HUNDRED_EVLT_U128, // 100 EVLT entry fee with decimals
             distribution: [50, 20, 10].span(), // 1st: 50%, 2nd: 30%, 3rd: 20%
             tournament_creator_share: Option::Some(10),
             game_creator_share: Option::Some(10),
@@ -383,9 +393,9 @@ mod tests {
             // Check player's balance before entry
         println!("[test_create_tournament_with_evlt_entry_fee] Checking player balance before entry");
         let balance_before = evlt_token_dispatcher.balance_of(player1_address);
-        assert!(balance_before == 1000, "Player should have 1000 EVLT before entry");
+        assert!(balance_before == THOUSAND_EVLT, "Player should have 1000 EVLT before entry");
         println!("[test_create_tournament_with_evlt_entry_fee] Player balance before entry: {}", balance_before);
-        evlt_token_dispatcher.approve(tournament_address, 100); // Approve tournament to spend 100 EVLT
+        evlt_token_dispatcher.approve(tournament_address, HUNDRED_EVLT); // Approve tournament to spend 100 EVLT
         // Player enters tournament (should pay entry fee)
         println!("[test_create_tournament_with_evlt_entry_fee] Player entering tournament");
         let (token_id, entry_number) = tournament_dispatcher.enter_tournament(
@@ -405,8 +415,8 @@ mod tests {
             // Check that entry fee was deducted
         println!("[test_create_tournament_with_evlt_entry_fee] Checking balance after entry");
         let balance_after = evlt_token_dispatcher.balance_of(player1_address);
-        assert!(balance_after == 900, "Player should have 900 EVLT after paying entry fee");
-        println!("[test_create_tournament_with_evlt_entry_fee] Player balance after entry: {} (expected 900)", balance_after);
+        assert!(balance_after == NINE_HUNDRED_EVLT, "Player should have 900 EVLT after paying entry fee");
+        println!("[test_create_tournament_with_evlt_entry_fee] Player balance after entry: {} (expected 900 EVLT with decimals)", balance_after);
 
             // Check tournament entries increased
         println!("[test_create_tournament_with_evlt_entry_fee] Checking final tournament entries");
@@ -440,8 +450,8 @@ mod tests {
 
         // Mint EVLT tokens to both players
         println!("[test_two_players_tournament_with_enlist_and_join_duel] Minting 1000 EVLT tokens to each player");
-        evlt_protected.mint(player1_address, 1000);
-        evlt_protected.mint(player2_address, 1000);
+        evlt_protected.mint(player1_address, THOUSAND_EVLT);
+        evlt_protected.mint(player2_address, THOUSAND_EVLT);
         println!("[test_two_players_tournament_with_enlist_and_join_duel] EVLT tokens minted successfully");
 
         // Allow tournament to transfer EVLT tokens
@@ -477,7 +487,7 @@ mod tests {
 
         let entry_fee = EntryFee {
             token_address: evlt_token_address,
-            amount: 100,
+            amount: HUNDRED_EVLT_U128,
             distribution: [50, 30].span(), // 1st: 50%, 2nd: 30%
             tournament_creator_share: Option::Some(10),
             game_creator_share: Option::Some(10),
@@ -501,7 +511,7 @@ mod tests {
         let balance_before_p1 = evlt_token_dispatcher.balance_of(player1_address);
         println!("[test_two_players_tournament_with_enlist_and_join_duel] Player1 balance before entry: {}", balance_before_p1);
         
-        evlt_token_dispatcher.approve(tournament_address, 100);
+        evlt_token_dispatcher.approve(tournament_address, HUNDRED_EVLT);
         let (token_id_p1, entry_number_p1) = tournament_dispatcher.enter_tournament(
             tournament.id,
             'player1',
@@ -517,7 +527,7 @@ mod tests {
         let balance_before_p2 = evlt_token_dispatcher.balance_of(player2_address);
         println!("[test_two_players_tournament_with_enlist_and_join_duel] Player2 balance before entry: {}", balance_before_p2);
         
-        evlt_token_dispatcher.approve(tournament_address, 100);
+        evlt_token_dispatcher.approve(tournament_address, HUNDRED_EVLT);
         let (token_id_p2, entry_number_p2) = tournament_dispatcher.enter_tournament(
             tournament.id,
             'player2',
@@ -625,6 +635,10 @@ mod tests {
         testing::set_contract_address(player1_address);
         
         if can_join_duel_p1 {
+            // Player1 needs to approve 1 EVLT to tournament_token before join_duel
+            println!("[test_two_players_tournament_with_enlist_and_join_duel] Player1 approving 1 EVLT to tournament_token");
+            evlt_token_dispatcher.approve(tournament_token_address, ONE_EVLT);
+            
             let board_id_p1 = tournament_token_dispatcher.join_duel(token_id_p1);
             println!("[test_two_players_tournament_with_enlist_and_join_duel] Player1 join_duel SUCCESS - Board ID: {} (0 means waiting in queue)", board_id_p1);
         } else {
@@ -636,6 +650,10 @@ mod tests {
         testing::set_contract_address(player2_address);
         
         let board_id_p2 = if can_join_duel_p2 {
+            // Player2 needs to approve 1 EVLT to tournament_token before join_duel
+            println!("[test_two_players_tournament_with_enlist_and_join_duel] Player2 approving 1 EVLT to tournament_token");
+            evlt_token_dispatcher.approve(tournament_token_address, ONE_EVLT);
+            
             let board_id = tournament_token_dispatcher.join_duel(token_id_p2);
             println!("[test_two_players_tournament_with_enlist_and_join_duel] Player2 join_duel SUCCESS - Board ID: {} (should be > 0 if matched)", board_id);
             board_id
@@ -683,8 +701,8 @@ mod tests {
         let balance_after_p1 = evlt_token_dispatcher.balance_of(player1_address);
         let balance_after_p2 = evlt_token_dispatcher.balance_of(player2_address);
         println!("[test_two_players_tournament_with_enlist_and_join_duel] Balances after entry - P1: {}, P2: {}", balance_after_p1, balance_after_p2);
-        assert!(balance_after_p1 == 899, "Player1 should have 899 EVLT after entry and join_duel");
-        assert!(balance_after_p2 == 899, "Player2 should have 899 EVLT after entry and join_duel");
+        assert!(balance_after_p1 == EIGHT_NINETY_NINE_EVLT, "Player1 should have 899 EVLT after entry and join_duel");
+        assert!(balance_after_p2 == EIGHT_NINETY_NINE_EVLT, "Player2 should have 899 EVLT after entry and join_duel");
         println!("[test_two_players_tournament_with_enlist_and_join_duel] Entry fee deductions verified - P1: {}, P2: {}", balance_after_p1, balance_after_p2);
 
         // Verify entry numbers

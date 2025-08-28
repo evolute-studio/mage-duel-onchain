@@ -29,6 +29,7 @@ pub struct TournamentStateModel {
     pub tournament_id: u64, // budokan id
     //------
     pub state: TournamentState,
+    pub prize_pool: u256,
 }
 
 #[derive(Copy, Drop, Serde, PartialEq, Introspect)]

@@ -15,6 +15,11 @@ version = "0.4.0"
 source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.4.0#ae3d960589a2f0c9af5fbd9236f6f3eb39fea8ed"
 
 [[package]]
+name = "alexandria_math"
+version = "0.4.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.4.0#ae3d960589a2f0c9af5fbd9236f6f3eb39fea8ed"
+
+[[package]]
 name = "dojo"
 version = "1.6.0-alpha.0"
 source = "git+https://github.com/dojoengine/dojo?tag=v1.6.0-alpha.2#184a4e8368269815823004d61e71f0699059ad77"
@@ -41,6 +46,7 @@ version = "1.6.0"
 dependencies = [
  "achievement",
  "alexandria_data_structures",
+ "alexandria_math",
  "dojo",
  "dojo_cairo_test",
  "nft_combo",

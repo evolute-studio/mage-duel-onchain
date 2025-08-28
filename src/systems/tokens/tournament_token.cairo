@@ -464,46 +464,90 @@ pub mod tournament_token {
                 tournament.state == TournamentState::InProgress)
         }
         fn join_duel(ref self: ContractState, pass_id: u64) -> felt252 {
+            println!("[join_duel] Starting join_duel for pass_id: {}", pass_id);
+            
             let mut store: Store = StoreTrait::new(self.world_default());
+            println!("[join_duel] Store created successfully");
+            
             // validate ownership
             let caller: ContractAddress = starknet::get_caller_address();
-            assert(self._is_owner_of(caller, pass_id.into()) == true, Errors::NOT_YOUR_ENTRY);
+            println!("[join_duel] Caller address: {:?}", caller);
+            
+            let is_owner = self._is_owner_of(caller, pass_id.into());
+            println!("[join_duel] Ownership check - is_owner: {}", is_owner);
+            assert(is_owner == true, Errors::NOT_YOUR_ENTRY);
+            println!("[join_duel] Ownership validation passed");
 
             // Check tournament lifecycle
+            println!("[join_duel] Getting budokan token metadata for lifecycle check");
             let token_metadata = store.get_budokan_token_metadata_value(pass_id);
-            assert(
-                token_metadata.lifecycle.is_playable(starknet::get_block_timestamp()),
-                Errors::BUDOKAN_NOT_PLAYABLE,
-            );
+            let current_timestamp = starknet::get_block_timestamp();
+            println!("[join_duel] Current timestamp: {}", current_timestamp);
+            
+            let is_playable = token_metadata.lifecycle.is_playable(current_timestamp);
+            println!("[join_duel] Lifecycle playability check - is_playable: {}", is_playable);
+            assert(is_playable, Errors::BUDOKAN_NOT_PLAYABLE);
+            println!("[join_duel] Lifecycle validation passed");
 
             // Get tournament entry
+            println!("[join_duel] Getting tournament pass for pass_id: {}", pass_id);
             let entry = store.get_tournament_pass(pass_id);
+            println!("[join_duel] Tournament pass retrieved - tournament_id: {}, player_address: {:?}, entry_number: {}, rating: {}", 
+                entry.tournament_id, entry.player_address, entry.entry_number, entry.rating);
+            
             assert(entry.tournament_id.is_non_zero(), Errors::NOT_ENLISTED);
+            println!("[join_duel] Tournament ID validation passed: {}", entry.tournament_id);
+            
             assert(entry.player_address.is_non_zero(), Errors::NOT_ENLISTED);
+            println!("[join_duel] Player address validation passed: {:?}", entry.player_address);
 
             // Check tournament state
+            println!("[join_duel] Getting tournament state for tournament_id: {}", entry.tournament_id);
             let tournament = store.get_tournament_value(entry.tournament_id);
+            println!("[join_duel] Tournament state retrieved - state: {:?}", tournament.state);
+            
             assert(tournament.state != TournamentState::Finished, Errors::HAS_ENDED);
+            println!("[join_duel] Tournament not finished check passed");
+            
             assert(tournament.state == TournamentState::InProgress, Errors::NOT_STARTED);
+            println!("[join_duel] Tournament in progress check passed");
 
             // Check and spend tokens for tournament entry (eEVLT or EVLT)
+            println!("[join_duel] Getting world storage for token validation");
             let world_storage = self.world_default();
-            assert(
-                AssertsTrait::assert_can_enter_tournament_game(
-                    caller, entry.tournament_id, world_storage,
-                ),
-                Errors::INSUFFICIENT_TOKENS,
+            println!("[join_duel] World storage obtained, checking token requirements");
+            
+            let can_enter = AssertsTrait::assert_can_enter_tournament_game(
+                caller, entry.tournament_id, world_storage,
             );
+            println!("[join_duel] Token validation result: {}", can_enter);
+            assert(can_enter, Errors::INSUFFICIENT_TOKENS);
+            println!("[join_duel] Token validation passed, tokens spent successfully");
 
             // Use matchmaking system to create/join tournaments
+            println!("[join_duel] Getting world instance for matchmaking");
             let world = self.world_default();
+            println!("[join_duel] Getting matchmaking library dispatcher");
             let matchmaking_dispatcher: IMatchmakingLibraryDispatcher = world.matchmaking_library_dispatcher();
+            println!("[join_duel] Matchmaking dispatcher obtained successfully");
 
             // Call auto_match with Tournament mode and tournament_id
+            println!("[join_duel] Calling auto_match with GameMode::Tournament and tournament_id: {}", entry.tournament_id);
+            let game_mode_packed = GameMode::Tournament.into();
+            println!("[join_duel] GameMode packed value: {}", game_mode_packed);
+            
             let result = matchmaking_dispatcher
-                .auto_match(GameMode::Tournament.into(), Option::Some(entry.tournament_id));
+                .auto_match(game_mode_packed, Option::Some(entry.tournament_id));
+            println!("[join_duel] auto_match result: {}", result);
 
             // Return the result: board_id if match found, 0 if waiting in queue
+            if result == 0 {
+                println!("[join_duel] Player added to queue, waiting for opponent");
+            } else {
+                println!("[join_duel] Match found! Board ID: {}", result);
+            }
+            
+            println!("[join_duel] join_duel completed successfully, returning: {}", result);
             (result)
         }
 
@@ -634,8 +678,11 @@ pub mod tournament_token {
 
         #[inline(always)]
         fn _is_owner_of(self: @ContractState, caller: ContractAddress, token_id: u64) -> bool {
-            let token_owner = self.erc721.owner_of(token_id.into());
-            token_owner == caller
+            println!("[_is_owner_of] Checking token ownership for caller: {:?}, token_id: {}", caller, token_id);
+            let token_owner: ContractAddress = self.erc721.owner_of(token_id.into());
+            let is_owner: bool = token_owner == caller;
+            println!("[_is_owner_of] Ownership result: {}", is_owner);
+            is_owner
         }
     }
 }

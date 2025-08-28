@@ -1,4 +1,4 @@
-use dojo::{world::WorldStorage, event::EventStorage};
+use dojo::{world::WorldStorage, event::EventStorage, model::ModelStorage};
 use evolute_duel::{
     models::{
         game::Game, player::{Player, PlayerTrait},
@@ -10,8 +10,13 @@ use evolute_duel::{
     },
     types::{packing::{GameStatus, GameMode}},
     interfaces::{ievlt_token::{IEvltTokenDispatcherTrait}}, libs::store::{Store, StoreTrait},
+    interfaces::dns::{DnsTrait, ITournamentDispatcher, ITournamentDispatcherTrait}
 };
 use starknet::ContractAddress;
+use openzeppelin_token::erc20::interface::{IERC20MetadataDispatcher, IERC20MetadataDispatcherTrait};
+use alexandria_math::pow;
+use tournaments::components::models::tournament::{Tournament, EntryFee, TokenType, ERC20Data};
+use core::num::traits::Zero;
 #[generate_trait]
 pub impl AssersImpl of AssertsTrait {
     fn assert_ready_to_create_game(self: @Game, mut world: WorldStorage) -> bool {
@@ -352,40 +357,336 @@ pub impl AssersImpl of AssertsTrait {
         true
     }
 
+    // Function to split EVLT according to tournament prize distribution
+    fn split_evlt_to_prize_pool(
+        player_address: ContractAddress,
+        tournament_id: u64,
+        evlt_dispatcher: evolute_duel::interfaces::ievlt_token::IEvltTokenDispatcher,
+        mut world: WorldStorage,
+    ) -> bool {
+        println!("[split_evlt_to_prize_pool] Starting EVLT prize pool splitting");
+        println!("[split_evlt_to_prize_pool] player_address: {:?}, tournament_id: {}", player_address, tournament_id);
+        
+        // Get EVLT decimals for proper calculation
+        println!("[split_evlt_to_prize_pool] Getting EVLT token metadata for decimals calculation");
+        let evlt_metadata_dispatcher = IERC20MetadataDispatcher { 
+            contract_address: evlt_dispatcher.contract_address 
+        };
+        let evlt_decimals = evlt_metadata_dispatcher.decimals();
+        println!("[split_evlt_to_prize_pool] EVLT decimals: {}", evlt_decimals);
+        
+        let one_evlt = pow(10, evlt_decimals.into()); // 1 EVLT with decimals
+        println!("[split_evlt_to_prize_pool] One EVLT with decimals: {}", one_evlt);
+        
+        // Check if player has enough EVLT with proper decimals
+        println!("[split_evlt_to_prize_pool] Checking player EVLT balance");
+        let evlt_balance = evlt_dispatcher.balance_of(player_address);
+        println!("[split_evlt_to_prize_pool] Player EVLT balance: {}", evlt_balance);
+        
+        if evlt_balance < one_evlt {
+            println!("[split_evlt_to_prize_pool] ERROR: Insufficient EVLT balance - required: {}, actual: {}", one_evlt, evlt_balance);
+            return false;
+        }
+        println!("[split_evlt_to_prize_pool] EVLT balance check passed");
+
+        // Read Tournament model directly from world storage
+        println!("[split_evlt_to_prize_pool] Reading tournament model for tournament_id: {}", tournament_id);
+        let tournament: Tournament = world.read_model(tournament_id);
+        println!("[split_evlt_to_prize_pool] Tournament model retrieved - id: {}", tournament.id);
+        
+        // Check if tournament exists and has entry fee distribution
+        let has_entry_fee = tournament.entry_fee.is_some();
+        println!("[split_evlt_to_prize_pool] Tournament exists: {}, has_entry_fee: {}", tournament.id != 0, has_entry_fee);
+        
+        if tournament.id != 0 && has_entry_fee {
+            let entry_fee = tournament.entry_fee.unwrap();
+            println!("[split_evlt_to_prize_pool] Entry fee found - distribution positions: {}", entry_fee.distribution.len());
+            
+            // Try to get budokan dispatcher through player tournament index
+            println!("[split_evlt_to_prize_pool] Getting player tournament index");
+            let store: Store = StoreTrait::new(world);
+            let player_index = store.get_player_tournament_index(player_address, tournament_id);
+            println!("[split_evlt_to_prize_pool] Player index retrieved - pass_id: {}", player_index.pass_id);
+            
+            if player_index.pass_id != 0 {
+                println!("[split_evlt_to_prize_pool] Getting budokan dispatcher for pass_id: {}", player_index.pass_id);
+                // We have a pass_id, get the budokan dispatcher
+                let budokan_dispatcher = store.budokan_dispatcher_from_pass_id(player_index.pass_id);
+                println!("[split_evlt_to_prize_pool] Budokan dispatcher retrieved");
+                
+                if budokan_dispatcher.contract_address != Zero::zero() {
+                    println!("[split_evlt_to_prize_pool] Budokan dispatcher is valid, distributing prizes");
+                    // Transfer EVLT to budokan contract for prize splitting
+                    evlt_dispatcher.approve(budokan_dispatcher.contract_address, one_evlt);
+                    
+                    // Split according to distribution using add_prize
+                    Self::distribute_evlt_prizes(
+                        entry_fee, 
+                        tournament_id, 
+                        one_evlt, 
+                        evlt_dispatcher.contract_address,
+                        budokan_dispatcher,
+                        world
+                    );
+                    println!("[split_evlt_to_prize_pool] EVLT prizes distributed successfully");
+                    
+                    return true;
+                } else {
+                    println!("[split_evlt_to_prize_pool] WARNING: Budokan dispatcher address is zero");
+                }
+            } else {
+                println!("[split_evlt_to_prize_pool] WARNING: Player index pass_id is zero");
+            }
+            
+            // Fallback: burn token if can't access budokan dispatcher
+            println!("[split_evlt_to_prize_pool] Fallback: burning EVLT token - amount: {}", one_evlt);
+            evlt_dispatcher.burn(player_address, one_evlt);
+            println!("[split_evlt_to_prize_pool] EVLT token burned successfully");
+            true
+        } else {
+            // Fallback: burn token as before if no tournament or no entry fee
+            println!("[split_evlt_to_prize_pool] Fallback: no tournament or entry fee, burning EVLT token - amount: {}", one_evlt);
+            evlt_dispatcher.burn(player_address, one_evlt);
+            println!("[split_evlt_to_prize_pool] EVLT token burned successfully (fallback)");
+            true
+        }
+    }
+
+    // Helper function to distribute EVLT as prizes according to tournament distribution
+    fn distribute_evlt_prizes(
+        entry_fee: EntryFee,
+        tournament_id: u64, 
+        total_evlt_amount: u256,
+        evlt_token_address: ContractAddress,
+        budokan_dispatcher: ITournamentDispatcher,
+        mut world: WorldStorage
+    ) {
+        println!("[distribute_evlt_prizes] Starting EVLT prize distribution");
+        println!("[distribute_evlt_prizes] tournament_id: {}, total_amount: {}", tournament_id, total_evlt_amount);
+        println!("[distribute_evlt_prizes] evlt_token_address: {:?}", evlt_token_address);
+        println!("[distribute_evlt_prizes] Distribution positions: {}", entry_fee.distribution.len());
+        
+        // Distribute prizes according to position distribution
+        let mut position: u8 = 1;
+        for percentage in entry_fee.distribution {
+            println!("[distribute_evlt_prizes] Processing position {} with percentage: {}", position, *percentage);
+            let prize_amount = (total_evlt_amount * (*percentage).into()) / 100;
+            println!("[distribute_evlt_prizes] Calculated prize amount for position {}: {}", position, prize_amount);
+            
+            if prize_amount > 0 {
+                println!("[distribute_evlt_prizes] Adding prize for position {} - amount: {}", position, prize_amount);
+                // Add prize for this position using budokan's add_prize function
+                budokan_dispatcher.add_prize(
+                    tournament_id,
+                    evlt_token_address,
+                    TokenType::erc20(ERC20Data { amount: prize_amount.try_into().unwrap() }),
+                    position
+                );
+                println!("[distribute_evlt_prizes] Prize added successfully for position {}", position);
+            } else {
+                println!("[distribute_evlt_prizes] Skipping position {} - prize amount is zero", position);
+            }
+            position += 1;
+        };
+        println!("[distribute_evlt_prizes] Position-based prize distribution completed");
+        
+        // Handle tournament creator share if specified
+        if let Option::Some(creator_share) = entry_fee.tournament_creator_share {
+            println!("[distribute_evlt_prizes] Processing tournament creator share: {}%", creator_share);
+            let creator_amount = (total_evlt_amount * creator_share.into()) / 100;
+            println!("[distribute_evlt_prizes] Tournament creator amount: {}", creator_amount);
+            if creator_amount > 0 {
+                println!("[distribute_evlt_prizes] TODO: Tournament creator share handling not implemented");
+                // TODO: Transfer directly to tournament creator
+                // For now, we could add it as a special prize or burn it
+            }
+        } else {
+            println!("[distribute_evlt_prizes] No tournament creator share specified");
+        }
+        
+        // Handle game creator share if specified  
+        if let Option::Some(game_creator_share) = entry_fee.game_creator_share {
+            println!("[distribute_evlt_prizes] Processing game creator share: {}%", game_creator_share);
+            let game_creator_amount = (total_evlt_amount * game_creator_share.into()) / 100;
+            println!("[distribute_evlt_prizes] Game creator amount: {}", game_creator_amount);
+            if game_creator_amount > 0 {
+                println!("[distribute_evlt_prizes] TODO: Game creator share handling not implemented");
+                // TODO: Transfer directly to game creator
+                // For now, we could add it as a special prize or burn it
+            }
+        } else {
+            println!("[distribute_evlt_prizes] No game creator share specified");
+        }
+        
+        println!("[distribute_evlt_prizes] EVLT prize distribution completed");
+    }
+
+    // New flow: transfer EVLT from player to tournament_token, then distribute to prize pool
+    fn transfer_and_distribute_evlt(
+        player_address: ContractAddress,
+        tournament_id: u64,
+        tournament_token_address: ContractAddress,
+        evlt_dispatcher: evolute_duel::interfaces::ievlt_token::IEvltTokenDispatcher,
+        mut world: WorldStorage,
+    ) -> bool {
+        println!("[transfer_and_distribute_evlt] Starting EVLT transfer and distribution");
+        println!("[transfer_and_distribute_evlt] player: {:?}, tournament_id: {}, tournament_token: {:?}", 
+            player_address, tournament_id, tournament_token_address);
+        
+        // Get EVLT decimals for proper calculation
+        let evlt_metadata_dispatcher = IERC20MetadataDispatcher { 
+            contract_address: evlt_dispatcher.contract_address 
+        };
+        let evlt_decimals = evlt_metadata_dispatcher.decimals();
+        let one_evlt = pow(10, evlt_decimals.into()); // 1 EVLT with decimals
+        println!("[transfer_and_distribute_evlt] One EVLT with decimals: {}", one_evlt);
+        
+        // Check player's EVLT balance
+        let player_balance = evlt_dispatcher.balance_of(player_address);
+        println!("[transfer_and_distribute_evlt] Player EVLT balance: {}", player_balance);
+        
+        if player_balance < one_evlt {
+            println!("[transfer_and_distribute_evlt] ERROR: Insufficient EVLT balance");
+            return false;
+        }
+        
+        // Check allowance - player should have approved tournament_token to spend 1 EVLT
+        let allowance = evlt_dispatcher.allowance(player_address, tournament_token_address);
+        println!("[transfer_and_distribute_evlt] Player allowance to tournament_token: {}", allowance);
+        
+        if allowance < one_evlt {
+            println!("[transfer_and_distribute_evlt] ERROR: Insufficient allowance - player needs to approve tournament_token");
+            return false;
+        }
+        
+        // Transfer 1 EVLT from player to tournament_token contract
+        println!("[transfer_and_distribute_evlt] Transferring 1 EVLT from player to tournament_token");
+        let transfer_success = evlt_dispatcher.transfer_from(
+            player_address, 
+            tournament_token_address, 
+            one_evlt
+        );
+        
+        if !transfer_success {
+            println!("[transfer_and_distribute_evlt] ERROR: Transfer failed");
+            return false;
+        }
+        
+        println!("[transfer_and_distribute_evlt] Transfer successful, now distributing to prize pool");
+        
+        // Read Tournament model to get prize distribution
+        let tournament: Tournament = world.read_model(tournament_id);
+        
+        // Check if tournament exists and has entry fee distribution
+        if tournament.id != 0 && tournament.entry_fee.is_some() {
+            let entry_fee = tournament.entry_fee.unwrap();
+            println!("[transfer_and_distribute_evlt] Tournament found with entry fee distribution");
+            
+            // Get budokan dispatcher through player tournament index
+            let store: Store = StoreTrait::new(world);
+            let player_index = store.get_player_tournament_index(player_address, tournament_id);
+            
+            if player_index.pass_id != 0 {
+                let budokan_dispatcher = store.budokan_dispatcher_from_pass_id(player_index.pass_id);
+                
+                if budokan_dispatcher.contract_address != Zero::zero() {
+                    println!("[transfer_and_distribute_evlt] Budokan dispatcher found, approving and distributing");
+                    
+                    // Tournament token approves budokan to spend the EVLT
+                    let approve_success = evlt_dispatcher.approve(budokan_dispatcher.contract_address, one_evlt);
+                    
+                    if approve_success {
+                        // Distribute prizes using budokan's add_prize function
+                        Self::distribute_evlt_prizes(
+                            entry_fee,
+                            tournament_id, 
+                            one_evlt,
+                            evlt_dispatcher.contract_address,
+                            budokan_dispatcher,
+                            world
+                        );
+                        
+                        println!("[transfer_and_distribute_evlt] EVLT successfully transferred and distributed");
+                        return true;
+                    } else {
+                        println!("[transfer_and_distribute_evlt] ERROR: Failed to approve budokan dispatcher");
+                        return false;
+                    }
+                }
+            }
+        }
+        
+        println!("[transfer_and_distribute_evlt] WARNING: No tournament or budokan found, keeping EVLT in tournament_token");
+        return true; // Still successful, just EVLT stays in tournament_token contract
+    }
+
     // Tournament game access and payment validation
     fn assert_can_enter_tournament_game(
         player_address: ContractAddress, tournament_id: u64, mut world: WorldStorage,
     ) -> bool {
+        println!("[assert_can_enter_tournament_game] Starting tournament game access validation");
+        println!("[assert_can_enter_tournament_game] player_address: {:?}, tournament_id: {}", player_address, tournament_id);
+        
         let mut store: Store = StoreTrait::new(world);
+        println!("[assert_can_enter_tournament_game] Store created successfully");
 
         // Try to get existing tournament balance
+        println!("[assert_can_enter_tournament_game] Getting tournament balance for player: {:?}, tournament: {}", player_address, tournament_id);
         let mut tournament_balance: TournamentBalance = store
             .get_tournament_balance(player_address, tournament_id);
+        println!("[assert_can_enter_tournament_game] Tournament balance retrieved - eevlt_balance: {}", tournament_balance.eevlt_balance);
 
         // Check if player has eEVLT tokens for this tournament
-        if tournament_balance.can_spend(1) {
+        let can_spend_eevlt = tournament_balance.can_spend(1);
+        println!("[assert_can_enter_tournament_game] eEVLT spending check - can_spend: {}", can_spend_eevlt);
+        
+        if can_spend_eevlt {
+            println!("[assert_can_enter_tournament_game] Using eEVLT tokens - spending 1 token");
             // Spend 1 eEVLT for tournament game
             tournament_balance.spend_balance(1);
             store.set_tournament_balance(@tournament_balance);
+            println!("[assert_can_enter_tournament_game] eEVLT balance updated successfully - new eevlt_balance: {}", tournament_balance.eevlt_balance);
 
             // Emit eEVLT burned event
             world.emit_event(@EevltBurned { player_address, tournament_id, amount: 1 });
+            println!("[assert_can_enter_tournament_game] eEVLT burned event emitted");
 
+            println!("[assert_can_enter_tournament_game] Tournament game access granted via eEVLT");
             return true;
         }
 
-        // No eEVLT available, try to spend EVLT token instead
+        // No eEVLT available, try to transfer EVLT token from player to tournament_token
+        println!("[assert_can_enter_tournament_game] No eEVLT available, trying EVLT token transfer");
         let evlt_dispatcher = store.evlt_token_dispatcher();
-        let evlt_balance = evlt_dispatcher.balance_of(player_address);
-
-        // Check if player has enough EVLT (1 EVLT = 1 tournament game)
-        if evlt_balance >= 1 {
-            // Burn 1 EVLT token
-            evlt_dispatcher.burn(player_address, 1);
+        println!("[assert_can_enter_tournament_game] EVLT dispatcher obtained");
+        
+        // Get tournament_token contract address from world
+        let tournament_token_address = world.find_contract_address(@"tournament_token");
+        println!("[assert_can_enter_tournament_game] Tournament token address: {:?}", tournament_token_address);
+        
+        if tournament_token_address.is_zero() {
+            println!("[assert_can_enter_tournament_game] ERROR: Tournament token contract not found");
+            return false;
+        }
+        
+        // Use new transfer and distribute function
+        println!("[assert_can_enter_tournament_game] Attempting to transfer and distribute EVLT");
+        let evlt_success = Self::transfer_and_distribute_evlt(
+            player_address, 
+            tournament_id, 
+            tournament_token_address,
+            evlt_dispatcher, 
+            world
+        );
+        println!("[assert_can_enter_tournament_game] EVLT transfer and distribution result: {}", evlt_success);
+        
+        if evlt_success {
+            println!("[assert_can_enter_tournament_game] Tournament game access granted via EVLT transfer");
             return true;
         }
 
         // Neither eEVLT nor EVLT available
+        println!("[assert_can_enter_tournament_game] ERROR: Insufficient tokens - neither eEVLT nor EVLT available");
         world
             .emit_event(
                 @ErrorEvent {
@@ -394,7 +695,9 @@ pub impl AssersImpl of AssertsTrait {
                     message: "Not enough eEVLT or EVLT tokens to enter tournament game",
                 },
             );
+        println!("[assert_can_enter_tournament_game] Error event emitted for insufficient tokens");
 
+        println!("[assert_can_enter_tournament_game] Tournament game access denied");
         false
     }
 }
