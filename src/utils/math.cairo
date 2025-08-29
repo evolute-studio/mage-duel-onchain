@@ -797,7 +797,7 @@ pub impl MathU256 of MathTrait<u256, u256> {
 mod unit {
     use super::{MathU8, MathU16, MathU32, MathU128, MathU256, MAX_SHORT_STRING_NUMBER};
     use evolute_duel::utils::bitwise::{BITWISE};
-    use evolute_duel::types::constants::{CONST};
+    use evolute_duel::constants::constants::{ETH_TO_WEI};
 
     #[test]
     fn test_abs() {
@@ -947,7 +947,7 @@ mod unit {
 
     #[test]
     fn test_map_u128() {
-        let wei: u256 = CONST::ETH_TO_WEI;
+        let wei: u256 = ETH_TO_WEI;
         let map_up_u256: u256 = MathU256::map(1 * wei, 0, 100 * wei, 0, 500_000 * wei);
         let map_up_u128: u128 = MathU128::map(1 * wei.low, 0, 100 * wei.low, 0, 500_000 * wei.low);
         let map_down_u256: u256 = MathU256::map(5_000 * wei, 0, 500_000 * wei, 0, 100 * wei);

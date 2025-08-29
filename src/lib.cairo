@@ -16,6 +16,7 @@ pub mod systems {
         pub mod scoring;
         pub mod validation;
         // pub mod prizes;
+        pub mod bitmap;
     }
     pub mod tokens {
         // pub mod evolute_coin;
@@ -23,8 +24,7 @@ pub mod systems {
         pub mod evlt_token;
         pub mod grnd_token;
     }
-    pub mod tournament_budokan_test;
-    // pub mod tournament_mock;
+    pub mod tournament;
 }
 
 pub mod models {
@@ -37,13 +37,17 @@ pub mod models {
     pub mod migration;
     pub mod tournament;
     pub mod tournament_balance;
+    pub mod tournament_matchmaking;
     pub mod challenge;
     pub mod scoreboard;
     pub mod pact;
 }
 
 pub mod events;
-pub mod constants;
+pub mod constants {
+    pub mod constants;
+    pub mod bitmap;
+}
 
 pub mod types {
     pub mod errors {
@@ -55,7 +59,6 @@ pub mod types {
     pub mod tasks;
     pub mod packing;
     pub mod challenge_state;
-    pub mod constants;
     pub mod timestamp;
     pub mod shuffler;
 }

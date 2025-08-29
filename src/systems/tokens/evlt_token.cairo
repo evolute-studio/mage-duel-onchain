@@ -162,7 +162,7 @@ pub mod evlt_token {
         }
 
         // Get budokan tournament address from DNS and grant transfer role
-        let budokan_address = world.find_contract_address(@"tournament_budokan_test");
+        let budokan_address = world.find_contract_address(@"tournament");
         if !budokan_address.is_zero() {
             self.accesscontrol._grant_role(TRANSFER_ROLE, budokan_address);
         }

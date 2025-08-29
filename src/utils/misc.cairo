@@ -1,6 +1,6 @@
 use starknet::{ContractAddress};
 use evolute_duel::utils::bitwise::{BITWISE};
-use evolute_duel::types::constants::{CONST};
+use evolute_duel::constants::constants::*;
 // https://github.com/starkware-libs/cairo/blob/main/corelib/src/integer.cairo
 // https://github.com/smartcontractkit/chainlink-starknet/blob/develop/contracts/src/utils.cairo
 // use core::integer::{u128s_from_felt252, U128sFromFelt252Result};
@@ -15,11 +15,11 @@ pub fn CONSUME_U256(_value: u256) {}
 
 #[inline(always)]
 pub fn WEI(value: u256) -> u256 {
-    (value * CONST::ETH_TO_WEI)
+    (value * ETH_TO_WEI)
 }
 #[inline(always)]
 pub fn ETH(value: u256) -> u256 {
-    (value / CONST::ETH_TO_WEI)
+    (value / ETH_TO_WEI)
 }
 
 

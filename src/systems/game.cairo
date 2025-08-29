@@ -52,7 +52,7 @@ pub mod game {
             packing::{GameStatus, GameState, PlayerSide, GameMode},
             trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait},
         },
-        constants::{CREATING_TIME, REVEAL_TIME, MOVE_TIME},
+        constants::constants::{CREATING_TIME, REVEAL_TIME, MOVE_TIME},
         libs::{ // store::{Store, StoreTrait},
             asserts::{AssertsTrait}, timing::{TimingTrait}, scoring::{ScoringTrait},
             move_execution::{MoveExecutionTrait, MoveData},

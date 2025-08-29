@@ -6,7 +6,7 @@ use tournaments::components::models::tournament::{
 use tournaments::components::models::schedule::{Schedule, Phase};
 
 #[starknet::interface]
-pub trait ITournamentMock<TState> {
+pub trait ITournament<TState> {
     // IERC721
     fn balance_of(self: @TState, account: ContractAddress) -> u64;
     fn owner_of(self: @TState, token_id: u64) -> ContractAddress;
@@ -74,7 +74,7 @@ pub trait ITournamentMock<TState> {
 }
 
 #[starknet::interface]
-pub trait ITournamentMockInit<TState> {
+pub trait ITournamentInit<TState> {
     fn initializer(
         ref self: TState,
         safe_mode: bool,
@@ -85,7 +85,7 @@ pub trait ITournamentMockInit<TState> {
 }
 
 #[dojo::contract]
-pub mod tournament_mock {
+pub mod tournament {
     use starknet::ContractAddress;
     use tournaments::components::tournament::tournament_component;
     use openzeppelin_introspection::src5::SRC5Component;
@@ -124,7 +124,7 @@ pub mod tournament_mock {
     }
 
     #[abi(embed_v0)]
-    impl TournamentInitializerImpl of super::ITournamentMockInit<ContractState> {
+    impl TournamentInitializerImpl of super::ITournamentInit<ContractState> {
         fn initializer(
             ref self: ContractState,
             safe_mode: bool,

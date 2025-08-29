@@ -28,9 +28,9 @@ mod tests {
 
     // Tournament systems
     use evolute_duel::systems::{
-        tournament_budokan_test::{
-            tournament_mock, ITournamentMock, ITournamentMockDispatcher, ITournamentMockDispatcherTrait,
-            ITournamentMockInit, ITournamentMockInitDispatcher, ITournamentMockInitDispatcherTrait,
+        tournament::{
+            tournament, ITournament, ITournamentDispatcher, ITournamentDispatcherTrait,
+            ITournamentInit, ITournamentInitDispatcher, ITournamentInitDispatcherTrait,
         },
         tokens::tournament_token::{
             tournament_token, ITournamentTokenDispatcher, ITournamentTokenDispatcherTrait,
@@ -138,7 +138,7 @@ mod tests {
                 TestResource::Model(m_UnionNode::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_PotentialContests::TEST_CLASS_HASH.try_into().unwrap()),
                 // Contracts
-                TestResource::Contract(tournament_mock::TEST_CLASS_HASH),
+                TestResource::Contract(tournament::TEST_CLASS_HASH),
                 TestResource::Contract(tournament_token::TEST_CLASS_HASH),
                 TestResource::Contract(evlt_topup::TEST_CLASS_HASH),
                 TestResource::Contract(evlt_token::TEST_CLASS_HASH),
@@ -169,7 +169,7 @@ mod tests {
 
     fn contract_defs() -> Span<ContractDef> {
         [
-            ContractDefTrait::new(@"evolute_duel", @"tournament_mock")
+            ContractDefTrait::new(@"evolute_duel", @"tournament")
                 .with_writer_of([dojo::utils::bytearray_hash(@"evolute_duel")].span()),
             ContractDefTrait::new(@"evolute_duel", @"tournament_token")
                 .with_writer_of([dojo::utils::bytearray_hash(@"evolute_duel")].span())
@@ -188,7 +188,7 @@ mod tests {
     }
 
     fn deploy_tournament_system() -> (
-        ITournamentMockDispatcher, 
+        ITournamentDispatcher, 
         ITournamentTokenDispatcher,
         IEvltTokenDispatcher,
         IEvltTokenProtectedDispatcher,
@@ -201,14 +201,14 @@ mod tests {
         world.sync_perms_and_inits(contract_defs());
         println!("[deploy_tournament_system] Permissions and initializations synced");
 
-        let (tournament_address, _) = world.dns(@"tournament_mock").unwrap();
+        let (tournament_address, _) = world.dns(@"tournament").unwrap();
         let (tournament_token_address, _) = world.dns(@"tournament_token").unwrap();
         let (evlt_token_address, _) = world.dns(@"evlt_token").unwrap();
         let (matchmaking_address, _) = world.dns(@"matchmaking").unwrap();
         println!("[deploy_tournament_system] Contract addresses resolved - Tournament: {:?}, TournamentToken: {:?}, EvltToken: {:?}, Matchmaking: {:?}", tournament_address, tournament_token_address, evlt_token_address, matchmaking_address);
 
-        let tournament_dispatcher = ITournamentMockDispatcher { contract_address: tournament_address };
-        let tournament_initializer_dispatcher = ITournamentMockInitDispatcher { contract_address: tournament_address };
+        let tournament_dispatcher = ITournamentDispatcher { contract_address: tournament_address };
+        let tournament_initializer_dispatcher = ITournamentInitDispatcher { contract_address: tournament_address };
         println!("[deploy_tournament_system] Initializing tournament system");
         tournament_initializer_dispatcher.initializer(false, true, evlt_token_address, tournament_token_address);
         println!("[deploy_tournament_system] Tournament system initialized");
