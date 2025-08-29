@@ -26,18 +26,6 @@ pub trait ITournamentMock<TState> {
     ) -> bool;
 
     // ITournament
-    fn total_tournaments(self: @TState) -> u64;
-    fn tournament(self: @TState, tournament_id: u64) -> TournamentModel;
-    fn get_registration(
-        self: @TState, game_address: ContractAddress, token_id: u64,
-    ) -> Registration;
-    fn get_prize(self: @TState, prize_id: u64) -> Prize;
-    fn tournament_entries(self: @TState, tournament_id: u64) -> u64;
-    fn get_leaderboard(self: @TState, tournament_id: u64) -> Array<u64>;
-    fn current_phase(self: @TState, tournament_id: u64) -> Phase;
-    fn is_token_registered(self: @TState, token: ContractAddress) -> bool;
-    // TODO: add for V2 (only ERC721 tokens)
-    // fn register_tokens(ref self: TState, tokens: Array<Token>);
     fn create_tournament(
         ref self: TState,
         creator_rewards_address: ContractAddress,
@@ -62,6 +50,20 @@ pub trait ITournamentMock<TState> {
         token_address: ContractAddress,
         token_type: TokenType,
         position: u8,
+    ) -> u64;
+    fn total_tournaments(self: @TState) -> u64;
+    fn tournament(self: @TState, tournament_id: u64) -> TournamentModel;
+    fn get_registration(
+        self: @TState, game_address: ContractAddress, token_id: u64,
+    ) -> Registration;
+    fn get_prize(self: @TState, prize_id: u64) -> Prize;
+    fn tournament_entries(self: @TState, tournament_id: u64) -> u32;
+    fn is_token_registered(self: @TState, address: ContractAddress) -> bool;
+    fn register_token(ref self: TState, address: ContractAddress, token_type: TokenType);
+    fn get_leaderboard(self: @TState, tournament_id: u64) -> Array<u64>;
+    fn current_phase(self: @TState, tournament_id: u64) -> Phase;
+    fn get_tournament_id_for_token_id(
+        self: @TState, game_address: ContractAddress, token_id: u64,
     ) -> u64;
 
     fn initializer(

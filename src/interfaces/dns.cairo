@@ -17,6 +17,7 @@ pub use evolute_duel::systems::{
     // evolute_coin::{IEvoluteCoin, IEvoluteCoinDispatcher, IEvoluteCoinDispatcherTrait},
     // lords_mock::{ILordsMockDispatcher, ILordsMockDispatcherTrait},
     tournament_token::{ITournamentTokenDispatcher, ITournamentTokenDispatcherTrait}},
+    tournament_budokan_test::{ITournamentMockDispatcher, ITournamentMockDispatcherTrait},
     // rewards_manager::{IRewardsManager, IRewardsManagerDispatcher,
 // IRewardsManagerDispatcherTrait},
 };
@@ -25,7 +26,7 @@ pub use evolute_duel::interfaces::{
     vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source},
     ievlt_token::{IEvltTokenDispatcher, IEvltTokenDispatcherTrait},
 };
-pub use tournaments::components::tournament::{ITournamentDispatcher, ITournamentDispatcherTrait};
+// pub use tournaments::components::tournament::{ITournamentDispatcher, ITournamentDispatcherTrait};
 // pub use pistols::libs::store::{Store, StoreTrait};
 // pub use evolute_duel::models::config::{CONFIG, Config};
 // pub use pistols::utils::misc::{ZERO};

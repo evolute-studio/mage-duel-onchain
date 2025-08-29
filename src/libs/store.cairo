@@ -51,7 +51,7 @@ pub use evolute_duel::types::packing::{PlayerSide, GameState, GameStatus, GameMo
 //     rules::{RewardValues},
 // };
 use tournaments::components::models::game::{TokenMetadata, TokenMetadataValue};
-use evolute_duel::interfaces::dns::{ITournamentDispatcher, DnsTrait};
+use evolute_duel::interfaces::dns::{ITournamentMockDispatcher, DnsTrait};
 use evolute_duel::interfaces::ievlt_token::{IEvltTokenDispatcher};
 
 #[derive(Copy, Drop)]
@@ -382,8 +382,8 @@ pub impl StoreImpl of StoreTrait {
         (self.world.read_model(challenge_id))
     }
 
-    fn budokan_dispatcher_from_pass_id(self: @Store, pass_id: u64) -> ITournamentDispatcher {
-        (ITournamentDispatcher {
+    fn budokan_dispatcher_from_pass_id(self: @Store, pass_id: u64) -> ITournamentMockDispatcher {
+        (ITournamentMockDispatcher {
             contract_address: self
                 .world
                 .read_member(

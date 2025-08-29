@@ -10,7 +10,7 @@ use evolute_duel::{
     },
     types::{packing::{GameStatus, GameMode}},
     interfaces::{ievlt_token::{IEvltTokenDispatcherTrait}}, libs::store::{Store, StoreTrait},
-    interfaces::dns::{DnsTrait, ITournamentDispatcher, ITournamentDispatcherTrait}
+    interfaces::dns::{DnsTrait, ITournamentMockDispatcher, ITournamentMockDispatcherTrait}
 };
 use starknet::ContractAddress;
 use openzeppelin_token::erc20::interface::{IERC20MetadataDispatcher, IERC20MetadataDispatcherTrait};
@@ -458,7 +458,7 @@ pub impl AssersImpl of AssertsTrait {
         tournament_id: u64, 
         total_evlt_amount: u256,
         evlt_token_address: ContractAddress,
-        budokan_dispatcher: ITournamentDispatcher,
+        budokan_dispatcher: ITournamentMockDispatcher,
         mut world: WorldStorage
     ) {
         println!("[distribute_evlt_prizes] Starting EVLT prize distribution");
