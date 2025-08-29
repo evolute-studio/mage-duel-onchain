@@ -9,7 +9,7 @@ pub struct MetagamePlayerData {
     pub player_address: ContractAddress, // Player's address
     pub deck: Span<u8>, // Deck of tiles available to the player
     pub tiles_placed: u32, // Number of tiles placed by the player
-    pub first_tile_placed: Option<Position>, // Coordinates of the first tile placed
+    pub first_tile_placed: Option<Position> // Coordinates of the first tile placed
     // pub score: u32, // Player's score (optional, can be added later)
 }
 
@@ -28,5 +28,5 @@ pub struct MetagameBoardBounds {
     pub max_col: u32, // Maximum column index for the board
     pub min_row: u32, // Minimum row index for the board
     pub max_row: u32, // Maximum row index for the board
-    pub gap_size: u32, // Size of the gap between tiles (optional, can be added later)
+    pub gap_size: u32 // Size of the gap between tiles (optional, can be added later)
 }

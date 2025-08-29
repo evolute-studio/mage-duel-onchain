@@ -12,34 +12,22 @@ pub trait IRewardsManager<T> {
 pub mod rewards_manager {
     use super::IRewardsManager;
     use starknet::ContractAddress;
-    use dojo::{
-        world::WorldStorage, 
-    };
+    use dojo::{world::WorldStorage};
     use evolute_duel::{
-        systems::{
-            tokens::{
-                evolute_coin::{},
-            }
-        },
-        interfaces::{
-            dns::{
-                DnsTrait,
-                IEvoluteCoinDispatcher, IEvoluteCoinDispatcherTrait
-            },
-        },
+        systems::{tokens::{evolute_coin::{}}},
+        interfaces::{dns::{DnsTrait, IEvoluteCoinDispatcher, IEvoluteCoinDispatcherTrait}},
     };
 
     #[storage]
-    struct Storage {
-    }
+    struct Storage {}
 
-    fn dojo_init(self: @ContractState) {
-        
-    }
+    fn dojo_init(self: @ContractState) {}
 
     #[abi(embed_v0)]
     impl RewardManagerImpl of IRewardsManager<ContractState> {
-        fn transfer_rewards(ref self: ContractState, player_address: ContractAddress, amount: u128) {
+        fn transfer_rewards(
+            ref self: ContractState, player_address: ContractAddress, amount: u128,
+        ) {
             // validate caller (game contract only)
             let mut world = self.world_default();
             assert!(world.caller_is_world_contract(), "[Rewards error] Invalid caller");

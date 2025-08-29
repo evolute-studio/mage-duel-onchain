@@ -2,3 +2,4 @@
 target
 manifest_*.json
 Scarb.lock
+bindings

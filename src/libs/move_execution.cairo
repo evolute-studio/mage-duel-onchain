@@ -1,9 +1,8 @@
 use starknet::ContractAddress;
 use evolute_duel::{
-    models::{game::{Board, Move, Rules}}, events::{Moved, BoardUpdated, InvalidMove, NotEnoughJokers},
+    models::{game::{Board, Move}}, events::{Moved, BoardUpdated, InvalidMove, NotEnoughJokers},
     systems::helpers::{validation::{is_valid_move}, board::{BoardTrait}},
-    types::packing::{PlayerSide, Tile},
-    events::{ErrorEvent}
+    types::packing::{PlayerSide, Tile}, events::{ErrorEvent},
 };
 use dojo::world::{WorldStorage};
 use dojo::model::{ModelStorage, Model};
@@ -38,26 +37,39 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
         true
     }
 
-    fn get_tile_for_move(joker_tile: Option<u8>, board: @Board, mut world: WorldStorage, player_address: ContractAddress) -> Option<u8> {
+    fn get_tile_for_move(
+        joker_tile: Option<u8>,
+        board: @Board,
+        mut world: WorldStorage,
+        player_address: ContractAddress,
+    ) -> Option<u8> {
         match joker_tile {
             Option::Some(tile_type) => Option::Some(tile_type),
             Option::None => {
                 match *board.top_tile {
-                    Option::Some(tile_index) => Option::Some(*(*board.available_tiles_in_deck).at(tile_index.into())),
+                    Option::Some(tile_index) => Option::Some(
+                        *(*board.available_tiles_in_deck).at(tile_index.into()),
+                    ),
                     Option::None => {
                         if board.commited_tile.is_none() {
-                            world.emit_event(@ErrorEvent {
-                                player_address,
-                                name: 'No tiles in the deck',
-                                message: "There are no tiles available in the deck to play",
-                            });
-                            return Option::None; 
+                            world
+                                .emit_event(
+                                    @ErrorEvent {
+                                        player_address,
+                                        name: 'No tiles in the deck',
+                                        message: "There are no tiles available in the deck to play",
+                                    },
+                                );
+                            return Option::None;
                         } else {
-                            world.emit_event(@ErrorEvent {
-                                player_address,
-                                name: 'Tile not revealed',
-                                message: "The top tile is not revealed yet",
-                            });
+                            world
+                                .emit_event(
+                                    @ErrorEvent {
+                                        player_address,
+                                        name: 'Tile not revealed',
+                                        message: "The top tile is not revealed yet",
+                                    },
+                                );
                             return Option::None;
                         }
                     },
@@ -66,9 +78,28 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
         }
     }
 
-    fn validate_move(board_id: felt252, tile: Tile, rotation: u8, col: u8, row: u8, board_size: u32, world: WorldStorage) -> bool {
+    fn validate_move(
+        board_id: felt252,
+        tile: Tile,
+        rotation: u8,
+        col: u8,
+        row: u8,
+        board_size: u32,
+        world: WorldStorage,
+    ) -> bool {
         is_valid_move(
-            board_id, tile, rotation, col.into(), row.into(), board_size, 1, 1, board_size - 2, board_size - 2, false, world
+            board_id,
+            tile,
+            rotation,
+            col.into(),
+            row.into(),
+            board_size,
+            1,
+            1,
+            board_size - 2,
+            board_size - 2,
+            false,
+            world,
         )
     }
 
@@ -91,7 +122,11 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
     }
 
     fn update_board_after_move(
-        move_data: MoveData, ref board: Board, is_joker: bool, is_tutorial: bool, world: WorldStorage,
+        move_data: MoveData,
+        ref board: Board,
+        is_joker: bool,
+        is_tutorial: bool,
+        world: WorldStorage,
     ) -> Option<u8> {
         let top_tile = if is_tutorial {
             Self::update_top_tile_in_tutorial(@board)
@@ -105,23 +140,20 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
 
         println!(
             "Updating board after move: move_data: {:?}, is_joker: {}, is_tutorial: {}",
-            move_data, is_joker, is_tutorial
+            move_data,
+            is_joker,
+            is_tutorial,
         );
-        println!(
-            "Board before move: {:?}",
-            board
-        );
+        println!("Board before move: {:?}", board);
 
         if is_tutorial && board.moves_done == 0 {
             println!("First move in tutorial, updating available tiles in deck");
             if move_data.rotation == 2 {
                 // If the first move if road facing right, we need to change deck
                 println!("Updating deck to right facing tiles");
-                BoardTrait::replace_tile_in_deck(
-                    ref board, 2, Tile::CCRF, world
-                );
+                BoardTrait::replace_tile_in_deck(ref board, 2, Tile::CCRF, world);
                 Self::update_avaliable_tiles_in_board(
-                    board.id, board.available_tiles_in_deck, world
+                    board.id, board.available_tiles_in_deck, world,
                 );
             }
         }
@@ -141,7 +173,7 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
                     Option::Some(*tile_index + 1)
                 }
             },
-            Option::None => Option::None, 
+            Option::None => Option::None,
         }
     }
 
@@ -183,10 +215,7 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
             );
     }
 
-    fn emit_board_updated_event(
-        board: @Board,
-        mut world: dojo::world::WorldStorage,
-    ) {
+    fn emit_board_updated_event(board: @Board, mut world: dojo::world::WorldStorage) {
         world
             .emit_event(
                 @BoardUpdated {
@@ -224,10 +253,15 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
             );
     }
 
-    fn update_avaliable_tiles_in_board(board_id: felt252, available_tiles_in_deck: Span<u8>, mut world: WorldStorage) {
-        world.write_member(
-            Model::<Board>::ptr_from_keys(board_id), selector!("available_tiles_in_deck"), available_tiles_in_deck,
-        );
+    fn update_avaliable_tiles_in_board(
+        board_id: felt252, available_tiles_in_deck: Span<u8>, mut world: WorldStorage,
+    ) {
+        world
+            .write_member(
+                Model::<Board>::ptr_from_keys(board_id),
+                selector!("available_tiles_in_deck"),
+                available_tiles_in_deck,
+            );
     }
 
     fn persist_board_updates(
@@ -282,12 +316,15 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
     }
 
     fn should_finish_game(
-        joker_number1: u8, 
-        joker_number2: u8, 
-        available_tiles_len_player1: u32, 
-        available_tiles_len_player2: u32
+        joker_number1: u8,
+        joker_number2: u8,
+        available_tiles_len_player1: u32,
+        available_tiles_len_player2: u32,
     ) -> bool {
-        (available_tiles_len_player1 == 0 && available_tiles_len_player2 == 0 && joker_number1 == 0 && joker_number2 == 0)
+        (available_tiles_len_player1 == 0
+            && available_tiles_len_player2 == 0
+            && joker_number1 == 0
+            && joker_number2 == 0)
     }
 
     fn is_board_full(moves_done: u8, board_size: u8) -> bool {
@@ -296,7 +333,11 @@ pub impl MoveExecutionImpl of MoveExecutionTrait {
     }
 
     fn create_skip_move_record(
-        move_id: felt252, player_side: PlayerSide, prev_move_id: Option<felt252>, board_id: felt252, top_tile: Option<u8>,
+        move_id: felt252,
+        player_side: PlayerSide,
+        prev_move_id: Option<felt252>,
+        board_id: felt252,
+        top_tile: Option<u8>,
     ) -> Move {
         Move {
             id: move_id,

@@ -10,7 +10,8 @@ use starknet::ContractAddress;
 /// - `controller_address`: The target controller address to migrate to.
 /// - `requested_at`: Timestamp when the migration was requested.
 /// - `expires_at`: Timestamp when the request expires.
-/// - `status`: Current status of the migration (0: pending, 1: approved, 2: rejected, 3: completed).
+/// - `status`: Current status of the migration (0: pending, 1: approved, 2: rejected, 3:
+/// completed).
 #[derive(Drop, Serde, Copy, Introspect, Debug)]
 #[dojo::model]
 pub struct MigrationRequest {

@@ -1,4 +1,4 @@
-world_address = "0x0230035e44105bbc11acf2dd1b271a78d53627a810e6a2fb024fd2edcf273c9c"
+world_address = "0x456df5dd00562b48529c589de80c70d0c2a7a73bbfbab6dd2bac7524b332b10"
 rpc = "http://localhost:5050/"
 
 [runner]
