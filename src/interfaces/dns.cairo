@@ -17,7 +17,7 @@ pub use evolute_duel::systems::{
     // evolute_coin::{IEvoluteCoin, IEvoluteCoinDispatcher, IEvoluteCoinDispatcherTrait},
     // lords_mock::{ILordsMockDispatcher, ILordsMockDispatcherTrait},
     tournament_token::{ITournamentTokenDispatcher, ITournamentTokenDispatcherTrait}},
-    tournament_budokan_test::{ITournamentMockDispatcher, ITournamentMockDispatcherTrait},
+    tournament::{ITournamentDispatcher, ITournamentDispatcherTrait},
     // rewards_manager::{IRewardsManager, IRewardsManagerDispatcher,
 // IRewardsManagerDispatcherTrait},
 };

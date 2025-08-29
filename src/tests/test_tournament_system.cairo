@@ -28,8 +28,8 @@ mod tests {
 
     // Tournament systems
     use evolute_duel::systems::{
-        tournament_budokan_test::{
-            tournament_mock, ITournamentMock, ITournamentMockDispatcher, ITournamentMockDispatcherTrait,
+        tournament::{
+            tournament_mock, ITournamentMock, ITournamentDispatcher, ITournamentDispatcherTrait,
             ITournamentMockInit, ITournamentMockInitDispatcher, ITournamentMockInitDispatcherTrait,
         },
         tokens::tournament_token::{
@@ -188,7 +188,7 @@ mod tests {
     }
 
     fn deploy_tournament_system() -> (
-        ITournamentMockDispatcher, 
+        ITournamentDispatcher, 
         ITournamentTokenDispatcher,
         IEvltTokenDispatcher,
         IEvltTokenProtectedDispatcher,
@@ -207,7 +207,7 @@ mod tests {
         let (matchmaking_address, _) = world.dns(@"matchmaking").unwrap();
         println!("[deploy_tournament_system] Contract addresses resolved - Tournament: {:?}, TournamentToken: {:?}, EvltToken: {:?}, Matchmaking: {:?}", tournament_address, tournament_token_address, evlt_token_address, matchmaking_address);
 
-        let tournament_dispatcher = ITournamentMockDispatcher { contract_address: tournament_address };
+        let tournament_dispatcher = ITournamentDispatcher { contract_address: tournament_address };
         let tournament_initializer_dispatcher = ITournamentMockInitDispatcher { contract_address: tournament_address };
         println!("[deploy_tournament_system] Initializing tournament system");
         tournament_initializer_dispatcher.initializer(false, true, evlt_token_address, tournament_token_address);

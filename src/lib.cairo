@@ -23,7 +23,7 @@ pub mod systems {
         pub mod evlt_token;
         pub mod grnd_token;
     }
-    pub mod tournament_budokan_test;
+    pub mod tournament;
     // pub mod tournament_mock;
 }
 

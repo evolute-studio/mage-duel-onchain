@@ -194,7 +194,7 @@ pub mod tournament_token {
     //     timestamp::{Period, PeriodTrait, TIMESTAMP},
     // };
     use evolute_duel::interfaces::dns::{
-        DnsTrait, SELECTORS, ITournamentMockDispatcher, ITournamentMockDispatcherTrait,
+        DnsTrait, SELECTORS, ITournamentDispatcher, ITournamentDispatcherTrait,
         IMatchmakingDispatcherTrait, IMatchmakingLibraryDispatcher
         // IDuelProtectedDispatcherTrait,
     };
@@ -427,7 +427,7 @@ pub mod tournament_token {
             println!("[can_start_tournament] Token metadata retrieved");
             
             println!("[can_start_tournament] Getting budokan tournament ID");
-            let (_, tournament_id): (ITournamentMockDispatcher, u64) = self
+            let (_, tournament_id): (ITournamentDispatcher, u64) = self
                 ._get_budokan_tournament_id(@store, pass_id);
             println!("[can_start_tournament] Tournament ID: {}", tournament_id);
             
@@ -498,7 +498,7 @@ pub mod tournament_token {
             
             // verify tournament not started
             println!("[start_tournament] Getting budokan tournament ID");
-            let (tournament_dispatcher, tournament_id): (ITournamentMockDispatcher, u64) = self
+            let (tournament_dispatcher, tournament_id): (ITournamentDispatcher, u64) = self
                 ._get_budokan_tournament_id(@store, pass_id);
             println!("[start_tournament] Tournament dispatcher: {:?}", tournament_dispatcher.contract_address);
             println!("[start_tournament] Retrieved tournament_id: {}", tournament_id);
@@ -734,11 +734,11 @@ pub mod tournament_token {
 
         fn _get_budokan_tournament_id(
             self: @ContractState, store: @Store, pass_id: u64,
-        ) -> (ITournamentMockDispatcher, u64) {
+        ) -> (ITournamentDispatcher, u64) {
             println!("[_get_budokan_tournament_id] Getting budokan tournament ID for pass_id: {}", pass_id);
             
             println!("[_get_budokan_tournament_id] Getting budokan dispatcher from store");
-            let budokan_dispatcher: ITournamentMockDispatcher = store
+            let budokan_dispatcher: ITournamentDispatcher = store
                 .budokan_dispatcher_from_pass_id(pass_id);
             println!("[_get_budokan_tournament_id] Budokan dispatcher address: {:?}", budokan_dispatcher.contract_address);
             
@@ -765,7 +765,7 @@ pub mod tournament_token {
             self: @ContractState, store: @Store, pass_id: u64,
         ) -> Option<Registration> {
             println!("[_get_budokan_registration] Getting budokan dispatcher for pass_id: {}", pass_id);
-            let budokan_dispatcher: ITournamentMockDispatcher = store
+            let budokan_dispatcher: ITournamentDispatcher = store
                 .budokan_dispatcher_from_pass_id(pass_id);
             println!("[_get_budokan_registration] Budokan dispatcher address: {:?}", budokan_dispatcher.contract_address);
             

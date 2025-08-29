@@ -162,7 +162,7 @@ pub mod evlt_token {
         }
 
         // Get budokan tournament address from DNS and grant transfer role
-        let budokan_address = world.find_contract_address(@"tournament_budokan_test");
+        let budokan_address = world.find_contract_address(@"tournament");
         if !budokan_address.is_zero() {
             self.accesscontrol._grant_role(TRANSFER_ROLE, budokan_address);
         }
@@ -259,12 +259,10 @@ pub mod evlt_token {
             let caller = starknet::get_caller_address();
             let contract_state = self.get_contract();
 
-            if contract_state.accesscontrol.has_role(TRANSFER_ROLE, caller) {
-                return;
+            if !contract_state.accesscontrol.has_role(TRANSFER_ROLE, caller) {
+                // Block all other transfers between non-zero addresses
+                panic(array![Errors::TRANSFERS_DISABLED]);
             }
-
-            // Block all other transfers between non-zero addresses
-            panic(array![Errors::TRANSFERS_DISABLED]);
         }
 
         fn after_update(
