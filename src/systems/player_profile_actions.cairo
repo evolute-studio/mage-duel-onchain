@@ -2,9 +2,6 @@ use starknet::ContractAddress;
 /// Interface defining actions for player profile management.
 #[starknet::interface]
 pub trait IPlayerProfileActions<T> {
-    /// Retrieves the player's balance.
-    fn balance(ref self: T);
-
     /// Lets admin set the player's data.
     /// - `player_id`: Unique identifier for the player.
     /// - `username`: Player's chosen in-game name.
@@ -17,19 +14,14 @@ pub trait IPlayerProfileActions<T> {
     /// It should be used with caution to ensure that player data integrity is maintained.
     /// Admins should ensure that the provided data is valid and consistent with the game's rules.
     fn set_player(
-        ref self: T, 
-        player_id: ContractAddress, 
-        username: felt252,  balance: u32, 
-        games_played: felt252, 
-        active_skin: u8, 
-        role: u8
+        ref self: T,
+        player_id: ContractAddress,
+        username: felt252,
+        balance: u32,
+        games_played: felt252,
+        active_skin: u8,
+        role: u8,
     );
-
-    /// Retrieves the player's username.
-    fn username(ref self: T);
-
-    /// Retrieves the player's active skin.
-    fn active_skin(ref self: T);
 
     /// Changes the player's username.
     /// - `new_username`: The new username to be set.
@@ -55,17 +47,12 @@ pub mod player_profile_actions {
 
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
+    use core::num::traits::Zero;
 
 
     use evolute_duel::{
-        events::{
-            CurrentPlayerBalance, CurrentPlayerActiveSkin, CurrentPlayerUsername,
-            PlayerUsernameChanged, PlayerSkinChanged, PlayerSkinChangeFailed,
-        },
-        models::{
-            player::{Player},
-            skins::{Shop},
-        }, types::packing::{},
+        events::{PlayerUsernameChanged, PlayerSkinChanged, PlayerSkinChangeFailed},
+        models::{player::{Player, PlayerTrait}, skins::{Shop}}, types::packing::{},
     };
     use evolute_duel::libs::achievements::AchievementsTrait;
     use openzeppelin_access::ownable::OwnableComponent;
@@ -76,18 +63,18 @@ pub mod player_profile_actions {
     #[abi(embed_v0)]
     impl OwnableMixinImpl = OwnableComponent::OwnableMixinImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
- 
+
     #[storage]
     struct Storage {
         #[substorage(v0)]
-        ownable: OwnableComponent::Storage
+        ownable: OwnableComponent::Storage,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         #[flat]
-        OwnableEvent: OwnableComponent::Event
+        OwnableEvent: OwnableComponent::Event,
     }
 
 
@@ -106,20 +93,14 @@ pub mod player_profile_actions {
 
     #[abi(embed_v0)]
     impl PlayerProfileActionsImpl of IPlayerProfileActions<ContractState> {
-        fn balance(ref self: ContractState) {
-            let mut world = self.world_default();
-            let player_id = get_caller_address();
-            let player: Player = world.read_model(player_id);
-            world.emit_event(@CurrentPlayerBalance { player_id, balance: player.balance });
-        }
-
         fn set_player(
-            ref self: ContractState, 
-            player_id: ContractAddress, 
-            username: felt252,  balance: u32, 
-            games_played: felt252, 
-            active_skin: u8, 
-            role: u8
+            ref self: ContractState,
+            player_id: ContractAddress,
+            username: felt252,
+            balance: u32,
+            games_played: felt252,
+            active_skin: u8,
+            role: u8,
         ) {
             self.ownable.assert_only_owner();
             let mut world = self.world_default();
@@ -132,13 +113,6 @@ pub mod player_profile_actions {
             world.write_model(@player);
         }
 
-        fn username(ref self: ContractState) {
-            let mut world = self.world_default();
-            let player_id = get_caller_address();
-            let player: Player = world.read_model(player_id);
-            world.emit_event(@CurrentPlayerUsername { player_id, username: player.username });
-        }
-
         fn change_username(ref self: ContractState, new_username: felt252) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
@@ -147,16 +121,6 @@ pub mod player_profile_actions {
             world.write_model(@player);
 
             world.emit_event(@PlayerUsernameChanged { player_id, new_username });
-        }
-
-        fn active_skin(ref self: ContractState) {
-            let mut world = self.world_default();
-            let player_id = get_caller_address();
-            let player: Player = world.read_model(player_id);
-            world
-                .emit_event(
-                    @CurrentPlayerActiveSkin { player_id, active_skin: player.active_skin },
-                );
         }
 
         fn change_skin(ref self: ContractState, skin_id: u8) {
@@ -183,23 +147,15 @@ pub mod player_profile_actions {
             world.write_model(@player);
 
             world.emit_event(@PlayerSkinChanged { player_id, new_skin: skin_id });
-            world
-                .emit_event(
-                    @CurrentPlayerActiveSkin { player_id, active_skin: player.active_skin },
-                );
 
             match skin_id {
                 0 | 1 => {}, // Default skin, no achievement => {},
                 2 => AchievementsTrait::unlock_bandi(world, player_id), //[Achievements] Bandi skin
                 3 => AchievementsTrait::unlock_golem(world, player_id), //[Achievements] Golem skin
-                4 => AchievementsTrait::unlock_mammoth(world, player_id), //[Achievements] Mammoth skin
+                4 => AchievementsTrait::unlock_mammoth(
+                    world, player_id,
+                ), //[Achievements] Mammoth skin
                 _ => {},
-                
-            }
-
-            //[Achievements] Mammoth skin
-            if skin_id == 4 {
-                AchievementsTrait::unlock_mammoth(world, player_id);
             }
         }
 
@@ -207,6 +163,10 @@ pub mod player_profile_actions {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let mut player: Player = world.read_model(player_id);
+            if player.is_bot() {
+                return; // Already a bot
+            }
+            self._check_if_empty_guest(player_id);
             player.role = 2;
             world.write_model(@player);
         }
@@ -215,6 +175,10 @@ pub mod player_profile_actions {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let mut player: Player = world.read_model(player_id);
+            if player.is_controller() {
+                return; // Already a controller
+            }
+            self._check_if_empty_guest(player_id);
             player.role = 1;
             world.write_model(@player);
         }
@@ -224,6 +188,21 @@ pub mod player_profile_actions {
     impl InternalImpl of InternalTrait {
         fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
             self.world(@"evolute_duel")
+        }
+
+        fn _check_if_empty_guest(self: @ContractState, guest_address: ContractAddress) {
+            let world = self.world_default();
+            let guest_player: Player = world.read_model(guest_address);
+            assert!(guest_player.is_guest(), "Only guest can perform this action");
+            assert!(guest_player.username.is_zero(), "Guest account must have no username");
+            assert!(guest_player.balance.is_zero(), "Guest account must have zero balance");
+            assert!(guest_player.games_played.is_zero(), "Guest account must have zero games played");
+            assert!(guest_player.active_skin == 0, "Guest account must have default skin");
+            assert!(guest_player.role == 0, "Guest account must have role 0 (Guest)");
+            assert!(!guest_player.tutorial_completed, "Guest account must not have completed tutorial");
+            assert!(guest_player.migration_target.is_zero(), "Guest account must not have migration target");
+            assert!(guest_player.migration_initiated_at.is_zero(), "Guest account must not have migration initiated time");
+            assert!(!guest_player.migration_used, "Guest account must not have used migration");
         }
     }
 }

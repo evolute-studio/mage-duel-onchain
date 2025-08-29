@@ -45,7 +45,6 @@ pub impl Seasoned of TrophyTrait {
             1 => 'fa-chess-bishop-piece',
             2 => 'fa-chess-queen-piece',
             _ => '',
-            
         }
     }
 

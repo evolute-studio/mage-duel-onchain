@@ -31,7 +31,7 @@ pub fn create_extended_tile(tile: Tile, rotation: u8) -> ExtendedTile {
         Tile::CRRF => [TEdge::C, TEdge::R, TEdge::R, TEdge::F],
         Tile::CRFR => [TEdge::C, TEdge::R, TEdge::F, TEdge::R],
         Tile::CFRR => [TEdge::C, TEdge::F, TEdge::R, TEdge::R],
-        Tile::Empty => [TEdge::M, TEdge::M, TEdge::M, TEdge::M],
+        Tile::Empty => [TEdge::None, TEdge::None, TEdge::None, TEdge::None],
     }.span();
 
     let rotation = (rotation % 4);
@@ -43,11 +43,8 @@ pub fn create_extended_tile(tile: Tile, rotation: u8) -> ExtendedTile {
     ExtendedTile { edges }
 }
 
-pub fn convert_board_position_to_node_position(state_tile_position: u8, direction: u8) -> u8 {
-    let col = state_tile_position / 8;
-    let row = state_tile_position % 8;
-
-    let position = col * 4 * 8 + row * 4 + direction;
+pub fn convert_board_position_to_node_position(col: u32, row: u32, direction: u8, board_size: u32) -> u32 {
+    let position = (col * board_size + row).into() * 4 + direction.into();
     position
 }
 

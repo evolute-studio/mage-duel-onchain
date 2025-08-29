@@ -1,49 +1,22 @@
 use dojo::model::{ModelStorage, Model};
 use dojo::world::WorldStorage;
-use dojo::world::WorldStorageTrait;
 
 
 use evolute_duel::{
     models::{
-        game::{Game, m_Game, Board, m_Board, Move, m_Move, Rules, m_Rules, Snapshot, m_Snapshot, TileCommitments, m_TileCommitments, AvailableTiles, m_AvailableTiles,},
-        scoring::{UnionFind, m_UnionFind,},
-        player::{ Player, m_Player,},
-        skins::{Shop, m_Shop,},
-    },
-    events::{
-        BoardCreated, e_BoardCreated, BoardCreatedFromSnapshot, e_BoardCreatedFromSnapshot,
-        BoardCreateFromSnapshotFalied, e_BoardCreateFromSnapshotFalied, SnapshotCreated,
-        e_SnapshotCreated, SnapshotCreateFailed, e_SnapshotCreateFailed, BoardUpdated,
-        e_BoardUpdated, RulesCreated, e_RulesCreated, Moved, e_Moved, Skiped, e_Skiped,
-        InvalidMove, e_InvalidMove, GameFinished, e_GameFinished, GameStarted, e_GameStarted,
-        GameCreated, e_GameCreated, GameCreateFailed, e_GameCreateFailed, GameJoinFailed,
-        e_GameJoinFailed, GameCanceled, e_GameCanceled, GameCanceleFailed, e_GameCanceleFailed,
-        PlayerNotInGame, e_PlayerNotInGame, NotYourTurn, e_NotYourTurn, NotEnoughJokers,
-        e_NotEnoughJokers, GameIsAlreadyFinished, e_GameIsAlreadyFinished, CantFinishGame,
-        e_CantFinishGame, CityContestWon, e_CityContestWon, CityContestDraw, e_CityContestDraw,
-        RoadContestWon, e_RoadContestWon, RoadContestDraw, e_RoadContestDraw,
-        CurrentPlayerBalance, e_CurrentPlayerBalance, CurrentPlayerUsername,
-        e_CurrentPlayerUsername, CurrentPlayerActiveSkin, e_CurrentPlayerActiveSkin,
-        PlayerUsernameChanged, e_PlayerUsernameChanged, PlayerSkinChanged, e_PlayerSkinChanged,
-        PlayerSkinChangeFailed, e_PlayerSkinChangeFailed, PhaseStarted, e_PhaseStarted,
-    },
-    types::packing::{GameStatus},
-    systems::{
-        helpers::board::{create_board},
-        game::{game, IGameDispatcher, IGameDispatcherTrait},
-        player_profile_actions::{
-            player_profile_actions, IPlayerProfileActionsDispatcher,
-            IPlayerProfileActionsDispatcherTrait,
+        game::{
+            Game, Board,
         },
     },
+    systems::{
+        game::{IGameDispatcher, IGameDispatcherTrait},
+    },
+    utils::hash::{hash_values, hash_values_with_sha256},
+    systems::helpers::tile_helpers::{create_extended_tile}
 };
 
 use starknet::{testing, ContractAddress};
-use core::dict::Felt252Dict;
-use origami_random::deck::{Deck, DeckTrait};
-use evolute_duel::utils::hash::{hash_values, hash_sha256_to_felt252, hash_values_with_sha256};
-use evolute_duel::types::packing::{GameState};
-use evolute_duel::systems::helpers::tile_helpers::{create_extended_tile};
+use origami_random::deck::{DeckTrait};
 
 #[derive(Drop, Debug, Clone)]
 struct PlayerData {
@@ -56,28 +29,28 @@ struct PlayerData {
 #[generate_trait]
 impl PlayerDataImpl of PlayerDataTrait {
     fn new(address: ContractAddress) -> PlayerData {
-        PlayerData {
-            address,
-            tile_commitments: array![],
-            nonces: array![],
-            permutation: array![],
-        }
+        PlayerData { address, tile_commitments: array![], nonces: array![], permutation: array![] }
     }
 
     fn commitments_exists(ref self: PlayerData) -> bool {
         !self.tile_commitments.is_empty()
     }
 
-    fn generate_commitments(
-        ref self: PlayerData, n: u8, game_type: GameType,
-    ) {
+    fn generate_commitments(ref self: PlayerData, n: u8, game_type: GameType) {
         self.generate_permutation(n);
-        println!("Permutation generated and saved: {:?}", self.permutation);
+        // println!("Permutation generated and saved: {:?}", self.permutation);
         self.generate_nonces(n);
-        println!("Nonces generated and saved: {:?}", self.nonces);
+        // println!("Nonces generated and saved: {:?}", self.nonces);
         let mut commitments = array![];
         for i in 0..n {
-            let commitment = hash_values_with_sha256(array![i.into(), (*self.nonces.at(i.into())).into(), (*self.permutation.at(i.into())).into()].span());
+            let commitment = hash_values_with_sha256(
+                array![
+                    i.into(),
+                    (*self.nonces.at(i.into())).into(),
+                    (*self.permutation.at(i.into())).into(),
+                ]
+                    .span(),
+            );
             for j in commitment.span() {
                 commitments.append(*j);
             };
@@ -85,10 +58,8 @@ impl PlayerDataImpl of PlayerDataTrait {
         self.tile_commitments = commitments
     }
 
-    fn generate_permutation(
-        ref self: PlayerData, n: u8
-    ) {
-       let mut deck = DeckTrait::new(self.address.into(), n.into());
+    fn generate_permutation(ref self: PlayerData, n: u8) {
+        let mut deck = DeckTrait::new(self.address.into(), n.into());
         let mut permutation = array![];
         for _ in 0..n {
             let tile = deck.draw() - 1; // Convert to 0-based index
@@ -97,9 +68,7 @@ impl PlayerDataImpl of PlayerDataTrait {
         self.permutation = permutation;
     }
 
-    fn generate_nonces(
-        ref self: PlayerData, n: u8
-    ) {
+    fn generate_nonces(ref self: PlayerData, n: u8) {
         let mut deck = DeckTrait::new(self.address.into(), n.into());
         let mut nonces = array![];
         for _ in 0..n {
@@ -109,10 +78,12 @@ impl PlayerDataImpl of PlayerDataTrait {
         self.nonces = nonces
     }
 
-    fn get_reveal_data(ref self: PlayerData, c: u8) -> (u8, felt252, u8) // Returns (tile_index, nonce, c)
+    fn get_reveal_data(
+        ref self: PlayerData, c: u8,
+    ) -> (u8, felt252, u8) // Returns (tile_index, nonce, c)
     {
         // println!("Purmutation: {:?}", self.permutation);
-    
+
         let mut tile_index = 65;
         for i in 0..self.permutation.len() {
             if *self.permutation.at(i) == c {
@@ -126,7 +97,9 @@ impl PlayerDataImpl of PlayerDataTrait {
         (tile_index.try_into().unwrap(), nonce, c)
     }
 
-    fn get_request_data(ref self: PlayerData, tile_index: u8) -> (u8, felt252, u8) // Returns (tile_index, nonce, c)
+    fn get_request_data(
+        ref self: PlayerData, tile_index: u8,
+    ) -> (u8, felt252, u8) // Returns (tile_index, nonce, c)
     {
         assert(tile_index < 65, 'Tile index out of bounds');
         let c = *self.permutation.at(tile_index.into());
@@ -134,7 +107,7 @@ impl PlayerDataImpl of PlayerDataTrait {
         (tile_index, nonce, c)
     }
 }
-    
+
 #[derive(Drop, Debug, Copy)]
 pub enum GameType {
     Standard,
@@ -156,21 +129,27 @@ struct GameCaller {
     host_player_data: PlayerData,
     guest_player_data: PlayerData,
     turn: Turn,
-    commited_tile: u8
+    commited_tile: u8,
 }
 
 #[generate_trait]
 pub impl GameCallerImpl of GameCallerTrait {
-    fn new(world: WorldStorage, game_address: ContractAddress, host_player: ContractAddress, guest_player: ContractAddress, game_type: GameType) -> GameCaller {
+    fn new(
+        world: WorldStorage,
+        game_address: ContractAddress,
+        host_player: ContractAddress,
+        guest_player: ContractAddress,
+        game_type: GameType,
+    ) -> GameCaller {
         let game_system = IGameDispatcher { contract_address: game_address };
         GameCaller {
-            world, 
+            world,
             game_system,
             host_player_data: PlayerDataTrait::new(host_player),
             guest_player_data: PlayerDataTrait::new(guest_player),
             game_type,
             turn: Turn::Host,
-            commited_tile: 0
+            commited_tile: 0,
         }
     }
 
@@ -180,34 +159,10 @@ pub impl GameCallerImpl of GameCallerTrait {
         self.game_system.create_game();
     }
 
-    fn create_game_from_snapshot(ref self: GameCaller, board_id: felt252) {
-        let host_player_address = self.host_player_data.address;
-        testing::set_contract_address(host_player_address);
-
-        let move_number = match self.game_type {
-            GameType::Standard => {panic!("Cannot create game from snapshot in Standard mode")},
-            GameType::Snapshot(move_number) => move_number,
-        };
-
-        let snapshot_id = match self.game_system.create_snapshot(board_id, move_number) {
-            Option::Some(snapshot_id) => {
-                println!("Snapshot created with ID: {}", snapshot_id);
-                snapshot_id
-            },
-            Option::None => {
-                println!("Failed to create snapshot");
-                return panic!("Failed to create snapshot");
-            },
-        };
-
-        self.game_system.create_game_from_snapshot(snapshot_id);
-    }
 
     fn join_game(ref self: GameCaller) {
         testing::set_contract_address(self.guest_player_data.address);
         self.game_system.join_game(self.host_player_data.address);
-
-        self.update_commited_tile();
     }
 
     fn commit_tiles(ref self: GameCaller) {
@@ -227,12 +182,13 @@ pub impl GameCallerImpl of GameCallerTrait {
         // Commit tiles for both players
         testing::set_contract_address(self.host_player_data.address);
         self.game_system.commit_tiles(self.host_player_data.tile_commitments.span());
-        println!("Host player committed tiles: {:?}", self.host_player_data.tile_commitments);
+        // println!("Host player committed tiles: {:?}", self.host_player_data.tile_commitments);
 
         testing::set_contract_address(self.guest_player_data.address);
         self.game_system.commit_tiles(self.guest_player_data.tile_commitments.span());
-        println!("Guest player committed tiles: {:?}", self.guest_player_data.tile_commitments);
+        // println!("Guest player committed tiles: {:?}", self.guest_player_data.tile_commitments);
 
+        self.update_commited_tile();
         self.turn = Turn::Host;
     }
 
@@ -245,7 +201,15 @@ pub impl GameCallerImpl of GameCallerTrait {
                 let (tile_index, nonce, c) = self.host_player_data.get_reveal_data(c);
                 tile = tile_index;
                 self.game_system.reveal_tile(tile_index, nonce, c);
-                println!("Host player revealed tile: {}", tile_index);
+                let board_id: Option<felt252> = self
+                    .world
+                    .read_member(
+                        Model::<Game>::ptr_from_keys(self.host_player_data.address),
+                        selector!("board_id"),
+                    );
+                let mut board: Board = self.world.read_model(board_id.unwrap());
+                let tile_type = *board.available_tiles_in_deck.at(tile_index.into());                
+                println!("Host player revealed tile: {:?}, at index: {}, and type: {}", create_extended_tile(tile_type.into(), 0), tile_index, tile_type);
             },
             Turn::Guest => {
                 println!("Guest player is revealing tile with c: {}", c);
@@ -253,7 +217,15 @@ pub impl GameCallerImpl of GameCallerTrait {
                 let (tile_index, nonce, c) = self.guest_player_data.get_reveal_data(c);
                 tile = tile_index;
                 self.game_system.reveal_tile(tile_index, nonce, c);
-                println!("Guest player revealed tile: {}", tile_index);
+                let board_id: Option<felt252> = self
+                    .world
+                    .read_member(
+                        Model::<Game>::ptr_from_keys(self.host_player_data.address),
+                        selector!("board_id"),
+                    );
+                let mut board: Board = self.world.read_model(board_id.unwrap());
+                let tile_type = *board.available_tiles_in_deck.at(tile_index.into());
+                println!("Guest player revealed tile: {:?}, at index: {}, and type: {}", create_extended_tile(tile_type.into(), 0), tile_index, tile_type);
             },
         }
 
@@ -263,9 +235,12 @@ pub impl GameCallerImpl of GameCallerTrait {
                 testing::set_contract_address(self.guest_player_data.address);
                 let (tile_index, nonce, c) = self.guest_player_data.get_request_data(tile);
                 self.game_system.request_next_tile(tile_index, nonce, c);
-                let board_id: Option<felt252> = self.world.read_member(
-                    Model::<Game>::ptr_from_keys(self.host_player_data.address), selector!("board_id")
-                );
+                let board_id: Option<felt252> = self
+                    .world
+                    .read_member(
+                        Model::<Game>::ptr_from_keys(self.host_player_data.address),
+                        selector!("board_id"),
+                    );
                 let mut board: Board = self.world.read_model(board_id.unwrap());
                 let commited_tile = board.commited_tile;
                 println!("Guest player received tile: {}", commited_tile.unwrap());
@@ -277,9 +252,12 @@ pub impl GameCallerImpl of GameCallerTrait {
                 testing::set_contract_address(self.host_player_data.address);
                 let (tile_index, nonce, c) = self.host_player_data.get_request_data(tile);
                 self.game_system.request_next_tile(tile_index, nonce, c);
-                let board_id: Option<felt252> = self.world.read_member(
-                    Model::<Game>::ptr_from_keys(self.host_player_data.address), selector!("board_id")
-                );
+                let board_id: Option<felt252> = self
+                    .world
+                    .read_member(
+                        Model::<Game>::ptr_from_keys(self.host_player_data.address),
+                        selector!("board_id"),
+                    );
                 let mut board: Board = self.world.read_model(board_id.unwrap());
                 let commited_tile = board.commited_tile;
                 println!("Host player received tile: {}", commited_tile.unwrap());
@@ -289,68 +267,75 @@ pub impl GameCallerImpl of GameCallerTrait {
         }
     }
 
-    fn process_move(ref self: GameCaller, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8) {
+    fn process_move(ref self: GameCaller, joker_tile: Option<u8>, rotation: u8, col: u32, row: u32) {
         match self.turn {
             Turn::Host => {
                 testing::set_contract_address(self.host_player_data.address);
-                self.game_system.make_move(joker_tile, rotation, col, row);
+                self.game_system.make_move(joker_tile, rotation, col.try_into().unwrap(), row.try_into().unwrap());
                 self.turn = Turn::Guest;
             },
             Turn::Guest => {
                 testing::set_contract_address(self.guest_player_data.address);
-                self.game_system.make_move(joker_tile, rotation, col, row);
+                self.game_system.make_move(joker_tile, rotation, col.try_into().unwrap(), row.try_into().unwrap());
                 self.turn = Turn::Host;
             },
         }
     }
 
-    fn process_multiple_moves(
-        ref self: GameCaller, moves: Array<(Option<u8>, u8, u8, u8)>
-    ) {
+    fn process_multiple_moves(ref self: GameCaller, moves: Array<(Option<u8>, u8, u8, u8)>) {
         self.update_commited_tile();
         let mut i = 0;
         for (joker_tile, rotation, col, row) in moves {
             println!("{}", i);
             self.commited_tile = self.process_reveal_phase(self.commited_tile).unwrap();
-            self.process_move(joker_tile, rotation, col, row);
+            self.process_move(joker_tile, rotation, col.try_into().unwrap(), row.try_into().unwrap());
             i += 1;
         }
     }
 
-    fn process_auto_multiple_moves(ref self: GameCaller, moves: u8, snapshot_move_number: u8) -> Array<(u8, u8, u8)> {
-        let mut snapshot_state = array![];
+    fn process_auto_multiple_moves(
+        ref self: GameCaller, moves: u8,
+    ) {
         self.update_commited_tile();
         for i in 0..moves {
             println!("{}", i);
             self.commited_tile = self.process_reveal_phase(self.commited_tile).unwrap();
-            let board_id: Option<felt252> = self.world.read_member(
-                Model::<Game>::ptr_from_keys(self.host_player_data.address), selector!("board_id")
-            );
+            let board_id: Option<felt252> = self
+                .world
+                .read_member(
+                    Model::<Game>::ptr_from_keys(self.host_player_data.address),
+                    selector!("board_id"),
+                );
             let mut board: Board = self.world.read_model(board_id.unwrap());
-            let (joker_tile, rotation, col, row) = MoveFinderTrait::find_move(ref board);
+            let (joker_tile, rotation, col, row) = MoveFinderTrait::find_move(ref board, self.world);
             self.process_move(joker_tile, rotation, col, row);
-            if i == snapshot_move_number {
-                snapshot_state = board.state.clone();
-                println!("Snapshot state at move {}: {:?}", i, snapshot_state)
-            }
         };
-        snapshot_state
     }
 
     fn process_auto_move(ref self: GameCaller) {
-        let board_id: Option<felt252> = self.world.read_member(
-            Model::<Game>::ptr_from_keys(self.host_player_data.address), selector!("board_id")
-        );
+        let board_id: Option<felt252> = self
+            .world
+            .read_member(
+                Model::<Game>::ptr_from_keys(self.host_player_data.address), selector!("board_id"),
+            );
         let mut board: Board = self.world.read_model(board_id.unwrap());
-        let (joker_tile, rotation, col, row) = MoveFinderTrait::find_move(ref board);
-        println!("Auto move found: joker_tile: {:?}, rotation: {}, col: {}, row: {}", joker_tile, rotation, col, row);
+        let (joker_tile, rotation, col, row) = MoveFinderTrait::find_move(ref board, self.world);
+        println!(
+            "Auto move found: joker_tile: {:?}, rotation: {}, col: {}, row: {}",
+            joker_tile,
+            rotation,
+            col,
+            row,
+        );
         self.process_move(joker_tile, rotation, col, row);
     }
 
     fn update_commited_tile(ref self: GameCaller) {
-        let board_id: Option<felt252> = self.world.read_member(
-            Model::<Game>::ptr_from_keys(self.host_player_data.address), selector!("board_id")
-        );
+        let board_id: Option<felt252> = self
+            .world
+            .read_member(
+                Model::<Game>::ptr_from_keys(self.host_player_data.address), selector!("board_id"),
+            );
         println!("Board ID: {:?}", board_id);
         let board: Board = self.world.read_model(board_id.unwrap());
         println!("Updated commited tile: {:?}", board.commited_tile);
@@ -362,41 +347,49 @@ pub impl GameCallerImpl of GameCallerTrait {
 use evolute_duel::systems::helpers::validation::is_valid_move;
 #[generate_trait]
 pub impl MoveFinderImpl of MoveFinderTrait {
-    fn find_move(ref board: Board) -> (Option<u8>, u8, u8, u8) { // Returns (joker_tile, rotation, col, row)
+    fn find_move(
+        ref board: Board, world: WorldStorage,
+    ) -> (Option<u8>, u8, u32, u32) { // Returns (joker_tile, rotation, col, row)
         let mut joker_tile: Option<u8> = Option::None;
         let mut rotation: u8 = 0;
-        let mut col: u8 = 0;
-        let mut row: u8 = 0;
+        let mut col: u32 = 0;
+        let mut row: u32 = 0;
 
         // Implement your logic to find the move here
         // For example, you can iterate over the board and find a valid move
         let tile = match board.top_tile {
-            Option::Some(tile_index) => {*board.available_tiles_in_deck.at(tile_index.into())},
-            Option::None => {
-                return panic!("No top tile found on the board");
-            },
+            Option::Some(tile_index) => { *board.available_tiles_in_deck.at(tile_index.into()) },
+            Option::None => { return panic!("No top tile found on the board"); },
         };
 
         let mut found = false;
 
-        for c in 0..7_u8 {
+        for c in 1..8_u32 {
             if found {
                 break; // Exit the loop if a valid move is found
             }
-            for r in 0..7_u8 {
+            for r in 1..8_u32 {
                 if found {
                     break; // Exit the loop if a valid move is found
                 }
                 // Check if the tile can be placed at (c, r) with any rotation
                 for rot in 0..4_u8 {
                     // Check if the move is valid
-                    if is_valid_move(tile.into(), rot, c, r, board.state.span(), board.initial_edge_state) {
+                    if is_valid_move(
+                        board.id, tile.into(), rot, c, r, 10, 1, 8, 1, 8, false, world,
+                    ) {
                         let extended_tile = create_extended_tile(tile.into(), rotation);
                         joker_tile = Option::None; // No joker tile used
                         rotation = rot;
                         col = c;
                         row = r;
-                        println!("Found valid move: extended_tile {:?}, rotation {}, col {}, row {}", extended_tile, rotation, col, row);
+                        println!(
+                            "Found valid move: extended_tile {:?}, rotation {}, col {}, row {}",
+                            extended_tile,
+                            rotation,
+                            col,
+                            row,
+                        );
                         found = true; // Set found to true to exit the loops
                         break;
                     }
@@ -407,7 +400,6 @@ pub impl MoveFinderImpl of MoveFinderTrait {
         assert!(found, "No valid move found on the board");
 
         // Return the found move
-        (joker_tile, rotation, col, row)
-    
+        (joker_tile, rotation, col - 1, row - 1)
     }
 }

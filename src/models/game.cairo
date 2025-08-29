@@ -1,5 +1,5 @@
 use starknet::{ContractAddress};
-use evolute_duel::types::packing::{GameState, GameStatus, PlayerSide};
+use evolute_duel::types::packing::{GameState, GameStatus, PlayerSide, GameMode};
 
 /// Represents the game board, including tile states, players, scores, and game progression.
 ///
@@ -19,11 +19,8 @@ use evolute_duel::types::packing::{GameState, GameStatus, PlayerSide};
 pub struct Board {
     #[key]
     pub id: felt252,
-    pub initial_edge_state: Span<u8>,
-    pub available_tiles_in_deck: Array<u8>,
+    pub available_tiles_in_deck: Span<u8>,
     pub top_tile: Option<u8>,
-    // (u8, u8, u8) => (tile_number, rotation, side)
-    pub state: Array<(u8, u8, u8)>,
     //(address, side, joker_number)
     pub player1: (ContractAddress, PlayerSide, u8),
     //(address, side, joker_number)
@@ -34,9 +31,7 @@ pub struct Board {
     pub red_score: (u16, u16),
     pub last_move_id: Option<felt252>,
     pub game_state: GameState,
-
     pub moves_done: u8,
-    pub last_update_timestamp: u64,
     pub commited_tile: Option<u8>,
     pub phase_started_at: u64,
 }
@@ -55,7 +50,7 @@ pub struct Board {
 /// If `tile` is `None`, this move represents a skip.
 /// If `prev_move_id` is `None`, this move is the first move of the game.
 /// If `is_joker` is `true`, the move involved a joker tile.
-#[derive(Drop, Serde, Introspect, Debug)]
+#[derive(Drop, Serde, Introspect, Debug, Copy)]
 #[dojo::model]
 pub struct Move {
     #[key]
@@ -95,7 +90,7 @@ pub struct Rules {
 /// - `player`: The player associated with this game instance.
 /// - `status`: Current game status (active, completed, etc.).
 /// - `board_id`: Reference to the board associated with the game.
-/// - `snapshot_id`: ID of a game state snapshot if game was created from a snapshot.
+/// - `game_mode`: The mode of the game (Tutorial, Ranked, Casual).
 #[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::model]
 pub struct Game {
@@ -103,23 +98,7 @@ pub struct Game {
     pub player: ContractAddress,
     pub status: GameStatus,
     pub board_id: Option<felt252>,
-    pub snapshot_id: Option<felt252>,
-}
-
-/// Stores a snapshot of the game state at a specific move number.
-///
-/// - `snapshot_id`: Unique identifier for the snapshot.
-/// - `player`: The player whose state is recorded.
-/// - `board_id`: Reference to the board state.
-/// - `move_number`: Move number associated with this snapshot.
-#[derive(Drop, Serde, Introspect, Debug)]
-#[dojo::model]
-pub struct Snapshot {
-    #[key]
-    pub snapshot_id: felt252,
-    pub player: ContractAddress,
-    pub board_id: felt252,
-    pub move_number: u8,
+    pub game_mode: GameMode,
 }
 
 #[derive(Drop, Serde, Introspect, Debug)]
@@ -141,5 +120,25 @@ pub struct AvailableTiles {
     #[key]
     pub player: ContractAddress,
     pub available_tiles: Span<u8>,
+}
+
+/// Configuration for different game modes.
+///
+/// - `game_mode`: The game mode this configuration applies to.
+/// - `board_size`: Size of the game board (7 for tutorial, 10 for ranked/casual).
+/// - `deck_type`: Type of deck to use (0: tutorial, 1: full randomized).
+/// - `initial_jokers`: Number of joker tiles each player starts with.
+/// - `time_per_phase`: Time limit for each phase in seconds (0 = no limit).
+/// - `auto_match`: Whether to enable automatic matchmaking for this mode.
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct GameConfig {
+    #[key]
+    pub game_mode: GameMode,
+    pub board_size: u8,
+    pub deck_type: u8,
+    pub initial_jokers: u8,
+    pub time_per_phase: u64,
+    pub auto_match: bool,
 }
 

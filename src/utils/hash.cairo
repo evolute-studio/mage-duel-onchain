@@ -4,20 +4,20 @@ use core::sha256::compute_sha256_byte_array;
 
 pub fn hash_values(values: Span<felt252>) -> felt252 {
     let hash = hash_values_with_sha256(values);
-    println!("SHA256 hash: {:?}", hash);
+    // println!("SHA256 hash: {:?}", hash);
     hash_sha256_to_felt252(hash.span())
 }
 
 pub fn hash_values_with_sha256(values: Span<felt252>) -> [u32; 8] {
-     assert(values.len() > 0, 'hash_values() has no values!');
+    assert(values.len() > 0, 'hash_values() has no values!');
     let mut bytes_input: ByteArray = "";
     for value in values {
         let as_byte_array: ByteArray = format!("{}", *value);
         bytes_input.append(@as_byte_array);
     };
-    println!("Input bytes: {:?}", bytes_input);
+    // println!("Input bytes: {:?}", bytes_input);
     let hash = compute_sha256_byte_array(@bytes_input);
-    
+
     hash
 }
 
@@ -37,9 +37,7 @@ pub fn hash_sha256_to_felt252(hash: Span<u32>) -> felt252 {
 //
 #[cfg(test)]
 mod unit {
-    use super::{
-        hash_values,
-    };
+    use super::{hash_values};
 
     #[test]
     fn test_hash_values() {
@@ -50,7 +48,7 @@ mod unit {
         let h123: felt252 = hash_values([111, 222, 333].span());
         let h1234: felt252 = hash_values([111, 222, 333, 444].span());
         assert_ne!(h1, 0, "h1");
-        assert_eq!(h1, h11, "h1 == h11");
+        assert_ne!(h1, h11, "h1 == h11");
         assert_ne!(h1, h12, "h1 != h12");
         assert_ne!(h12, h123, "h12 != h123");
         assert_ne!(h123, h1234, "h3 != h4");

@@ -1,4 +1,5 @@
 use starknet::ContractAddress;
+use core::num::traits::Zero;
 // --------------------------------------
 // Player Profile Models
 // --------------------------------------
@@ -10,7 +11,7 @@ use starknet::ContractAddress;
 /// - `balance`: Current balance of in-game currency or points.
 /// - `games_played`: Total number of games played by the player.
 /// - `active_skin`: The currently equipped skin or avatar.
-#[derive(Drop, Serde, Introspect, Debug)]
+#[derive(Drop, Serde, Copy, Introspect, Debug)]
 #[dojo::model]
 pub struct Player {
     #[key]
@@ -20,13 +21,17 @@ pub struct Player {
     pub games_played: felt252,
     pub active_skin: u8,
     pub role: u8, // 0: Guest, 1: Controller, 2: Bot
+    pub tutorial_completed: bool,
+    pub migration_target: ContractAddress,
+    pub migration_initiated_at: u64,
+    pub migration_used: bool, // Prevents repeated migrations
 }
 
 #[generate_trait]
 pub impl PlayerImpl of PlayerTrait {
     fn is_bot(self: @Player) -> bool {
         *self.role == 2
-    } 
+    }
 
     fn is_controller(self: @Player) -> bool {
         *self.role == 1
@@ -34,6 +39,14 @@ pub impl PlayerImpl of PlayerTrait {
 
     fn is_guest(self: @Player) -> bool {
         *self.role == 0
+    }
+
+    fn can_migrate(self: @Player) -> bool {
+        *self.role == 0 && *self.tutorial_completed && (*self.migration_target).is_zero() && !*self.migration_used
+    }
+
+    fn has_pending_migration(self: @Player) -> bool {
+        !(*self.migration_target).is_zero()
     }
 }
 

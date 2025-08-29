@@ -2,54 +2,12 @@ use starknet::ContractAddress;
 use evolute_duel::types::packing::{GameState, GameStatus, PlayerSide};
 
 #[derive(Drop, Serde, Introspect, Debug)]
-#[dojo::event]
-pub struct BoardCreated {
+#[dojo::event(historical = true)]
+pub struct ErrorEvent {
     #[key]
-    pub board_id: felt252,
-    pub initial_edge_state: Array<u8>,
-    pub state: Array<(u8, u8, u8)>,
-    //(address, side, joker_number)
-    pub player1: (ContractAddress, PlayerSide, u8),
-    //(address, side, joker_number)
-    pub player2: (ContractAddress, PlayerSide, u8),
-    // (u16, u16) => (city_score, road_score)
-    pub blue_score: (u16, u16),
-    // (u16, u16) => (city_score, road_score)
-    pub red_score: (u16, u16),
-    pub last_move_id: Option<felt252>,
-    pub game_state: GameState,
-}
-
-#[derive(Drop, Serde, Introspect, Debug)]
-#[dojo::event]
-pub struct BoardCreatedFromSnapshot {
-    #[key]
-    pub board_id: felt252,
-    pub old_board_id: felt252,
-    pub move_number: u8,
-    pub initial_edge_state: Span<u8>,
-    pub available_tiles_in_deck: Span<u8>,
-    pub top_tile: Option<u8>,
-    pub state: Array<(u8, u8, u8)>,
-    //(address, side, joker_number)
-    pub player1: (ContractAddress, PlayerSide, u8),
-    //(address, side, joker_number)
-    pub player2: (ContractAddress, PlayerSide, u8),
-    // (u16, u16) => (city_score, road_score)
-    pub blue_score: (u16, u16),
-    // (u16, u16) => (city_score, road_score)
-    pub red_score: (u16, u16),
-    pub last_move_id: Option<felt252>,
-    pub game_state: GameState,
-}
-
-#[derive(Drop, Serde, Introspect, Debug)]
-#[dojo::event]
-pub struct BoardCreateFromSnapshotFalied {
-    #[key]
-    pub player: ContractAddress,
-    pub old_board_id: felt252,
-    pub move_number: u8,
+    pub player_address: ContractAddress,
+    pub name: felt252,
+    pub message: ByteArray,
 }
 
 #[derive(Drop, Serde, Introspect, Debug)]
@@ -77,9 +35,7 @@ pub struct SnapshotCreateFailed {
 pub struct BoardUpdated {
     #[key]
     pub board_id: felt252,
-    pub available_tiles_in_deck: Span<u8>,
     pub top_tile: Option<u8>,
-    pub state: Span<(u8, u8, u8)>,
     //(address, side, joker_number)
     pub player1: (ContractAddress, PlayerSide, u8),
     //(address, side, joker_number)
@@ -91,16 +47,6 @@ pub struct BoardUpdated {
     pub last_move_id: Option<felt252>,
     pub moves_done: u8,
     pub game_state: GameState,
-}
-
-#[derive(Drop, Serde, Introspect)]
-#[dojo::event]
-pub struct RulesCreated {
-    #[key]
-    pub rules_id: felt252,
-    // pub deck: Array<(Tile, u8)>,
-    pub edges: (u8, u8),
-    pub joker_number: u8,
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Debug)]
@@ -150,7 +96,7 @@ pub struct InvalidMove {
 #[dojo::event]
 pub struct GameFinished {
     #[key]
-    pub host_player: ContractAddress,
+    pub player: ContractAddress,
     pub board_id: felt252,
 }
 
@@ -231,23 +177,6 @@ pub struct NotEnoughJokers {
     pub board_id: felt252,
 }
 
-
-#[derive(Copy, Drop, Serde, Introspect, Debug)]
-#[dojo::event]
-pub struct GameIsAlreadyFinished {
-    #[key]
-    pub player_id: ContractAddress,
-    pub board_id: felt252,
-}
-
-#[derive(Copy, Drop, Serde, Introspect, Debug)]
-#[dojo::event]
-pub struct CantFinishGame {
-    #[key]
-    pub player_id: ContractAddress,
-    pub board_id: felt252,
-}
-
 // --------------------------------------
 // Contest Events
 // --------------------------------------
@@ -257,7 +186,7 @@ pub struct CityContestWon {
     #[key]
     pub board_id: felt252,
     #[key]
-    pub root: u8,
+    pub root: u32,
     pub winner: PlayerSide,
     pub red_points: u16,
     pub blue_points: u16,
@@ -269,7 +198,7 @@ pub struct CityContestDraw {
     #[key]
     pub board_id: felt252,
     #[key]
-    pub root: u8,
+    pub root: u32,
     pub red_points: u16,
     pub blue_points: u16,
 }
@@ -280,7 +209,7 @@ pub struct RoadContestWon {
     #[key]
     pub board_id: felt252,
     #[key]
-    pub root: u8,
+    pub root: u32,
     pub winner: PlayerSide,
     pub red_points: u16,
     pub blue_points: u16,
@@ -292,7 +221,7 @@ pub struct RoadContestDraw {
     #[key]
     pub board_id: felt252,
     #[key]
-    pub root: u8,
+    pub root: u32,
     pub red_points: u16,
     pub blue_points: u16,
 }
@@ -300,30 +229,6 @@ pub struct RoadContestDraw {
 // --------------------------------------
 // Player Profile Events
 // --------------------------------------
-
-#[derive(Copy, Drop, Serde, Introspect, Debug)]
-#[dojo::event]
-pub struct CurrentPlayerBalance {
-    #[key]
-    pub player_id: ContractAddress,
-    pub balance: u32,
-}
-
-#[derive(Copy, Drop, Serde, Introspect, Debug)]
-#[dojo::event]
-pub struct CurrentPlayerUsername {
-    #[key]
-    pub player_id: ContractAddress,
-    pub username: felt252,
-}
-
-#[derive(Copy, Drop, Serde, Introspect, Debug)]
-#[dojo::event]
-pub struct CurrentPlayerActiveSkin {
-    #[key]
-    pub player_id: ContractAddress,
-    pub active_skin: u8,
-}
 
 #[derive(Copy, Drop, Serde, Introspect, Debug)]
 #[dojo::event]
@@ -362,4 +267,79 @@ pub struct PhaseStarted {
     pub top_tile: Option<u8>,
     pub commited_tile: Option<u8>,
     pub started_at: u64,
+}
+
+// --------------------------------------
+// Migration Events
+// --------------------------------------
+
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct MigrationError {
+    #[key]
+    pub guest_address: ContractAddress,
+    #[key]
+    pub controller_address: ContractAddress,
+    pub status: felt252, // 'Success' or 'Error'
+    pub error_context: ByteArray, // Details about guest/controller roles
+    pub error_message: ByteArray, // The error message from the failed assert
+}
+
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct MigrationInitiated {
+    #[key]
+    pub guest_address: ContractAddress,
+    #[key]
+    pub controller_address: ContractAddress,
+    pub expires_at: u64,
+}
+
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct MigrationConfirmed {
+    #[key]
+    pub guest_address: ContractAddress,
+    #[key]
+    pub controller_address: ContractAddress,
+    pub confirmed_at: u64,
+}
+
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct MigrationCompleted {
+    #[key]
+    pub guest_address: ContractAddress,
+    #[key]
+    pub controller_address: ContractAddress,
+    pub balance_transferred: u32,
+    pub games_transferred: felt252,
+}
+
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct MigrationCancelled {
+    #[key]
+    pub guest_address: ContractAddress,
+    #[key]
+    pub controller_address: ContractAddress,
+    pub cancelled_at: u64,
+}
+
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct EmergencyMigrationCancelled {
+    #[key]
+    pub guest_address: ContractAddress,
+    #[key]
+    pub admin_address: ContractAddress,
+    pub reason: ByteArray,
+}
+
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct TutorialCompleted {
+    #[key]
+    pub player_id: ContractAddress,
+    pub completed_at: u64,
 }
