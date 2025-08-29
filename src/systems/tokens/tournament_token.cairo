@@ -402,45 +402,127 @@ pub mod tournament_token {
         // Phase 2 -- Start tournament
         //
         fn can_start_tournament(self: @ContractState, pass_id: u64) -> bool {
+            println!("[can_start_tournament] Checking if tournament can be started for pass_id: {}", pass_id);
+            
+            println!("[can_start_tournament] Getting token owner");
             let token_owner = self.erc721.owner_of(pass_id.into());
-            if (token_owner != starknet::get_caller_address()) {
+            println!("[can_start_tournament] Token owner: {:?}", token_owner);
+            
+            let caller = starknet::get_caller_address();
+            println!("[can_start_tournament] Caller address: {:?}", caller);
+            
+            if (token_owner != caller) {
+                println!("[can_start_tournament] FAIL: Caller is not token owner");
                 return false;
             }
+            println!("[can_start_tournament] PASS: Caller is token owner");
+            
+            println!("[can_start_tournament] Creating store");
             let store: Store = StoreTrait::new(self.world_default());
+            println!("[can_start_tournament] Store created");
+            
+            println!("[can_start_tournament] Getting budokan token metadata");
             let token_metadata: TokenMetadataValue = store
                 .get_budokan_token_metadata_value(pass_id);
+            println!("[can_start_tournament] Token metadata retrieved");
+            
+            println!("[can_start_tournament] Getting budokan tournament ID");
             let (_, tournament_id): (ITournamentDispatcher, u64) = self
                 ._get_budokan_tournament_id(@store, pass_id);
+            println!("[can_start_tournament] Tournament ID: {}", tournament_id);
+            
+            println!("[can_start_tournament] Getting tournament from store");
             let tournament = store.get_tournament(tournament_id);
-            (// owns entry
-            self._is_owner_of(starknet::get_caller_address(), pass_id.into())
-                &&// correct lifecycle
-                token_metadata.lifecycle.can_start(starknet::get_block_timestamp())
-                &&// tournament not started (don't exist yet)
-                tournament.state == TournamentState::Undefined)
+            println!("[can_start_tournament] Tournament state: {:?}", tournament.state);
+            
+            // Check ownership
+            println!("[can_start_tournament] Checking ownership with _is_owner_of");
+            let owns_entry = self._is_owner_of(caller, pass_id.into());
+            println!("[can_start_tournament] Owns entry: {}", owns_entry);
+            
+            // Check lifecycle
+            let current_timestamp = starknet::get_block_timestamp();
+            println!("[can_start_tournament] Current timestamp: {}", current_timestamp);
+            let can_start_lifecycle = token_metadata.lifecycle.can_start(current_timestamp);
+            println!("[can_start_tournament] Lifecycle can_start: {}", can_start_lifecycle);
+            
+            // Check tournament state
+            let tournament_not_started = tournament.state == TournamentState::Undefined;
+            println!("[can_start_tournament] Tournament not started (is Undefined): {}", tournament_not_started);
+            
+            let result = owns_entry && can_start_lifecycle && tournament_not_started;
+            println!("[can_start_tournament] Final result: {} (owns_entry: {} && can_start_lifecycle: {} && tournament_not_started: {})", 
+                result, owns_entry, can_start_lifecycle, tournament_not_started);
+            
+            result
         }
         fn start_tournament(ref self: ContractState, pass_id: u64) -> u64 {
+            println!("[start_tournament] ============= STARTING TOURNAMENT =============");
+            println!("[start_tournament] Starting tournament for pass_id: {}", pass_id);
+            
+            println!("[start_tournament] Asserting token ownership");
             self.assert_token_ownership(pass_id);
+            println!("[start_tournament] Token ownership assertion passed");
+            
+            println!("[start_tournament] Creating Store from world");
             let mut store: Store = StoreTrait::new(self.world_default());
+            println!("[start_tournament] Store created successfully");
+            
             // validate ownership
+            println!("[start_tournament] Getting caller address");
             let caller: ContractAddress = starknet::get_caller_address();
-            assert(self._is_owner_of(caller, pass_id.into()) == true, Errors::NOT_YOUR_ENTRY);
+            println!("[start_tournament] Caller address: {:?}", caller);
+            
+            println!("[start_tournament] Validating ownership with _is_owner_of");
+            let is_owner = self._is_owner_of(caller, pass_id.into());
+            println!("[start_tournament] Ownership validation result: {}", is_owner);
+            assert(is_owner == true, Errors::NOT_YOUR_ENTRY);
+            println!("[start_tournament] Ownership validation passed");
+            
             // verify lifecycle
+            println!("[start_tournament] Getting budokan token metadata for lifecycle verification");
             let token_metadata: TokenMetadataValue = store
                 .get_budokan_token_metadata_value(pass_id);
+            println!("[start_tournament] Token metadata retrieved successfully");
+            
+            let current_timestamp = starknet::get_block_timestamp();
+            println!("[start_tournament] Current block timestamp: {}", current_timestamp);
+            
+            let can_start = token_metadata.lifecycle.can_start(current_timestamp);
+            println!("[start_tournament] Lifecycle can_start check result: {}", can_start);
             assert(
-                token_metadata.lifecycle.can_start(starknet::get_block_timestamp()),
+                can_start,
                 Errors::BUDOKAN_NOT_STARTABLE,
             );
+            println!("[start_tournament] Lifecycle verification passed");
+            
             // verify tournament not started
-            let (_, tournament_id): (ITournamentDispatcher, u64) = self
+            println!("[start_tournament] Getting budokan tournament ID");
+            let (tournament_dispatcher, tournament_id): (ITournamentDispatcher, u64) = self
                 ._get_budokan_tournament_id(@store, pass_id);
+            println!("[start_tournament] Tournament dispatcher: {:?}", tournament_dispatcher.contract_address);
+            println!("[start_tournament] Retrieved tournament_id: {}", tournament_id);
+            
+            println!("[start_tournament] Getting tournament state from store");
             let mut tournament: TournamentStateModel = store.get_tournament(tournament_id);
+            println!("[start_tournament] Current tournament state: {:?}", tournament.state);
+            println!("[start_tournament] Tournament prize_pool: {}", tournament.prize_pool);
+            
             assert(tournament.state == TournamentState::Undefined, Errors::ALREADY_STARTED);
+            println!("[start_tournament] Tournament state validation passed (was Undefined)");
+            
+            println!("[start_tournament] Setting tournament state to InProgress");
             tournament.state = TournamentState::InProgress;
+            println!("[start_tournament] Tournament state updated to: {:?}", tournament.state);
+            
             // store!
+            println!("[start_tournament] Saving tournament to store");
             store.set_tournament(@tournament);
+            println!("[start_tournament] Tournament saved to store successfully");
+            
             // return tournament id
+            println!("[start_tournament] Tournament started successfully! Tournament ID: {}", tournament_id);
+            println!("[start_tournament] ============= TOURNAMENT STARTED =============");
             (tournament_id)
         }
 
@@ -628,26 +710,54 @@ pub mod tournament_token {
     impl InternalImpl of InternalTrait {
         #[inline(always)]
         fn _assert_caller_is_owner(self: @ContractState) {
+            println!("[_assert_caller_is_owner] Asserting caller is contract owner");
+            
+            println!("[_assert_caller_is_owner] Getting world storage");
             let world = self.world_default();
+            println!("[_assert_caller_is_owner] World storage obtained");
+            
+            let caller = starknet::get_caller_address();
+            println!("[_assert_caller_is_owner] Caller address: {:?}", caller);
+            
+            println!("[_assert_caller_is_owner] Checking if caller is owner of TOURNAMENT_TOKEN");
+            let is_owner = world
+                .dispatcher
+                .is_owner(SELECTORS::TOURNAMENT_TOKEN, caller);
+            println!("[_assert_caller_is_owner] Is owner check result: {}", is_owner);
+            
             assert(
-                world
-                    .dispatcher
-                    .is_owner(SELECTORS::TOURNAMENT_TOKEN, starknet::get_caller_address()) == true,
+                is_owner == true,
                 Errors::CALLER_NOT_OWNER,
             );
+            println!("[_assert_caller_is_owner] Caller ownership assertion passed");
         }
 
         fn _get_budokan_tournament_id(
             self: @ContractState, store: @Store, pass_id: u64,
         ) -> (ITournamentDispatcher, u64) {
+            println!("[_get_budokan_tournament_id] Getting budokan tournament ID for pass_id: {}", pass_id);
+            
+            println!("[_get_budokan_tournament_id] Getting budokan dispatcher from store");
             let budokan_dispatcher: ITournamentDispatcher = store
                 .budokan_dispatcher_from_pass_id(pass_id);
+            println!("[_get_budokan_tournament_id] Budokan dispatcher address: {:?}", budokan_dispatcher.contract_address);
+            
+            println!("[_get_budokan_tournament_id] Checking if dispatcher address is non-zero");
             let tournament_id: u64 = if (budokan_dispatcher.contract_address.is_non_zero()) {
-                budokan_dispatcher
-                    .get_tournament_id_for_token_id(starknet::get_contract_address(), pass_id)
+                println!("[_get_budokan_tournament_id] Dispatcher is valid, getting tournament ID from budokan");
+                let contract_address = starknet::get_contract_address();
+                println!("[_get_budokan_tournament_id] Current contract address: {:?}", contract_address);
+                
+                let id = budokan_dispatcher
+                    .get_tournament_id_for_token_id(contract_address, pass_id);
+                println!("[_get_budokan_tournament_id] Retrieved tournament_id from budokan: {}", id);
+                id
             } else {
+                println!("[_get_budokan_tournament_id] WARNING: Dispatcher address is zero, returning 0");
                 0
             }; // invalid entry
+            
+            println!("[_get_budokan_tournament_id] Final tournament_id: {}", tournament_id);
             (budokan_dispatcher, tournament_id)
         }
 
@@ -672,8 +782,18 @@ pub mod tournament_token {
 
         #[inline(always)]
         fn assert_token_ownership(self: @ContractState, token_id: u64) {
+            println!("[assert_token_ownership] Asserting token ownership for token_id: {}", token_id);
             let token_owner = self.erc721.owner_of(token_id.into());
-            assert(token_owner == starknet::get_caller_address(), Errors::NOT_YOUR_ENTRY);
+            println!("[assert_token_ownership] Token owner: {:?}", token_owner);
+            
+            let caller = starknet::get_caller_address();
+            println!("[assert_token_ownership] Caller address: {:?}", caller);
+            
+            let is_owner = token_owner == caller;
+            println!("[assert_token_ownership] Is owner check result: {}", is_owner);
+            
+            assert(is_owner, Errors::NOT_YOUR_ENTRY);
+            println!("[assert_token_ownership] Token ownership assertion passed");
         }
 
         #[inline(always)]
