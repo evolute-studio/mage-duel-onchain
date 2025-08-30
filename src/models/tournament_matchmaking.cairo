@@ -70,7 +70,6 @@ pub struct TournamentSlot {
     pub slot_index: u32,       // позиция в очереди лиги
     //------------------------
     pub player_address: ContractAddress,
-    pub join_time: u64,        // timestamp присоединения
 }
 
 //------------------------------------
@@ -107,34 +106,9 @@ pub impl TournamentRegistryImpl of TournamentRegistryTrait {
     fn subscribe(
         ref self: TournamentRegistry, 
         ref league: TournamentLeague, 
-        player_address: ContractAddress,
-        mut world: WorldStorage
+        ref player_index: PlayerLeagueIndex
     ) -> TournamentSlot {
-        // Create slot for player
-        let slot_index = league.size;
-        let join_time = starknet::get_block_timestamp();
-        let slot = TournamentSlot {
-            game_mode: self.game_mode,
-            tournament_id: self.tournament_id,
-            league_id: league.league_id,
-            slot_index,
-            player_address,
-            join_time,
-        };
-        
-        // Create/Update index entry for fast lookup  
-        let player_index = PlayerLeagueIndex {
-            game_mode: self.game_mode,
-            tournament_id: self.tournament_id,
-            player_address,
-            league_id: league.league_id,
-            slot_index,
-            join_time,
-        };
-        world.write_model(@player_index);
-        
-        // Update league size
-        league.size += 1;
+        let slot = league.subscribe(ref player_index);
         
         // Update bitmap of active leagues
         self._update_league_bitmap(league.league_id, league.size);
@@ -145,115 +119,26 @@ pub impl TournamentRegistryImpl of TournamentRegistryTrait {
     fn unsubscribe(
         ref self: TournamentRegistry,
         ref league: TournamentLeague, 
-        player_address: ContractAddress,
-        mut world: WorldStorage
+        ref player_index: PlayerLeagueIndex
     ) {
-        // Get player's current position using index
-        let player_index: PlayerLeagueIndex = world.read_model((
-            self.game_mode,
-            self.tournament_id,
-            player_address
-        ));
-        
-        // Check if player is actually in this league
-        if player_index.league_id == league.league_id && player_index.league_id != 0 {
-            // Handle slot compaction (move last player to removed player's position)
-            let last_slot_index = league.size - 1;
-            if player_index.slot_index != last_slot_index {
-                // Get the last slot
-                let last_slot: TournamentSlot = world.read_model((
-                    self.game_mode,
-                    self.tournament_id,
-                    league.league_id,
-                    last_slot_index
-                ));
-                
-                // Move last player to the removed player's position
-                let mut moved_slot = TournamentSlot {
-                    game_mode: self.game_mode,
-                    tournament_id: self.tournament_id,
-                    league_id: league.league_id,
-                    slot_index: player_index.slot_index,
-                    player_address: last_slot.player_address,
-                    join_time: last_slot.join_time,
-                };
-                world.write_model(@moved_slot);
-                
-                // Update moved player's index
-                let mut moved_player_index = PlayerLeagueIndex {
-                    game_mode: self.game_mode,
-                    tournament_id: self.tournament_id,
-                    player_address: last_slot.player_address,
-                    league_id: league.league_id,
-                    slot_index: player_index.slot_index,
-                    join_time: last_slot.join_time,
-                };
-                world.write_model(@moved_player_index);
-            }
-            
-            // Remove the last slot (now empty after moving)
-            let mut empty_slot: TournamentSlot = world.read_model((
-                self.game_mode,
-                self.tournament_id,
-                league.league_id,
-                last_slot_index
-            ));
-            empty_slot.player_address = starknet::contract_address_const::<0>();
-            world.write_model(@empty_slot);
-            
-            // Clear player's index
-            let empty_index = PlayerLeagueIndex {
-                game_mode: self.game_mode,
-                tournament_id: self.tournament_id,
-                player_address,
-                league_id: 0,
-                slot_index: 0,
-                join_time: 0,
-            };
-            world.write_model(@empty_index);
-            
-            // Update league size
-            league.size -= 1;
-            
-            // Update bitmap
-            self._update_league_bitmap(league.league_id, league.size);
-        }
+        league.unsubscribe(ref player_index);
+        // Update bitmap
+        self._update_league_bitmap(league.league_id, league.size);
     }
 
     fn search_league(
         ref self: TournamentRegistry,
-        ref player_league: TournamentLeague, 
-        player_address: ContractAddress,
-        world: WorldStorage
+        ref league: TournamentLeague, 
+        ref player_index: PlayerLeagueIndex,
     ) -> Option<u8> {
-        // Remove player from his current league
-        self.unsubscribe(ref player_league, player_address, world);
+        PlayerLeagueIndexAssert::assert_subscribed(player_index);
+        self.unsubscribe(ref league, ref player_index);
         
-        // Check that registry is not empty
-        let leagues_u256: u256 = self.leagues.into();
-        if leagues_u256 == 0 {
+        if self.leagues == 0 {
             return Option::None;
         }
-        
-        // КЛЮЧЕВОЙ АЛГОРИТМ: найти ближайшую активную лигу
-        match Bitmap::nearest_significant_bit(self.leagues.into(), player_league.league_id) {
-            Option::Some(found_league_id) => {
-                // Проверяем принадлежность радиусу поиска
-                let player_league_id = player_league.league_id;
-                let league_diff = if found_league_id >= player_league_id {
-                    found_league_id - player_league_id
-                } else {
-                    player_league_id - found_league_id
-                };
-                
-                if league_diff <= LEAGUE_SEARCH_RADIUS {
-                    Option::Some(found_league_id)
-                } else {
-                    Option::None
-                }
-            },
-            Option::None => Option::None
-        }
+
+        Bitmap::nearest_significant_bit(self.leagues.into(), league.league_id) 
     }
 
     fn _update_league_bitmap(ref self: TournamentRegistry, league_id: u8, size: u32) {
@@ -323,6 +208,35 @@ pub impl TournamentLeagueImpl of TournamentLeagueTrait {
             id.try_into().unwrap()
         }
     }
+
+    fn subscribe(ref self: TournamentLeague, ref player_index: PlayerLeagueIndex) -> TournamentSlot {
+        PlayerLeagueIndexAssert::assert_subscribable(player_index);
+        let slot_index = self.size;
+        self.size += 1;
+        player_index.league_id = self.league_id;
+        player_index.slot_index = slot_index;
+
+        TournamentSlotTrait::new(
+            self.game_mode,
+            self.tournament_id,
+            self.league_id,
+            slot_index,
+            player_index.player_address
+        )
+    }
+
+    fn unsubscribe(ref self: TournamentLeague, ref player_index: PlayerLeagueIndex) {
+        LeagueAssert::assert_subscribed(self, player_index);
+        self.size -= 1;
+        player_index.league_id = 0;
+        player_index.slot_index = 0;
+    }
+
+    fn search_player(ref self: TournamentLeague, seed: felt252) -> u32 {
+        let seed: u256 = seed.into();
+        let index = seed % self.size.into();
+        index.try_into().unwrap()
+    }
 }
 
 //------------------------------------
@@ -343,7 +257,6 @@ pub impl TournamentSlotImpl of TournamentSlotTrait {
             league_id,
             slot_index,
             player_address,
-            join_time: starknet::get_block_timestamp(),
         }
     }
 
@@ -353,6 +266,33 @@ pub impl TournamentSlotImpl of TournamentSlotTrait {
 
     fn is_empty(self: @TournamentSlot) -> bool {
         (*self.player_address).is_zero()
+    }
+}
+
+#[generate_trait]
+pub impl RegistryAssert of RegistryAssertTrait {
+    fn assert_not_empty(self: TournamentRegistry) {
+        assert!(self.leagues.into() > 0_u256, "Tournament registry is empty");
+    }
+}
+
+#[generate_trait]
+pub impl LeagueAssert of LeagueAssertTrait {
+    fn assert_subscribed(self: TournamentLeague, player_index: PlayerLeagueIndex) {
+        assert!(player_index.league_id == self.league_id, "Player is not in a league");
+    }
+}
+
+#[generate_trait]
+pub impl PlayerLeagueIndexAssert of PlayerLeagueIndexAssertTrait {
+    #[inline(always)]
+    fn assert_subscribable(player_index: PlayerLeagueIndex) {
+        assert!(player_index.league_id == 0, "Player is not in a league");
+    }
+
+    #[inline(always)]
+    fn assert_subscribed(player: PlayerLeagueIndex) {
+        assert!(player.league_id != 0, "Player is not subscribed to a league");
     }
 }
 
@@ -455,73 +395,76 @@ pub impl TournamentELOImpl of TournamentELOTrait {
             tournament_id,
             player_league_id
         ));
+
+        let mut player_index: PlayerLeagueIndex = world.read_model((
+            GameMode::Tournament,
+            tournament_id,
+            player_address
+        ));
         
-        // Search for opponent using registry algorithm with radius check
-        match registry.search_league(ref player_league, player_address, world) {
+        // [Step 1] Always subscribe player first (like subscribe())
+        player_index.join_time = starknet::get_block_timestamp();
+        let slot = registry.subscribe(ref player_league, ref player_index);
+        
+        // [Step 2] Try to find opponent (like fight())
+        let seed = starknet::get_tx_info().unbox().transaction_hash;
+        let mut updated_registry = registry;
+        let mut updated_player_league = player_league;
+        let mut updated_player_index = player_index;
+        
+        match updated_registry.search_league(ref updated_player_league, ref updated_player_index) {
             Option::Some(opponent_league_id) => {
-                // Update models after search_league modified them
-                world.write_model(@registry);
-                world.write_model(@player_league);
-                
-                // Find random player in the found league
-                let opponent_league: TournamentLeague = world.read_model((
+                // Found opponent league - get random opponent
+                let mut opponent_league: TournamentLeague = world.read_model((
                     GameMode::Tournament,
                     tournament_id,
                     opponent_league_id
                 ));
+                let opponent_slot_id = opponent_league.search_player(seed);
+                let opponent_slot: TournamentSlot = world.read_model((
+                    GameMode::Tournament,
+                    tournament_id,
+                    opponent_league_id,
+                    opponent_slot_id
+                ));
+                let opponent_address = opponent_slot.player_address;
                 
-                Self::_find_random_player_in_league(
-                    tournament_id, opponent_league_id, opponent_league.size, world
-                )
+                // Get opponent index and unsubscribe them
+                let mut opponent_index: PlayerLeagueIndex = world.read_model((
+                    GameMode::Tournament,
+                    tournament_id,
+                    opponent_address
+                ));
+                updated_registry.unsubscribe(ref opponent_league, ref opponent_index);
+                
+                // Clear opponent slot
+                let mut cleared_opponent_slot = opponent_slot;
+                cleared_opponent_slot.nullify();
+                
+                // Clear player slot (we were just subscribed)
+                let mut cleared_player_slot = slot;
+                cleared_player_slot.nullify();
+                
+                // Update all models
+                world.write_model(@updated_registry);
+                world.write_model(@updated_player_league);
+                world.write_model(@opponent_league);
+                world.write_model(@updated_player_index);
+                world.write_model(@opponent_index);
+                world.write_model(@cleared_opponent_slot);
+                world.write_model(@cleared_player_slot);
+                
+                Option::Some(opponent_address)
             },
             Option::None => {
-                // No suitable league found within radius, add player to their own league
-                let slot = registry.subscribe(ref player_league, player_address, world);
-                world.write_model(@registry);
-                world.write_model(@player_league); 
+                // No opponent found - player stays subscribed, keep slot
+                world.write_model(@updated_registry);
+                world.write_model(@updated_player_league);
+                world.write_model(@updated_player_index);
                 world.write_model(@slot);
+                
                 Option::None
             }
-        }
-    }
-    
-    // Helper: Find random player in league
-    fn _find_random_player_in_league(
-        tournament_id: u64,
-        league_id: u8,
-        league_size: u32,
-        world: WorldStorage
-    ) -> Option<ContractAddress> {
-        if league_size == 0 {
-            return Option::None;
-        }
-        
-        // Simple pseudo-random: use current timestamp + league_id as seed
-        let timestamp = starknet::get_block_timestamp();
-        let random_index = (timestamp + league_id.into()) % league_size.into();
-        
-        // Try to find non-empty slot starting from random index
-        let mut attempts = 0;
-        let mut current_index: u32 = (random_index % league_size.into()).try_into().unwrap();
-
-        loop {
-            if attempts >= league_size {
-                break Option::None;
-            }
-            
-            let slot: TournamentSlot = world.read_model((
-                GameMode::Tournament,
-                tournament_id,
-                league_id,
-                current_index
-            ));
-            
-            if !slot.is_empty() {
-                break Option::Some(slot.player_address);
-            }
-            
-            current_index = (current_index + 1) % league_size.into();
-            attempts += 1;
         }
     }
 }

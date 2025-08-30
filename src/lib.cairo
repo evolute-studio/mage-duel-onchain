@@ -25,6 +25,7 @@ pub mod systems {
         pub mod grnd_token;
     }
     pub mod tournament;
+    // pub mod tournament_mock;
 }
 
 pub mod models {
@@ -114,6 +115,7 @@ pub mod tests {
     pub mod test_matchmaking;
     pub mod test_tournament_system;
     pub mod test_tournament_budokan;
+    pub mod test_tournament_matchmaking;
     // pub mod test_scoring;
 // pub mod test_tile_reveal;
 // pub mod test_game_finalization;

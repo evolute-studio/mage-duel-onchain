@@ -250,19 +250,38 @@ pub mod evlt_token {
             recipient: ContractAddress,
             amount: u256,
         ) {
+            println!("[before_update] Starting EVLT token transfer validation");
+            println!("[before_update] from: {:?}, recipient: {:?}, amount: {}", from, recipient, amount);
+
             // Allow minting (from zero address) and burning (to zero address)
-            if from.is_zero() || recipient.is_zero() {
+            if from.is_zero() {
+                println!("[before_update] Minting operation detected (from zero address) - allowing");
                 return;
             }
+            if recipient.is_zero() {
+                println!("[before_update] Burning operation detected (to zero address) - allowing");
+                return;
+            }
+
+            println!("[before_update] Transfer operation between non-zero addresses detected");
 
             // Allow transfers initiated by addresses with TRANSFER_ROLE (like budokan tournaments)
             let caller = starknet::get_caller_address();
+            println!("[before_update] Caller address: {:?}", caller);
+            
             let contract_state = self.get_contract();
+            println!("[before_update] Contract state retrieved successfully");
 
-            if contract_state.accesscontrol.has_role(TRANSFER_ROLE, caller) {
+            let has_transfer_role = contract_state.accesscontrol.has_role(TRANSFER_ROLE, caller);
+            println!("[before_update] Caller has TRANSFER_ROLE: {}", has_transfer_role);
+
+            if has_transfer_role {
+                println!("[before_update] Transfer allowed - caller has TRANSFER_ROLE");
                 return;
             }
 
+            println!("[before_update] Transfer BLOCKED - caller does not have TRANSFER_ROLE");
+            println!("[before_update] Blocking transfer with TRANSFERS_DISABLED error");
             // Block all other transfers between non-zero addresses
             panic(array![Errors::TRANSFERS_DISABLED]);
         }

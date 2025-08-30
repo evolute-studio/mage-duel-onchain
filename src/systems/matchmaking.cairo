@@ -63,7 +63,7 @@ pub mod matchmaking {
     use dojo::{event::EventStorage, model::{ModelStorage}};
     use evolute_duel::{
         libs::{asserts::AssertsTrait, phase_management::{PhaseManagementTrait}},
-        models::{game::{Game, GameModeConfig, MatchmakingState, PlayerMatchmaking}, tournament_matchmaking::{TournamentELOTrait}},
+        models::{game::{Game, GameModeConfig, MatchmakingState, PlayerMatchmaking}, tournament_matchmaking::{TournamentELOTrait}, tournament::{TournamentBoard}},
         events::{GameCreated, GameStarted, GameCanceled}, types::{packing::{GameStatus, GameMode}},
         systems::helpers::{board::{BoardTrait}},
     };
@@ -321,7 +321,7 @@ pub mod matchmaking {
             println!("[MATCHMAKING] join_game: creating board for game mode");
             let board = self
                 ._create_board_for_mode(
-                    host_player, guest_player, host_game.game_mode, config, world,
+                    host_player, guest_player, host_game.game_mode, config, 0, world,
                 );
             println!("[MATCHMAKING] join_game: board created with id={}", board.id);
 
@@ -434,7 +434,7 @@ pub mod matchmaking {
                         
                         // Create board for the match
                         let board = self._create_board_for_mode(
-                            opponent, caller, mode, config, world,
+                            opponent, caller, mode, config, tid, world,
                         );
                         
                         // Update both players' game states
@@ -531,17 +531,18 @@ pub mod matchmaking {
                     let config: GameModeConfig = world.read_model(mode);
                     println!("[MATCHMAKING] auto_match: config loaded for mode={:?}", mode);
 
-                    // Create board for the match
-                    println!("[MATCHMAKING] auto_match: creating board for match");
-                    let board = self
-                        ._create_board_for_mode(
-                            opponent, // host_player (first in queue)
-                            caller, // guest_player (joining now)
-                            mode,
-                            config,
-                            world,
-                        );
-                    println!("[MATCHMAKING] auto_match: board created with id={}", board.id);
+                // Create board for the match
+                println!("[MATCHMAKING] auto_match: creating board for match");
+                let board = self
+                    ._create_board_for_mode(
+                        opponent, // host_player (first in queue)
+                        caller, // guest_player (joining now)
+                        mode,
+                        config,
+                        tid, // tournament_id
+                        world,
+                    );
+                println!("[MATCHMAKING] auto_match: board created with id={}", board.id);
 
                     // Update both players' game states
                     opponent_game.status = GameStatus::InProgress;
@@ -726,20 +727,23 @@ pub mod matchmaking {
             guest_player: ContractAddress,
             game_mode: GameMode,
             config: GameModeConfig,
+            tournament_id: u64,
             world: dojo::world::WorldStorage,
         ) -> evolute_duel::models::game::Board {
             println!(
-                "[MATCHMAKING] _create_board_for_mode: mode={:?}, host={:?}, guest={:?}",
+                "[MATCHMAKING] _create_board_for_mode: mode={:?}, host={:?}, guest={:?}, tournament_id={}",
                 game_mode,
                 host_player,
                 guest_player,
+                tournament_id,
             );
 
-            match game_mode {
+            let mut world_ref = world;
+            let board = match game_mode {
                 GameMode::Tutorial => {
                     println!("[MATCHMAKING] _create_board_for_mode: creating tutorial board");
                     let board = BoardTrait::create_tutorial_board(
-                        world, host_player, guest_player,
+                        world_ref, host_player, guest_player,
                     );
                     println!(
                         "[MATCHMAKING] _create_board_for_mode: tutorial board created with id={}",
@@ -754,8 +758,13 @@ pub mod matchmaking {
                         game_mode,
                     );
                     let board = BoardTrait::create_board(
-                        world, host_player, guest_player, game_mode,
+                        world_ref, host_player, guest_player, game_mode,
                     );
+                    let tournament_board = TournamentBoard {
+                        board_id: board.id.clone(),
+                        tournament_id: tournament_id,
+                    };
+                    world_ref.write_model(@tournament_board);
                     println!(
                         "[MATCHMAKING] _create_board_for_mode: regular board created with id={}",
                         board.id,
@@ -769,7 +778,9 @@ pub mod matchmaking {
                     );
                     panic!("Unsupported game mode")
                 },
-            }
+            };
+            
+            board
         }
 
         /// Internal function to cancel a player's game

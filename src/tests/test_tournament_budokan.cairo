@@ -19,8 +19,8 @@
 //     use tournaments::components::models::schedule::{Schedule, Period};
 
 //     // Tournament budokan test contract
-//     use evolute_duel::systems::tournament_budokan_test::{
-//         tournament_budokan_test, ITournament, ITournamentDispatcher, ITournamentDispatcherTrait,
+//     use evolute_duel::systems::tournament::{
+//         tournament, ITournament, ITournamentDispatcher, ITournamentDispatcherTrait,
 //     };
 
 //     // Test mocks
@@ -62,7 +62,7 @@
 //                 TestResource::Model(m_SettingsDetails::TEST_CLASS_HASH.try_into().unwrap()),
 //                 TestResource::Model(m_Score::TEST_CLASS_HASH.try_into().unwrap()),
 //                 // Contracts
-//                 TestResource::Contract(tournament_budokan_test::TEST_CLASS_HASH),
+//                 TestResource::Contract(tournament::TEST_CLASS_HASH),
 //                 TestResource::Contract(erc20_mock::TEST_CLASS_HASH),
 //                 TestResource::Contract(erc721_mock::TEST_CLASS_HASH),
 //             ]
@@ -72,7 +72,7 @@
 
 //     fn contract_defs() -> Span<ContractDef> {
 //         [
-//             ContractDefTrait::new(@"evolute_duel", @"tournament_budokan_test")
+//             ContractDefTrait::new(@"evolute_duel", @"tournament")
 //                 .with_writer_of([dojo::utils::bytearray_hash(@"evolute_duel")].span()),
 //             ContractDefTrait::new(@"evolute_duel", @"erc20_mock")
 //                 .with_writer_of([dojo::utils::bytearray_hash(@"evolute_duel")].span()),
