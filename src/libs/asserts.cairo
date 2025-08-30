@@ -339,7 +339,7 @@ pub impl AssersImpl of AssertsTrait {
         game: @Game, caller: ContractAddress, action: felt252, mut world: WorldStorage,
     ) -> bool {
         let current_mode = *game.game_mode;
-        if current_mode != GameMode::Ranked && current_mode != GameMode::Casual {
+        if current_mode != GameMode::Ranked && current_mode != GameMode::Casual && current_mode != GameMode::Tournament {
             world
                 .emit_event(
                     @ErrorEvent {
