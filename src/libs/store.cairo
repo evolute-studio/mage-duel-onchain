@@ -22,7 +22,7 @@ pub use evolute_duel::models::{
     },
     tournament::{
         TournamentStateModel, TournamentStateModelValue, TournamentPass, TournamentPassValue,
-        TournamentChallenge, PlayerTournamentIndex, TournamentState,
+        TournamentBoard, PlayerTournamentIndex, TournamentState,
     },
     tournament_balance::{TournamentBalance, TournamentBalanceTrait},
     // config::{
@@ -310,7 +310,7 @@ pub impl StoreImpl of StoreTrait {
         self.world.write_model(model);
     }
 
-    fn set_tournament_challenge(ref self: Store, model: @TournamentChallenge) {
+    fn set_tournament_board(ref self: Store, model: @TournamentBoard) {
         self.world.write_model(model);
     }
 
@@ -378,8 +378,8 @@ pub impl StoreImpl of StoreTrait {
             .world
             .read_member(Model::<TokenMetadata>::ptr_from_keys(pass_id), selector!("minted_by")))
     }
-    fn get_tournament_challenge(self: @Store, challenge_id: felt252) -> TournamentChallenge {
-        (self.world.read_model(challenge_id))
+    fn get_tournament_board(self: @Store, board_id: felt252) -> TournamentBoard {
+        (self.world.read_model(board_id))
     }
 
     fn budokan_dispatcher_from_pass_id(self: @Store, pass_id: u64) -> ITournamentMockDispatcher {

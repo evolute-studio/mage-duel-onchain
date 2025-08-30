@@ -54,6 +54,97 @@ pub impl RatingSystemImpl of RatingSystemTrait {
         (new_winner_rating, new_loser_rating)
     }
 
+    /// Update tournament ratings for both players after a draw
+    fn update_tournament_ratings_draw(
+        player1_address: ContractAddress,
+        player2_address: ContractAddress,
+        tournament_id: u64,
+        mut world: dojo::world::WorldStorage,
+    ) {
+        println!("[RATING] Processing draw for tournament {}", tournament_id);
+        
+        // Get tournament passes for both players
+        let player1_passes = Self::get_player_tournament_pass(player1_address, tournament_id, @world);
+        let player2_passes = Self::get_player_tournament_pass(player2_address, tournament_id, @world);
+
+        match (player1_passes, player2_passes) {
+            (
+                Option::Some(mut player1_pass), Option::Some(mut player2_pass),
+            ) => {
+                println!(
+                    "[RATING] Draw - Before: Player1: {:?} ({}), Player2: {:?} ({})",
+                    player1_address,
+                    player1_pass.rating,
+                    player2_address,
+                    player2_pass.rating,
+                );
+
+                // Calculate rating changes for draw (outcome = 50 for both players)
+                let (player1_change, player1_is_negative): (u64, bool) = EloTrait::rating_change(
+                    player1_pass.rating, // Player1's current rating
+                    player2_pass.rating, // Player2's current rating  
+                    50_u16, // Outcome: 50 = draw
+                    K_FACTOR // K-factor
+                );
+
+                let (player2_change, player2_is_negative): (u64, bool) = EloTrait::rating_change(
+                    player2_pass.rating, // Player2's current rating
+                    player1_pass.rating, // Player1's current rating
+                    50_u16, // Outcome: 50 = draw  
+                    K_FACTOR // K-factor
+                );
+
+                // Apply rating changes for player1
+                let new_player1_rating = if player1_is_negative {
+                    if player1_pass.rating > player1_change.try_into().unwrap() {
+                        player1_pass.rating - player1_change.try_into().unwrap()
+                    } else {
+                        100 // Minimum rating
+                    }
+                } else {
+                    player1_pass.rating + player1_change.try_into().unwrap()
+                };
+
+                // Apply rating changes for player2
+                let new_player2_rating = if player2_is_negative {
+                    if player2_pass.rating > player2_change.try_into().unwrap() {
+                        player2_pass.rating - player2_change.try_into().unwrap()
+                    } else {
+                        100 // Minimum rating
+                    }
+                } else {
+                    player2_pass.rating + player2_change.try_into().unwrap()
+                };
+
+                // Update both players' stats (no wins/losses for draw)
+                player1_pass.rating = new_player1_rating;
+                player1_pass.games_played += 1;
+                
+                player2_pass.rating = new_player2_rating;
+                player2_pass.games_played += 1;
+
+                // Write updated passes back to world
+                world.write_model(@player1_pass);
+                world.write_model(@player2_pass);
+
+                println!(
+                    "[RATING] Draw - After: Player1: {:?} ({}), Player2: {:?} ({})",
+                    player1_address,
+                    new_player1_rating,
+                    player2_address,
+                    new_player2_rating,
+                );
+            },
+            _ => {
+                // One or both players don't have tournament passes, skip rating update
+                println!(
+                    "[RATING] Skipping draw rating update - missing tournament pass data for tournament {}",
+                    tournament_id,
+                );
+            },
+        }
+    }
+
     /// Update tournament ratings for both players after a game
     fn update_tournament_ratings(
         winner_address: ContractAddress,

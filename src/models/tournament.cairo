@@ -45,9 +45,9 @@ pub enum TournamentState {
 //
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-pub struct TournamentChallenge {
+pub struct TournamentBoard {
     #[key]
-    pub challenge_id: felt252,
+    pub board_id: felt252,
     //-------------------------
     pub tournament_id: u64,
 }

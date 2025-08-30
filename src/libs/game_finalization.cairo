@@ -1,6 +1,7 @@
 use starknet::ContractAddress;
 use evolute_duel::{
-    models::{game::{Board, Game, Rules}, player::{Player}}, events::{GameFinished, BoardUpdated},
+    models::{game::{Board, Game, Rules}, player::{Player}, tournament::{TournamentBoard}}, 
+    events::{GameFinished, BoardUpdated},
     types::packing::{GameState, GameStatus, PlayerSide, GameMode},
     libs::{
         scoring::{ScoringTrait}, achievements::{AchievementsTrait},
@@ -75,7 +76,7 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
             Option::Some(2) // Red wins
         } else {
             println!("[determine_winner] It's a draw!");
-            Option::Some(0) // Draw
+            Option::None // Draw
         }
     }
 
@@ -208,15 +209,6 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         world.write_model(@host_game);
         world.write_model(@guest_game);
         println!("[update_game_status] Both games marked as Finished and written to world");
-
-        // Update tournament ratings if this was a tournament game
-        if was_tournament_game {
-            println!(
-                "[update_game_status] Tournament game detected - ratings will be updated by caller",
-            );
-            // Note: Rating updates will be handled by the caller who knows the winner/loser and
-        // tournament_id
-        }
     }
 
     /// Update tournament ratings after a tournament game finishes
@@ -233,6 +225,79 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         RatingSystemTrait::update_tournament_ratings(
             winner_address, loser_address, tournament_id, world,
         );
+    }
+
+    /// Check if game was tournament and update tournament stats if needed
+    fn process_tournament_stats_if_needed(
+        finalization_data: GameFinalizationData,
+        winner: Option<u8>,
+        mut world: dojo::world::WorldStorage,
+    ) {
+        println!("[process_tournament_stats_if_needed] Checking if tournament game");
+
+        // Check if this was a tournament game
+        let host_game: Game = world.read_model(finalization_data.player1_address);
+        let was_tournament_game = host_game.game_mode == GameMode::Tournament;
+        
+        if !was_tournament_game {
+            println!("[process_tournament_stats_if_needed] Regular (non-tournament) game - no tournament updates");
+            return;
+        }
+
+        println!("[process_tournament_stats_if_needed] Tournament game detected - checking for tournament_id");
+
+        // Try to get tournament board to find tournament_id
+        let tournament_board: TournamentBoard = world.read_model(finalization_data.board_id);
+        let tournament_id = tournament_board.tournament_id;
+
+        if tournament_id == 0 {
+            println!("[process_tournament_stats_if_needed] Tournament game but no valid tournament_id found");
+            return;
+        }
+
+        println!("[process_tournament_stats_if_needed] Found tournament_id: {}", tournament_id);
+        
+        // Determine winner and loser based on game outcome and update ratings
+        match winner {
+            Option::Some(winner) => {
+                match winner {
+                    0 => {},
+                    1 => {
+                        // Blue wins
+                        let (winner_addr, loser_addr) = if finalization_data.player1_side == PlayerSide::Blue {
+                            (finalization_data.player1_address, finalization_data.player2_address)
+                        } else {
+                            (finalization_data.player2_address, finalization_data.player1_address)
+                        };
+                        
+                        println!("[process_tournament_stats_if_needed] Blue wins - updating tournament ratings");
+                        Self::update_tournament_ratings(winner_addr, loser_addr, tournament_id, world);},
+                    2 => {
+                        // Red wins  
+                        let (winner_addr, loser_addr) = if finalization_data.player1_side == PlayerSide::Blue {
+                            (finalization_data.player2_address, finalization_data.player1_address)
+                        } else {
+                            (finalization_data.player1_address, finalization_data.player2_address)
+                        };
+                        
+                        println!("[process_tournament_stats_if_needed] Red wins - updating tournament ratings");
+                        Self::update_tournament_ratings(winner_addr, loser_addr, tournament_id, world);
+                    },
+                    _ => {},
+                }
+                
+            },
+            Option::None => {
+                // Draw case - winner is None
+                println!("[process_tournament_stats_if_needed] Draw detected - updating both players' tournament ratings");
+                RatingSystemTrait::update_tournament_ratings_draw(
+                    finalization_data.player1_address,
+                    finalization_data.player2_address,
+                    tournament_id,
+                    world
+                );
+            }
+        }
     }
 
     fn emit_game_finished_events(
@@ -409,6 +474,9 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         Self::process_achievements(
             winner, finalization_data.player1_address, finalization_data.player2_address, world,
         );
+
+        // Process tournament stats if this was a tournament game
+        Self::process_tournament_stats_if_needed(finalization_data, winner, world);
 
         println!("[finalize_game] Game finalization completed successfully");
     }
