@@ -35,6 +35,7 @@ pub struct PlayerAssignment {
     //-----------------------
     pub duel_id: felt252, // current Duel a Player is in
     pub pass_id: u64, // current Tournament a Player is in
+    pub tournament_id: u64, // current Tournament ID from budokan
 }
 
 use evolute_duel::libs::store::{Store, StoreTrait};
@@ -77,16 +78,17 @@ pub impl PlayerImpl of PlayerTrait {
     }
 
     // Enter tournament method - static method for tournament entry
-    fn enter_tournament(ref store: Store, player_address: starknet::ContractAddress, pass_id: u64) {
-        println!("[PlayerTrait::enter_tournament] Starting enter_tournament for player: {:?}, pass_id: {}", player_address, pass_id);
+    fn enter_tournament(ref store: Store, player_address: starknet::ContractAddress, pass_id: u64, tournament_id: u64) {
+        println!("[PlayerTrait::enter_tournament] Starting enter_tournament for player: {:?}, pass_id: {}, tournament_id: {}", player_address, pass_id, tournament_id);
         
         // Create player assignment for this tournament pass
         let player_assignment = PlayerAssignment {
             player_address: player_address,
             pass_id: pass_id,
+            tournament_id: tournament_id,
             duel_id: 0 // Will be set when matched in tournament
         };
-        println!("[PlayerTrait::enter_tournament] Player assignment created - player: {:?}, pass_id: {}, duel_id: {}", player_address, pass_id, 0);
+        println!("[PlayerTrait::enter_tournament] Player assignment created - player: {:?}, pass_id: {}, tournament_id: {}, duel_id: {}", player_address, pass_id, tournament_id, 0);
 
         // Save player assignment
         store.set_player_challenge(@player_assignment);

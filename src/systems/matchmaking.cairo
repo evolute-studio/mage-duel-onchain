@@ -798,7 +798,29 @@ pub mod matchmaking {
             let status = game.status;
             println!("[MATCHMAKING] _cancel_game: current status={:?}", status);
 
-            if status == GameStatus::InProgress && game.board_id.is_some() {
+            // Check if player is in tournament queue waiting for opponent
+            if status == GameStatus::Created && game.game_mode == GameMode::Tournament {
+                println!("[MATCHMAKING] _cancel_game: player is in tournament queue, checking for active tournament");
+                
+                // Get player's active tournament ID from PlayerAssignment
+                match evolute_duel::models::tournament_matchmaking::TournamentELOTrait::get_player_active_tournament_id(
+                    player_address,
+                    world
+                ) {
+                    Option::Some(tournament_id) => {
+                        println!("[MATCHMAKING] _cancel_game: found active tournament_id={}, unsubscribing player", tournament_id);
+                        evolute_duel::models::tournament_matchmaking::TournamentELOTrait::unsubscribe_tournament_player(
+                            player_address,
+                            tournament_id,
+                            world
+                        );
+                        println!("[MATCHMAKING] _cancel_game: player unsubscribed from tournament queue");
+                    },
+                    Option::None => {
+                        println!("[MATCHMAKING] _cancel_game: no active tournament found for player");
+                    }
+                }
+            } else if status == GameStatus::InProgress && game.board_id.is_some() {
                 println!("[MATCHMAKING] _cancel_game: canceling active game with board");
                 let mut board: evolute_duel::models::game::Board = world
                     .read_model(game.board_id.unwrap());

@@ -386,7 +386,7 @@ pub mod tournament_token {
                     // validate and create DuelistAssignment
                     //TODO: logic of entering tournament for game
                     println!("[enlist_duelist] Calling PlayerTrait::enter_tournament");
-                    PlayerTrait::enter_tournament(ref store, caller, pass_id);
+                    PlayerTrait::enter_tournament(ref store, caller, pass_id, registration.tournament_id);
                     println!("[enlist_duelist] PlayerTrait::enter_tournament completed successfully");
                 },
                 Option::None => {

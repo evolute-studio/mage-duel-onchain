@@ -467,4 +467,70 @@ pub impl TournamentELOImpl of TournamentELOTrait {
             }
         }
     }
+
+    // Get player's active tournament ID from PlayerAssignment
+    fn get_player_active_tournament_id(
+        player_address: ContractAddress,
+        world: WorldStorage
+    ) -> Option<u64> {
+        let player_assignment: evolute_duel::models::player::PlayerAssignment = world.read_model(player_address);
+        
+        if player_assignment.tournament_id != 0 {
+            Option::Some(player_assignment.tournament_id)
+        } else {
+            Option::None
+        }
+    }
+
+    // Unsubscribe player from tournament matchmaking queue
+    fn unsubscribe_tournament_player(
+        player_address: ContractAddress,
+        tournament_id: u64,
+        mut world: WorldStorage
+    ) {
+        // Get player's current subscription status
+        let mut player_index: PlayerLeagueIndex = world.read_model((
+            GameMode::Tournament,
+            tournament_id,
+            player_address
+        ));
+
+        // Check if player is actually subscribed
+        if player_index.league_id == 0 {
+            // Player is not subscribed to any league
+            return;
+        }
+
+        // Get registry and league
+        let mut registry: TournamentRegistry = world.read_model((
+            GameMode::Tournament, 
+            tournament_id
+        ));
+        
+        let mut league: TournamentLeague = world.read_model((
+            GameMode::Tournament,
+            tournament_id,
+            player_index.league_id
+        ));
+
+        // Get the slot to clear it
+        let mut slot: TournamentSlot = world.read_model((
+            GameMode::Tournament,
+            tournament_id,
+            player_index.league_id,
+            player_index.slot_index
+        ));
+
+        // Unsubscribe using registry method
+        registry.unsubscribe(ref league, ref player_index);
+
+        // Clear the slot
+        slot.nullify();
+
+        // Update all models
+        world.write_model(@registry);
+        world.write_model(@league);
+        world.write_model(@player_index);
+        world.write_model(@slot);
+    }
 }

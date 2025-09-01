@@ -100,7 +100,7 @@ mod tests {
         );
 
         assert!(rating == DEFAULT_RATING, "New player should have default rating 1200");
-        println!("[test_get_tournament_player_rating_default] ✓ Default rating test passed: {}", rating);
+        println!("[test_get_tournament_player_rating_default] Default rating test passed: {}", rating);
     }
 
     #[test]
@@ -121,7 +121,7 @@ mod tests {
         );
 
         assert!(rating == expected_rating, "Existing player should have their tournament rating");
-        println!("[test_get_tournament_player_rating_existing] ✓ Existing player rating test passed: {}", rating);
+        println!("[test_get_tournament_player_rating_existing] Existing player rating test passed: {}", rating);
     }
 
     #[test]
@@ -183,7 +183,7 @@ mod tests {
         assert!(loser_pass.losses == 1, "Loser should have 1 loss");
         assert!(loser_pass.games_played == 1, "Loser should have 1 game played");
 
-        println!("[test_update_tournament_ratings_after_match] ✓ Rating update test passed");
+        println!("[test_update_tournament_ratings_after_match] Rating update test passed");
     }
 
     #[test]
@@ -204,7 +204,7 @@ mod tests {
         );
 
         assert!(opponent.is_none(), "Should not find opponent when alone in queue");
-        println!("[test_find_tournament_opponent_no_opponents] ✓ Correctly returned None");
+        println!("[test_find_tournament_opponent_no_opponents] Correctly returned None");
 
         // Verify player is subscribed in their league
         let player_rating = TournamentELOTrait::get_tournament_player_rating(player_address, TEST_TOURNAMENT_ID, world);
@@ -220,7 +220,7 @@ mod tests {
         assert!(player_index.slot_index == 0, "Player should be first in queue");
         assert!(player_index.join_time > 0, "Join time should be set");
         
-        println!("[test_find_tournament_opponent_no_opponents] ✓ Player subscribed - League: {}, Slot: {}", 
+        println!("[test_find_tournament_opponent_no_opponents] Player subscribed - League: {}, Slot: {}", 
             player_index.league_id, player_index.slot_index);
 
         // Verify league has the player
@@ -240,7 +240,7 @@ mod tests {
         ));
         assert!(slot.player_address == player_address, "Slot should contain player address");
 
-        println!("[test_find_tournament_opponent_no_opponents] ✓ Test completed successfully");
+        println!("[test_find_tournament_opponent_no_opponents] Test completed successfully");
     }
 
     #[test]
@@ -262,7 +262,7 @@ mod tests {
             world
         );
         assert!(opponent1.is_none(), "First player should not find opponent");
-        println!("[test_find_tournament_opponent_match_found] ✓ Player1 added to queue");
+        println!("[test_find_tournament_opponent_match_found] Player1 added to queue");
 
         // Verify first player is subscribed
         let player1_index: PlayerLeagueIndex = world.read_model((
@@ -282,7 +282,7 @@ mod tests {
         assert!(opponent2.is_some(), "Second player should find opponent");
         let matched_opponent = opponent2.unwrap();
         assert!(matched_opponent == player1_address, "Should match with player1");
-        println!("[test_find_tournament_opponent_match_found] ✓ Player2 matched with Player1: {:?}", matched_opponent);
+        println!("[test_find_tournament_opponent_match_found] Player2 matched with Player1: {:?}", matched_opponent);
 
         // Verify both players are unsubscribed after match
         let player1_index_after: PlayerLeagueIndex = world.read_model((
@@ -298,7 +298,7 @@ mod tests {
         
         assert!(player1_index_after.league_id == 0, "Player1 should be unsubscribed after match");
         assert!(player2_index_after.league_id == 0, "Player2 should be unsubscribed after match");
-        println!("[test_find_tournament_opponent_match_found] ✓ Both players unsubscribed after match");
+        println!("[test_find_tournament_opponent_match_found] Both players unsubscribed after match");
 
         // Verify league size decreased
         let league_id = TournamentLeagueTrait::compute_id(DEFAULT_RATING);
@@ -325,7 +325,7 @@ mod tests {
         assert!(slot1.player_address.is_zero(), "First slot should be cleared");
         assert!(slot2.player_address.is_zero(), "Second slot should be cleared");
 
-        println!("[test_find_tournament_opponent_match_found] ✓ Test completed successfully");
+        println!("[test_find_tournament_opponent_match_found] Test completed successfully");
     }
 
     #[test]
@@ -359,7 +359,7 @@ mod tests {
         assert!(league_id_high >= 1 && league_id_high <= 17, "League ID should be in valid range");
         assert!(league_id_very_high >= 1 && league_id_very_high <= 17, "League ID should be in valid range");
 
-        println!("[test_tournament_league_compute_id] ✓ League computation test passed");
+        println!("[test_tournament_league_compute_id] League computation test passed");
     }
 
     #[test]
@@ -399,7 +399,7 @@ mod tests {
             matched_opponent == player1_address || matched_opponent == player2_address,
             "Should match with either player1 or player2"
         );
-        println!("[test_multiple_players_same_league] ✓ Player3 matched with: {:?}", matched_opponent);
+        println!("[test_multiple_players_same_league] Player3 matched with: {:?}", matched_opponent);
 
         // Verify league still has one remaining player
         let league_id = TournamentLeagueTrait::compute_id(DEFAULT_RATING);
@@ -410,6 +410,6 @@ mod tests {
         ));
         assert!(league.size == 1, "League should have 1 remaining player");
 
-        println!("[test_multiple_players_same_league] ✓ Test completed successfully");
+        println!("[test_multiple_players_same_league] Test completed successfully");
     }
 }
