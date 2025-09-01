@@ -198,6 +198,7 @@ pub mod tournament_token {
         IMatchmakingDispatcherTrait, IMatchmakingLibraryDispatcher
         // IDuelProtectedDispatcherTrait,
     };
+    use evolute_duel::interfaces::ievlt_token::{IEvltTokenProtectedDispatcher, IEvltTokenProtectedDispatcherTrait};
     // use evolute_duel::systems::rng::{RngWrap, RngWrapTrait};
     use evolute_duel::libs::store::{Store, StoreTrait};
     // use pistols::utils::short_string::{ShortStringTrait};
@@ -332,7 +333,8 @@ pub mod tournament_token {
         }
         fn enlist_duelist(ref self: ContractState, pass_id: u64) {
             println!("[enlist_duelist] Starting enlist_duelist for pass_id: {}", pass_id);
-            let mut store: Store = StoreTrait::new(self.world_default());
+            let mut world = self.world_default();
+            let mut store: Store = StoreTrait::new(world);
             println!("[enlist_duelist] Store created successfully");
             
             // validate entry ownership
@@ -388,6 +390,18 @@ pub mod tournament_token {
                     println!("[enlist_duelist] Calling PlayerTrait::enter_tournament");
                     PlayerTrait::enter_tournament(ref store, caller, pass_id, registration.tournament_id);
                     println!("[enlist_duelist] PlayerTrait::enter_tournament completed successfully");
+
+                    // Reward player with 10 EVLT tokens for enlisting
+                    println!("[enlist_duelist] Minting 10 EVLT tokens as enlistment reward");
+                    let evlt_token_address = world.evlt_token_address();
+                    let evlt_dispatcher = IEvltTokenProtectedDispatcher { contract_address: evlt_token_address };
+                    
+                    // 10 EVLT tokens with 18 decimals = 10 * 10^18
+                    let reward_amount: u256 = 10_u256 * 1000000000000000000_u256; // 10 * 10^18
+                    println!("[enlist_duelist] Minting {} EVLT tokens to player {:?}", reward_amount, caller);
+                    
+                    evlt_dispatcher.mint(caller, reward_amount);
+                    println!("[enlist_duelist] Successfully minted {} EVLT tokens to player", reward_amount);
                 },
                 Option::None => {
                     // should never get here since entry is owned and exists

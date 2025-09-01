@@ -17,6 +17,9 @@ mod tests {
             TournamentPass, m_TournamentPass, TournamentStateModel, m_TournamentStateModel, PlayerTournamentIndex,
             m_PlayerTournamentIndex, TournamentState,
         },
+        tournament_matchmaking::{TournamentRegistry, m_TournamentRegistry, TournamentLeague, m_TournamentLeague,
+            TournamentSlot, m_TournamentSlot, PlayerLeagueIndex, m_PlayerLeagueIndex
+        },
         tournament_balance::{TournamentBalance, m_TournamentBalance}, player::{Player, m_Player, PlayerAssignment, m_PlayerAssignment},
         game::{
             GameModeConfig, m_GameModeConfig, Game, m_Game, Board, m_Board, MatchmakingState, 
@@ -83,6 +86,7 @@ mod tests {
 
     // EVLT token constants (18 decimals)
     const ONE_EVLT: u256 = 1000000000000000000; // 1 * 10^18
+    const TEN_EVLT: u256 = 10000000000000000000; // 10 * 10^18 - Enlistment reward
     const HUNDRED_EVLT: u256 = 100000000000000000000; // 100 * 10^18  
     const THOUSAND_EVLT: u256 = 1000000000000000000000; // 1000 * 10^18
     const NINE_HUNDRED_EVLT: u256 = 900000000000000000000; // 900 * 10^18 (1000 - 100)
@@ -123,6 +127,11 @@ mod tests {
                 TestResource::Model(m_TournamentConfig::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_PrizeClaim::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_QualificationEntries::TEST_CLASS_HASH.try_into().unwrap()),
+                // Tournament Matchmaking models
+                TestResource::Model(m_TournamentRegistry::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_TournamentLeague::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_TournamentSlot::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_PlayerLeagueIndex::TEST_CLASS_HASH.try_into().unwrap()),
                 //Game models
                 TestResource::Model(m_GameModeConfig::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_Game::TEST_CLASS_HASH.try_into().unwrap()),
@@ -701,8 +710,8 @@ mod tests {
         let balance_after_p1 = evlt_token_dispatcher.balance_of(player1_address);
         let balance_after_p2 = evlt_token_dispatcher.balance_of(player2_address);
         println!("[test_two_players_tournament_with_enlist_and_join_duel] Balances after entry - P1: {}, P2: {}", balance_after_p1, balance_after_p2);
-        assert!(balance_after_p1 == EIGHT_NINETY_NINE_EVLT, "Player1 should have 899 EVLT after entry and join_duel");
-        assert!(balance_after_p2 == EIGHT_NINETY_NINE_EVLT, "Player2 should have 899 EVLT after entry and join_duel");
+        assert!(balance_after_p1 == NINE_HUNDRED_EVLT + TEN_EVLT - ONE_EVLT, "Player1 should have 899 EVLT after entry and join_duel");
+        assert!(balance_after_p2 == NINE_HUNDRED_EVLT + TEN_EVLT - ONE_EVLT, "Player2 should have 899 EVLT after entry and join_duel");
         println!("[test_two_players_tournament_with_enlist_and_join_duel] Entry fee deductions verified - P1: {}, P2: {}", balance_after_p1, balance_after_p2);
 
         // Verify entry numbers
@@ -720,5 +729,138 @@ mod tests {
             println!("[test_two_players_tournament_with_enlist_and_join_duel] - Players successfully matched via tournament token auto-matchmaking");
         }
         println!("[test_two_players_tournament_with_enlist_and_join_duel] - All verifications passed");
+    }
+
+    #[test]
+    fn test_enlist_duelist_evlt_reward() {
+        println!("[test_enlist_duelist_evlt_reward] Starting test for EVLT reward on enlistment");
+        let (tournament_dispatcher, tournament_token_dispatcher, evlt_token_dispatcher,
+        evlt_protected, _matchmaking_dispatcher, mut world) = deploy_tournament_system();
+        println!("[test_enlist_duelist_evlt_reward] System deployed successfully");
+
+        let admin_address: ContractAddress = contract_address_const::<ADMIN_ADDRESS>();
+        let player1_address: ContractAddress = contract_address_const::<PLAYER1_ADDRESS>();
+        let tournament_token_address = tournament_token_dispatcher.contract_address;
+        let evlt_token_address = evlt_token_dispatcher.contract_address;
+        let tournament_address = tournament_dispatcher.contract_address;
+        
+        // === SETUP PHASE ===
+        println!("[test_enlist_duelist_evlt_reward] === SETUP PHASE ===");
+        testing::set_contract_address(admin_address);
+        evlt_protected.set_minter(admin_address);
+        println!("[test_enlist_duelist_evlt_reward] Admin set as minter");
+
+        // Mint initial EVLT tokens to player (1000 EVLT)
+        println!("[test_enlist_duelist_evlt_reward] Minting 1000 EVLT tokens to player");
+        evlt_protected.mint(player1_address, THOUSAND_EVLT);
+        println!("[test_enlist_duelist_evlt_reward] EVLT tokens minted successfully");
+
+        // Allow tournament to transfer EVLT tokens
+        println!("[test_enlist_duelist_evlt_reward] Setting transfer permissions");
+        evlt_protected.set_transfer_allowed(tournament_address);
+        println!("[test_enlist_duelist_evlt_reward] Transfer permissions set");
+
+        // === TOURNAMENT CREATION ===
+        println!("[test_enlist_duelist_evlt_reward] === TOURNAMENT CREATION ===");
+        let metadata = Metadata {
+            name: 'EVLT Reward Test Tournament',
+            description: "Tournament for testing EVLT reward on enlistment",
+        };
+        
+        let current_time = starknet::get_block_timestamp();
+        let schedule = Schedule {
+            registration: Option::Some(Period {
+                start: current_time,
+                end: current_time + 3600, // 1 hour registration
+            }),
+            game: Period {
+                start: current_time + 3600,
+                end: current_time + 7200, // 1 hour game period
+            },
+            submission_duration: 1000,
+        };
+
+        let game_config = GameConfig {
+            address: tournament_token_address,
+            settings_id: 1,
+            prize_spots: 1, // Top 1 player gets prize
+        };
+
+        let entry_fee = EntryFee {
+            token_address: evlt_token_address,
+            amount: HUNDRED_EVLT_U128,
+            distribution: [100].span(), // 100% to 1st place
+            tournament_creator_share: Option::None,
+            game_creator_share: Option::None,
+        };
+
+        println!("[test_enlist_duelist_evlt_reward] Creating tournament");
+        let tournament = tournament_dispatcher.create_tournament(
+            admin_address,
+            metadata,
+            schedule,
+            game_config,
+            Option::Some(entry_fee),
+            Option::None
+        );
+        println!("[test_enlist_duelist_evlt_reward] Tournament created successfully - ID: {}", tournament.id);
+
+        // === PLAYER ENTRY ===
+        println!("[test_enlist_duelist_evlt_reward] === PLAYER ENTRY ===");
+        testing::set_contract_address(player1_address);
+        
+        let balance_before_entry = evlt_token_dispatcher.balance_of(player1_address);
+        println!("[test_enlist_duelist_evlt_reward] Player balance before entry: {}", balance_before_entry);
+        assert!(balance_before_entry == THOUSAND_EVLT, "Player should start with 1000 EVLT");
+        
+        evlt_token_dispatcher.approve(tournament_address, HUNDRED_EVLT);
+        let (token_id, entry_number) = tournament_dispatcher.enter_tournament(
+            tournament.id,
+            'player1',
+            player1_address,
+            Option::None
+        );
+        println!("[test_enlist_duelist_evlt_reward] Player entered - Token ID: {}, Entry: {}", token_id, entry_number);
+
+        let balance_after_entry = evlt_token_dispatcher.balance_of(player1_address);
+        println!("[test_enlist_duelist_evlt_reward] Player balance after entry: {}", balance_after_entry);
+        assert!(balance_after_entry == NINE_HUNDRED_EVLT, "Player should have 900 EVLT after entry fee");
+
+        // === ENLISTMENT TEST ===
+        println!("[test_enlist_duelist_evlt_reward] === ENLISTMENT TEST ===");
+        
+        let can_enlist = tournament_token_dispatcher.can_enlist_duelist(token_id);
+        println!("[test_enlist_duelist_evlt_reward] Player can enlist: {}", can_enlist);
+        assert!(can_enlist, "Player should be able to enlist");
+        
+        // Record balance before enlistment
+        let balance_before_enlist = evlt_token_dispatcher.balance_of(player1_address);
+        println!("[test_enlist_duelist_evlt_reward] Player balance before enlistment: {}", balance_before_enlist);
+        
+        // Enlist the player
+        println!("[test_enlist_duelist_evlt_reward] Enlisting player...");
+        tournament_token_dispatcher.enlist_duelist(token_id);
+        println!("[test_enlist_duelist_evlt_reward] Player enlisted successfully with pass ID: {}", token_id);
+
+        // === VERIFICATION ===
+        println!("[test_enlist_duelist_evlt_reward] === VERIFICATION ===");
+        
+        // Check balance after enlistment - should have increased by 10 EVLT
+        let balance_after_enlist = evlt_token_dispatcher.balance_of(player1_address);
+        println!("[test_enlist_duelist_evlt_reward] Player balance after enlistment: {}", balance_after_enlist);
+        
+        let expected_balance = balance_before_enlist + TEN_EVLT; // 900 + 10 = 910 EVLT
+        println!("[test_enlist_duelist_evlt_reward] Expected balance: {}", expected_balance);
+        
+        assert!(balance_after_enlist == expected_balance, "Player should receive 10 EVLT tokens as enlistment reward");
+        
+        // Verify the actual amounts
+        let reward_received = balance_after_enlist - balance_before_enlist;
+        println!("[test_enlist_duelist_evlt_reward] Reward received: {}", reward_received);
+        assert!(reward_received == TEN_EVLT, "Reward should be exactly 10 EVLT tokens");
+
+        println!("[test_enlist_duelist_evlt_reward] === SUCCESS ===");
+        println!("[test_enlist_duelist_evlt_reward] Test passed! Player received {} EVLT tokens as enlistment reward", reward_received);
+        println!("[test_enlist_duelist_evlt_reward] Final balance: {} EVLT (started with 1000, paid 100 entry fee, received 10 reward)", balance_after_enlist);
     }
 }

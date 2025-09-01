@@ -159,6 +159,7 @@ pub mod evlt_token {
         if !tournament_token_address.is_zero() {
             self.accesscontrol._grant_role(BURNER_ROLE, tournament_token_address);
             self.accesscontrol._grant_role(TRANSFER_ROLE, tournament_token_address);
+            self.accesscontrol._grant_role(MINTER_ROLE, tournament_token_address);
         }
 
         // Get budokan tournament address from DNS and grant transfer role

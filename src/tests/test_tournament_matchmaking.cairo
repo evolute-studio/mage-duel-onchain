@@ -64,18 +64,19 @@ mod tests {
         mut world: WorldStorage,
         pass_id: u64,
         player_address: ContractAddress,
+        entry_number: u8,
         tournament_id: u64,
-        rating: u32
+        rating: u32,
     ) {
         let tournament_pass = TournamentPass {
             pass_id,
             tournament_id,
             player_address,
+            entry_number,
             rating,
             wins: 0,
             losses: 0,
             games_played: 0,
-            state: TournamentState::Enlisted,
         };
         world.write_model_test(@tournament_pass);
 
@@ -112,7 +113,7 @@ mod tests {
         let expected_rating = 1500;
         
         // Create tournament pass with custom rating
-        create_tournament_pass(world, 1, player_address, TEST_TOURNAMENT_ID, expected_rating);
+        create_tournament_pass(world, 1, player_address, 1, TEST_TOURNAMENT_ID, expected_rating);
 
         let rating = TournamentELOTrait::get_tournament_player_rating(
             player_address, 
@@ -134,8 +135,8 @@ mod tests {
         let initial_rating = 1200;
 
         // Create tournament passes for both players
-        create_tournament_pass(world, 1, winner_address, TEST_TOURNAMENT_ID, initial_rating);
-        create_tournament_pass(world, 2, loser_address, TEST_TOURNAMENT_ID, initial_rating);
+        create_tournament_pass(world, 1, winner_address, 1,  TEST_TOURNAMENT_ID, initial_rating);
+        create_tournament_pass(world, 2, loser_address, 2,  TEST_TOURNAMENT_ID, initial_rating);
 
         // Get initial ratings
         let winner_rating_before = TournamentELOTrait::get_tournament_player_rating(
@@ -194,7 +195,7 @@ mod tests {
         let player_address: ContractAddress = contract_address_const::<PLAYER1_ADDRESS>();
         
         // Create tournament pass for player
-        create_tournament_pass(world, 1, player_address, TEST_TOURNAMENT_ID, DEFAULT_RATING);
+        create_tournament_pass(world, 1, player_address, 1, TEST_TOURNAMENT_ID, DEFAULT_RATING);
 
         // Try to find opponent (should return None and subscribe player)
         let opponent = TournamentELOTrait::find_tournament_opponent(
@@ -252,8 +253,8 @@ mod tests {
         let player2_address: ContractAddress = contract_address_const::<PLAYER2_ADDRESS>();
         
         // Create tournament passes for both players with similar ratings (same league)
-        create_tournament_pass(world, 1, player1_address, TEST_TOURNAMENT_ID, DEFAULT_RATING);
-        create_tournament_pass(world, 2, player2_address, TEST_TOURNAMENT_ID, DEFAULT_RATING + 10);
+        create_tournament_pass(world, 1, player1_address, 1, TEST_TOURNAMENT_ID, DEFAULT_RATING);
+        create_tournament_pass(world, 2, player2_address, 2, TEST_TOURNAMENT_ID, DEFAULT_RATING + 10);
 
         // First player enters queue (should return None and subscribe)
         let opponent1 = TournamentELOTrait::find_tournament_opponent(
@@ -333,7 +334,7 @@ mod tests {
         println!("[test_tournament_league_compute_id] Testing league ID computation");
 
         // Test minimum rating (should be league 1)
-        let min_rating = 800;
+        let min_rating = 100;
         let league_id_min = TournamentLeagueTrait::compute_id(min_rating);
         assert!(league_id_min == 1, "Minimum rating should be league 1");
         println!("[test_tournament_league_compute_id] Min rating {} -> League {}", min_rating, league_id_min);
@@ -372,9 +373,9 @@ mod tests {
         let player3_address: ContractAddress = contract_address_const::<PLAYER3_ADDRESS>();
         
         // All players have similar ratings (same league)
-        create_tournament_pass(world, 1, player1_address, TEST_TOURNAMENT_ID, DEFAULT_RATING);
-        create_tournament_pass(world, 2, player2_address, TEST_TOURNAMENT_ID, DEFAULT_RATING + 5);
-        create_tournament_pass(world, 3, player3_address, TEST_TOURNAMENT_ID, DEFAULT_RATING + 10);
+        create_tournament_pass(world, 1, player1_address, 1, TEST_TOURNAMENT_ID, DEFAULT_RATING);
+        create_tournament_pass(world, 2, player2_address, 2, TEST_TOURNAMENT_ID, DEFAULT_RATING + 5);
+        create_tournament_pass(world, 3, player3_address, 3, TEST_TOURNAMENT_ID, DEFAULT_RATING + 10);
 
         // First player enters (should subscribe)
         let opponent1 = TournamentELOTrait::find_tournament_opponent(
