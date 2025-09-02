@@ -21,6 +21,9 @@ openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-cont
 nft_combo = { git = "https://github.com/underware-gg/cairo-nft-combo", tag = "v1.0.0"}
 
 [[target.starknet-contract]]
+allowed-libfuncs = true
+# allowed-libfuncs-list.name = "experimental"
+sierra = true
 build-external-contracts = [
     "dojo::world::world_contract::world",
     "tournaments::components::models::game::m_GameMetadata",

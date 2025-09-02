@@ -13,7 +13,7 @@ pub mod tutorial {
     use super::*;
     use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
     use dojo::{event::EventStorage, model::{ModelStorage, Model}};
-    use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use evolute_duel::{
         libs::{
             asserts::AssertsTrait, timing::{TimingTrait}, scoring::{ScoringTrait},
@@ -266,8 +266,8 @@ pub mod tutorial {
             player: ContractAddress,
             player_side: PlayerSide,
             ref board: Board,
-            move_id_generator: core::starknet::storage::StorageBase::<
-                core::starknet::storage::Mutable<core::felt252>,
+            move_id_generator: starknet::storage::StorageBase::<
+                starknet::storage::Mutable<core::felt252>,
             >,
             emit_event: bool,
         ) {

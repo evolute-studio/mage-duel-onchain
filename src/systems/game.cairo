@@ -89,7 +89,7 @@ pub mod game {
 
 
     fn dojo_init(self: @ContractState) {
-        let mut world = self.world_default();
+        let mut _world = self.world_default();
         // let id = 0;
         // let deck: Span<u8> = array![
         //     2, // CCCC
@@ -822,8 +822,8 @@ pub mod game {
             player: ContractAddress,
             player_side: PlayerSide,
             ref board: Board,
-            move_id_generator: core::starknet::storage::StorageBase::<
-                core::starknet::storage::Mutable<core::felt252>,
+            move_id_generator: starknet::storage::StorageBase::<
+                starknet::storage::Mutable<core::felt252>,
             >,
             emit_event: bool,
         ) {

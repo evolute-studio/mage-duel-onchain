@@ -6,7 +6,7 @@ use dojo::world::{WorldStorage};
 // Internal imports  
 use evolute_duel::{
     constants::bitmap::{LEAGUE_SIZE, DEFAULT_RATING, LEAGUE_COUNT, LEAGUE_MIN_THRESHOLD, DEFAULT_K_FACTOR, LEAGUE_SEARCH_RADIUS},
-    systems::helpers::bitmap::{Bitmap, BitmapTrait},
+    systems::helpers::bitmap::{Bitmap},
     models::tournament::{TournamentPass, PlayerTournamentIndex},
     types::packing::GameMode,
 };
@@ -138,7 +138,21 @@ pub impl TournamentRegistryImpl of TournamentRegistryTrait {
             return Option::None;
         }
 
-        Bitmap::nearest_significant_bit(self.leagues.into(), league.league_id) 
+        match Bitmap::nearest_significant_bit(self.leagues.into(), league.league_id) {
+            Some(bit) => {
+                let distance = if bit > league.league_id {
+                    bit - league.league_id
+                } else {
+                    league.league_id - bit
+                };
+                if distance <= LEAGUE_SEARCH_RADIUS {
+                    Some(bit.try_into().unwrap())
+                } else {
+                    None
+                }
+            },
+            None => None,
+        }
     }
 
     fn _update_league_bitmap(ref self: TournamentRegistry, league_id: u8, size: u32) {
@@ -261,7 +275,7 @@ pub impl TournamentSlotImpl of TournamentSlotTrait {
     }
 
     fn nullify(ref self: TournamentSlot) {
-        self.player_address = starknet::contract_address_const::<0>();
+        self.player_address = Zero::zero();
     }
 
     fn is_empty(self: @TournamentSlot) -> bool {
