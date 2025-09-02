@@ -96,7 +96,7 @@ pub impl StoreImpl of StoreTrait {
         let tournament_config: GameModeConfig = self
             .world
             .read_model(
-                GameMode::Tournament
+                (Into::<GameMode, u8>::into(GameMode::Tournament))
             );
         (tournament_config)
     }

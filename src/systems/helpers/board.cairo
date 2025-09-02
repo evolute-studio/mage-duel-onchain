@@ -160,15 +160,23 @@ pub impl BoardImpl of BoardTrait {
     }
 
     fn flatten_deck_rules(deck_rules: Span<u8>) -> Span<u8> {
+        println!("[BoardTrait::flatten_deck_rules] Flattening deck rules with {} tile types", deck_rules.len());
+        
         let mut deck_rules_flat = ArrayTrait::new();
         for tile_index in 0..24_u8 {
             let tile_type: u8 = tile_index;
             let tile_amount: u8 = *deck_rules.at(tile_index.into());
+            
+            if tile_amount > 0 {
+                println!("[BoardTrait::flatten_deck_rules] Tile type {} has {} instances", tile_type, tile_amount);
+            }
+            
             for _ in 0..tile_amount {
                 deck_rules_flat.append(tile_type);
             }
         };
 
+        println!("[BoardTrait::flatten_deck_rules] Flattened deck contains {} total tiles", deck_rules_flat.len());
         return deck_rules_flat.span();
     }
 
@@ -258,41 +266,66 @@ pub impl BoardImpl of BoardTrait {
     }
 
     fn tutorial_deck(deck_rules: Span<u8>) -> Span<u8> {
+        println!("[BoardTrait::tutorial_deck] Creating tutorial deck with {} base deck rules", deck_rules.len());
+        
         // Example deck for tutorial
         let mut deck_rules_flat = ArrayTrait::new();
         deck_rules_flat.append(Tile::FFRR.into());
         deck_rules_flat.append(Tile::CRFR.into());
         deck_rules_flat.append(Tile::CCFR.into());
         deck_rules_flat.append(Tile::CCFF.into());
+        println!("[BoardTrait::tutorial_deck] Added 4 predefined tutorial tiles: FFRR, CRFR, CCFR, CCFF");
+        
         //We have 24 tiles in total, so we can add more tiles to fill the deck
         // Add 1 of each tile type for simplicity
         let mut i: u8 = 4;
         let flatten_deck_rules = Self::flatten_deck_rules(deck_rules);
-        let mut random_deck = DeckTrait::new(
-            ('TUTORIAL_DECK' + get_block_timestamp().into()), flatten_deck_rules.len(),
-        );
+        println!("[BoardTrait::tutorial_deck] Flattened deck rules has {} tiles", flatten_deck_rules.len());
+        
+        let seed = 'TUTORIAL_DECK' + get_block_timestamp().into();
+        let mut random_deck = DeckTrait::new(seed, flatten_deck_rules.len());
+        println!("[BoardTrait::tutorial_deck] Initialized random deck with seed: {} and length: {}", seed, flatten_deck_rules.len());
+        
         while i < 25 {
             let tile_index = random_deck.draw().into() - 1;
             let tile_type = *flatten_deck_rules.at(tile_index);
             deck_rules_flat.append(tile_type);
+            println!("[BoardTrait::tutorial_deck] Added tile {} (type: {}) at position {}", tile_index, tile_type, i);
             i += 1;
         };
+        
+        println!("[BoardTrait::tutorial_deck] Final tutorial deck has {} tiles", deck_rules_flat.len());
         return deck_rules_flat.span();
     }
 
     fn generate_tutorial_initial_board_state(board_id: felt252, mut world: WorldStorage) {
+        println!("[BoardTrait::generate_tutorial_initial_board_state] Generating tutorial initial board state for board_id: {}", board_id);
+        
         let bases = array![0, 6 * 7 * 4 + 3, (6 * 7 + 6) * 4 + 2, 6 * 4 + 1].span();
+        println!("[BoardTrait::generate_tutorial_initial_board_state] Base positions: [{}, {}, {}, {}]", 
+            *bases.at(0), *bases.at(1), *bases.at(2), *bases.at(3));
 
         let steps: Span<i32> = array![7 * 4, 4, -7 * 4, -4].span();
+        println!("[BoardTrait::generate_tutorial_initial_board_state] Steps: [{}, {}, {}, {}]", 
+            *steps.at(0), *steps.at(1), *steps.at(2), *steps.at(3));
 
         let edges_positions = array![2, 2, 3, 4];
+        println!("[BoardTrait::generate_tutorial_initial_board_state] Edge positions: [{}, {}, {}, {}]", 
+            *edges_positions.at(0), *edges_positions.at(1), *edges_positions.at(2), *edges_positions.at(3));
 
         let edges_types = array![TEdge::R, TEdge::C, TEdge::R, TEdge::C].span();
+        println!("[BoardTrait::generate_tutorial_initial_board_state] Edge types: [Road, City, Road, City]");
 
         for side in 0..4_u8 {
-            let position = (*bases.at(side.into())
-                + (*steps.at(side.into())) * (*edges_positions.at(side.into())));
+            let base_pos = *bases.at(side.into());
+            let step = *steps.at(side.into());
+            let edge_pos = *edges_positions.at(side.into());
+            let position = base_pos + step * edge_pos;
             let node_type = *edges_types.at(side.into());
+            
+            println!("[BoardTrait::generate_tutorial_initial_board_state] Side {}: base={}, step={}, edge_pos={}, final_position={}, type={:?}", 
+                side, base_pos, step, edge_pos, position, node_type);
+            
             world
                 .write_model(
                     @UnionNode {
@@ -308,6 +341,9 @@ pub impl BoardImpl of BoardTrait {
                         player_side: PlayerSide::None // No player assigned yet
                     },
                 );
+            println!("[BoardTrait::generate_tutorial_initial_board_state] Created UnionNode at position {} for side {}", position, side);
         };
+        
+        println!("[BoardTrait::generate_tutorial_initial_board_state] Tutorial initial board state generation completed");
     }
 }

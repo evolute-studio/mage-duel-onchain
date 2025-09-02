@@ -297,7 +297,7 @@ pub mod tournament_token {
             println!("[setting_exists] Checking tournament type validity");
             println!("[setting_exists] settings.game_mode = {:?}", settings.game_mode);
 
-            let exists = settings.game_mode == GameMode::Tournament
+            let exists = settings.game_mode == GameMode::Tournament.into()
                 && settings.board_size != 0;
 
             println!("[setting_exists] Tournament type is not Undefined: {}", exists);
