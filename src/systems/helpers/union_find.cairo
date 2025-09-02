@@ -89,8 +89,8 @@ mod tests {
         NamespaceDef {
             namespace: "evolute_duel",
             resources: [
-                TestResource::Model(m_Board::TEST_CLASS_HASH),
-                TestResource::Model(m_UnionNode::TEST_CLASS_HASH),
+                TestResource::Model(m_Board::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_UnionNode::TEST_CLASS_HASH.try_into().unwrap()),
             ]
                 .span(),
         }

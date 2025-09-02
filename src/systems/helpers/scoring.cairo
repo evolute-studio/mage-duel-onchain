@@ -409,18 +409,17 @@ mod tests {
     use evolute_duel::events::{
         e_CityContestWon, e_CityContestDraw, e_RoadContestWon, e_RoadContestDraw,
     };
-    use starknet::contract_address_const;
 
     fn setup_world() -> WorldStorage {
         let namespace_def = NamespaceDef {
             namespace: "evolute_duel",
             resources: [
-                TestResource::Model(m_UnionNode::TEST_CLASS_HASH),
-                TestResource::Model(m_PotentialContests::TEST_CLASS_HASH),
-                TestResource::Event(e_CityContestWon::TEST_CLASS_HASH),
-                TestResource::Event(e_CityContestDraw::TEST_CLASS_HASH),
-                TestResource::Event(e_RoadContestWon::TEST_CLASS_HASH),
-                TestResource::Event(e_RoadContestDraw::TEST_CLASS_HASH),
+                TestResource::Model(m_UnionNode::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_PotentialContests::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_CityContestWon::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_CityContestDraw::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_RoadContestWon::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_RoadContestDraw::TEST_CLASS_HASH.try_into().unwrap()),
             ]
                 .span(),
         };
@@ -919,7 +918,7 @@ mod tests {
         let rotation = 0;
         let board_size = 10;
         let player_side = PlayerSide::Blue;
-        let player_address = contract_address_const::<0x123>();
+        let player_address = TryInto::<felt252, ContractAddress>::try_into(0x123).unwrap();
 
         // First place the tile
         connect_edges_in_tile(world, board_id, col, row, tile, rotation, player_side, board_size);

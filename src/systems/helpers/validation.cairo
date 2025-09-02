@@ -104,7 +104,7 @@ mod tests {
     fn setup_world() -> WorldStorage {
         let namespace_def = NamespaceDef {
             namespace: "evolute_duel",
-            resources: [TestResource::Model(m_UnionNode::TEST_CLASS_HASH),].span(),
+            resources: [TestResource::Model(m_UnionNode::TEST_CLASS_HASH.try_into().unwrap()),].span(),
         };
         spawn_test_world([namespace_def].span())
     }
