@@ -30,8 +30,8 @@ mod tests {
         let ndef = NamespaceDef {
             namespace: "evolute_duel",
             resources: [
-                TestResource::Model(m_CoinConfig::TEST_CLASS_HASH),
-                TestResource::Contract(grnd_token::TEST_CLASS_HASH),
+                TestResource::Model(m_CoinConfig::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Contract(grnd_token::TEST_CLASS_HASH.try_into().unwrap()),
             ]
                 .span(),
         };

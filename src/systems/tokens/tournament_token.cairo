@@ -608,17 +608,17 @@ pub mod tournament_token {
             assert(tournament.state == TournamentState::InProgress, Errors::NOT_STARTED);
             println!("[join_duel] Tournament in progress check passed");
 
-            // Check and spend tokens for tournament entry (eEVLT or EVLT)
-            println!("[join_duel] Getting world storage for token validation");
+            // Check if player can afford tournament entry (WITHOUT charging tokens)
+            println!("[join_duel] Getting world storage for token affordability validation");
             let world_storage = self.world_default();
-            println!("[join_duel] World storage obtained, checking token requirements");
+            println!("[join_duel] World storage obtained, checking if player can afford tournament");
             
-            let can_enter = AssertsTrait::assert_can_enter_tournament_game(
+            let can_afford = AssertsTrait::assert_can_afford_tournament_game(
                 caller, entry.tournament_id, world_storage,
             );
-            println!("[join_duel] Token validation result: {}", can_enter);
-            assert(can_enter, Errors::INSUFFICIENT_TOKENS);
-            println!("[join_duel] Token validation passed, tokens spent successfully");
+            println!("[join_duel] Token affordability check result: {}", can_afford);
+            assert(can_afford, Errors::INSUFFICIENT_TOKENS);
+            println!("[join_duel] Token affordability validation passed - player can afford tournament but tokens not charged yet");
 
             // Use matchmaking system to create/join tournaments
             println!("[join_duel] Getting world instance for matchmaking");

@@ -61,6 +61,7 @@ pub mod matchmaking {
     use starknet::{ContractAddress, get_caller_address};
     use core::starknet::storage::{StoragePointerWriteAccess};
     use dojo::{event::EventStorage, model::{ModelStorage}};
+    use dojo::world::{WorldStorage};
     use evolute_duel::{
         libs::{asserts::AssertsTrait, phase_management::{PhaseManagementTrait}},
         models::{game::{Game, GameModeConfig, MatchmakingState, PlayerMatchmaking}, tournament_matchmaking::{TournamentELOTrait}, tournament::{TournamentBoard}},
@@ -426,37 +427,65 @@ pub mod matchmaking {
                     Option::Some(opponent) => {
                         println!("[MATCHMAKING] auto_match: Tournament opponent found: {:x}", opponent);
                         
-                        // Get opponent game state
-                        let mut opponent_game: Game = world.read_model(opponent);
+                        // Charge tokens for both players - if either fails, handle gracefully
+                        let caller_charged = AssertsTrait::try_charge_player(caller, tid, world);
+                        let opponent_charged = AssertsTrait::try_charge_player(opponent, tid, world);
                         
-                        // Get game configuration
-                        let config: GameModeConfig = world.read_model(mode);
+                        println!("[MATCHMAKING] auto_match: Token charging - caller: {}, opponent: {}", caller_charged, opponent_charged);
                         
-                        // Create board for the match
-                        let board = self._create_board_for_mode(
-                            opponent, caller, mode, config, tid, world,
-                        );
-                        
-                        // Update both players' game states
-                        opponent_game.status = GameStatus::InProgress;
-                        opponent_game.board_id = Option::Some(board.id);
-                        opponent_game.game_mode = mode;
-                        world.write_model(@opponent_game);
-                        
-                        caller_game.status = GameStatus::InProgress;
-                        caller_game.board_id = Option::Some(board.id);
-                        caller_game.game_mode = mode;
-                        world.write_model(@caller_game);
-                        
-                        // Emit events for both players
-                        world.emit_event(
-                            @GameStarted {
-                                host_player: opponent, guest_player: caller, board_id: board.id,
+                        match (caller_charged, opponent_charged) {
+                            (true, true) => {
+                                println!("[MATCHMAKING] auto_match: Both players successfully charged - proceeding with match");
+                                
+                                // Get opponent game state
+                                let mut opponent_game: Game = world.read_model(opponent);
+                                
+                                // Get game configuration
+                                let config: GameModeConfig = world.read_model(mode);
+                                
+                                // Create board for the match
+                                let board = self._create_board_for_mode(
+                                    opponent, caller, mode, config, tid, world,
+                                );
+                                
+                                // Update both players' game states
+                                opponent_game.status = GameStatus::InProgress;
+                                opponent_game.board_id = Option::Some(board.id);
+                                opponent_game.game_mode = mode;
+                                world.write_model(@opponent_game);
+                                
+                                caller_game.status = GameStatus::InProgress;
+                                caller_game.board_id = Option::Some(board.id);
+                                caller_game.game_mode = mode;
+                                world.write_model(@caller_game);
+                                
+                                // Emit events for both players
+                                world.emit_event(
+                                    @GameStarted {
+                                        host_player: opponent, guest_player: caller, board_id: board.id,
+                                    },
+                                );
+                                
+                                println!("[MATCHMAKING] auto_match: Tournament match successful! board_id={}", board.id);
+                                return board.id;
                             },
-                        );
-                        
-                        println!("[MATCHMAKING] auto_match: Tournament match successful! board_id={}", board.id);
-                        return board.id;
+                            (false, true) => {
+                                println!("[MATCHMAKING] auto_match: Caller failed to pay, opponent charged successfully - removing caller from queue, keeping opponent");
+                                self._remove_from_tournament_queue(caller, tid, world);
+                                return 0; // Caller fails, returns 0
+                            },
+                            (true, false) => {
+                                println!("[MATCHMAKING] auto_match: Opponent failed to pay, caller charged successfully - removing opponent from queue, keeping caller in queue");
+                                self._remove_from_tournament_queue(opponent, tid, world);
+                                return 0; // Opponent fails, returns 0
+                            },
+                            (false, false) => {
+                                println!("[MATCHMAKING] auto_match: Both players failed to pay - removing both from queue");
+                                self._remove_from_tournament_queue(caller, tid, world);
+                                self._remove_from_tournament_queue(opponent, tid, world);
+                                return 0; // Both fail, caller returns 0
+                            },
+                        }
                     },
                     Option::None => {
                         println!("[MATCHMAKING] auto_match: No opponent found within league radius, player added to tournament queue");
@@ -879,6 +908,45 @@ pub mod matchmaking {
             world.emit_event(@GameCanceled { host_player: player_address, status: new_status });
 
             println!("[MATCHMAKING] _cancel_game: player game canceled, function completed");
+        }
+
+        // Remove player from tournament queue (for insufficient tokens scenario)
+        fn _remove_from_tournament_queue(
+            ref self: ContractState,
+            player_address: ContractAddress,
+            tournament_id: u64,
+            mut world: WorldStorage,
+        ) {
+            println!("[MATCHMAKING] _remove_from_tournament_queue: removing player {:x} from tournament {} queue", player_address, tournament_id);
+
+            // Unsubscribe from tournament queue
+            evolute_duel::models::tournament_matchmaking::TournamentELOTrait::unsubscribe_tournament_player(
+                player_address,
+                tournament_id,
+                world
+            );
+            println!("[MATCHMAKING] _remove_from_tournament_queue: player unsubscribed from tournament queue");
+
+            // Clear PlayerMatchmaking status
+            let empty_mm = PlayerMatchmaking {
+                player: player_address, 
+                game_mode: GameMode::None, 
+                tournament_id: 0,
+                timestamp: starknet::get_block_timestamp(),
+            };
+            world.write_model(@empty_mm);
+            println!("[MATCHMAKING] _remove_from_tournament_queue: PlayerMatchmaking cleared");
+
+            // Update player game status to canceled
+            let mut game: Game = world.read_model(player_address);
+            game.status = GameStatus::Canceled;
+            game.board_id = Option::None;
+            game.game_mode = GameMode::None;
+            world.write_model(@game);
+            
+            // Emit event
+            world.emit_event(@GameCanceled { host_player: player_address, status: GameStatus::Canceled });
+            println!("[MATCHMAKING] _remove_from_tournament_queue: player removed from tournament queue due to insufficient tokens");
         }
     }
 }

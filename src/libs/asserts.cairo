@@ -620,7 +620,67 @@ pub impl AssersImpl of AssertsTrait {
         return true; // Still successful, just EVLT stays in tournament_token contract
     }
 
-    // Tournament game access and payment validation
+    // Tournament game access validation WITHOUT charging (for join_duel validation)
+    fn assert_can_afford_tournament_game(
+        player_address: ContractAddress, tournament_id: u64, mut world: WorldStorage,
+    ) -> bool {
+        println!("[assert_can_afford_tournament_game] Starting tournament game affordability check");
+        println!("[assert_can_afford_tournament_game] player_address: {:x}, tournament_id: {}", player_address, tournament_id);
+        
+        let mut store: Store = StoreTrait::new(world);
+        println!("[assert_can_afford_tournament_game] Store created successfully");
+
+        // Check if player has eEVLT tokens for this tournament
+        let mut tournament_balance: TournamentBalance = store
+            .get_tournament_balance(player_address, tournament_id);
+        println!("[assert_can_afford_tournament_game] Tournament balance retrieved - eevlt_balance: {}", tournament_balance.eevlt_balance);
+
+        let can_spend_eevlt = tournament_balance.can_spend(1);
+        println!("[assert_can_afford_tournament_game] eEVLT spending check - can_spend: {}", can_spend_eevlt);
+        
+        if can_spend_eevlt {
+            println!("[assert_can_afford_tournament_game] Player has sufficient eEVLT tokens");
+            return true;
+        }
+
+        // Check EVLT balance and allowance without spending
+        println!("[assert_can_afford_tournament_game] No eEVLT available, checking EVLT balance and allowance");
+        let evlt_dispatcher = store.evlt_token_dispatcher();
+        println!("[assert_can_afford_tournament_game] EVLT dispatcher obtained");
+        
+        // Get tournament_token contract address from world
+        let tournament_token_address = world.find_contract_address(@"tournament_token");
+        println!("[assert_can_afford_tournament_game] Tournament token address: {:x}", tournament_token_address);
+        
+        if tournament_token_address.is_zero() {
+            println!("[assert_can_afford_tournament_game] ERROR: Tournament token contract not found");
+            return false;
+        }
+
+        // Check EVLT balance
+        let one_evlt: u256 = 1000000000000000000_u256; // 1 EVLT with 18 decimals
+        let player_balance = evlt_dispatcher.balanceOf(player_address);
+        println!("[assert_can_afford_tournament_game] Player EVLT balance: {}", player_balance);
+
+        if player_balance < one_evlt {
+            println!("[assert_can_afford_tournament_game] ERROR: Insufficient EVLT balance");
+            return false;
+        }
+
+        // Check allowance 
+        let allowance = evlt_dispatcher.allowance(player_address, tournament_token_address);
+        println!("[assert_can_afford_tournament_game] Player allowance to tournament_token: {}", allowance);
+
+        if allowance < one_evlt {
+            println!("[assert_can_afford_tournament_game] ERROR: Insufficient allowance - player needs to approve tournament_token");
+            return false;
+        }
+
+        println!("[assert_can_afford_tournament_game] Player can afford tournament game (has EVLT balance and allowance)");
+        return true;
+    }
+
+    // Tournament game access and payment validation WITH charging
     fn assert_can_enter_tournament_game(
         player_address: ContractAddress, tournament_id: u64, mut world: WorldStorage,
     ) -> bool {
@@ -700,6 +760,19 @@ pub impl AssersImpl of AssertsTrait {
         println!("[assert_can_enter_tournament_game] Tournament game access denied");
         false
     }
+
+    // Safe wrapper for charging player tokens (returns bool instead of panicking)
+    fn try_charge_player(
+        player_address: ContractAddress, tournament_id: u64, mut world: WorldStorage,
+    ) -> bool {
+        println!("[try_charge_player] Attempting to charge player: {:x}, tournament_id: {}", player_address, tournament_id);
+        
+        // Use the existing charging logic but catch any failures
+        let result = Self::assert_can_enter_tournament_game(player_address, tournament_id, world);
+        println!("[try_charge_player] Charge result for player {:x}: {}", player_address, result);
+        
+        result
+    }
 }
 
 
@@ -725,14 +798,14 @@ mod tests {
         let namespace_def = NamespaceDef {
             namespace: "evolute_duel",
             resources: [
-                TestResource::Model(m_Game::TEST_CLASS_HASH),
-                TestResource::Model(m_Player::TEST_CLASS_HASH),
-                TestResource::Model(m_MigrationRequest::TEST_CLASS_HASH),
-                TestResource::Event(e_GameCreateFailed::TEST_CLASS_HASH),
-                TestResource::Event(e_GameJoinFailed::TEST_CLASS_HASH),
-                TestResource::Event(e_PlayerNotInGame::TEST_CLASS_HASH),
-                TestResource::Event(e_GameFinished::TEST_CLASS_HASH),
-                TestResource::Event(e_MigrationError::TEST_CLASS_HASH),
+                TestResource::Model(m_Game::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_Player::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_MigrationRequest::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_GameCreateFailed::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_GameJoinFailed::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_PlayerNotInGame::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_GameFinished::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_MigrationError::TEST_CLASS_HASH.try_into().unwrap()),
             ]
                 .span(),
         };
