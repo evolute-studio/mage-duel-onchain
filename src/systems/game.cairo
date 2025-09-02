@@ -50,7 +50,7 @@ pub mod game {
         systems::helpers::{board::{BoardTrait}},
         types::{
             packing::{GameStatus, GameState, PlayerSide, GameMode},
-            trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait},
+            // trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait},
         },
         constants::constants::{CREATING_TIME, REVEAL_TIME, MOVE_TIME},
         libs::{ // store::{Store, StoreTrait},
@@ -64,27 +64,27 @@ pub mod game {
     };
     use dojo::{event::EventStorage, model::{ModelStorage, Model}};
 
-    use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use origami_random::dice::DiceTrait;
 
-    use achievement::components::achievable::AchievableComponent;
-    component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
-    impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
+    // use achievement::components::achievable::AchievableComponent;
+    // component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
+    // impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
 
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        #[flat]
-        AchievableEvent: AchievableComponent::Event,
-    }
+    // #[event]
+    // #[derive(Drop, starknet::Event)]
+    // enum Event {
+    //     #[flat]
+    //     AchievableEvent: AchievableComponent::Event,
+    // }
 
     #[storage]
     struct Storage {
         board_id_generator: felt252,
         move_id_generator: felt252,
         snapshot_id_generator: felt252,
-        #[substorage(v0)]
-        achievable: AchievableComponent::Storage,
+        // #[substorage(v0)]
+        // achievable: AchievableComponent::Storage,
     }
 
 
@@ -126,29 +126,29 @@ pub mod game {
 
         // world.write_model(@rules);
 
-        let mut trophy_id: u8 = TROPHY_COUNT;
-        while trophy_id > 0 {
-            let trophy: Trophy = trophy_id.into();
-            self
-                .achievable
-                .create(
-                    world,
-                    id: trophy.identifier(),
-                    hidden: trophy.hidden(),
-                    index: trophy.index(),
-                    points: trophy.points(),
-                    start: 0,
-                    end: 0,
-                    group: trophy.group(),
-                    icon: trophy.icon(),
-                    title: trophy.title(),
-                    description: trophy.description(),
-                    tasks: trophy.tasks(),
-                    data: trophy.data(),
-                );
+        // let mut trophy_id: u8 = TROPHY_COUNT;
+        // while trophy_id > 0 {
+        //     let trophy: Trophy = trophy_id.into();
+        //     self
+        //         .achievable
+        //         .create(
+        //             world,
+        //             id: trophy.identifier(),
+        //             hidden: trophy.hidden(),
+        //             index: trophy.index(),
+        //             points: trophy.points(),
+        //             start: 0,
+        //             end: 0,
+        //             group: trophy.group(),
+        //             icon: trophy.icon(),
+        //             title: trophy.title(),
+        //             description: trophy.description(),
+        //             tasks: trophy.tasks(),
+        //             data: trophy.data(),
+        //         );
 
-            trophy_id -= 1;
-        };
+        //     trophy_id -= 1;
+        // };
     }
 
     #[abi(embed_v0)]

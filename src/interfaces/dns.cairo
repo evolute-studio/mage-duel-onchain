@@ -1,3 +1,4 @@
+use core::num::traits::Zero;
 use starknet::{ContractAddress, ClassHash};
 use dojo::world::{WorldStorage, WorldStorageTrait, IWorldDispatcher};
 use dojo::meta::interface::{IDeployedResourceDispatcher, IDeployedResourceDispatcherTrait};
@@ -62,22 +63,12 @@ pub impl DnsImpl of DnsTrait {
     }
     fn find_contract_address(self: @WorldStorage, contract_name: @ByteArray) -> ContractAddress {
         // let (contract_address, _) = self.dns(contract_name).unwrap(); // will panic if not found
-        match self.dns_address(contract_name) {
-            Option::Some(contract_address) => { (contract_address) },
-            Option::None => {
-                (starknet::contract_address_const::<0x0>()) // return zero address if not found
-            },
-        }
+        self.dns_address(contract_name).unwrap_or(Zero::zero()) 
     }
 
     fn find_contract_class_hash(self: @WorldStorage, contract_name: @ByteArray) -> ClassHash {
         // let (contract_address, _) = self.dns(contract_name).unwrap(); // will panic if not found
-        match self.dns_class_hash(contract_name) {
-            Option::Some(class_hash) => { (class_hash) },
-            Option::None => {
-                (starknet::class_hash::class_hash_const::<0x0>()) // return zero address if not found
-            },
-        }
+        self.dns_class_hash(contract_name).unwrap_or(Zero::zero())
     }
 
     // Create a Store from a dispatcher

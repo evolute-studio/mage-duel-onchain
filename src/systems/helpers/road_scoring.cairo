@@ -10,7 +10,7 @@ use evolute_duel::{
     types::packing::{TEdge, PlayerSide, Tile, UnionNode},
 };
 use dojo::world::{WorldStorage};
-use evolute_duel::libs::{achievements::AchievementsTrait};
+// use evolute_duel::libs::{achievements::AchievementsTrait};
 use starknet::ContractAddress;
 use core::dict::Felt252Dict;
 use alexandria_data_structures::vec::{NullableVec, VecTrait};
@@ -291,9 +291,9 @@ pub fn connect_adjacent_road_edges(
                 }
 
                 //[Achievement] RoadBuilder
-                AchievementsTrait::build_road(
-                    world, player_address, (road_root.blue_points + road_root.red_points).into(),
-                );
+                // AchievementsTrait::build_road(
+                //     world, player_address, (road_root.blue_points + road_root.red_points).into(),
+                // );
             }
         }
     } else if roads_connected.len() > 0 {
@@ -308,9 +308,9 @@ pub fn connect_adjacent_road_edges(
             }
 
             //[Achievement] RoadBuilder
-            AchievementsTrait::build_road(
-                world, player_address, (road_root.blue_points + road_root.red_points).into(),
-            );
+            // AchievementsTrait::build_road(
+            //     world, player_address, (road_root.blue_points + road_root.red_points).into(),
+            // );
         }
     }
 

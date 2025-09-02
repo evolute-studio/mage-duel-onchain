@@ -32,8 +32,9 @@ pub struct TournamentStateModel {
     pub prize_pool: u256,
 }
 
-#[derive(Copy, Drop, Serde, PartialEq, Introspect)]
+#[derive(Copy, Drop, Serde, PartialEq, Introspect, DojoStore, Default)]
 pub enum TournamentState {
+    #[default]
     Undefined, // 0
     InProgress, // 1
     Finished, // 2

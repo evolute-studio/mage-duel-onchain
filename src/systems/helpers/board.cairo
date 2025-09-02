@@ -9,7 +9,7 @@ use evolute_duel::{
 };
 
 
-use core::starknet::get_block_timestamp;
+use starknet::get_block_timestamp;
 
 
 #[generate_trait]

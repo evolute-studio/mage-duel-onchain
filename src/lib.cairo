@@ -56,8 +56,8 @@ pub mod types {
         pub mod tournament;
         pub mod duelist;
     }
-    pub mod trophies;
-    pub mod tasks;
+    // pub mod trophies;
+    // pub mod tasks;
     pub mod packing;
     pub mod challenge_state;
     pub mod timestamp;
@@ -65,7 +65,7 @@ pub mod types {
 }
 
 pub mod libs {
-    pub mod achievements;
+    // pub mod achievements;
     pub mod asserts;
     pub mod timing;
     pub mod scoring;
@@ -76,10 +76,6 @@ pub mod libs {
     pub mod player_data;
     pub mod store;
     pub mod rating_system;
-}
-
-pub mod components {
-    pub mod coin_component;
 }
 
 pub mod utils {

@@ -1,5 +1,6 @@
-#[derive(Copy, Drop, Serde, PartialEq, Introspect)]
+#[derive(Copy, Drop, Serde, PartialEq, Introspect, DojoStore, Default)]
 pub enum ChallengeState {
+    #[default]
     Null, // 0  
     Awaiting, // 1
     Withdrawn, // 2

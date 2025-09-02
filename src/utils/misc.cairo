@@ -1,4 +1,5 @@
 use starknet::{ContractAddress};
+use core::num::traits::Zero;
 use evolute_duel::utils::bitwise::{BITWISE};
 use evolute_duel::constants::constants::*;
 // https://github.com/starkware-libs/cairo/blob/main/corelib/src/integer.cairo
@@ -28,7 +29,7 @@ pub fn ETH(value: u256) -> u256 {
 //
 #[inline(always)]
 pub fn ZERO() -> ContractAddress {
-    (starknet::contract_address_const::<0x0>())
+    (Zero::zero())
 }
 
 pub impl ContractAddressDefault of Default<ContractAddress> {

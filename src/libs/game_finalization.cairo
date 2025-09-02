@@ -4,7 +4,8 @@ use evolute_duel::{
     events::{GameFinished, BoardUpdated},
     types::packing::{GameState, GameStatus, PlayerSide, GameMode},
     libs::{
-        scoring::{ScoringTrait}, achievements::{AchievementsTrait},
+        scoring::{ScoringTrait}, 
+        // achievements::{AchievementsTrait},
         rating_system::{RatingSystemTrait},
     },
 };
@@ -392,21 +393,21 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         println!("[process_achievements] Processing achievements for game completion");
         println!("[process_achievements] Winner: {:?}", winner);
 
-        AchievementsTrait::play_game(world, player1_address);
-        println!("[process_achievements] Play game achievement processed for player1");
+        // AchievementsTrait::play_game(world, player1_address);
+        // println!("[process_achievements] Play game achievement processed for player1");
 
-        AchievementsTrait::play_game(world, player2_address);
-        println!("[process_achievements] Play game achievement processed for player2");
+        // AchievementsTrait::play_game(world, player2_address);
+        // println!("[process_achievements] Play game achievement processed for player2");
 
-        if winner == Option::Some(1) {
-            AchievementsTrait::win_game(world, player1_address);
-            println!("[process_achievements] Win game achievement processed for player1 (Blue)");
-        } else if winner == Option::Some(2) {
-            AchievementsTrait::win_game(world, player2_address);
-            println!("[process_achievements] Win game achievement processed for player2 (Red)");
-        } else {
-            println!("[process_achievements] No win achievement (draw or no winner)");
-        }
+        // if winner == Option::Some(1) {
+        //     AchievementsTrait::win_game(world, player1_address);
+        //     println!("[process_achievements] Win game achievement processed for player1 (Blue)");
+        // } else if winner == Option::Some(2) {
+        //     AchievementsTrait::win_game(world, player2_address);
+        //     println!("[process_achievements] Win game achievement processed for player2 (Red)");
+        // } else {
+        //     println!("[process_achievements] No win achievement (draw or no winner)");
+        // }
     }
 
     fn finalize_game(

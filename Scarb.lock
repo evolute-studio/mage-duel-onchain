@@ -2,75 +2,51 @@
 version = 1
 
 [[package]]
-name = "achievement"
-version = "0.0.0"
-source = "git+https://github.com/evolute-studio/arcade#3f302cb24c5d0bead74ef642d433273b3b05d550"
-dependencies = [
- "dojo",
-]
-
-[[package]]
 name = "alexandria_data_structures"
-version = "0.4.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.4.0#ae3d960589a2f0c9af5fbd9236f6f3eb39fea8ed"
+version = "0.5.2"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.5.2#2fa8b3e12e31f58216b7d890c3d9094da9e6fcff"
 
 [[package]]
 name = "alexandria_math"
-version = "0.4.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.4.0#ae3d960589a2f0c9af5fbd9236f6f3eb39fea8ed"
+version = "0.5.2"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.5.2#2fa8b3e12e31f58216b7d890c3d9094da9e6fcff"
 
 [[package]]
 name = "dojo"
-version = "1.6.0-alpha.0"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.6.0-alpha.2#184a4e8368269815823004d61e71f0699059ad77"
+version = "1.6.0-alpha.1"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.7.0-alpha.1#67aeb9f49c6b8c30b1850badd065c9192617c3b2"
 dependencies = [
- "dojo_plugin",
+ "dojo_macros",
 ]
 
 [[package]]
 name = "dojo_cairo_test"
-version = "1.6.0-alpha.0"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.6.0-alpha.2#184a4e8368269815823004d61e71f0699059ad77"
+version = "1.6.0-alpha.1"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.7.0-alpha.1#67aeb9f49c6b8c30b1850badd065c9192617c3b2"
 dependencies = [
  "dojo",
 ]
 
 [[package]]
-name = "dojo_plugin"
-version = "2.10.1"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.6.0-alpha.2#184a4e8368269815823004d61e71f0699059ad77"
+name = "dojo_macros"
+version = "1.6.0-alpha.1"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.7.0-alpha.1#67aeb9f49c6b8c30b1850badd065c9192617c3b2"
 
 [[package]]
 name = "evolute_duel"
-version = "1.6.0"
+version = "1.7.0"
 dependencies = [
- "achievement",
  "alexandria_data_structures",
  "alexandria_math",
  "dojo",
  "dojo_cairo_test",
- "nft_combo",
+ "dojo_macros",
  "openzeppelin_access",
  "openzeppelin_introspection",
  "openzeppelin_token",
  "origami_random",
  "origami_rating",
  "tournaments",
-]
-
-[[package]]
-name = "graffiti"
-version = "0.1.0"
-source = "git+https://github.com/rsodre/graffiti.git?rev=url#e8b0854798ebbcebde504ea299ed556900564ff2"
-
-[[package]]
-name = "nft_combo"
-version = "1.0.0"
-source = "git+https://github.com/underware-gg/cairo-nft-combo?tag=v1.0.0#a70521897e115f3418e49ac78cfb693d185fed66"
-dependencies = [
- "graffiti",
- "openzeppelin_introspection",
- "openzeppelin_token",
 ]
 
 [[package]]
@@ -125,9 +101,10 @@ source = "git+https://github.com/dojoengine/origami#81e49e9db43e8528cbb5d914e4da
 [[package]]
 name = "tournaments"
 version = "0.0.1"
-source = "git+https://github.com/evolute-studio/budokan-tournaments#242e498f73e739fc64a4881ceb4c53d848a950b5"
+source = "git+https://github.com/evolute-studio/budokan-tournaments#71bccd49f8bbf552d7b331dac268ab76c69e4088"
 dependencies = [
  "dojo",
+ "dojo_macros",
  "openzeppelin_introspection",
  "openzeppelin_token",
 ]

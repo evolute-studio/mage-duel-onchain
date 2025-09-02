@@ -54,7 +54,7 @@ pub mod player_profile_actions {
         events::{PlayerUsernameChanged, PlayerSkinChanged, PlayerSkinChangeFailed},
         models::{player::{Player, PlayerTrait}, skins::{Shop}}, types::packing::{},
     };
-    use evolute_duel::libs::achievements::AchievementsTrait;
+    // use evolute_duel::libs::achievements::AchievementsTrait;
     use openzeppelin_access::ownable::OwnableComponent;
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -148,15 +148,15 @@ pub mod player_profile_actions {
 
             world.emit_event(@PlayerSkinChanged { player_id, new_skin: skin_id });
 
-            match skin_id {
-                0 | 1 => {}, // Default skin, no achievement => {},
-                2 => AchievementsTrait::unlock_bandi(world, player_id), //[Achievements] Bandi skin
-                3 => AchievementsTrait::unlock_golem(world, player_id), //[Achievements] Golem skin
-                4 => AchievementsTrait::unlock_mammoth(
-                    world, player_id,
-                ), //[Achievements] Mammoth skin
-                _ => {},
-            }
+            // match skin_id {
+            //     0 | 1 => {}, // Default skin, no achievement => {},
+            //     2 => AchievementsTrait::unlock_bandi(world, player_id), //[Achievements] Bandi skin
+            //     3 => AchievementsTrait::unlock_golem(world, player_id), //[Achievements] Golem skin
+            //     4 => AchievementsTrait::unlock_mammoth(
+            //         world, player_id,
+            //     ), //[Achievements] Mammoth skin
+            //     _ => {},
+            // }
         }
 
         fn become_bot(ref self: ContractState) {

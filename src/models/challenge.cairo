@@ -23,8 +23,9 @@ pub struct Challenge {
     pub timestamps: Period,
 }
 
-#[derive(Serde, Copy, Drop, PartialEq, Introspect)]
+#[derive(Serde, Copy, Drop, PartialEq, Introspect, DojoStore, Default)]
 pub enum DuelType {
+    #[default]
     Undefined, // 0
     Regular, // 1
     Tournament // 2

@@ -1,5 +1,6 @@
 use starknet::{ContractAddress};
 use evolute_duel::types::packing::{GameState, GameStatus, PlayerSide, GameMode};
+use core::num::traits::Zero;
 
 /// Represents the game board, including tile states, players, scores, and game progression.
 ///
@@ -34,6 +35,25 @@ pub struct Board {
     pub moves_done: u8,
     pub commited_tile: Option<u8>,
     pub phase_started_at: u64,
+}
+
+impl BoardDefault of Default<Board> {
+    fn default() -> Board {
+        Board {
+            id: 0,
+            available_tiles_in_deck: array![].span(),
+            top_tile: None,
+            player1: (Zero::zero(), Default::default(), 0),
+            player2: (Zero::zero(), Default::default(), 0),
+            blue_score: (0, 0),
+            red_score: (0, 0),
+            last_move_id: None,
+            game_state: Default::default(),
+            moves_done: 0,
+            commited_tile: None,
+            phase_started_at: 0,
+        }
+    }
 }
 
 /// Represents a player's move, tracking tile placement and game progression.
@@ -99,6 +119,17 @@ pub struct Game {
     pub status: GameStatus,
     pub board_id: Option<felt252>,
     pub game_mode: GameMode,
+}
+
+impl GameDefault of Default<Game> {
+    fn default() -> Game {
+        Game {
+            player: Zero::zero(),
+            status: Default::default(),
+            board_id: None,
+            game_mode: Default::default(),
+        }
+    }
 }
 
 #[derive(Drop, Serde, Introspect, Debug)]
