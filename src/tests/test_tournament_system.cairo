@@ -214,7 +214,7 @@ mod tests {
         let (tournament_token_address, _) = world.dns(@"tournament_token").unwrap();
         let (evlt_token_address, _) = world.dns(@"evlt_token").unwrap();
         let (matchmaking_address, _) = world.dns(@"matchmaking").unwrap();
-        println!("[deploy_tournament_system] Contract addresses resolved - Tournament: {:?}, TournamentToken: {:?}, EvltToken: {:?}, Matchmaking: {:?}", tournament_address, tournament_token_address, evlt_token_address, matchmaking_address);
+        println!("[deploy_tournament_system] Contract addresses resolved - Tournament: {:x}, TournamentToken: {:x}, EvltToken: {:x}, Matchmaking: {:x}", tournament_address, tournament_token_address, evlt_token_address, matchmaking_address);
 
         let tournament_dispatcher = ITournamentDispatcher { contract_address: tournament_address };
         let tournament_initializer_dispatcher = ITournamentInitDispatcher { contract_address: tournament_address };
@@ -285,7 +285,7 @@ mod tests {
         println!("[test_deploy_tournament_system] Starting test");
         let (tournament_dispatcher, _, _, _, _, mut world) = deploy_tournament_system();
         println!("[test_deploy_tournament_system] Deployed tournament system successfully");
-        println!("[test_deploy_tournament_system] Tournament address: {:?}", tournament_dispatcher.contract_address);
+        println!("[test_deploy_tournament_system] Tournament address: {:x}", tournament_dispatcher.contract_address);
         println!("[test_deploy_tournament_system] Test completed");
     }
     #[test]
@@ -300,7 +300,7 @@ mod tests {
         let tournament_token_address = tournament_token_dispatcher.contract_address;
         let evlt_token_address = evlt_token_dispatcher.contract_address;
         let tournament_address = tournament_dispatcher.contract_address;
-        println!("[test_create_tournament_with_evlt_entry_fee] Addresses set - Admin: {:?}, Player1: {:?}", admin_address, player1_address);
+        println!("[test_create_tournament_with_evlt_entry_fee] Addresses set - Admin: {:x}, Player1: {:x}", admin_address, player1_address);
 
             // Setup admin as contract caller
         println!("[test_create_tournament_with_evlt_entry_fee] Setting up admin permissions");
@@ -360,7 +360,7 @@ mod tests {
             tournament_creator_share: Option::Some(10),
             game_creator_share: Option::Some(10),
         };
-        println!("[test_create_tournament_with_evlt_entry_fee] Entry fee configured - Amount: {}, Token: {:?}", entry_fee.amount, entry_fee.token_address);
+        println!("[test_create_tournament_with_evlt_entry_fee] Entry fee configured - Amount: {}, Token: {:x}", entry_fee.amount, entry_fee.token_address);
 
             // Create tournament with EVLT entry fee
         println!("[test_create_tournament_with_evlt_entry_fee] Creating tournament with EVLT entry fee");
@@ -449,7 +449,7 @@ mod tests {
         let tournament_token_address = tournament_token_dispatcher.contract_address;
         let evlt_token_address = evlt_token_dispatcher.contract_address;
         let tournament_address = tournament_dispatcher.contract_address;
-        println!("[test_two_players_tournament_with_enlist_and_join_duel] Addresses set - Admin: {:?}, Player1: {:?}, Player2: {:?}", admin_address, player1_address, player2_address);
+        println!("[test_two_players_tournament_with_enlist_and_join_duel] Addresses set - Admin: {:x}, Player1: {:x}, Player2: {:x}", admin_address, player1_address, player2_address);
 
         // === SETUP PHASE ===
         println!("[test_two_players_tournament_with_enlist_and_join_duel] === SETUP PHASE ===");
@@ -693,7 +693,7 @@ mod tests {
             let board: Board = world.read_model(board_id_p2);
             let (player1_addr, _, _) = board.player1;
             let (player2_addr, _, _) = board.player2;
-            println!("[test_two_players_tournament_with_enlist_and_join_duel] Board details - Player1: {:?}, Player2: {:?}, Game State: {:?}", player1_addr, player2_addr, board.game_state);
+            println!("[test_two_players_tournament_with_enlist_and_join_duel] Board details - Player1: {:x}, Player2: {:x}, Game State: {:?}", player1_addr, player2_addr, board.game_state);
             
         } else {
             println!("[test_two_players_tournament_with_enlist_and_join_duel] No match found - both players in queue");

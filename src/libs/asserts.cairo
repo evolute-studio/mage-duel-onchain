@@ -365,7 +365,7 @@ pub impl AssersImpl of AssertsTrait {
         mut world: WorldStorage,
     ) -> bool {
         println!("[split_evlt_to_prize_pool] Starting EVLT prize pool splitting");
-        println!("[split_evlt_to_prize_pool] player_address: {:?}, tournament_id: {}", player_address, tournament_id);
+        println!("[split_evlt_to_prize_pool] player_address: {:x}, tournament_id: {}", player_address, tournament_id);
         
         // Get EVLT decimals for proper calculation
         println!("[split_evlt_to_prize_pool] Getting EVLT token metadata for decimals calculation");
@@ -463,7 +463,7 @@ pub impl AssersImpl of AssertsTrait {
     ) {
         println!("[distribute_evlt_prizes] Starting EVLT prize distribution");
         println!("[distribute_evlt_prizes] tournament_id: {}, total_amount: {}", tournament_id, total_evlt_amount);
-        println!("[distribute_evlt_prizes] evlt_token_address: {:?}", evlt_token_address);
+        println!("[distribute_evlt_prizes] evlt_token_address: {:x}", evlt_token_address);
         println!("[distribute_evlt_prizes] Distribution positions: {}", entry_fee.distribution.len());
         
         // Distribute prizes according to position distribution
@@ -530,7 +530,7 @@ pub impl AssersImpl of AssertsTrait {
         mut world: WorldStorage,
     ) -> bool {
         println!("[transfer_and_distribute_evlt] Starting EVLT transfer and distribution");
-        println!("[transfer_and_distribute_evlt] player: {:?}, tournament_id: {}, tournament_token: {:?}", 
+        println!("[transfer_and_distribute_evlt] player: {:x}, tournament_id: {}, tournament_token: {:x}", 
             player_address, tournament_id, tournament_token_address);
         
         // Get EVLT decimals for proper calculation
@@ -625,13 +625,13 @@ pub impl AssersImpl of AssertsTrait {
         player_address: ContractAddress, tournament_id: u64, mut world: WorldStorage,
     ) -> bool {
         println!("[assert_can_enter_tournament_game] Starting tournament game access validation");
-        println!("[assert_can_enter_tournament_game] player_address: {:?}, tournament_id: {}", player_address, tournament_id);
+        println!("[assert_can_enter_tournament_game] player_address: {:x}, tournament_id: {}", player_address, tournament_id);
         
         let mut store: Store = StoreTrait::new(world);
         println!("[assert_can_enter_tournament_game] Store created successfully");
 
         // Try to get existing tournament balance
-        println!("[assert_can_enter_tournament_game] Getting tournament balance for player: {:?}, tournament: {}", player_address, tournament_id);
+        println!("[assert_can_enter_tournament_game] Getting tournament balance for player: {:x}, tournament: {}", player_address, tournament_id);
         let mut tournament_balance: TournamentBalance = store
             .get_tournament_balance(player_address, tournament_id);
         println!("[assert_can_enter_tournament_game] Tournament balance retrieved - eevlt_balance: {}", tournament_balance.eevlt_balance);
@@ -662,7 +662,7 @@ pub impl AssersImpl of AssertsTrait {
         
         // Get tournament_token contract address from world
         let tournament_token_address = world.find_contract_address(@"tournament_token");
-        println!("[assert_can_enter_tournament_game] Tournament token address: {:?}", tournament_token_address);
+        println!("[assert_can_enter_tournament_game] Tournament token address: {:x}", tournament_token_address);
         
         if tournament_token_address.is_zero() {
             println!("[assert_can_enter_tournament_game] ERROR: Tournament token contract not found");
