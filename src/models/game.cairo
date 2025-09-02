@@ -168,7 +168,7 @@ pub struct AvailableTiles {
 #[dojo::model]
 pub struct GameModeConfig {
     #[key]
-    pub game_mode: GameMode,
+    pub game_mode: u8, // GameMode to u8
     pub board_size: u8,
     pub deck_type: u8,
     pub initial_jokers: u8,

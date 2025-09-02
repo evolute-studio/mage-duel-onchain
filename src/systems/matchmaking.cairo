@@ -129,7 +129,7 @@ pub mod matchmaking {
         // Initialize default game configurations for all modes
         // Tutorial configuration
         let tutorial_config = GameModeConfig {
-            game_mode: GameMode::Tutorial,
+            game_mode: GameMode::Tutorial.into(),
             board_size: 7,
             deck_type: 0, // Tutorial deck
             initial_jokers: 3,
@@ -143,10 +143,10 @@ pub mod matchmaking {
 
         // Ranked configuration
         let ranked_config = GameModeConfig {
-            game_mode: GameMode::Ranked,
+            game_mode: GameMode::Ranked.into(),
             board_size: 10,
             deck_type: 1, // Full randomized deck
-            initial_jokers: 2,
+            initial_jokers: 3,
             time_per_phase: 60, // 1 minute per phase
             auto_match: true,
             deck,
@@ -157,10 +157,10 @@ pub mod matchmaking {
 
         // Casual configuration
         let casual_config = GameModeConfig {
-            game_mode: GameMode::Casual,
+            game_mode: GameMode::Casual.into(),
             board_size: 10,
             deck_type: 1, // Full randomized deck
-            initial_jokers: 2,
+            initial_jokers: 3,
             time_per_phase: 0, // No time limit
             auto_match: false,
             deck,
@@ -171,10 +171,10 @@ pub mod matchmaking {
 
         // Tournament configuration
         let tournament_config = GameModeConfig {
-            game_mode: GameMode::Tournament,
+            game_mode: GameMode::Tournament.into(),
             board_size: 10,
             deck_type: 1, // Full randomized deck
-            initial_jokers: 2,
+            initial_jokers: 3,
             time_per_phase: 60, // 1 minute per phase
             auto_match: true, // Enable automatic matchmaking for tournaments
             deck,
@@ -365,13 +365,12 @@ pub mod matchmaking {
             joker_price: u16,
         ) {
             let mut world = self.world_default();
-            let mode: GameMode = game_mode.into();
 
             // TODO: Add admin check here
             // assert!(is_admin(get_caller_address()), "Only admin can update configs");
 
             let config = GameModeConfig {
-                game_mode: mode,
+                game_mode,
                 board_size,
                 deck_type,
                 initial_jokers,
