@@ -1,4 +1,5 @@
 use starknet::{ContractAddress};
+use core::num::traits::Zero;
 use evolute_duel::types::challenge_state::{ChallengeState, ChallengeStateTrait};
 use evolute_duel::types::timestamp::{Period};
 
@@ -55,7 +56,7 @@ pub impl ChallengeImpl of ChallengeTrait {
         } else if (*self.winner == 2) {
             *self.address_b
         } else {
-            starknet::contract_address_const::<0>()
+            Zero::zero()
         })
     }
     #[inline(always)]

@@ -59,7 +59,6 @@ pub trait IMatchmaking<T> {
 pub mod matchmaking {
     use super::*;
     use starknet::{ContractAddress, get_caller_address};
-    use core::starknet::storage::{StoragePointerWriteAccess};
     use dojo::{event::EventStorage, model::{ModelStorage}};
     use evolute_duel::{
         libs::{asserts::AssertsTrait, phase_management::{PhaseManagementTrait}},

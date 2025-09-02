@@ -198,10 +198,6 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         println!("[update_game_status] Host game current status: {:?}", host_game.status);
         println!("[update_game_status] Guest game current status: {:?}", guest_game.status);
 
-        // Check if this was a tournament game before resetting game_mode
-        let was_tournament_game = host_game.game_mode == GameMode::Tournament
-            && guest_game.game_mode == GameMode::Tournament;
-
         host_game.status = GameStatus::Finished;
         host_game.game_mode = GameMode::None; // Reset game mode to None
         guest_game.status = GameStatus::Finished;
