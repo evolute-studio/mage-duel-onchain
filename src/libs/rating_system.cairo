@@ -72,7 +72,7 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                 Option::Some(mut player1_pass), Option::Some(mut player2_pass),
             ) => {
                 println!(
-                    "[RATING] Draw - Before: Player1: {:?} ({}), Player2: {:?} ({})",
+                    "[RATING] Draw - Before: Player1: {:x} ({}), Player2: {:x} ({})",
                     player1_address,
                     player1_pass.rating,
                     player2_address,
@@ -128,7 +128,7 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                 world.write_model(@player2_pass);
 
                 println!(
-                    "[RATING] Draw - After: Player1: {:?} ({}), Player2: {:?} ({})",
+                    "[RATING] Draw - After: Player1: {:x} ({}), Player2: {:x} ({})",
                     player1_address,
                     new_player1_rating,
                     player2_address,
@@ -161,7 +161,7 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                 Option::Some(mut winner_pass), Option::Some(mut loser_pass),
             ) => {
                 println!(
-                    "[RATING] Before - Winner: {:?} ({}), Loser: {:?} ({})",
+                    "[RATING] Before - Winner: {:x} ({}), Loser: {:x} ({})",
                     winner_address,
                     winner_pass.rating,
                     loser_address,
@@ -188,7 +188,7 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                 world.write_model(@loser_pass);
 
                 println!(
-                    "[RATING] After - Winner: {:?} ({}), Loser: {:?} ({})",
+                    "[RATING] After - Winner: {:x} ({}), Loser: {:x} ({})",
                     Into::<ContractAddress, felt252>::into(winner_address),
                     new_winner_rating,
                     Into::<ContractAddress, felt252>::into(loser_address),

@@ -193,7 +193,7 @@ pub mod matchmaking {
             let mode: GameMode = game_mode.into();
 
             println!(
-                "[MATCHMAKING] create_game: caller={:?}, game_mode={}, mode={:?}",
+                "[MATCHMAKING] create_game: caller={:x}, game_mode={}, mode={:?}",
                 caller,
                 game_mode,
                 mode,
@@ -240,7 +240,7 @@ pub mod matchmaking {
                     println!("[MATCHMAKING] create_game: entering Tutorial mode");
                     // Tutorial requires bot opponent
                     let bot_address = opponent.expect('Bot address required');
-                    println!("[MATCHMAKING] create_game: Tutorial bot_address={:?}", bot_address);
+                    println!("[MATCHMAKING] create_game: Tutorial bot_address={:x}", bot_address);
                     self._create_tutorial_game(caller, bot_address, config);
                 },
                 GameMode::Ranked |
@@ -272,7 +272,7 @@ pub mod matchmaking {
             let mut world = self.world_default();
             let guest_player = get_caller_address();
 
-            println!("[MATCHMAKING] join_game: guest={:?}, host={:?}", guest_player, host_player);
+            println!("[MATCHMAKING] join_game: guest={:x}, host={:x}", guest_player, host_player);
 
             // Get host game info
             let mut host_game: Game = world.read_model(host_player);
@@ -345,7 +345,7 @@ pub mod matchmaking {
         fn cancel_game(ref self: ContractState) {
             let caller = get_caller_address();
 
-            println!("[MATCHMAKING] cancel_game: caller={:?}", caller);
+            println!("[MATCHMAKING] cancel_game: caller={:x}", caller);
 
             // Use internal function with permission checks enabled
             self._cancel_game(caller);
@@ -393,7 +393,7 @@ pub mod matchmaking {
             let tid = tournament_id.unwrap_or(0);
 
             println!(
-                "[MATCHMAKING] auto_match: caller={:?}, mode={:?}, tournament_id={:?}",
+                "[MATCHMAKING] auto_match: caller={:x}, mode={:?}, tournament_id={:?}",
                 caller,
                 mode,
                 tournament_id,
@@ -424,7 +424,7 @@ pub mod matchmaking {
                 // Use tournament ELO system to find opponent within radius
                 match TournamentELOTrait::find_tournament_opponent(caller, tid, world) {
                     Option::Some(opponent) => {
-                        println!("[MATCHMAKING] auto_match: Tournament opponent found: {:?}", opponent);
+                        println!("[MATCHMAKING] auto_match: Tournament opponent found: {:x}", opponent);
                         
                         // Get opponent game state
                         let mut opponent_game: Game = world.read_model(opponent);
@@ -496,7 +496,7 @@ pub mod matchmaking {
                     // Match found! Get the first waiting player
                     let mut waiting_players_vec = queue_state.waiting_players.span();
                     let opponent = *waiting_players_vec[0];
-                    println!("[MATCHMAKING] auto_match: opponent={:?}", opponent);
+                    println!("[MATCHMAKING] auto_match: opponent={:x}", opponent);
 
                     // Remove opponent from queue (create new array without first element)
                     let mut new_waiting_players: Array<ContractAddress> = ArrayTrait::new();
@@ -643,7 +643,7 @@ pub mod matchmaking {
             let mut world = self.world_default();
 
             println!(
-                "[MATCHMAKING] _create_tutorial_game: player={:?}, bot={:?}",
+                "[MATCHMAKING] _create_tutorial_game: player={:x}, bot={:x}",
                 player_address,
                 bot_address,
             );
@@ -841,7 +841,7 @@ pub mod matchmaking {
                     player1_address
                 };
 
-                println!("[MATCHMAKING] _cancel_game: another_player={:?}", another_player);
+                println!("[MATCHMAKING] _cancel_game: another_player={:x}", another_player);
                 let mut another_game: Game = world.read_model(another_player);
                 println!(
                     "[MATCHMAKING] _cancel_game: another_game before cancel - status={:?}",

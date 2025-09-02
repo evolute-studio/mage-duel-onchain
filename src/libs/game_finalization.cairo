@@ -312,13 +312,13 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
 
         world.emit_event(@GameFinished { player: player1_address, board_id });
         println!(
-            "[emit_game_finished_events] GameFinished event emitted for player1: {:?}",
+            "[emit_game_finished_events] GameFinished event emitted for player1: {:x}",
             player1_address,
         );
 
         world.emit_event(@GameFinished { player: player2_address, board_id });
         println!(
-            "[emit_game_finished_events] GameFinished event emitted for player2: {:?}",
+            "[emit_game_finished_events] GameFinished event emitted for player2: {:x}",
             player2_address,
         );
     }
