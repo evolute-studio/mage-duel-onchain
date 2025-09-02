@@ -343,3 +343,18 @@ pub struct TutorialCompleted {
     pub player_id: ContractAddress,
     pub completed_at: u64,
 }
+
+#[derive(Copy, Drop, Serde, Introspect, Debug)]
+#[dojo::event]
+pub struct GameFinishResult {
+    #[key]
+    pub board_id: felt252,
+    pub tournament_id: u64,
+    pub first_player_id: ContractAddress,
+    pub first_player_rating: u32,
+    pub first_player_rating_delta: i32, // может быть отрицательным
+    pub second_player_id: ContractAddress, 
+    pub second_player_rating: u32,
+    pub second_player_rating_delta: i32, // может быть отрицательным
+    pub winner: Option<u8>, // 1 если first_player выиграл, 2 если second_player, None для ничьи
+}

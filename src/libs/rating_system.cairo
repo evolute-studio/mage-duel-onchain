@@ -55,12 +55,13 @@ pub impl RatingSystemImpl of RatingSystemTrait {
     }
 
     /// Update tournament ratings for both players after a draw
+    /// Returns ((player1_old_rating, player1_new_rating), (player2_old_rating, player2_new_rating))
     fn update_tournament_ratings_draw(
         player1_address: ContractAddress,
         player2_address: ContractAddress,
         tournament_id: u64,
         mut world: dojo::world::WorldStorage,
-    ) {
+    ) -> Option<((u32, u32), (u32, u32))> {
         println!("[RATING] Processing draw for tournament {}", tournament_id);
         
         // Get tournament passes for both players
@@ -134,6 +135,9 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                     player2_address,
                     new_player2_rating,
                 );
+
+                // Return rating changes data
+                return Option::Some(((player1_pass.rating, new_player1_rating), (player2_pass.rating, new_player2_rating)));
             },
             _ => {
                 // One or both players don't have tournament passes, skip rating update
@@ -141,17 +145,19 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                     "[RATING] Skipping draw rating update - missing tournament pass data for tournament {}",
                     tournament_id,
                 );
+                return Option::None;
             },
         }
     }
 
     /// Update tournament ratings for both players after a game
+    /// Returns ((winner_old_rating, winner_new_rating), (loser_old_rating, loser_new_rating))
     fn update_tournament_ratings(
         winner_address: ContractAddress,
         loser_address: ContractAddress,
         tournament_id: u64,
         mut world: dojo::world::WorldStorage,
-    ) {
+    ) -> Option<((u32, u32), (u32, u32))> {
         // Get tournament passes for both players
         let winner_passes = Self::get_player_tournament_pass(winner_address, tournament_id, @world);
         let loser_passes = Self::get_player_tournament_pass(loser_address, tournament_id, @world);
@@ -194,6 +200,9 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                     Into::<ContractAddress, felt252>::into(loser_address),
                     new_loser_rating,
                 );
+
+                // Return rating changes data
+                return Option::Some(((winner_pass.rating, new_winner_rating), (loser_pass.rating, new_loser_rating)));
             },
             _ => {
                 // One or both players don't have tournament passes, skip rating update
@@ -201,6 +210,7 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                     "[RATING] Skipping rating update - missing tournament pass data for tournament {}",
                     tournament_id,
                 );
+                return Option::None;
             },
         }
     }
