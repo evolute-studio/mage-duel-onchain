@@ -283,7 +283,7 @@ mod tests {
         assert!(opponent2.is_some(), "Second player should find opponent");
         let matched_opponent = opponent2.unwrap();
         assert!(matched_opponent == player1_address, "Should match with player1");
-        println!("[test_find_tournament_opponent_match_found] Player2 matched with Player1: {:?}", matched_opponent);
+        println!("[test_find_tournament_opponent_match_found] Player2 matched with Player1: {:x}", matched_opponent);
 
         // Verify both players are unsubscribed after match
         let player1_index_after: PlayerLeagueIndex = world.read_model((
@@ -400,7 +400,7 @@ mod tests {
             matched_opponent == player1_address || matched_opponent == player2_address,
             "Should match with either player1 or player2"
         );
-        println!("[test_multiple_players_same_league] Player3 matched with: {:?}", matched_opponent);
+        println!("[test_multiple_players_same_league] Player3 matched with: {:x}", matched_opponent);
 
         // Verify league still has one remaining player
         let league_id = TournamentLeagueTrait::compute_id(DEFAULT_RATING);
