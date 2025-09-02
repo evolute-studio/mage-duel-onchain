@@ -273,24 +273,44 @@ pub mod game {
         // }
 
         fn commit_tiles(ref self: ContractState, commitments: Span<u32>) {
+            println!("[commit_tiles] ============= STARTING COMMIT TILES =============");
+            println!("[commit_tiles] Starting commit_tiles function");
+            
             let mut world = self.world_default();
+            println!("[commit_tiles] World storage obtained successfully");
+            
             let player = get_caller_address();
+            println!("[commit_tiles] Player address: 0x{:x}", player);
+            println!("[commit_tiles] Commitments length: {}", commitments.len());
 
             let mut game: Game = world.read_model(player);
+            println!("[commit_tiles] Player game loaded - status: {:?}", game.status);
+            println!("[commit_tiles] Player board_id: {:?}", game.board_id);
 
             if game.board_id.is_none() {
+                println!("[commit_tiles] ERROR: Player 0x{:x} is not in any game", player);
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
                 return;
             }
+            println!("[commit_tiles] PASS: Player is in a game");
 
+            println!("[commit_tiles] Checking regular game access");
             if !AssertsTrait::assert_regular_game_access(@game, player, 'commit_tiles', world) {
+                println!("[commit_tiles] ERROR: Regular game access denied");
                 return;
             }
+            println!("[commit_tiles] PASS: Regular game access granted");
 
             let board_id = game.board_id.unwrap();
+            println!("[commit_tiles] Board ID: {}", board_id);
+            
             let mut board: Board = world.read_model(board_id);
+            println!("[commit_tiles] Board loaded - game_state: {:?}", board.game_state);
+            println!("[commit_tiles] Board phase_started_at: {}", board.phase_started_at);
+            println!("[commit_tiles] Board commited_tile: {:?}", board.commited_tile);
 
             if game.status != GameStatus::InProgress {
+                println!("[commit_tiles] ERROR: Game status is not InProgress: {:?}", game.status);
                 world
                     .emit_event(
                         @ErrorEvent {
@@ -299,11 +319,13 @@ pub mod game {
                             message: "You can only commit tiles when the game is in progress",
                         },
                     );
-                println!("[Commit Error] Game status is not InProgress: {:?}", game.status);
+                println!("[commit_tiles] ERROR Event emitted for invalid game status");
                 return;
             }
+            println!("[commit_tiles] PASS: Game status is InProgress");
 
             if board.game_state != GameState::Creating {
+                println!("[commit_tiles] ERROR: Board game_state is not Creating: {:?}", board.game_state);
                 world
                     .emit_event(
                         @ErrorEvent {
@@ -312,26 +334,31 @@ pub mod game {
                             message: format!("Game state is not Creating: {:?}", board.game_state),
                         },
                     );
-                println!("[Commit Error] Game state is {:?}", board.game_state);
+                println!("[commit_tiles] ERROR Event emitted for invalid board game state");
                 return;
             }
+            println!("[commit_tiles] PASS: Board game_state is Creating");
 
             let timestamp = get_block_timestamp();
+            println!("[commit_tiles] Current timestamp: {}", timestamp);
+            println!("[commit_tiles] Phase started at: {}", board.phase_started_at);
+            println!("[commit_tiles] CREATING_TIME: {}", CREATING_TIME);
+            println!("[commit_tiles] Deadline: {} (phase_started_at + CREATING_TIME)", board.phase_started_at + CREATING_TIME);
 
             if timestamp > board.phase_started_at + CREATING_TIME {
+                println!("[commit_tiles] ERROR: Commit timeout - current: {} > deadline: {}", timestamp, board.phase_started_at + CREATING_TIME);
                 world.emit_event(@GameCreateFailed { host_player: player, status: game.status });
-                println!(
-                    "[ERROR] Commit timeout: {:?} > {:?} + {:?}",
-                    timestamp,
-                    board.phase_started_at,
-                    CREATING_TIME,
-                );
+                println!("[commit_tiles] GameCreateFailed event emitted");
                 return;
             }
+            println!("[commit_tiles] PASS: Commit is within time limit");
 
+            println!("[commit_tiles] Starting commitment processing");
             let mut tile_commitments = array![];
-            // println!("comitments length: {:?}", commitments.len());
+            println!("[commit_tiles] Commitments length: {}", commitments.len());
+            
             if commitments.len() % 8 != 0 {
+                println!("[commit_tiles] ERROR: Commitments length {} is not a multiple of 8", commitments.len());
                 world
                     .emit_event(
                         @ErrorEvent {
@@ -340,60 +367,98 @@ pub mod game {
                             message: "Commitments length is not a multiple of 8",
                         },
                     );
-                println!("[ERROR] Commitments length is not a multiple of 8");
+                println!("[commit_tiles] ERROR Event emitted for invalid commitments length");
                 return;
             }
-            for i in 0..(commitments.len() / 8) {
+            println!("[commit_tiles] PASS: Commitments length is valid multiple of 8");
+            let tiles_count = commitments.len() / 8;
+            println!("[commit_tiles] Processing {} tile commitments", tiles_count);
+            
+            for i in 0..tiles_count {
                 let commitment: Span<u32> = commitments.slice(i * 8, 8);
-                // println!("sha256 commitments[{}]: {:?}", i, commitment);
+                println!("[commit_tiles] Processing commitment[{}]: {:?}", i, commitment);
                 let tile_commitment = hash_sha256_to_felt252(commitment);
+                println!("[commit_tiles] Hash result for commitment[{}]: 0x{:x}", i, tile_commitment);
                 tile_commitments.append(tile_commitment);
             };
             let tile_commitments = tile_commitments.span();
+            println!("[commit_tiles] Final tile_commitments length: {}", tile_commitments.len());
 
+            println!("[commit_tiles] Writing TileCommitments to world storage");
             world.write_model(@TileCommitments { board_id, player, tile_commitments });
+            println!("[commit_tiles] TileCommitments written successfully");
 
+            println!("[commit_tiles] Extracting player information from board");
             let (player1_address, _player1_side, _joker_number1) = board.player1;
             let (player2_address, _player2_side, _joker_number2) = board.player2;
+            println!("[commit_tiles] Player1: 0x{:x}, Player2: 0x{:x}", player1_address, player2_address);
 
             let another_player = if player == player1_address {
+                println!("[commit_tiles] Current player is Player1, opponent is Player2: 0x{:x}", player2_address);
                 player2_address
             } else if player == player2_address {
+                println!("[commit_tiles] Current player is Player2, opponent is Player1: 0x{:x}", player1_address);
                 player1_address
             } else {
+                println!("[commit_tiles] ERROR: Player 0x{:x} is not in this game", player);
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id });
                 return;
             };
+            println!("[commit_tiles] Opponent player identified: 0x{:x}", another_player);
 
+            println!("[commit_tiles] Reading opponent's tile commitments");
             let another_player_commitments: TileCommitments = world
                 .read_model((board_id, another_player));
+            println!("[commit_tiles] Opponent commitments length: {}", another_player_commitments.tile_commitments.len());
 
             if another_player_commitments.tile_commitments.len() == tile_commitments.len() {
+                println!("[commit_tiles] BOTH PLAYERS COMMITTED! Current: {}, Opponent: {}", tile_commitments.len(), another_player_commitments.tile_commitments.len());
+                println!("[commit_tiles] Transitioning both players to InProgress status");
+                
                 game.status = GameStatus::InProgress;
                 let mut another_player_game: Game = world.read_model(another_player);
                 another_player_game.status = GameStatus::InProgress;
+                
+                println!("[commit_tiles] Writing updated game models to world");
                 world.write_model(@another_player_game);
                 world.write_model(@game);
+                println!("[commit_tiles] Game models updated successfully");
 
-                let mut dice = DiceTrait::new(
-                    tile_commitments.len().try_into().unwrap(),
-                    'SEED' + get_block_timestamp().into() + board_id.into(),
-                );
+                println!("[commit_tiles] Generating random committed tile");
+                let dice_max = tile_commitments.len().try_into().unwrap();
+                let dice_seed = 'SEED' + get_block_timestamp().into() + board_id.into();
+                println!("[commit_tiles] Dice parameters - max: {}, seed: 0x{:x}", dice_max, dice_seed);
+                
+                let mut dice = DiceTrait::new(dice_max, dice_seed);
+                println!("[commit_tiles] Dice created successfully");
 
-                let commited_tile = Option::Some(dice.roll() - 1);
+                let roll_result = dice.roll();
+                println!("[commit_tiles] Dice roll result: {}", roll_result);
+                let commited_tile = Option::Some(roll_result - 1);
+                println!("[commit_tiles] Committed tile index: {:?}", commited_tile);
 
+                println!("[commit_tiles] Updating board committed tile");
                 board.commited_tile = commited_tile;
+                println!("[commit_tiles] Writing committed tile to board model");
                 world
                     .write_member(
                         Model::<Board>::ptr_from_keys(board_id),
                         selector!("commited_tile"),
                         board.commited_tile,
                     );
+                println!("[commit_tiles] Board committed tile updated successfully");
 
+                println!("[commit_tiles] Transitioning to reveal phase");
+                println!("[commit_tiles] Phase transition params - board_id: {}, top_tile: {:?}, commited_tile: {:?}", board_id, board.top_tile, board.commited_tile);
                 PhaseManagementTrait::transition_to_reveal_phase(
                     board_id, board.top_tile, board.commited_tile, world,
                 );
+                println!("[commit_tiles] Successfully transitioned to reveal phase");
+            } else {
+                println!("[commit_tiles] WAITING FOR OPPONENT: Current player committed {}, opponent has {} commitments", tile_commitments.len(), another_player_commitments.tile_commitments.len());
             }
+            
+            println!("[commit_tiles] ============= COMMIT TILES COMPLETED =============");
         }
 
 
