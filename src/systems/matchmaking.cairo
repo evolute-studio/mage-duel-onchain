@@ -559,18 +559,18 @@ pub mod matchmaking {
                     let config: GameModeConfig = world.read_model(mode);
                     println!("[MATCHMAKING] auto_match: config loaded for mode={:?}", mode);
 
-                // Create board for the match
-                println!("[MATCHMAKING] auto_match: creating board for match");
-                let board = self
-                    ._create_board_for_mode(
-                        opponent, // host_player (first in queue)
-                        caller, // guest_player (joining now)
-                        mode,
-                        config,
-                        tid, // tournament_id
-                        world,
-                    );
-                println!("[MATCHMAKING] auto_match: board created with id={}", board.id);
+                    // Create board for the match
+                    println!("[MATCHMAKING] auto_match: creating board for match");
+                    let board = self
+                        ._create_board_for_mode(
+                            opponent, // host_player (first in queue)
+                            caller, // guest_player (joining now)
+                            mode,
+                            config,
+                            tid, // tournament_id
+                            world,
+                        );
+                    println!("[MATCHMAKING] auto_match: board created with id={}", board.id);
 
                     // Update both players' game states
                     opponent_game.status = GameStatus::InProgress;

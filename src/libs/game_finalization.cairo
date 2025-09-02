@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
 use evolute_duel::{
     models::{game::{Board, Game, Rules}, player::{Player}, tournament::{TournamentBoard}}, 
-    events::{GameFinished, BoardUpdated},
+    events::{GameFinished, BoardUpdated, GameFinishResult},
     types::packing::{GameState, GameStatus, PlayerSide, GameMode},
     libs::{
         scoring::{ScoringTrait}, 
@@ -219,7 +219,7 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         println!("[update_tournament_ratings] Updating ratings for tournament {}", tournament_id);
 
         // Call the rating system to update both players' ratings
-        RatingSystemTrait::update_tournament_ratings(
+        let _rating_changes = RatingSystemTrait::update_tournament_ratings(
             winner_address, loser_address, tournament_id, world,
         );
     }
@@ -268,7 +268,16 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
                         };
                         
                         println!("[process_tournament_stats_if_needed] Blue wins - updating tournament ratings");
-                        Self::update_tournament_ratings(winner_addr, loser_addr, tournament_id, world);},
+                        let rating_changes = RatingSystemTrait::update_tournament_ratings(
+                            winner_addr, loser_addr, tournament_id, world,
+                        );
+
+                        // Emit GameFinishResult event
+                        Self::emit_game_finish_result(
+                            finalization_data, tournament_id, rating_changes, 
+                            winner_addr, loser_addr, 1, world
+                        );
+                    },
                     2 => {
                         // Red wins  
                         let (winner_addr, loser_addr) = if finalization_data.player1_side == PlayerSide::Blue {
@@ -278,7 +287,15 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
                         };
                         
                         println!("[process_tournament_stats_if_needed] Red wins - updating tournament ratings");
-                        Self::update_tournament_ratings(winner_addr, loser_addr, tournament_id, world);
+                        let rating_changes = RatingSystemTrait::update_tournament_ratings(
+                            winner_addr, loser_addr, tournament_id, world,
+                        );
+                        
+                        // Emit GameFinishResult event
+                        Self::emit_game_finish_result(
+                            finalization_data, tournament_id, rating_changes, 
+                            winner_addr, loser_addr, 2, world
+                        );
                     },
                     _ => {},
                 }
@@ -287,12 +304,100 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
             Option::None => {
                 // Draw case - winner is None
                 println!("[process_tournament_stats_if_needed] Draw detected - updating both players' tournament ratings");
-                RatingSystemTrait::update_tournament_ratings_draw(
+                let rating_changes = RatingSystemTrait::update_tournament_ratings_draw(
                     finalization_data.player1_address,
                     finalization_data.player2_address,
                     tournament_id,
                     world
                 );
+                
+                // Emit GameFinishResult event for draw
+                Self::emit_game_finish_result_draw(
+                    finalization_data, tournament_id, rating_changes, world
+                );
+            }
+        }
+    }
+
+    /// Emit GameFinishResult event for winner/loser scenario  
+    fn emit_game_finish_result(
+        finalization_data: GameFinalizationData,
+        tournament_id: u64,
+        rating_changes: Option<((u32, u32), (u32, u32))>,
+        winner_addr: ContractAddress,
+        loser_addr: ContractAddress,
+        winner_side: u8, // 1 for blue, 2 for red
+        mut world: dojo::world::WorldStorage,
+    ) {
+        match rating_changes {
+            Option::Some(((winner_old_rating, winner_new_rating), (loser_old_rating, loser_new_rating))) => {
+                // Determine which player is first/second based on finalization_data
+                let (first_player_id, first_player_rating, first_player_rating_delta,
+                     second_player_id, second_player_rating, second_player_rating_delta, winner) = 
+                if finalization_data.player1_address == winner_addr {
+                    // Player1 is winner
+                    let winner_delta: i32 = winner_new_rating.try_into().unwrap() - winner_old_rating.try_into().unwrap();
+                    let loser_delta: i32 = loser_new_rating.try_into().unwrap() - loser_old_rating.try_into().unwrap();
+                    (finalization_data.player1_address, winner_new_rating, winner_delta,
+                     finalization_data.player2_address, loser_new_rating, loser_delta,
+                     Option::Some(1))
+                } else {
+                    // Player2 is winner  
+                    let winner_delta: i32 = winner_new_rating.try_into().unwrap() - winner_old_rating.try_into().unwrap();
+                    let loser_delta: i32 = loser_new_rating.try_into().unwrap() - loser_old_rating.try_into().unwrap();
+                    (finalization_data.player1_address, loser_new_rating, loser_delta,
+                     finalization_data.player2_address, winner_new_rating, winner_delta,
+                     Option::Some(2))
+                };
+
+                world.emit_event(@GameFinishResult {
+                    board_id: finalization_data.board_id,
+                    tournament_id,
+                    first_player_id,
+                    first_player_rating,
+                    first_player_rating_delta,
+                    second_player_id,
+                    second_player_rating,
+                    second_player_rating_delta,
+                    winner,
+                });
+
+                println!("[emit_game_finish_result] GameFinishResult event emitted for tournament {} board {}", tournament_id, finalization_data.board_id);
+            },
+            Option::None => {
+                println!("[emit_game_finish_result] No rating changes available, skipping GameFinishResult event");
+            }
+        }
+    }
+
+    /// Emit GameFinishResult event for draw scenario
+    fn emit_game_finish_result_draw(
+        finalization_data: GameFinalizationData,
+        tournament_id: u64,
+        rating_changes: Option<((u32, u32), (u32, u32))>,
+        mut world: dojo::world::WorldStorage,
+    ) {
+        match rating_changes {
+            Option::Some(((player1_old_rating, player1_new_rating), (player2_old_rating, player2_new_rating))) => {
+                let first_player_rating_delta: i32 = player1_new_rating.try_into().unwrap() - player1_old_rating.try_into().unwrap();
+                let second_player_rating_delta: i32 = player2_new_rating.try_into().unwrap() - player2_old_rating.try_into().unwrap();
+
+                world.emit_event(@GameFinishResult {
+                    board_id: finalization_data.board_id,
+                    tournament_id,
+                    first_player_id: finalization_data.player1_address,
+                    first_player_rating: player1_new_rating,
+                    first_player_rating_delta,
+                    second_player_id: finalization_data.player2_address,
+                    second_player_rating: player2_new_rating,
+                    second_player_rating_delta,
+                    winner: Option::None, // Draw
+                });
+
+                println!("[emit_game_finish_result_draw] GameFinishResult event emitted for draw in tournament {} board {}", tournament_id, finalization_data.board_id);
+            },
+            Option::None => {
+                println!("[emit_game_finish_result_draw] No rating changes available, skipping GameFinishResult event");
             }
         }
     }
