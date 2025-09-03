@@ -20,28 +20,40 @@ pub impl BoardImpl of BoardTrait {
         player2: ContractAddress,
         game_mode: GameMode,
     ) -> Board {
-        println!("[BoardTrait::create_board] Creating board for players: {:?} vs {:?}", player1, player2);
+        println!("[BoardTrait::create_board] ============= STARTING CREATE BOARD =============");
+        println!("[BoardTrait::create_board] Creating board for players: 0x{:x} vs 0x{:x}", player1, player2);
+        println!("[BoardTrait::create_board] Game mode: {:?}", game_mode);
         
         // Get current board counter from world storage
         const BOARD_COUNTER_KEY: felt252 = 'BOARD_COUNTER';
+        println!("[BoardTrait::create_board] Reading board counter from world storage");
         let mut board_counter: BoardCounter = world.read_model(BOARD_COUNTER_KEY);
         println!("[BoardTrait::create_board] Current board counter: {}", board_counter.current_count);
         
         // Use current count as board_id and increment for next use
         let board_id = board_counter.current_count + 1;
+        println!("[BoardTrait::create_board] Assigning board_id: {}", board_id);
         board_counter.current_count = board_counter.current_count + 1;
         
         // Save updated counter back to world storage
+        println!("[BoardTrait::create_board] Saving updated counter to world storage");
         world.write_model(@board_counter);
         println!("[BoardTrait::create_board] Board ID assigned: {}, counter updated to: {}", board_id, board_counter.current_count);
 
+        println!("[BoardTrait::create_board] Loading game mode configuration");
         let config: GameModeConfig = world.read_model(game_mode);
+        println!("[BoardTrait::create_board] Config loaded - board_size: {}, initial_jokers: {}, deck length: {}", 
+            config.board_size, config.initial_jokers, config.deck.len());
         assert!(config.deck.len() != 0, "[BoardTrait] Deck config is empty");
+        println!("[BoardTrait::create_board] Flattening deck rules");
         let mut deck_rules_flat = Self::flatten_deck_rules(config.deck);
+        println!("[BoardTrait::create_board] Flattened deck rules, total tiles: {}", deck_rules_flat.len());
 
         let last_move_id = Option::None;
         let game_state = GameState::Creating;
+        let current_timestamp = get_block_timestamp();
 
+        println!("[BoardTrait::create_board] Creating board model");
         let mut board = Board {
             id: board_id,
             available_tiles_in_deck: deck_rules_flat,
@@ -54,23 +66,36 @@ pub impl BoardImpl of BoardTrait {
             moves_done: 0,
             game_state,
             commited_tile: Option::None,
-            phase_started_at: get_block_timestamp(),
+            phase_started_at: current_timestamp,
         };
 
+        println!("[BoardTrait::create_board] Board model created - id: {}, game_state: {:?}, phase_started_at: {}", 
+            board.id, board.game_state, board.phase_started_at);
+        println!("[BoardTrait::create_board] Player assignments - Player1: 0x{:x} (Blue), Player2: 0x{:x} (Red)", 
+            player1, player2);
+
+        println!("[BoardTrait::create_board] Writing board to world storage");
         world.write_model(@board);
+        println!("[BoardTrait::create_board] Board written to world storage successfully");
 
         // Initialize edges using config.board_size
         let (cities_on_edges, roads_on_edges) = config.edges;
+        println!("[BoardTrait::create_board] Initializing board edges - cities_on_edges: {}, roads_on_edges: {}, board_size: {}", 
+            cities_on_edges, roads_on_edges, config.board_size);
         Self::generate_initial_board_state(
             cities_on_edges, roads_on_edges, board_id, config.board_size, world,
         );
+        println!("[BoardTrait::create_board] Initial board state generated");
 
         // Create player available tiles.
+        println!("[BoardTrait::create_board] Creating available tiles for both players");
         let mut available_tiles: Array<u8> = array![];
         for i in 0..deck_rules_flat.len() {
             available_tiles.append(i.try_into().unwrap());
         };
+        println!("[BoardTrait::create_board] Available tiles array created with {} tiles", available_tiles.len());
 
+        println!("[BoardTrait::create_board] Writing available tiles for Player1: 0x{:x}", player1);
         world
             .write_model(
                 @AvailableTiles {
@@ -78,13 +103,16 @@ pub impl BoardImpl of BoardTrait {
                 },
             );
 
+        println!("[BoardTrait::create_board] Writing available tiles for Player2: 0x{:x}", player2);
         world
             .write_model(
                 @AvailableTiles {
                     board_id, player: player2, available_tiles: available_tiles.span(),
                 },
             );
+        println!("[BoardTrait::create_board] Available tiles written for both players");
 
+        println!("[BoardTrait::create_board] ============= CREATE BOARD COMPLETED =============");
         return board;
     }
 
@@ -208,27 +236,39 @@ pub impl BoardImpl of BoardTrait {
         player_address: ContractAddress,
         bot_address: ContractAddress,
     ) -> Board {
-        println!("[BoardTrait::create_tutorial_board] Creating tutorial board for player: {:?} vs bot: {:?}", player_address, bot_address);
+        println!("[BoardTrait::create_tutorial_board] ============= STARTING CREATE TUTORIAL BOARD =============");
+        println!("[BoardTrait::create_tutorial_board] Creating tutorial board for player: 0x{:x} vs bot: 0x{:x}", player_address, bot_address);
         
         // Get current board counter from world storage
         const BOARD_COUNTER_KEY: felt252 = 'BOARD_COUNTER';
+        println!("[BoardTrait::create_tutorial_board] Reading board counter from world storage");
         let mut board_counter: BoardCounter = world.read_model(BOARD_COUNTER_KEY);
         println!("[BoardTrait::create_tutorial_board] Current board counter: {}", board_counter.current_count);
         
         // Use current count as board_id and increment for next use
         let board_id = board_counter.current_count + 1;
+        println!("[BoardTrait::create_tutorial_board] Assigning tutorial board_id: {}", board_id);
         board_counter.current_count = board_counter.current_count + 1;
         
         // Save updated counter back to world storage
+        println!("[BoardTrait::create_tutorial_board] Saving updated counter to world storage");
         world.write_model(@board_counter);
         println!("[BoardTrait::create_tutorial_board] Board ID assigned: {}, counter updated to: {}", board_id, board_counter.current_count);
 
+        println!("[BoardTrait::create_tutorial_board] Loading tutorial game mode configuration");
         let config: GameModeConfig = world.read_model(GameMode::Tutorial);
+        println!("[BoardTrait::create_tutorial_board] Tutorial config loaded - board_size: {}, initial_jokers: {}, deck length: {}", 
+            config.board_size, config.initial_jokers, config.deck.len());
+        
+        println!("[BoardTrait::create_tutorial_board] Creating tutorial deck");
         let mut deck_rules_flat = Self::tutorial_deck(config.deck);
+        println!("[BoardTrait::create_tutorial_board] Tutorial deck created with {} tiles", deck_rules_flat.len());
 
         let last_move_id = Option::None;
         let game_state = GameState::Move;
+        let current_timestamp = get_block_timestamp();
 
+        println!("[BoardTrait::create_tutorial_board] Creating tutorial board model");
         let mut board = Board {
             id: board_id,
             available_tiles_in_deck: deck_rules_flat,
@@ -241,14 +281,24 @@ pub impl BoardImpl of BoardTrait {
             moves_done: 0,
             game_state,
             commited_tile: Option::None,
-            phase_started_at: get_block_timestamp(),
+            phase_started_at: current_timestamp,
         };
 
+        println!("[BoardTrait::create_tutorial_board] Tutorial board model created - id: {}, game_state: {:?}, top_tile: {:?}", 
+            board.id, board.game_state, board.top_tile);
+        println!("[BoardTrait::create_tutorial_board] Player assignments - Player: 0x{:x} (Blue), Bot: 0x{:x} (Red)", 
+            player_address, bot_address);
+
+        println!("[BoardTrait::create_tutorial_board] Writing tutorial board to world storage");
         world.write_model(@board);
+        println!("[BoardTrait::create_tutorial_board] Tutorial board written to world storage successfully");
 
         // Initialize edges
+        println!("[BoardTrait::create_tutorial_board] Generating tutorial initial board state");
         Self::generate_tutorial_initial_board_state(board_id, world);
+        println!("[BoardTrait::create_tutorial_board] Tutorial initial board state generated");
 
+        println!("[BoardTrait::create_tutorial_board] ============= CREATE TUTORIAL BOARD COMPLETED =============");
         return board;
     }
 

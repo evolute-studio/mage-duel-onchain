@@ -184,7 +184,7 @@ pub struct GameModeConfig {
 #[dojo::model]
 pub struct MatchmakingState {
     #[key]
-    pub game_mode: GameMode,
+    pub game_mode: u8, // GameMode to u8
     #[key]
     pub tournament_id: u64, // 0 for non-tournament modes
     pub waiting_players: Array<ContractAddress>,
