@@ -2,14 +2,6 @@
 version = 1
 
 [[package]]
-name = "achievement"
-version = "0.0.0"
-source = "git+https://github.com/evolute-studio/arcade#3f302cb24c5d0bead74ef642d433273b3b05d550"
-dependencies = [
- "dojo",
-]
-
-[[package]]
 name = "alexandria_data_structures"
 version = "0.4.0"
 source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.4.0#ae3d960589a2f0c9af5fbd9236f6f3eb39fea8ed"
@@ -44,7 +36,6 @@ source = "git+https://github.com/dojoengine/dojo?tag=v1.6.0-alpha.2#184a4e836826
 name = "evolute_duel"
 version = "1.6.0"
 dependencies = [
- "achievement",
  "alexandria_data_structures",
  "alexandria_math",
  "dojo",
@@ -61,7 +52,7 @@ dependencies = [
 [[package]]
 name = "graffiti"
 version = "0.1.0"
-source = "git+https://github.com/rsodre/graffiti.git?rev=url#e8b0854798ebbcebde504ea299ed556900564ff2"
+source = "git+https://github.com/rsodre/graffiti?rev=url#e8b0854798ebbcebde504ea299ed556900564ff2"
 
 [[package]]
 name = "nft_combo"
@@ -125,7 +116,7 @@ source = "git+https://github.com/dojoengine/origami#81e49e9db43e8528cbb5d914e4da
 [[package]]
 name = "tournaments"
 version = "0.0.1"
-source = "git+https://github.com/evolute-studio/budokan-tournaments#242e498f73e739fc64a4881ceb4c53d848a950b5"
+source = "git+https://github.com/evolute-studio/budokan-tournaments?rev=4fff1b509d9adee655417191a6e6ba208a7887ff#4fff1b509d9adee655417191a6e6ba208a7887ff"
 dependencies = [
  "dojo",
  "openzeppelin_introspection",

@@ -139,19 +139,19 @@ pub impl TournamentRegistryImpl of TournamentRegistryTrait {
         }
 
         match Bitmap::nearest_significant_bit(self.leagues.into(), league.league_id) {
-            Some(bit) => {
+            Option::Some(bit) => {
                 let distance = if bit > league.league_id {
                     bit - league.league_id
                 } else {
                     league.league_id - bit
                 };
                 if distance <= LEAGUE_SEARCH_RADIUS {
-                    Some(bit.try_into().unwrap())
+                    Option::Some(bit.try_into().unwrap())
                 } else {
-                    None
+                    Option::None
                 }
             },
-            None => None,
+            Option::None => Option::None,
         }
     }
 

@@ -10,7 +10,7 @@ use evolute_duel::{
 };
 use dojo::world::{WorldStorage};
 
-use evolute_duel::libs::{achievements::{AchievementsTrait}};
+// use evolute_duel::libs::{achievements::{AchievementsTrait}};
 use starknet::ContractAddress;
 
 pub fn is_edge_node(col: u32, row: u32, side: u8, board_size: u32) -> bool {
@@ -227,9 +227,9 @@ pub fn connect_adjacent_edges(
         if city_root.open_edges == 0 && !city_root.contested {
             city_contest_result = handle_contest(world, ref city_root);
             //[Achivement] CityBuilder
-            AchievementsTrait::build_city(
-                world, player_address, ((city_root.red_points + city_root.blue_points) / 2).into(),
-            );
+            // AchievementsTrait::build_city(
+            //     world, player_address, ((city_root.red_points + city_root.blue_points) / 2).into(),
+            // );
         }
     }
 
@@ -241,9 +241,9 @@ pub fn connect_adjacent_edges(
             road_contest_results.append(contest_result);
 
             // [Achievement] RoadBuilder
-            AchievementsTrait::build_road(
-                world, player_address, (road_root.red_points + road_root.blue_points).into(),
-            );
+            // AchievementsTrait::build_road(
+            //     world, player_address, (road_root.red_points + road_root.blue_points).into(),
+            // );
         }
     };
 
