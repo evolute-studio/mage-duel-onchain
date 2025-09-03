@@ -317,7 +317,7 @@ pub impl TournamentLeagueImpl of TournamentLeagueTrait {
         println!("[TournamentLeagueTrait::unsubscribe] player_address: {:x}", player_index.player_address);
         println!("[TournamentLeagueTrait::unsubscribe] player current league_id: {}, slot_index: {}", player_index.league_id, player_index.slot_index);
         
-        LeagueAssert::assert_subscribed(*self, player_index);
+        LeagueAssert::assert_subscribed(self, player_index);
         self.size -= 1;
         player_index.league_id = 0;
         player_index.slot_index = 0;
