@@ -688,9 +688,9 @@ pub impl TournamentELOImpl of TournamentELOTrait {
                 println!("[TournamentELOTrait::find_tournament_opponent] === NO OPPONENT FOUND ===");
                 // No opponent found - player stays subscribed, keep slot
                 println!("[TournamentELOTrait::find_tournament_opponent] Player stays in queue - updating world state");
-                world.write_model(@updated_registry);
-                world.write_model(@updated_player_league);
-                world.write_model(@updated_player_index);
+                world.write_model(@registry);
+                world.write_model(@player_league);
+                world.write_model(@player_index);
                 world.write_model(@slot);
                 
                 println!("[TournamentELOTrait::find_tournament_opponent] === RETURNING NONE ===");

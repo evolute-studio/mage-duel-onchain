@@ -430,95 +430,95 @@ pub mod matchmaking {
 
             println!("[MATCHMAKING] auto_match: caller validation passed");
 
-            // // For Tournament mode, use modernized ELO-based matchmaking with radius
-            // if mode == GameMode::Tournament && tid > 0 {
-            //     println!("[MATCHMAKING] auto_match: Using modernized tournament ELO matchmaking with radius");
+            // For Tournament mode, use modernized ELO-based matchmaking with radius
+            if mode == GameMode::Tournament && tid > 0 {
+                println!("[MATCHMAKING] auto_match: Using modernized tournament ELO matchmaking with radius");
                 
-            //     // Use tournament ELO system to find opponent within radius
-            //     match TournamentELOTrait::find_tournament_opponent(caller, tid, world) {
-            //         Option::Some(opponent) => {
-            //             println!("[MATCHMAKING] auto_match: Tournament opponent found: {:x}", opponent);
+                // Use tournament ELO system to find opponent within radius
+                match TournamentELOTrait::find_tournament_opponent(caller, tid, world) {
+                    Option::Some(opponent) => {
+                        println!("[MATCHMAKING] auto_match: Tournament opponent found: {:x}", opponent);
                         
-            //             // Charge tokens for both players - if either fails, handle gracefully
-            //             let caller_charged = AssertsTrait::try_charge_player(caller, tid, world);
-            //             let opponent_charged = AssertsTrait::try_charge_player(opponent, tid, world);
+                        // Charge tokens for both players - if either fails, handle gracefully
+                        let caller_charged = AssertsTrait::try_charge_player(caller, tid, world);
+                        let opponent_charged = AssertsTrait::try_charge_player(opponent, tid, world);
                         
-            //             println!("[MATCHMAKING] auto_match: Token charging - caller: {}, opponent: {}", caller_charged, opponent_charged);
+                        println!("[MATCHMAKING] auto_match: Token charging - caller: {}, opponent: {}", caller_charged, opponent_charged);
                         
-            //             match (caller_charged, opponent_charged) {
-            //                 (true, true) => {
-            //                     println!("[MATCHMAKING] auto_match: Both players successfully charged - proceeding with match");
+                        match (caller_charged, opponent_charged) {
+                            (true, true) => {
+                                println!("[MATCHMAKING] auto_match: Both players successfully charged - proceeding with match");
                                 
-            //                     // Get opponent game state
-            //                     let mut opponent_game: Game = world.read_model(opponent);
+                                // Get opponent game state
+                                let mut opponent_game: Game = world.read_model(opponent);
                                 
-            //                     // Get game configuration
-            //                     let config: GameModeConfig = world.read_model(mode);
+                                // Get game configuration
+                                let config: GameModeConfig = world.read_model(mode);
                                 
-            //                     // Create board for the match
-            //                     let board = self._create_board_for_mode(
-            //                         opponent, caller, mode, config, tid, world,
-            //                     );
+                                // Create board for the match
+                                let board = self._create_board_for_mode(
+                                    opponent, caller, mode, config, tid, world,
+                                );
                                 
-            //                     // Update both players' game states
-            //                     opponent_game.status = GameStatus::InProgress;
-            //                     opponent_game.board_id = Option::Some(board.id);
-            //                     opponent_game.game_mode = mode;
-            //                     world.write_model(@opponent_game);
+                                // Update both players' game states
+                                opponent_game.status = GameStatus::InProgress;
+                                opponent_game.board_id = Option::Some(board.id);
+                                opponent_game.game_mode = mode;
+                                world.write_model(@opponent_game);
                                 
-            //                     caller_game.status = GameStatus::InProgress;
-            //                     caller_game.board_id = Option::Some(board.id);
-            //                     caller_game.game_mode = mode;
-            //                     world.write_model(@caller_game);
+                                caller_game.status = GameStatus::InProgress;
+                                caller_game.board_id = Option::Some(board.id);
+                                caller_game.game_mode = mode;
+                                world.write_model(@caller_game);
                                 
-            //                     // Emit events for both players
-            //                     world.emit_event(
-            //                         @GameStarted {
-            //                             host_player: opponent, guest_player: caller, board_id: board.id,
-            //                         },
-            //                     );
+                                // Emit events for both players
+                                world.emit_event(
+                                    @GameStarted {
+                                        host_player: opponent, guest_player: caller, board_id: board.id,
+                                    },
+                                );
                                 
-            //                     println!("[MATCHMAKING] auto_match: Tournament match successful! board_id={}", board.id);
-            //                     return board.id;
-            //                 },
-            //                 (false, true) => {
-            //                     println!("[MATCHMAKING] auto_match: Caller failed to pay, opponent charged successfully - removing caller from queue, keeping opponent");
-            //                     self._remove_from_tournament_queue(caller, tid, world);
-            //                     return 0; // Caller fails, returns 0
-            //                 },
-            //                 (true, false) => {
-            //                     println!("[MATCHMAKING] auto_match: Opponent failed to pay, caller charged successfully - removing opponent from queue, keeping caller in queue");
-            //                     self._remove_from_tournament_queue(opponent, tid, world);
-            //                     return 0; // Opponent fails, returns 0
-            //                 },
-            //                 (false, false) => {
-            //                     println!("[MATCHMAKING] auto_match: Both players failed to pay - removing both from queue");
-            //                     self._remove_from_tournament_queue(caller, tid, world);
-            //                     self._remove_from_tournament_queue(opponent, tid, world);
-            //                     return 0; // Both fail, caller returns 0
-            //                 },
-            //             }
-            //         },
-            //         Option::None => {
-            //             println!("[MATCHMAKING] auto_match: No opponent found within league radius, player added to tournament queue");
+                                println!("[MATCHMAKING] auto_match: Tournament match successful! board_id={}", board.id);
+                                return board.id;
+                            },
+                            (false, true) => {
+                                println!("[MATCHMAKING] auto_match: Caller failed to pay, opponent charged successfully - removing caller from queue, keeping opponent");
+                                self._remove_from_tournament_queue(caller, tid, world);
+                                return 0; // Caller fails, returns 0
+                            },
+                            (true, false) => {
+                                println!("[MATCHMAKING] auto_match: Opponent failed to pay, caller charged successfully - removing opponent from queue, keeping caller in queue");
+                                self._remove_from_tournament_queue(opponent, tid, world);
+                                return 0; // Opponent fails, returns 0
+                            },
+                            (false, false) => {
+                                println!("[MATCHMAKING] auto_match: Both players failed to pay - removing both from queue");
+                                self._remove_from_tournament_queue(caller, tid, world);
+                                self._remove_from_tournament_queue(opponent, tid, world);
+                                return 0; // Both fail, caller returns 0
+                            },
+                        }
+                    },
+                    Option::None => {
+                        println!("[MATCHMAKING] auto_match: No opponent found within league radius, player added to tournament queue");
                         
-            //             // Player was automatically added to their league by find_tournament_opponent
-            //             // Update caller's game state to Created (waiting)
-            //             caller_game.status = GameStatus::Created;
-            //             caller_game.board_id = Option::None;
-            //             caller_game.game_mode = mode;
-            //             world.write_model(@caller_game);
+                        // Player was automatically added to their league by find_tournament_opponent
+                        // Update caller's game state to Created (waiting)
+                        caller_game.status = GameStatus::Created;
+                        caller_game.board_id = Option::None;
+                        caller_game.game_mode = mode;
+                        world.write_model(@caller_game);
                         
-            //             // Emit GameCreated event for convenient client interface
-            //             world.emit_event(
-            //                 @GameCreated { host_player: caller, status: GameStatus::Created },
-            //             );
+                        // Emit GameCreated event for convenient client interface
+                        world.emit_event(
+                            @GameCreated { host_player: caller, status: GameStatus::Created },
+                        );
                         
-            //             println!("[MATCHMAKING] auto_match: Player added to queue, GameCreated event emitted");
-            //             return 0;
-            //         }
-            //     }
-            // } else {
+                        println!("[MATCHMAKING] auto_match: Player added to queue, GameCreated event emitted");
+                        return 0;
+                    }
+                }
+            } else {
                 // Non-tournament modes: use existing FIFO algorithm
                 println!("[MATCHMAKING] auto_match: Using FIFO matchmaking for non-tournament mode");
                 
@@ -645,7 +645,7 @@ pub mod matchmaking {
                     println!("[MATCHMAKING] auto_match: returning 0 (waiting in queue)");
                     return 0;
                 }
-            // }
+            }
         }
 
         /// Admin function to cancel any player's game

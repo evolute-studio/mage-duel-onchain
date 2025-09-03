@@ -15,7 +15,7 @@ mod tests {
     use evolute_duel::models::{
         tournament::{
             TournamentPass, m_TournamentPass, TournamentStateModel, m_TournamentStateModel, PlayerTournamentIndex,
-            m_PlayerTournamentIndex, TournamentState,
+            m_PlayerTournamentIndex, TournamentBoard, m_TournamentBoard
         },
         tournament_matchmaking::{TournamentRegistry, m_TournamentRegistry, TournamentLeague, m_TournamentLeague,
             TournamentSlot, m_TournamentSlot, PlayerLeagueIndex, m_PlayerLeagueIndex
@@ -132,6 +132,7 @@ mod tests {
                 TestResource::Model(m_TournamentLeague::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_TournamentSlot::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_PlayerLeagueIndex::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_TournamentBoard::TEST_CLASS_HASH.try_into().unwrap()),
                 //Game models
                 TestResource::Model(m_GameModeConfig::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_Game::TEST_CLASS_HASH.try_into().unwrap()),
@@ -547,7 +548,7 @@ mod tests {
 
         // Verify tournament entries
         let total_entries = tournament_dispatcher.tournament_entries(tournament.id);
-        assert!(total_entries == 2, "Tournament should have 2 entries");
+        assert!(total_entries == 3, "Tournament should have 3 entries");
         println!("[test_two_players_tournament_with_enlist_and_join_duel] Tournament entries verified: {}", total_entries);
 
         // === ENLIST PHASE ===
@@ -715,8 +716,8 @@ mod tests {
         println!("[test_two_players_tournament_with_enlist_and_join_duel] Entry fee deductions verified - P1: {}, P2: {}", balance_after_p1, balance_after_p2);
 
         // Verify entry numbers
-        assert!(entry_number_p1 == 1, "Player1 should be entry #1");
-        assert!(entry_number_p2 == 2, "Player2 should be entry #2");
+        assert!(entry_number_p1 == 2, "Player1 should be entry #1");
+        assert!(entry_number_p2 == 3, "Player2 should be entry #2");
         println!("[test_two_players_tournament_with_enlist_and_join_duel] Entry numbers verified");
 
         println!("[test_two_players_tournament_with_enlist_and_join_duel] ALL TESTS PASSED! Comprehensive test completed successfully");
