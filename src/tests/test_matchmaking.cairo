@@ -21,8 +21,8 @@ mod tests {
             },
             player::{Player, m_Player},
             scoring::{UnionNode, m_UnionNode, PotentialContests, m_PotentialContests},
-            tournament::{TournamentPass, m_TournamentPass, PlayerTournamentIndex, m_PlayerTournamentIndex},
-            tournament_matchmaking::{TournamentRegistry, m_TournamentRegistry, TournamentLeague, m_TournamentLeague, TournamentSlot, m_TournamentSlot},
+            tournament::{TournamentPass, m_TournamentPass, PlayerTournamentIndex, m_PlayerTournamentIndex, TournamentBoard, m_TournamentBoard,},
+            tournament_matchmaking::{TournamentRegistry, m_TournamentRegistry, TournamentLeague, m_TournamentLeague, TournamentSlot, m_TournamentSlot, PlayerLeagueIndex, m_PlayerLeagueIndex},
         },
         events::{
             GameCreated, e_GameCreated, GameStarted, e_GameStarted, GameCanceled, e_GameCanceled,
@@ -31,7 +31,7 @@ mod tests {
             e_PlayerNotInGame, GameFinished, e_GameFinished, ErrorEvent, e_ErrorEvent,
             MigrationError, e_MigrationError, NotYourTurn, e_NotYourTurn, NotEnoughJokers,
             e_NotEnoughJokers, Moved, e_Moved, Skiped, e_Skiped, InvalidMove, e_InvalidMove,
-            PhaseStarted, e_PhaseStarted,
+            PhaseStarted, e_PhaseStarted, GameFinishResult, e_GameFinishResult
         },
         types::packing::{GameStatus, GameMode, GameState},
         systems::{
@@ -68,6 +68,8 @@ mod tests {
                 TestResource::Model(m_TournamentRegistry::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_TournamentLeague::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_TournamentSlot::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_PlayerLeagueIndex::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_TournamentBoard::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Contract(matchmaking::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Event(e_GameCreated::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Event(e_GameStarted::TEST_CLASS_HASH.try_into().unwrap()),
@@ -86,6 +88,7 @@ mod tests {
                 TestResource::Event(e_Skiped::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Event(e_InvalidMove::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Event(e_PhaseStarted::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_GameFinishResult::TEST_CLASS_HASH.try_into().unwrap()),
             ]
                 .span(),
         };
@@ -276,20 +279,20 @@ mod tests {
     #[test]
     fn test_join_casual_game_success() {
         let (dispatcher, mut world) = deploy_matchmaking();
-
+        println!("[test_join_casual_game_success] contract deployed");
         let player1: ContractAddress = contract_address_const::<PLAYER1_ADDRESS>();
         let player2: ContractAddress = contract_address_const::<PLAYER2_ADDRESS>();
         setup_player(world, player1);
         setup_player(world, player2);
-
+        println!("[test_join_casual_game_success] players setup done");
         // Player1 creates a game
         testing::set_contract_address(player1);
         dispatcher.create_game(GameMode::Casual.into(), Option::None);
-
+        println!("[test_join_casual_game_success] player1 created a casual game");
         // Player2 joins the game
         testing::set_contract_address(player2);
         dispatcher.join_game(player1);
-
+        println!("[test_join_casual_game_success] player2 joined player1's game");
         // Both players should be in progress
         assert_game_status(world, player1, GameStatus::InProgress);
         assert_game_status(world, player2, GameStatus::InProgress);
@@ -524,11 +527,11 @@ mod tests {
         let casual_config: GameModeConfig = world.read_model(GameMode::Casual);
         let tournament_config: GameModeConfig = world.read_model(GameMode::Tournament);
 
-        assert!(tutorial_config.game_mode == GameMode::Tutorial, "Tutorial config should exist");
-        assert!(ranked_config.game_mode == GameMode::Ranked, "Ranked config should exist");
-        assert!(casual_config.game_mode == GameMode::Casual, "Casual config should exist");
+        assert!(tutorial_config.game_mode == GameMode::Tutorial.into(), "Tutorial config should exist");
+        assert!(ranked_config.game_mode == GameMode::Ranked.into(), "Ranked config should exist");
+        assert!(casual_config.game_mode == GameMode::Casual.into(), "Casual config should exist");
         assert!(
-            tournament_config.game_mode == GameMode::Tournament, "Tournament config should exist",
+            tournament_config.game_mode == GameMode::Tournament.into(), "Tournament config should exist",
         );
 
         // Check some specific values

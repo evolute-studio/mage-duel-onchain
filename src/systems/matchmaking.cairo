@@ -270,13 +270,17 @@ pub mod matchmaking {
         }
 
         fn join_game(ref self: ContractState, host_player: ContractAddress) {
+            println!("[MATCHMAKING] ============= STARTING JOIN GAME =============");
             let mut world = self.world_default();
             let guest_player = get_caller_address();
 
-            println!("[MATCHMAKING] join_game: guest={:x}, host={:x}", guest_player, host_player);
+            println!("[MATCHMAKING] join_game: guest=0x{:x}, host=0x{:x}", guest_player, host_player);
+            println!("[MATCHMAKING] join_game: world storage obtained successfully");
 
             // Get host game info
+            println!("[MATCHMAKING] join_game: reading host game model for 0x{:x}", host_player);
             let mut host_game: Game = world.read_model(host_player);
+            println!("[MATCHMAKING] join_game: reading guest game model for 0x{:x}", guest_player);
             let mut guest_game: Game = world.read_model(guest_player);
 
             println!(
@@ -293,14 +297,16 @@ pub mod matchmaking {
             );
 
             // Validate join conditions
+            println!("[MATCHMAKING] join_game: validating join conditions with AssertsTrait::assert_ready_to_join_game");
             if !AssertsTrait::assert_ready_to_join_game(@guest_game, @host_game, world) {
                 println!("[MATCHMAKING] join_game: FAILED - guest not ready to join game");
                 return;
             }
 
-            println!("[MATCHMAKING] join_game: join conditions validated");
+            println!("[MATCHMAKING] join_game: PASS - join conditions validated");
 
             // Validate guest can join this game mode
+            println!("[MATCHMAKING] join_game: validating game mode access for guest");
             if !AssertsTrait::assert_game_mode_access(
                 @host_game,
                 array![GameMode::Ranked, GameMode::Casual].span(),
@@ -312,35 +318,43 @@ pub mod matchmaking {
                 return;
             }
 
-            println!("[MATCHMAKING] join_game: game mode access granted");
+            println!("[MATCHMAKING] join_game: PASS - game mode access granted");
 
             // Get configuration for this game mode
+            println!("[MATCHMAKING] join_game: loading configuration for game mode: {:?}", host_game.game_mode);
             let config: GameModeConfig = world.read_model(host_game.game_mode);
-            println!("[MATCHMAKING] join_game: config loaded for mode={:?}", host_game.game_mode);
+            println!("[MATCHMAKING] join_game: config loaded - board_size: {}, initial_jokers: {}", 
+                config.board_size, config.initial_jokers);
 
             // Create board based on game mode configuration
-            println!("[MATCHMAKING] join_game: creating board for game mode");
+            println!("[MATCHMAKING] join_game: calling _create_board_for_mode");
             let board = self
                 ._create_board_for_mode(
                     host_player, guest_player, host_game.game_mode, config, 0, world,
                 );
-            println!("[MATCHMAKING] join_game: board created with id={}", board.id);
+            println!("[MATCHMAKING] join_game: board created successfully with id={}", board.id);
 
             // Update both players' game state
+            println!("[MATCHMAKING] join_game: updating both players' game states");
             host_game.status = GameStatus::InProgress;
             host_game.board_id = Option::Some(board.id);
+            println!("[MATCHMAKING] join_game: writing updated host game model");
             world.write_model(@host_game);
-            println!("[MATCHMAKING] join_game: host game updated to InProgress");
+            println!("[MATCHMAKING] join_game: host game updated - status: {:?}, board_id: {:?}", 
+                host_game.status, host_game.board_id);
 
             guest_game.status = GameStatus::InProgress;
             guest_game.board_id = Option::Some(board.id);
             guest_game.game_mode = host_game.game_mode;
+            println!("[MATCHMAKING] join_game: writing updated guest game model");
             world.write_model(@guest_game);
-            println!("[MATCHMAKING] join_game: guest game updated to InProgress");
+            println!("[MATCHMAKING] join_game: guest game updated - status: {:?}, board_id: {:?}, game_mode: {:?}", 
+                guest_game.status, guest_game.board_id, guest_game.game_mode);
 
+            println!("[MATCHMAKING] join_game: emitting GameStarted event");
             world.emit_event(@GameStarted { host_player, guest_player, board_id: board.id });
 
-            println!("[MATCHMAKING] join_game: GameStarted event emitted, function completed");
+            println!("[MATCHMAKING] join_game: ============= JOIN GAME COMPLETED =============");
         }
 
         fn cancel_game(ref self: ContractState) {
