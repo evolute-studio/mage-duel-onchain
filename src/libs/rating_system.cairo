@@ -61,7 +61,7 @@ pub impl RatingSystemImpl of RatingSystemTrait {
         player2_address: ContractAddress,
         tournament_id: u64,
         mut world: dojo::world::WorldStorage,
-    ) -> Option<((u32, u32), (u32, u32))> {
+    ) -> Option<((u32, i32), (u32, i32))> {
         println!("[RATING] Processing draw for tournament {}", tournament_id);
         
         // Get tournament passes for both players
@@ -117,6 +117,9 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                     player2_pass.rating + player2_change.try_into().unwrap()
                 };
 
+                let player1_rating_change: i32 = new_player1_rating.try_into().unwrap() - player1_pass.rating.try_into().unwrap();
+                let player2_rating_change: i32 = new_player2_rating.try_into().unwrap() - player2_pass.rating.try_into().unwrap();
+
                 // Update both players' stats (no wins/losses for draw)
                 player1_pass.rating = new_player1_rating;
                 player1_pass.games_played += 1;
@@ -137,7 +140,7 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                 );
 
                 // Return rating changes data
-                return Option::Some(((player1_pass.rating, new_player1_rating), (player2_pass.rating, new_player2_rating)));
+                return Option::Some(((player1_pass.rating, player1_rating_change), (player2_pass.rating, player2_rating_change)));
             },
             _ => {
                 // One or both players don't have tournament passes, skip rating update
@@ -157,7 +160,7 @@ pub impl RatingSystemImpl of RatingSystemTrait {
         loser_address: ContractAddress,
         tournament_id: u64,
         mut world: dojo::world::WorldStorage,
-    ) -> Option<((u32, u32), (u32, u32))> {
+    ) -> Option<((u32, i32), (u32, i32))> {
         // Get tournament passes for both players
         let winner_passes = Self::get_player_tournament_pass(winner_address, tournament_id, @world);
         let loser_passes = Self::get_player_tournament_pass(loser_address, tournament_id, @world);
@@ -178,6 +181,9 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                 let (new_winner_rating, new_loser_rating) = Self::calculate_rating_change(
                     winner_pass.rating, loser_pass.rating, K_FACTOR,
                 );
+
+                let winner_rating_change: i32 = new_winner_rating.try_into().unwrap() - winner_pass.rating.try_into().unwrap();
+                let loser_rating_change: i32 = new_loser_rating.try_into().unwrap() - loser_pass.rating.try_into().unwrap();
 
                 // Update winner stats
                 winner_pass.rating = new_winner_rating;
@@ -202,7 +208,7 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                 );
 
                 // Return rating changes data
-                return Option::Some(((winner_pass.rating, new_winner_rating), (loser_pass.rating, new_loser_rating)));
+                return Option::Some(((winner_pass.rating, winner_rating_change), (loser_pass.rating, loser_rating_change)));
             },
             _ => {
                 // One or both players don't have tournament passes, skip rating update

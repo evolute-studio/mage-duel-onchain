@@ -323,30 +323,26 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
     fn emit_game_finish_result(
         finalization_data: GameFinalizationData,
         tournament_id: u64,
-        rating_changes: Option<((u32, u32), (u32, u32))>,
+        rating_changes: Option<((u32, i32), (u32, i32))>,
         winner_addr: ContractAddress,
         loser_addr: ContractAddress,
         winner_side: u8, // 1 for blue, 2 for red
         mut world: dojo::world::WorldStorage,
     ) {
         match rating_changes {
-            Option::Some(((winner_old_rating, winner_new_rating), (loser_old_rating, loser_new_rating))) => {
+            Option::Some(((winner_rating, winner_rating_delta), (loser_rating, loser_rating_delta))) => {
                 // Determine which player is first/second based on finalization_data
                 let (first_player_id, first_player_rating, first_player_rating_delta,
                      second_player_id, second_player_rating, second_player_rating_delta, winner) = 
                 if finalization_data.player1_address == winner_addr {
                     // Player1 is winner
-                    let winner_delta: i32 = winner_new_rating.try_into().unwrap() - winner_old_rating.try_into().unwrap();
-                    let loser_delta: i32 = loser_new_rating.try_into().unwrap() - loser_old_rating.try_into().unwrap();
-                    (finalization_data.player1_address, winner_new_rating, winner_delta,
-                     finalization_data.player2_address, loser_new_rating, loser_delta,
+                    (finalization_data.player1_address, winner_rating, winner_rating_delta,
+                     finalization_data.player2_address, loser_rating, loser_rating_delta,
                      Option::Some(1))
                 } else {
-                    // Player2 is winner  
-                    let winner_delta: i32 = winner_new_rating.try_into().unwrap() - winner_old_rating.try_into().unwrap();
-                    let loser_delta: i32 = loser_new_rating.try_into().unwrap() - loser_old_rating.try_into().unwrap();
-                    (finalization_data.player1_address, loser_new_rating, loser_delta,
-                     finalization_data.player2_address, winner_new_rating, winner_delta,
+                    // Player2 is winner
+                    (finalization_data.player1_address, loser_rating, loser_rating_delta,
+                     finalization_data.player2_address, winner_rating, winner_rating_delta,
                      Option::Some(2))
                 };
 
@@ -374,22 +370,19 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
     fn emit_game_finish_result_draw(
         finalization_data: GameFinalizationData,
         tournament_id: u64,
-        rating_changes: Option<((u32, u32), (u32, u32))>,
+        rating_changes: Option<((u32, i32), (u32, i32))>,
         mut world: dojo::world::WorldStorage,
     ) {
         match rating_changes {
-            Option::Some(((player1_old_rating, player1_new_rating), (player2_old_rating, player2_new_rating))) => {
-                let first_player_rating_delta: i32 = player1_new_rating.try_into().unwrap() - player1_old_rating.try_into().unwrap();
-                let second_player_rating_delta: i32 = player2_new_rating.try_into().unwrap() - player2_old_rating.try_into().unwrap();
-
+            Option::Some(((first_player_rating, first_player_rating_delta), (second_player_rating, second_player_rating_delta))) => {
                 world.emit_event(@GameFinishResult {
                     board_id: finalization_data.board_id,
                     tournament_id,
                     first_player_id: finalization_data.player1_address,
-                    first_player_rating: player1_new_rating,
+                    first_player_rating,
                     first_player_rating_delta,
                     second_player_id: finalization_data.player2_address,
-                    second_player_rating: player2_new_rating,
+                    second_player_rating,
                     second_player_rating_delta,
                     winner: Option::None, // Draw
                 });
