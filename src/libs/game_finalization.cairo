@@ -548,7 +548,10 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
 
         board.game_state = GameState::Finished;
         println!("[finalize_game] Board game state set to Finished");
-
+        
+        // Process tournament stats if this was a tournament game
+        Self::process_tournament_stats_if_needed(finalization_data, winner, world);
+        
         Self::update_game_status(
             finalization_data.player1_address, finalization_data.player2_address, world,
         );
@@ -576,9 +579,6 @@ pub impl GameFinalizationImpl of GameFinalizationTrait {
         Self::process_achievements(
             winner, finalization_data.player1_address, finalization_data.player2_address, world,
         );
-
-        // Process tournament stats if this was a tournament game
-        Self::process_tournament_stats_if_needed(finalization_data, winner, world);
 
         println!("[finalize_game] Game finalization completed successfully");
     }
