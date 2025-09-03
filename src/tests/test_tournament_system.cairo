@@ -265,7 +265,7 @@ mod tests {
         
         // Tournament configuration
         let tournament_config = GameModeConfig {
-            game_mode: GameMode::Tournament,
+            game_mode: GameMode::Tournament.into(),
             board_size: 10,
             deck_type: 1, // Full randomized deck
             initial_jokers: 2,
