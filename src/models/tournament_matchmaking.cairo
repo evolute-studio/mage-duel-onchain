@@ -31,7 +31,7 @@ mod errors {
 #[dojo::model]
 pub struct TournamentRegistry {
     #[key]
-    pub game_mode: GameMode,         // GameMode::Tournament
+    pub game_mode: u8,         // GameMode::Tournament as u8
     #[key] 
     pub tournament_id: u64,    // ID турнира
     //------------------------
@@ -45,7 +45,7 @@ pub struct TournamentRegistry {
 #[dojo::model]
 pub struct TournamentLeague {
     #[key]
-    pub game_mode: GameMode,         // GameMode::Tournament
+    pub game_mode: u8,         // GameMode::Tournament as u8
     #[key] 
     pub tournament_id: u64,    // ID турнира
     #[key]
@@ -61,7 +61,7 @@ pub struct TournamentLeague {
 #[dojo::model]
 pub struct TournamentSlot {
     #[key]
-    pub game_mode: GameMode,         // GameMode::Tournament
+    pub game_mode: u8,         // GameMode::Tournament as u8
     #[key]
     pub tournament_id: u64,    // ID турнира
     #[key]
@@ -79,7 +79,7 @@ pub struct TournamentSlot {
 #[dojo::model]
 pub struct PlayerLeagueIndex {
     #[key]
-    pub game_mode: GameMode,         // GameMode::Tournament
+    pub game_mode: u8,         // GameMode::Tournament as u8
     #[key]
     pub tournament_id: u64,    // ID турнира
     #[key]
@@ -95,7 +95,7 @@ pub struct PlayerLeagueIndex {
 //
 #[generate_trait]
 pub impl TournamentRegistryImpl of TournamentRegistryTrait {
-    fn new(game_mode: GameMode, tournament_id: u64) -> TournamentRegistry {
+    fn new(game_mode: u8, tournament_id: u64) -> TournamentRegistry {
         TournamentRegistry { 
             game_mode,
             tournament_id, 
@@ -196,7 +196,7 @@ pub impl TournamentRegistryImpl of TournamentRegistryTrait {
 //
 #[generate_trait]
 pub impl TournamentLeagueImpl of TournamentLeagueTrait {
-    fn new(game_mode: GameMode, tournament_id: u64, league_id: u8) -> TournamentLeague {
+    fn new(game_mode: u8, tournament_id: u64, league_id: u8) -> TournamentLeague {
         TournamentLeague { 
             game_mode,
             tournament_id,
@@ -259,7 +259,7 @@ pub impl TournamentLeagueImpl of TournamentLeagueTrait {
 #[generate_trait]
 pub impl TournamentSlotImpl of TournamentSlotTrait {
     fn new(
-        game_mode: GameMode,
+        game_mode: u8,
         tournament_id: u64,
         league_id: u8,
         slot_index: u32,
@@ -399,19 +399,19 @@ pub impl TournamentELOImpl of TournamentELOTrait {
         
         // Get registry
         let mut registry: TournamentRegistry = world.read_model((
-            GameMode::Tournament, 
+            Into::<GameMode, u8>::into(GameMode::Tournament),
             tournament_id
         ));
         
         // Get player's league
         let mut player_league: TournamentLeague = world.read_model((
-            GameMode::Tournament,
+            Into::<GameMode, u8>::into(GameMode::Tournament),
             tournament_id,
             player_league_id
         ));
 
         let mut player_index: PlayerLeagueIndex = world.read_model((
-            GameMode::Tournament,
+            Into::<GameMode, u8>::into(GameMode::Tournament),
             tournament_id,
             player_address
         ));
@@ -430,13 +430,13 @@ pub impl TournamentELOImpl of TournamentELOTrait {
             Option::Some(opponent_league_id) => {
                 // Found opponent league - get random opponent
                 let mut opponent_league: TournamentLeague = world.read_model((
-                    GameMode::Tournament,
+                    Into::<GameMode, u8>::into(GameMode::Tournament),
                     tournament_id,
                     opponent_league_id
                 ));
                 let opponent_slot_id = opponent_league.search_player(seed);
                 let opponent_slot: TournamentSlot = world.read_model((
-                    GameMode::Tournament,
+                    Into::<GameMode, u8>::into(GameMode::Tournament),
                     tournament_id,
                     opponent_league_id,
                     opponent_slot_id
@@ -445,7 +445,7 @@ pub impl TournamentELOImpl of TournamentELOTrait {
                 
                 // Get opponent index and unsubscribe them
                 let mut opponent_index: PlayerLeagueIndex = world.read_model((
-                    GameMode::Tournament,
+                    Into::<GameMode, u8>::into(GameMode::Tournament),
                     tournament_id,
                     opponent_address
                 ));
@@ -504,7 +504,7 @@ pub impl TournamentELOImpl of TournamentELOTrait {
     ) {
         // Get player's current subscription status
         let mut player_index: PlayerLeagueIndex = world.read_model((
-            GameMode::Tournament,
+            Into::<GameMode, u8>::into(GameMode::Tournament),
             tournament_id,
             player_address
         ));
@@ -517,19 +517,19 @@ pub impl TournamentELOImpl of TournamentELOTrait {
 
         // Get registry and league
         let mut registry: TournamentRegistry = world.read_model((
-            GameMode::Tournament, 
+            Into::<GameMode, u8>::into(GameMode::Tournament),
             tournament_id
         ));
         
         let mut league: TournamentLeague = world.read_model((
-            GameMode::Tournament,
+            Into::<GameMode, u8>::into(GameMode::Tournament),
             tournament_id,
             player_index.league_id
         ));
 
         // Get the slot to clear it
         let mut slot: TournamentSlot = world.read_model((
-            GameMode::Tournament,
+            Into::<GameMode, u8>::into(GameMode::Tournament),
             tournament_id,
             player_index.league_id,
             player_index.slot_index
