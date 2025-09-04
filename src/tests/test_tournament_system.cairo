@@ -716,8 +716,8 @@ mod tests {
         println!("[test_two_players_tournament_with_enlist_and_join_duel] Entry fee deductions verified - P1: {}, P2: {}", balance_after_p1, balance_after_p2);
 
         // Verify entry numbers
-        assert!(entry_number_p1 == 2, "Player1 should be entry #1");
-        assert!(entry_number_p2 == 3, "Player2 should be entry #2");
+        assert!(entry_number_p1 == 1, "Player1 should be entry #1");
+        assert!(entry_number_p2 == 2, "Player2 should be entry #2");
         println!("[test_two_players_tournament_with_enlist_and_join_duel] Entry numbers verified");
 
         println!("[test_two_players_tournament_with_enlist_and_join_duel] ALL TESTS PASSED! Comprehensive test completed successfully");

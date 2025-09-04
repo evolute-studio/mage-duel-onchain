@@ -116,6 +116,7 @@ pub mod tests {
     pub mod test_tournament_system;
     pub mod test_tournament_budokan;
     pub mod test_tournament_matchmaking;
+    pub mod test_matchmaking_tournament_elo;
     // pub mod test_scoring;
 // pub mod test_tile_reveal;
 // pub mod test_game_finalization;

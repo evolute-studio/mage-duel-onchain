@@ -21,7 +21,7 @@ use core::num::traits::Zero;
 pub impl AssersImpl of AssertsTrait {
     fn assert_ready_to_create_game(self: @Game, mut world: WorldStorage) -> bool {
         let status = *self.status;
-        if status == GameStatus::InProgress || status == GameStatus::Created {
+        if status == GameStatus::InProgress {
             world.emit_event(@GameCreateFailed { host_player: *self.player, status });
             println!("Game already created or in progress");
             return false;

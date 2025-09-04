@@ -5,7 +5,12 @@ use dojo::world::{WorldStorage};
 
 // Internal imports  
 use evolute_duel::{
-    constants::bitmap::{LEAGUE_SIZE, DEFAULT_RATING, LEAGUE_COUNT, LEAGUE_MIN_THRESHOLD, DEFAULT_K_FACTOR, LEAGUE_SEARCH_RADIUS},
+    constants::bitmap::{
+        LEAGUE_SIZE, DEFAULT_RATING, LEAGUE_COUNT, LEAGUE_MIN_THRESHOLD, DEFAULT_K_FACTOR,
+        SEARCH_TIER_1_TIME, SEARCH_TIER_2_TIME, SEARCH_TIER_3_TIME,
+        SEARCH_RADIUS_TIER_0, SEARCH_RADIUS_TIER_1, SEARCH_RADIUS_TIER_2, SEARCH_RADIUS_TIER_3,
+        MAX_ELO_DIFFERENCE
+    },
     systems::helpers::bitmap::{Bitmap},
     models::tournament::{TournamentPass, PlayerTournamentIndex},
     types::packing::GameMode,
@@ -151,11 +156,13 @@ pub impl TournamentRegistryImpl of TournamentRegistryTrait {
         ref self: TournamentRegistry,
         ref league: TournamentLeague, 
         ref player_index: PlayerLeagueIndex,
+        search_radius: u8,
     ) -> Option<u8> {
         println!("[TournamentRegistryTrait::search_league] Starting league search");
         println!("[TournamentRegistryTrait::search_league] tournament_id: {}, player_league_id: {}", self.tournament_id, league.league_id);
         println!("[TournamentRegistryTrait::search_league] player_address: {:x}", player_index.player_address);
         println!("[TournamentRegistryTrait::search_league] current leagues bitmap: {}", self.leagues);
+        println!("[TournamentRegistryTrait::search_league] dynamic search_radius: {}", search_radius);
         
         PlayerLeagueIndexAssert::assert_subscribed(player_index);
         self.unsubscribe(ref league, ref player_index);
@@ -173,13 +180,13 @@ pub impl TournamentRegistryImpl of TournamentRegistryTrait {
                 } else {
                     league.league_id - bit
                 };
-                println!("[TournamentRegistryTrait::search_league] Distance from player league: {}, search radius: {}", distance, LEAGUE_SEARCH_RADIUS);
-                if distance <= LEAGUE_SEARCH_RADIUS {
+                println!("[TournamentRegistryTrait::search_league] Distance from player league: {}, dynamic search_radius: {}", distance, search_radius);
+                if distance <= search_radius || search_radius == SEARCH_RADIUS_TIER_3 {
                     let result_league = bit.try_into().unwrap();
-                    println!("[TournamentRegistryTrait::search_league] League within radius - returning league_id: {}", result_league);
+                    println!("[TournamentRegistryTrait::search_league] League within dynamic radius - returning league_id: {}", result_league);
                     Option::Some(result_league)
                 } else {
-                    println!("[TournamentRegistryTrait::search_league] League outside search radius - returning None");
+                    println!("[TournamentRegistryTrait::search_league] League outside dynamic search radius - returning None");
                     Option::None
                 }
             },
@@ -467,6 +474,48 @@ pub impl PlayerLeagueIndexAssert of PlayerLeagueIndexAssertTrait {
 }
 
 //------------------------------------
+// Dynamic search and fairness helpers
+//
+pub(crate) fn calculate_search_radius(wait_time: u64) -> u8 {
+    println!("[DYNAMIC_SEARCH] calculate_search_radius: wait_time={}s", wait_time);
+    
+    let radius = if wait_time < SEARCH_TIER_1_TIME {
+        SEARCH_RADIUS_TIER_0  // 0: only own league
+    } else if wait_time < SEARCH_TIER_2_TIME {
+        SEARCH_RADIUS_TIER_1  // 1: ±1 league
+    } else if wait_time < SEARCH_TIER_3_TIME {
+        SEARCH_RADIUS_TIER_2  // 2: ±2 leagues
+    } else {
+        SEARCH_RADIUS_TIER_3  // 255: any available league
+    };
+    
+    println!("[DYNAMIC_SEARCH] calculated radius: {} leagues", radius);
+    radius
+}
+
+pub(crate) fn validate_match_fairness(
+    player_rating: u32,
+    opponent_rating: u32,
+    wait_time: u64
+) -> bool {
+    println!("[FAIRNESS_CHECK] player_rating: {}, opponent_rating: {}", player_rating, opponent_rating);
+    println!("[FAIRNESS_CHECK] wait_time: {}s", wait_time);
+    
+    // Otherwise check rating difference
+    let rating_diff = if player_rating > opponent_rating {
+        player_rating - opponent_rating  
+    } else {
+        opponent_rating - player_rating
+    };
+    
+    let is_fair = rating_diff <= MAX_ELO_DIFFERENCE;
+    println!("[FAIRNESS_CHECK] rating_diff: {}, max_allowed: {}, is_fair: {}", 
+        rating_diff, MAX_ELO_DIFFERENCE, is_fair);
+    
+    is_fair
+}
+
+//------------------------------------
 // ELO system for tournaments
 //
 #[generate_trait]
@@ -608,16 +657,41 @@ pub impl TournamentELOImpl of TournamentELOTrait {
         ));
         println!("[TournamentELOTrait::find_tournament_opponent] player current league_id: {}, slot_index: {}", player_index.league_id, player_index.slot_index);
         
-        // [Step 1] Always subscribe player first (like subscribe())
-        println!("[TournamentELOTrait::find_tournament_opponent] === STEP 1: SUBSCRIBING PLAYER ===");
-        player_index.join_time = starknet::get_block_timestamp();
-        println!("[TournamentELOTrait::find_tournament_opponent] player join_time set to: {}", player_index.join_time);
+        // [Step 1] Check subscription status and subscribe if needed
+        let (slot, is_new_subscription) = if player_index.league_id == 0 {
+            println!("[TournamentELOTrait::find_tournament_opponent] === STEP 1: SUBSCRIBING NEW PLAYER ===");
+            player_index.join_time = starknet::get_block_timestamp();
+            println!("[TournamentELOTrait::find_tournament_opponent] player join_time set to: {}", player_index.join_time);
+            
+            let new_slot = registry.subscribe(ref player_league, ref player_index);
+            println!("[TournamentELOTrait::find_tournament_opponent] player subscribed to slot_index: {}", new_slot.slot_index);
+            
+            (new_slot, true)
+        } else {
+            println!("[TournamentELOTrait::find_tournament_opponent] === STEP 1: PLAYER ALREADY SUBSCRIBED ===");
+            println!("[TournamentELOTrait::find_tournament_opponent] existing league_id: {}, slot_index: {}", player_index.league_id, player_index.slot_index);
+            println!("[TournamentELOTrait::find_tournament_opponent] existing join_time: {}", player_index.join_time);
+            
+            // Read existing slot
+            let existing_slot: TournamentSlot = world.read_model((
+                Into::<GameMode, u8>::into(GameMode::Tournament),
+                tournament_id,
+                player_index.league_id,
+                player_index.slot_index
+            ));
+            
+            (existing_slot, false)
+        };
         
-        let slot = registry.subscribe(ref player_league, ref player_index);
-        println!("[TournamentELOTrait::find_tournament_opponent] player subscribed to slot_index: {}", slot.slot_index);
+        // [Step 2] Calculate dynamic search radius based on wait time
+        println!("[TournamentELOTrait::find_tournament_opponent] === STEP 2: CALCULATING DYNAMIC SEARCH RADIUS ===");
+        let current_time = starknet::get_block_timestamp();
+        let wait_time = current_time - player_index.join_time;
+        let search_radius = calculate_search_radius(wait_time);
+        println!("[TournamentELOTrait::find_tournament_opponent] wait_time: {}s, search_radius: {} leagues", wait_time, search_radius);
         
-        // [Step 2] Try to find opponent (like fight())
-        println!("[TournamentELOTrait::find_tournament_opponent] === STEP 2: SEARCHING FOR OPPONENT ===");
+        // [Step 3] Try to find opponent with dynamic radius
+        println!("[TournamentELOTrait::find_tournament_opponent] === STEP 3: SEARCHING FOR OPPONENT ===");
         let seed = starknet::get_tx_info().unbox().transaction_hash;
         println!("[TournamentELOTrait::find_tournament_opponent] using seed: {}", seed);
         
@@ -625,7 +699,7 @@ pub impl TournamentELOImpl of TournamentELOTrait {
         let mut updated_player_league = player_league;
         let mut updated_player_index = player_index;
         
-        match updated_registry.search_league(ref updated_player_league, ref updated_player_index) {
+        match updated_registry.search_league(ref updated_player_league, ref updated_player_index, search_radius) {
             Option::Some(opponent_league_id) => {
                 println!("[TournamentELOTrait::find_tournament_opponent] Found opponent league_id: {}", opponent_league_id);
                 // Found opponent league - get random opponent
@@ -647,6 +721,29 @@ pub impl TournamentELOImpl of TournamentELOTrait {
                 ));
                 let opponent_address = opponent_slot.player_address;
                 println!("[TournamentELOTrait::find_tournament_opponent] opponent_address: {:x}", opponent_address);
+                
+                // [Step 4] Check match fairness
+                println!("[TournamentELOTrait::find_tournament_opponent] === STEP 4: FAIRNESS CHECK ===");
+                let opponent_rating = Self::get_tournament_player_rating(opponent_address, tournament_id, world);
+                println!("[TournamentELOTrait::find_tournament_opponent] opponent_rating: {}", opponent_rating);
+                
+                let is_fair_match = validate_match_fairness(player_rating, opponent_rating, wait_time);
+                println!("[TournamentELOTrait::find_tournament_opponent] is_fair_match: {}", is_fair_match);
+                
+                if !is_fair_match {
+                    println!("[TournamentELOTrait::find_tournament_opponent] === MATCH REJECTED DUE TO UNFAIRNESS ===");
+                    // Unfair match - player stays subscribed, return None
+                    if is_new_subscription {
+                        println!("[TournamentELOTrait::find_tournament_opponent] Saving models for new subscription after fairness rejection");
+                        world.write_model(@registry);
+                        world.write_model(@player_league);  
+                        world.write_model(@player_index);
+                        world.write_model(@slot);
+                    } else {
+                        println!("[TournamentELOTrait::find_tournament_opponent] Player stays in queue after fairness rejection");
+                    }
+                    return Option::None;
+                }
                 
                 // Get opponent index and unsubscribe them
                 println!("[TournamentELOTrait::find_tournament_opponent] === UNSUBSCRIBING OPPONENT ===");
@@ -688,10 +785,17 @@ pub impl TournamentELOImpl of TournamentELOTrait {
                 println!("[TournamentELOTrait::find_tournament_opponent] === NO OPPONENT FOUND ===");
                 // No opponent found - player stays subscribed, keep slot
                 println!("[TournamentELOTrait::find_tournament_opponent] Player stays in queue - updating world state");
-                world.write_model(@registry);
-                world.write_model(@player_league);
-                world.write_model(@player_index);
-                world.write_model(@slot);
+                
+                // Save models if this was a new subscription
+                if is_new_subscription {
+                    println!("[TournamentELOTrait::find_tournament_opponent] Saving models for new subscription");
+                    world.write_model(@registry);
+                    world.write_model(@player_league);
+                    world.write_model(@player_index);
+                    world.write_model(@slot);
+                } else {
+                    println!("[TournamentELOTrait::find_tournament_opponent] Player was already subscribed - no model updates needed");
+                }
                 
                 println!("[TournamentELOTrait::find_tournament_opponent] === RETURNING NONE ===");
                 Option::None

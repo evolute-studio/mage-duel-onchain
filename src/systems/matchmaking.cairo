@@ -519,132 +519,8 @@ pub mod matchmaking {
                     }
                 }
             } else {
-                // Non-tournament modes: use existing FIFO algorithm
-                println!("[MATCHMAKING] auto_match: Using FIFO matchmaking for non-tournament mode");
-                
-                // Get or create matchmaking queue state
-                let mut queue_state: MatchmakingState = world.read_model((mode, tid));
-                println!(
-                    "[MATCHMAKING] auto_match: queue state - waiting_players.len()={}",
-                    queue_state.waiting_players.len(),
-                );
-
-                // Simple FIFO algorithm: check if there's a waiting player
-                if queue_state.waiting_players.len() > 0 {
-                    println!(
-                        "[MATCHMAKING] auto_match: MATCH FOUND! Processing existing waiting player",
-                    );
-                    // Match found! Get the first waiting player
-                    let mut waiting_players_vec = queue_state.waiting_players.span();
-                    let opponent = *waiting_players_vec[0];
-                    println!("[MATCHMAKING] auto_match: opponent={:x}", opponent);
-
-                    // Remove opponent from queue (create new array without first element)
-                    let mut new_waiting_players: Array<ContractAddress> = ArrayTrait::new();
-                    let mut i = 1;
-                    while i < waiting_players_vec.len() {
-                        new_waiting_players.append(*waiting_players_vec[i]);
-                        i += 1;
-                    };
-                    queue_state.waiting_players = new_waiting_players.clone();
-                    world.write_model(@queue_state);
-                    println!(
-                        "[MATCHMAKING] auto_match: opponent removed from queue, new queue size={}",
-                        new_waiting_players.len(),
-                    );
-
-                    // Remove opponent from PlayerMatchmaking
-                    let empty_opponent_mm = PlayerMatchmaking {
-                        player: opponent, game_mode: GameMode::None, tournament_id: 0, timestamp: 0,
-                    };
-                    world.write_model(@empty_opponent_mm);
-                    println!("[MATCHMAKING] auto_match: opponent PlayerMatchmaking cleared");
-
-                    // Get opponent game state
-                    let mut opponent_game: Game = world.read_model(opponent);
-                    println!(
-                        "[MATCHMAKING] auto_match: opponent_game - status={:?}, mode={:?}",
-                        opponent_game.status,
-                        opponent_game.game_mode,
-                    );
-
-                    // Get game configuration
-                    let config: GameModeConfig = world.read_model(mode);
-                    println!("[MATCHMAKING] auto_match: config loaded for mode={:?}", mode);
-
-                    // Create board for the match
-                    println!("[MATCHMAKING] auto_match: creating board for match");
-                    let board = self
-                        ._create_board_for_mode(
-                            opponent, // host_player (first in queue)
-                            caller, // guest_player (joining now)
-                            mode,
-                            config,
-                            tid, // tournament_id
-                            world,
-                        );
-                    println!("[MATCHMAKING] auto_match: board created with id={}", board.id);
-
-                    // Update both players' game states
-                    opponent_game.status = GameStatus::InProgress;
-                    opponent_game.board_id = Option::Some(board.id);
-                    opponent_game.game_mode = mode;
-                    world.write_model(@opponent_game);
-                    println!("[MATCHMAKING] auto_match: opponent game updated to InProgress");
-
-                    caller_game.status = GameStatus::InProgress;
-                    caller_game.board_id = Option::Some(board.id);
-                    caller_game.game_mode = mode;
-                    world.write_model(@caller_game);
-                    println!("[MATCHMAKING] auto_match: caller game updated to InProgress");
-
-                    // Emit events
-                    world
-                        .emit_event(
-                            @GameStarted {
-                                host_player: opponent, guest_player: caller, board_id: board.id,
-                            },
-                        );
-                    println!("[MATCHMAKING] auto_match: GameStarted event emitted");
-
-                    // Return board_id
-                    println!(
-                        "[MATCHMAKING] auto_match: MATCH SUCCESSFUL! Returning board_id={}", board.id,
-                    );
-                    return board.id;
-                } else {
-                    println!("[MATCHMAKING] auto_match: NO MATCH FOUND, adding caller to queue");
-                    // No match found, add to queue
-                    queue_state.waiting_players.append(caller);
-                    world.write_model(@queue_state);
-                    println!(
-                        "[MATCHMAKING] auto_match: caller added to queue, queue size={}",
-                        queue_state.waiting_players.len(),
-                    );
-
-                    // Create PlayerMatchmaking entry
-                    let player_mm = PlayerMatchmaking {
-                        player: caller,
-                        game_mode: mode,
-                        tournament_id: tid,
-                        timestamp: starknet::get_block_timestamp(),
-                    };
-                    world.write_model(@player_mm);
-                    println!("[MATCHMAKING] auto_match: PlayerMatchmaking entry created");
-
-                    // Update caller's game state to Created (waiting)
-                    caller_game.status = GameStatus::Created;
-                    caller_game.board_id = Option::None;
-                    caller_game.game_mode = mode;
-                    world.write_model(@caller_game);
-                    println!(
-                        "[MATCHMAKING] auto_match: caller game state updated to Created (waiting)",
-                    );
-
-                    // Return 0 to indicate waiting in queue
-                    println!("[MATCHMAKING] auto_match: returning 0 (waiting in queue)");
-                    return 0;
-                }
+                println!("[MATCHMAKING] auto_match: Only Tournament mode supported currently");
+                return panic!("[MATCHMAKING] auto_match: Only Tournament mode supported currently");
             }
         }
 
@@ -920,6 +796,142 @@ pub mod matchmaking {
             world.emit_event(@GameCanceled { host_player: player_address, status: new_status });
 
             println!("[MATCHMAKING] _cancel_game: player game canceled, function completed");
+        }
+
+        // FIFO matchmaking algorithm for non-tournament modes
+        fn _fifo_matchmaking(
+            ref self: ContractState,
+            caller: ContractAddress,
+            mode: GameMode,
+            tid: u64,
+            mut caller_game: Game,
+            mut world: WorldStorage,
+        ) -> felt252 {
+            println!("[MATCHMAKING] _fifo_matchmaking: Using FIFO matchmaking for non-tournament mode");
+            
+            // Get or create matchmaking queue state
+            let mut queue_state: MatchmakingState = world.read_model((mode, tid));
+            println!(
+                "[MATCHMAKING] _fifo_matchmaking: queue state - waiting_players.len()={}",
+                queue_state.waiting_players.len(),
+            );
+
+            // Simple FIFO algorithm: check if there's a waiting player
+            if queue_state.waiting_players.len() > 0 {
+                println!(
+                    "[MATCHMAKING] _fifo_matchmaking: MATCH FOUND! Processing existing waiting player",
+                );
+                // Match found! Get the first waiting player
+                let mut waiting_players_vec = queue_state.waiting_players.span();
+                let opponent = *waiting_players_vec[0];
+                println!("[MATCHMAKING] _fifo_matchmaking: opponent={:x}", opponent);
+
+                // Remove opponent from queue (create new array without first element)
+                let mut new_waiting_players: Array<ContractAddress> = ArrayTrait::new();
+                let mut i = 1;
+                while i < waiting_players_vec.len() {
+                    new_waiting_players.append(*waiting_players_vec[i]);
+                    i += 1;
+                };
+                queue_state.waiting_players = new_waiting_players.clone();
+                world.write_model(@queue_state);
+                println!(
+                    "[MATCHMAKING] _fifo_matchmaking: opponent removed from queue, new queue size={}",
+                    new_waiting_players.len(),
+                );
+
+                // Remove opponent from PlayerMatchmaking
+                let empty_opponent_mm = PlayerMatchmaking {
+                    player: opponent, game_mode: GameMode::None, tournament_id: 0, timestamp: 0,
+                };
+                world.write_model(@empty_opponent_mm);
+                println!("[MATCHMAKING] _fifo_matchmaking: opponent PlayerMatchmaking cleared");
+
+                // Get opponent game state
+                let mut opponent_game: Game = world.read_model(opponent);
+                println!(
+                    "[MATCHMAKING] _fifo_matchmaking: opponent_game - status={:?}, mode={:?}",
+                    opponent_game.status,
+                    opponent_game.game_mode,
+                );
+
+                // Get game configuration
+                let config: GameModeConfig = world.read_model(mode);
+                println!("[MATCHMAKING] _fifo_matchmaking: config loaded for mode={:?}", mode);
+
+                // Create board for the match
+                println!("[MATCHMAKING] _fifo_matchmaking: creating board for match");
+                let board = self
+                    ._create_board_for_mode(
+                        opponent, // host_player (first in queue)
+                        caller, // guest_player (joining now)
+                        mode,
+                        config,
+                        tid, // tournament_id
+                        world,
+                    );
+                println!("[MATCHMAKING] _fifo_matchmaking: board created with id={}", board.id);
+
+                // Update both players' game states
+                opponent_game.status = GameStatus::InProgress;
+                opponent_game.board_id = Option::Some(board.id);
+                opponent_game.game_mode = mode;
+                world.write_model(@opponent_game);
+                println!("[MATCHMAKING] _fifo_matchmaking: opponent game updated to InProgress");
+
+                caller_game.status = GameStatus::InProgress;
+                caller_game.board_id = Option::Some(board.id);
+                caller_game.game_mode = mode;
+                world.write_model(@caller_game);
+                println!("[MATCHMAKING] _fifo_matchmaking: caller game updated to InProgress");
+
+                // Emit events
+                world
+                    .emit_event(
+                        @GameStarted {
+                            host_player: opponent, guest_player: caller, board_id: board.id,
+                        },
+                    );
+                println!("[MATCHMAKING] _fifo_matchmaking: GameStarted event emitted");
+
+                // Return board_id
+                println!(
+                    "[MATCHMAKING] _fifo_matchmaking: MATCH SUCCESSFUL! Returning board_id={}", board.id,
+                );
+                return board.id;
+            } else {
+                println!("[MATCHMAKING] _fifo_matchmaking: NO MATCH FOUND, adding caller to queue");
+                // No match found, add to queue
+                queue_state.waiting_players.append(caller);
+                world.write_model(@queue_state);
+                println!(
+                    "[MATCHMAKING] _fifo_matchmaking: caller added to queue, queue size={}",
+                    queue_state.waiting_players.len(),
+                );
+
+                // Create PlayerMatchmaking entry
+                let player_mm = PlayerMatchmaking {
+                    player: caller,
+                    game_mode: mode,
+                    tournament_id: tid,
+                    timestamp: starknet::get_block_timestamp(),
+                };
+                world.write_model(@player_mm);
+                println!("[MATCHMAKING] _fifo_matchmaking: PlayerMatchmaking entry created");
+
+                // Update caller's game state to Created (waiting)
+                caller_game.status = GameStatus::Created;
+                caller_game.board_id = Option::None;
+                caller_game.game_mode = mode;
+                world.write_model(@caller_game);
+                println!(
+                    "[MATCHMAKING] _fifo_matchmaking: caller game state updated to Created (waiting)",
+                );
+
+                // Return 0 to indicate waiting in queue
+                println!("[MATCHMAKING] _fifo_matchmaking: returning 0 (waiting in queue)");
+                return 0;
+            }
         }
 
         // Remove player from tournament queue (for insufficient tokens scenario)
