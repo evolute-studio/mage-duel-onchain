@@ -548,7 +548,7 @@ mod tests {
 
         // Verify tournament entries
         let total_entries = tournament_dispatcher.tournament_entries(tournament.id);
-        assert!(total_entries == 3, "Tournament should have 3 entries");
+        assert!(total_entries == 2, "Tournament should have 2 entries");
         println!("[test_two_players_tournament_with_enlist_and_join_duel] Tournament entries verified: {}", total_entries);
 
         // === ENLIST PHASE ===

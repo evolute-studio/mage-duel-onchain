@@ -16,7 +16,7 @@ openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts", 
 # achievement = { git = "https://github.com/evolute-studio/arcade" } # fork of arcade https://github.com/cartridge-gg/arcade 
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.4.0" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.4.0" }
-tournaments = { git = "https://github.com/evolute-studio/budokan-tournaments", rev = "4fff1b509d9adee655417191a6e6ba208a7887ff" } # fork of tournaments https://github.com/Provable-Games/tournaments
+tournaments = { git = "https://github.com/evolute-studio/budokan-tournaments", branch = "1.6.0-alpha.2" } # fork of tournaments https://github.com/Provable-Games/tournaments
 openzeppelin_introspection = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v1.0.0" }
 nft_combo = { git = "https://github.com/underware-gg/cairo-nft-combo", tag = "v1.0.0"}
 

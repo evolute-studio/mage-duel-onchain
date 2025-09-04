@@ -262,7 +262,7 @@ pub mod matchmaking {
                             @GameCreated { host_player: caller, status: GameStatus::Created },
                         );
                 },
-                _ => { println!("[MATCHMAKING] create_game: unsupported game mode"); },
+                _ => { panic!("[MATCHMAKING] create_game: unsupported game mode"); },
             }
 
             println!("[MATCHMAKING] create_game: function completed");
