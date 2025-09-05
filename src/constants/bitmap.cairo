@@ -20,7 +20,7 @@ pub const SEARCH_TIER_3_TIME: u64 = 60;  // Time to expand to tier 3
 pub const SEARCH_RADIUS_TIER_0: u8 = 0;   // Own league only (0-15s)
 pub const SEARCH_RADIUS_TIER_1: u8 = 1;   // ±1 league (15-30s)
 pub const SEARCH_RADIUS_TIER_2: u8 = 2;   // ±2 leagues (30-60s)  
-pub const SEARCH_RADIUS_TIER_3: u8 = 255; // Maximum radius (60s+)
+pub const SEARCH_RADIUS_TIER_3: u8 = 16; // Maximum radius (60s+)
 
 // Fairness check
 pub const MAX_ELO_DIFFERENCE: u32 = 800;   // Max rating difference for fair matches

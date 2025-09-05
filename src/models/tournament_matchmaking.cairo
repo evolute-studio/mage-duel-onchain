@@ -509,7 +509,7 @@ pub(crate) fn validate_match_fairness(
         opponent_rating - player_rating
     };
     
-    let is_fair = rating_diff <= MAX_ELO_DIFFERENCE;
+    let is_fair = rating_diff < MAX_ELO_DIFFERENCE;
     println!("[FAIRNESS_CHECK] rating_diff: {}, max_allowed: {}, is_fair: {}", 
         rating_diff, MAX_ELO_DIFFERENCE, is_fair);
     
