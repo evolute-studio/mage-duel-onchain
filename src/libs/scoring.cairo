@@ -1,11 +1,9 @@
 use starknet::ContractAddress;
 use evolute_duel::{
-    models::{game::{Board},},
-    systems::helpers::{
-        // city_scoring::{connect_city_edges_in_tile, connect_adjacent_city_edges, close_all_cities},
-        // road_scoring::{connect_road_edges_in_tile, connect_adjacent_road_edges, close_all_roads},
-        scoring::{connect_edges_in_tile, connect_adjacent_edges, close_all_nodes},
-    },
+    models::{game::{Board}},
+    systems::helpers::{// city_scoring::{connect_city_edges_in_tile, connect_adjacent_city_edges, close_all_cities},
+    // road_scoring::{connect_road_edges_in_tile, connect_adjacent_road_edges, close_all_roads},
+    scoring::{connect_edges_in_tile, connect_adjacent_edges, close_all_nodes}},
     types::packing::{PlayerSide, TEdge},
 };
 
@@ -31,14 +29,15 @@ pub impl ScoringImpl of ScoringTrait {
         mut world: dojo::world::WorldStorage,
     ) -> ScoringResult {
         let (city_points, road_points) = connect_edges_in_tile(
-            world, board_id, col, row, tile, rotation, player_side, board_size
+            world, board_id, col, row, tile, rotation, player_side, board_size,
         );
 
         let (
-            (mut blue_city_points_delta, mut blue_road_points_delta), 
-            (mut red_city_points_delta, mut red_road_points_delta)
-        ) = connect_adjacent_edges(
-            world, board_id, col, row, tile, rotation, board_size, player_side, player_address
+            (mut blue_city_points_delta, mut blue_road_points_delta),
+            (mut red_city_points_delta, mut red_road_points_delta),
+        ) =
+            connect_adjacent_edges(
+            world, board_id, col, row, tile, rotation, board_size, player_side, player_address,
         );
 
         if player_side == PlayerSide::Blue {
@@ -49,7 +48,7 @@ pub impl ScoringImpl of ScoringTrait {
             red_road_points_delta += road_points.try_into().unwrap();
         }
 
-        ScoringResult { 
+        ScoringResult {
             blue_city_points_delta,
             blue_road_points_delta,
             red_city_points_delta,
@@ -60,21 +59,28 @@ pub impl ScoringImpl of ScoringTrait {
     fn apply_scoring_results(
         scoring_result: ScoringResult, player_side: PlayerSide, ref board: Board,
     ) {
-        
         let (old_city_points, old_road_points) = board.blue_score;
         board
             .blue_score =
                 (
-                    (old_city_points.try_into().unwrap() + scoring_result.blue_city_points_delta).try_into().unwrap(),
-                    (old_road_points.try_into().unwrap() + scoring_result.blue_road_points_delta).try_into().unwrap(),
+                    (old_city_points.try_into().unwrap() + scoring_result.blue_city_points_delta)
+                        .try_into()
+                        .unwrap(),
+                    (old_road_points.try_into().unwrap() + scoring_result.blue_road_points_delta)
+                        .try_into()
+                        .unwrap(),
                 );
-    
+
         let (old_city_points, old_road_points) = board.red_score;
         board
             .red_score =
                 (
-                    (old_city_points.try_into().unwrap() + scoring_result.red_city_points_delta).try_into().unwrap(),
-                    (old_road_points.try_into().unwrap() + scoring_result.red_road_points_delta).try_into().unwrap(),
+                    (old_city_points.try_into().unwrap() + scoring_result.red_city_points_delta)
+                        .try_into()
+                        .unwrap(),
+                    (old_road_points.try_into().unwrap() + scoring_result.red_road_points_delta)
+                        .try_into()
+                        .unwrap(),
                 );
     }
 
@@ -109,15 +115,11 @@ pub impl ScoringImpl of ScoringTrait {
     }
 
     fn calculate_final_scoring(
-        potential_contests: Span<u32>,
-        ref board: Board,
-        mut world: dojo::world::WorldStorage,
+        potential_contests: Span<u32>, ref board: Board, mut world: dojo::world::WorldStorage,
     ) {
         println!("Calculating final scoring...");
 
-        let contest_results = close_all_nodes(
-            world, potential_contests, board.id
-        );
+        let contest_results = close_all_nodes(world, potential_contests, board.id);
 
         for i in 0..contest_results.len() {
             let contest_result = *contest_results.at(i.into());

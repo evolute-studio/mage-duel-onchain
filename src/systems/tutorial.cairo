@@ -1,147 +1,57 @@
-use starknet::ContractAddress;
-
-const MOVE_TIME: u64 = 65; // 1 min
-
 /// Interface defining core game actions and player interactions.
 #[starknet::interface]
 pub trait ITutorial<T> {
-    fn create_tutorial_game(
-        ref self: T,
-        bot_address: ContractAddress,
-    );
-
-    fn make_move(
-        ref self: T, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8,
-    );
+    fn make_move(ref self: T, joker_tile: Option<u8>, rotation: u8, col: u8, row: u8);
 
     fn skip_move(ref self: T);
-
-    /// Cancels a tutorial game - only the player (not bot) can cancel
-    fn cancel_game(ref self: T);
-}   
+}
 
 
 // dojo decorator
 #[dojo::contract]
 pub mod tutorial {
     use super::*;
-    use starknet::{
-        ContractAddress,
-        get_caller_address,
-        get_block_timestamp,
-    };
-    use dojo::{
-        event::EventStorage,
-        model::{ModelStorage, Model},
-    };
-    use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
+    use dojo::{event::EventStorage, model::{ModelStorage, Model}};
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use evolute_duel::{
         libs::{
-            asserts::AssertsTrait,
-            timing::{TimingTrait},
-            scoring::{ScoringTrait},
+            asserts::AssertsTrait, timing::{TimingTrait}, scoring::{ScoringTrait},
             move_execution::{MoveExecutionTrait, MoveData},
             game_finalization::{GameFinalizationTrait, GameFinalizationData},
             phase_management::{PhaseManagementTrait},
         },
         models::{
-            game::{Game, Board, Move},
-            scoring::{PotentialContests},
-            player::{Player, PlayerTrait},
+            game::{Game, Board, Move}, scoring::{PotentialContests}, player::{Player, PlayerTrait},
         },
-        events::{TutorialCompleted, GameCanceled},
-        types::{
-            packing::{GameStatus, GameState, PlayerSide, GameMode},
-        },
-        systems::helpers::{
-            board::{BoardTrait},
-        },
-        events::{GameCreated, GameStarted, Skiped},
+        events::{TutorialCompleted}, types::{packing::{GameState, PlayerSide}},
+        systems::helpers::{board::{BoardTrait}}, events::{Skiped},
     };
-    
+
     #[storage]
     struct Storage {
         move_id_generator: felt252,
     }
-    
+
     #[abi(embed_v0)]
     impl TutorialImpl of ITutorial<ContractState> {
-        fn create_tutorial_game(
-            ref self: ContractState,
-            bot_address: ContractAddress,
-        ) {
-            let mut world = self.world_default();
-
-            let host_player = get_caller_address();
-
-            let mut game: Game = world.read_model(host_player);
-
-            if !AssertsTrait::assert_ready_to_create_game(@game, world) {
-                return;
-            }
-
-            let mut bot_game = world.read_model(bot_address);
-            if !AssertsTrait::assert_ready_to_create_game(@bot_game, world) {
-                return;
-            }
-
-            let board = BoardTrait::create_tutorial_board(
-                world,
-                host_player,
-                bot_address,
-            );
-                
-
-            game.status = GameStatus::InProgress;
-            game.board_id = Option::Some(board.id);
-            game.game_mode = GameMode::Tutorial;
-            world.write_model(@game);
-
-            
-            bot_game.status = GameStatus::InProgress;
-            bot_game.board_id = Option::Some(board.id);
-            bot_game.game_mode = GameMode::Tutorial;
-            world.write_model(@bot_game);
-
-
-            
-            // For now, we will just emit an event indicating the game has been created
-            world.emit_event(@GameCreated { 
-                host_player,
-                status: GameStatus::Created,
-            });
-
-            world.emit_event(@GameStarted {
-                host_player,
-                guest_player: bot_address,
-                board_id: board.id,
-            });
-
-            PhaseManagementTrait::transition_to_move_phase(
-                board.id,
-                board.top_tile,
-                board.commited_tile,
-                world,
-            );
-        }
-
         fn make_move(
             ref self: ContractState, joker_tile: Option<u8>, rotation: u8, mut col: u8, mut row: u8,
         ) {
             let mut world = self.world_default();
             let player = get_caller_address();
-           
+
             let game: Game = world.read_model(player);
 
             if !AssertsTrait::assert_player_in_game(@game, Option::None, world) {
                 return;
             }
-            
+
             // Validate GameMode access for tutorial make_move
             if !AssertsTrait::assert_tutorial_game_access(@game, player, 'make_move', world) {
                 return;
             }
-            
+
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
@@ -152,17 +62,19 @@ pub mod tutorial {
             assert!(
                 board.game_state == GameState::Move,
                 "[ERROR] Game state is not Move: {:?}",
-                board.game_state
+                board.game_state,
             );
 
             let (player_side, joker_number) = match board.get_player_data(player, world) {
                 Option::Some((side, joker_number)) => (side, joker_number),
-                Option::None => {return;}
+                Option::None => { return; },
             };
 
             let is_joker = joker_tile.is_some();
 
-            if !MoveExecutionTrait::validate_joker_usage(joker_tile, joker_number, player, board_id, world) {
+            if !MoveExecutionTrait::validate_joker_usage(
+                joker_tile, joker_number, player, board_id, world,
+            ) {
                 return;
             }
 
@@ -170,26 +82,31 @@ pub mod tutorial {
                 return;
             }
 
-            let tile = match MoveExecutionTrait::get_tile_for_move(joker_tile, @board, world, player) {
+            let tile =
+                match MoveExecutionTrait::get_tile_for_move(joker_tile, @board, world, player) {
                 Option::Some(tile) => tile,
-                Option::None => {
-                    return;
-                }
+                Option::None => { return; },
             };
 
-            if !MoveExecutionTrait::validate_move(board_id, tile.into(), rotation, col, row, 7, world) {
+            if !MoveExecutionTrait::validate_move(
+                board_id, tile.into(), rotation, col, row, 7, world,
+            ) {
                 let move_id = self.move_id_generator.read();
-                let move_data = MoveData { tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile };
-                let move_record = MoveExecutionTrait::create_move_record(move_id, move_data, board.last_move_id, board_id);
+                let move_data = MoveData {
+                    tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile,
+                };
+                let move_record = MoveExecutionTrait::create_move_record(
+                    move_id, move_data, board.last_move_id, board_id,
+                );
                 MoveExecutionTrait::emit_invalid_move_event(move_record, board_id, player, world);
                 println!("[Invalid move] \nBoard: {:?}, Move: {:?}", board, move_record);
                 return;
             }
-            
+
             println!("Validation passed, proceeding with move execution");
 
             let scoring_result = ScoringTrait::calculate_move_scoring(
-                tile, rotation, col.into(), row.into(), player_side, player, board_id, 7, world
+                tile, rotation, col.into(), row.into(), player_side, player, board_id, 7, world,
             );
 
             println!("Scoring result: {:?}", scoring_result);
@@ -198,16 +115,22 @@ pub mod tutorial {
 
             println!("Scoring applied, updating board");
 
-            let move_data = MoveData { tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile };
-            let top_tile = MoveExecutionTrait::update_board_after_move(move_data, ref board, is_joker, is_tutorial: true, world: world);
+            let move_data = MoveData {
+                tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile,
+            };
+            let top_tile = MoveExecutionTrait::update_board_after_move(
+                move_data, ref board, is_joker, is_tutorial: true, world: world,
+            );
 
             println!("Board updated, creating move record");
 
             let move_id = self.move_id_generator.read();
-            let move_record = MoveExecutionTrait::create_move_record(move_id, move_data, board.last_move_id, board_id);
+            let move_record = MoveExecutionTrait::create_move_record(
+                move_id, move_data, board.last_move_id, board_id,
+            );
 
             println!("Move record created: {:?}", move_record);
-            
+
             board.last_move_id = Option::Some(move_id);
             self.move_id_generator.write(move_id + 1);
 
@@ -218,45 +141,49 @@ pub mod tutorial {
             println!("Move events emitted");
 
             let (updated_joker1, updated_joker2) = board.get_joker_numbers();
-            println!("[make_move] Game ending check: joker1={}, joker2={}, top_tile_exists={}, moves_done={}", updated_joker1, updated_joker2, top_tile.is_some(), board.moves_done);
-            
+            println!(
+                "[make_move] Game ending check: joker1={}, joker2={}, top_tile_exists={}, moves_done={}",
+                updated_joker1,
+                updated_joker2,
+                top_tile.is_some(),
+                board.moves_done,
+            );
+
             // Check if board is full (all playable positions are occupied)
             if MoveExecutionTrait::is_board_full(board.moves_done, 7) {
                 println!("[make_move] BOARD FULL CONDITION MET: moves_done={}", board.moves_done);
                 let potential_contests_model: PotentialContests = world.read_model(board_id);
-                println!("[make_move] About to call _finish_game with {} potential contests", potential_contests_model.potential_contests.len());
-                self._finish_game(
-                    ref board,
-                    potential_contests_model.potential_contests.span(),
+                println!(
+                    "[make_move] About to call _finish_game with {} potential contests",
+                    potential_contests_model.potential_contests.len(),
                 );
+                self._finish_game(ref board, potential_contests_model.potential_contests.span());
                 println!("[make_move] _finish_game call completed, returning");
                 return;
             }
-            
+
             // Check traditional end conditions (no jokers and no tiles left)
-            if updated_joker1 == 0 && updated_joker2 == 0  && top_tile.is_none() {
-                println!("[make_move] TRADITIONAL ENDING CONDITION MET: No jokers and no tiles left");
-                let potential_contests_model: PotentialContests = world.read_model(board_id);
-                println!("[make_move] About to call _finish_game with {} potential contests", potential_contests_model.potential_contests.len());
-                self._finish_game(
-                    ref board,
-                    potential_contests_model.potential_contests.span(),
+            if updated_joker1 == 0 && updated_joker2 == 0 && top_tile.is_none() {
+                println!(
+                    "[make_move] TRADITIONAL ENDING CONDITION MET: No jokers and no tiles left",
                 );
+                let potential_contests_model: PotentialContests = world.read_model(board_id);
+                println!(
+                    "[make_move] About to call _finish_game with {} potential contests",
+                    potential_contests_model.potential_contests.len(),
+                );
+                self._finish_game(ref board, potential_contests_model.potential_contests.span());
                 println!("[make_move] _finish_game call completed, returning");
                 return;
             }
 
             PhaseManagementTrait::transition_to_move_phase(
-                board.id,
-                board.top_tile,
-                board.commited_tile,
-                world,
+                board.id, board.top_tile, board.commited_tile, world,
             );
-
             // println!(
-            //     "Move made: {:?} \nBoard: {:?} \nUnion find: {:?}",
-            //     move, board, union_find,
-            // );
+        //     "Move made: {:?} \nBoard: {:?} \nUnion find: {:?}",
+        //     move, board, union_find,
+        // );
         }
 
         fn skip_move(ref self: ContractState) {
@@ -268,7 +195,7 @@ pub mod tutorial {
             if !AssertsTrait::assert_player_in_game(@game, Option::None, world) {
                 return;
             }
-            
+
             // Validate GameMode access for tutorial skip_move
             if !AssertsTrait::assert_tutorial_game_access(@game, player, 'skip_move', world) {
                 return;
@@ -284,13 +211,13 @@ pub mod tutorial {
             assert!(
                 board.game_state == GameState::Move,
                 "[ERROR] Game state is not Move: {:?}",
-                board.game_state
+                board.game_state,
             );
 
             // Get player data and validate turn
             let (player_side, _) = match board.get_player_data(player, world) {
                 Option::Some((side, joker_number)) => (side, joker_number),
-                Option::None => {return;}
+                Option::None => { return; },
             };
 
             // Validate it's current player's turn
@@ -304,92 +231,27 @@ pub mod tutorial {
 
             // Execute skip move
             self._skip_move(player, player_side, ref board, self.move_id_generator, true);
-            
+
             // If two consecutive skips, finish the game
             if should_finish_game {
                 println!("[skip_move] Two consecutive skips detected, finishing the game");
                 let potential_contests_model: PotentialContests = world.read_model(board_id);
-                println!("[skip_move] About to call _finish_game with {} potential contests", potential_contests_model.potential_contests.len());
-                
-                self._finish_game(
-                    ref board,
-                    potential_contests_model.potential_contests.span(),
+                println!(
+                    "[skip_move] About to call _finish_game with {} potential contests",
+                    potential_contests_model.potential_contests.len(),
                 );
-                
+
+                self._finish_game(ref board, potential_contests_model.potential_contests.span());
+
                 println!("[skip_move] _finish_game call completed, returning");
                 return;
             }
-            
-            MoveExecutionTrait::emit_board_updated_event(
-                @board, world,
-            );
+
+            MoveExecutionTrait::emit_board_updated_event(@board, world);
 
             PhaseManagementTrait::transition_to_move_phase(
-                board.id,
-                board.top_tile,
-                board.commited_tile,
-                world,
+                board.id, board.top_tile, board.commited_tile, world,
             );
-        }
-
-        fn cancel_game(ref self: ContractState) {
-            let mut world = self.world_default();
-            let player = get_caller_address();
-
-            let mut game: Game = world.read_model(player);
-
-            // Validate this is a tutorial game
-            if !AssertsTrait::assert_tutorial_game_access(@game, player, 'cancel_game', world) {
-                return;
-            }
-
-            // Validate player can cancel (must be in Created or InProgress state)
-            if game.status != GameStatus::Created && game.status != GameStatus::InProgress {
-                println!("[ERROR] Cannot cancel tutorial game in status: {:?}", game.status);
-                return;
-            }
-
-            let board_id = game.board_id;
-            
-            // If game is in progress, we need to handle the board
-            if game.status == GameStatus::InProgress && board_id.is_some() {
-                let mut board: Board = world.read_model(board_id.unwrap());
-                let board_id_value = board.id.clone();
-                let (player1_address, _, _) = board.player1;
-                let (player2_address, _, _) = board.player2;
-
-                // Identify the bot (the one that's not the caller)
-                let bot_address = if player1_address == player {
-                    player2_address
-                } else {
-                    player1_address
-                };
-
-                // Update bot's game state
-                let mut bot_game: Game = world.read_model(bot_address);
-                bot_game.status = GameStatus::Canceled;
-                bot_game.board_id = Option::None;
-                world.write_model(@bot_game);
-
-                // Mark board as finished
-                world.write_member(
-                    Model::<Board>::ptr_from_keys(board_id_value),
-                    selector!("game_state"),
-                    GameState::Finished,
-                );
-            }
-
-            // Update player's game state
-            game.status = GameStatus::Canceled;
-            game.board_id = Option::None;
-            world.write_model(@game);
-
-            world.emit_event(@GameCanceled { 
-                host_player: player, 
-                status: GameStatus::Canceled 
-            });
-
-            println!("[TUTORIAL] Game canceled by player: {:?}", player);
         }
     }
 
@@ -404,8 +266,8 @@ pub mod tutorial {
             player: ContractAddress,
             player_side: PlayerSide,
             ref board: Board,
-            move_id_generator: core::starknet::storage::StorageBase::<
-                core::starknet::storage::Mutable<core::felt252>,
+            move_id_generator: starknet::storage::StorageBase::<
+                starknet::storage::Mutable<core::felt252>,
             >,
             emit_event: bool,
         ) {
@@ -427,7 +289,9 @@ pub mod tutorial {
                 first_board_id: board_id,
                 timestamp,
                 top_tile: match board.top_tile {
-                    Option::Some(tile_index) => Option::Some(*board.available_tiles_in_deck.at(tile_index.into())),
+                    Option::Some(tile_index) => Option::Some(
+                        *board.available_tiles_in_deck.at(tile_index.into()),
+                    ),
                     Option::None => Option::None,
                 },
             };
@@ -439,11 +303,10 @@ pub mod tutorial {
 
             world.write_model(@move);
 
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                    selector!("top_tile"),
-                    board.top_tile,
-            );
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
+                );
             world
                 .write_member(
                     Model::<Board>::ptr_from_keys(board_id),
@@ -461,18 +324,19 @@ pub mod tutorial {
             }
         }
 
-        fn _finish_game(
-            self: @ContractState,
-            ref board: Board,
-            potential_contests: Span<u32>,
-        ) {
+        fn _finish_game(self: @ContractState, ref board: Board, potential_contests: Span<u32>) {
             println!("[_finish_game] Starting game finalization for board ID: {}", board.id);
-            
+
             let mut world = self.world_default();
             let (player1_address, player1_side, joker_number1) = board.player1;
             let (player2_address, _player2_side, joker_number2) = board.player2;
 
-            println!("[_finish_game] Player1: {:?}, Side: {:?}, Jokers: {}", player1_address, player1_side, joker_number1);
+            println!(
+                "[_finish_game] Player1: {:?}, Side: {:?}, Jokers: {}",
+                player1_address,
+                player1_side,
+                joker_number1,
+            );
             println!("[_finish_game] Player2: {:?}, Jokers: {}", player2_address, joker_number2);
 
             let finalization_data = GameFinalizationData {
@@ -484,12 +348,12 @@ pub mod tutorial {
                 joker_number2,
             };
 
-            println!("[_finish_game] Calling GameFinalizationTrait::finalize_game with {} potential contests", potential_contests.len());
+            println!(
+                "[_finish_game] Calling GameFinalizationTrait::finalize_game with {} potential contests",
+                potential_contests.len(),
+            );
             GameFinalizationTrait::finalize_game(
-                finalization_data,
-                ref board,
-                potential_contests,
-                0, // Both
+                finalization_data, ref board, potential_contests, 0, // Both
                 world,
             );
             println!("[_finish_game] GameFinalizationTrait::finalize_game completed");
@@ -497,42 +361,52 @@ pub mod tutorial {
             // Auto-complete tutorial for guest players
             let current_time = get_block_timestamp();
             println!("[_finish_game] Current timestamp: {}", current_time);
-            
+
             // Check and complete tutorial for player1 if they are a guest
             println!("[_finish_game] Reading player1 model for tutorial completion check");
             let mut player1: Player = world.read_model(player1_address);
-            println!("[_finish_game] Player1 is_guest: {}, tutorial_completed: {}", player1.is_guest(), player1.tutorial_completed);
+            println!(
+                "[_finish_game] Player1 is_guest: {}, tutorial_completed: {}",
+                player1.is_guest(),
+                player1.tutorial_completed,
+            );
             if player1.is_guest() && !player1.tutorial_completed {
                 println!("[_finish_game] Completing tutorial for player1");
                 player1.tutorial_completed = true;
                 world.write_model(@player1);
-                
-                world.emit_event(@TutorialCompleted {
-                    player_id: player1_address,
-                    completed_at: current_time
-                });
+
+                world
+                    .emit_event(
+                        @TutorialCompleted {
+                            player_id: player1_address, completed_at: current_time,
+                        },
+                    );
                 println!("[_finish_game] Tutorial completed event emitted for player1");
             }
-            
+
             // Check and complete tutorial for player2 if they are a guest
             println!("[_finish_game] Reading player2 model for tutorial completion check");
             let mut player2: Player = world.read_model(player2_address);
-            println!("[_finish_game] Player2 is_guest: {}, tutorial_completed: {}", player2.is_guest(), player2.tutorial_completed);
+            println!(
+                "[_finish_game] Player2 is_guest: {}, tutorial_completed: {}",
+                player2.is_guest(),
+                player2.tutorial_completed,
+            );
             if player2.is_guest() && !player2.tutorial_completed {
                 println!("[_finish_game] Completing tutorial for player2");
                 player2.tutorial_completed = true;
                 world.write_model(@player2);
-                
-                world.emit_event(@TutorialCompleted {
-                    player_id: player2_address,
-                    completed_at: current_time
-                });
+
+                world
+                    .emit_event(
+                        @TutorialCompleted {
+                            player_id: player2_address, completed_at: current_time,
+                        },
+                    );
                 println!("[_finish_game] Tutorial completed event emitted for player2");
             }
-            
+
             println!("[_finish_game] Game finalization completed");
         }
-
     }
-   
 }

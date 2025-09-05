@@ -40,13 +40,9 @@ pub mod account_migration {
     use evolute_duel::{
         events::{
             MigrationInitiated, MigrationConfirmed, MigrationCompleted, MigrationCancelled,
-            EmergencyMigrationCancelled, MigrationError
+            EmergencyMigrationCancelled,
         },
-        models::{
-            player::{Player, PlayerTrait}, 
-            migration::{MigrationRequest, MigrationRequestTrait}
-        },
-        libs::{asserts::AssertsTrait},
+        models::{player::{Player}, migration::{MigrationRequest}}, libs::{asserts::AssertsTrait},
     };
     use openzeppelin_access::ownable::OwnableComponent;
 
@@ -90,15 +86,21 @@ pub mod account_migration {
             let existing_request: MigrationRequest = world.read_model(caller);
 
             // VALIDATION USING ASSERTS TRAIT:
-            if !AssertsTrait::assert_guest_can_initiate_migration(@guest_player, target_controller, world) {
+            if !AssertsTrait::assert_guest_can_initiate_migration(
+                @guest_player, target_controller, world,
+            ) {
                 return;
             }
-            
-            if !AssertsTrait::assert_controller_can_receive_migration(@controller_player, caller, world) {
+
+            if !AssertsTrait::assert_controller_can_receive_migration(
+                @controller_player, caller, world,
+            ) {
                 return;
             }
-            
-            if !AssertsTrait::assert_no_pending_migration(@guest_player, @existing_request, current_time, target_controller, world) {
+
+            if !AssertsTrait::assert_no_pending_migration(
+                @guest_player, @existing_request, current_time, target_controller, world,
+            ) {
                 return;
             }
 
@@ -108,7 +110,7 @@ pub mod account_migration {
                 controller_address: target_controller,
                 requested_at: current_time,
                 expires_at: current_time + MIGRATION_TIMEOUT,
-                status: 0, // pending
+                status: 0 // pending
             };
 
             // Update guest account
@@ -119,11 +121,14 @@ pub mod account_migration {
             world.write_model(@migration_request);
             world.write_model(@updated_guest);
 
-            world.emit_event(@MigrationInitiated {
-                guest_address: caller,
-                controller_address: target_controller,
-                expires_at: current_time + MIGRATION_TIMEOUT
-            });
+            world
+                .emit_event(
+                    @MigrationInitiated {
+                        guest_address: caller,
+                        controller_address: target_controller,
+                        expires_at: current_time + MIGRATION_TIMEOUT,
+                    },
+                );
         }
 
         fn confirm_migration(ref self: ContractState, guest_address: ContractAddress) {
@@ -134,7 +139,9 @@ pub mod account_migration {
             let mut migration_request: MigrationRequest = world.read_model(guest_address);
 
             // VALIDATION USING ASSERTS TRAIT:
-            if !AssertsTrait::assert_can_confirm_migration(@migration_request, caller, current_time, world) {
+            if !AssertsTrait::assert_can_confirm_migration(
+                @migration_request, caller, current_time, world,
+            ) {
                 return;
             }
 
@@ -142,11 +149,12 @@ pub mod account_migration {
             migration_request.status = 1; // approved
             world.write_model(@migration_request);
 
-            world.emit_event(@MigrationConfirmed {
-                guest_address,
-                controller_address: caller,
-                confirmed_at: current_time
-            });
+            world
+                .emit_event(
+                    @MigrationConfirmed {
+                        guest_address, controller_address: caller, confirmed_at: current_time,
+                    },
+                );
         }
 
         fn execute_migration(ref self: ContractState, guest_address: ContractAddress) {
@@ -155,10 +163,13 @@ pub mod account_migration {
 
             let migration_request: MigrationRequest = world.read_model(guest_address);
             let guest_player: Player = world.read_model(guest_address);
-            let mut controller_player: Player = world.read_model(migration_request.controller_address);
+            let mut controller_player: Player = world
+                .read_model(migration_request.controller_address);
 
             // VALIDATION USING ASSERTS TRAIT:
-            if !AssertsTrait::assert_can_execute_migration(@migration_request, @guest_player, current_time, world) {
+            if !AssertsTrait::assert_can_execute_migration(
+                @migration_request, @guest_player, current_time, world,
+            ) {
                 return;
             }
 
@@ -194,12 +205,15 @@ pub mod account_migration {
             world.write_model(@cleaned_guest);
             world.write_model(@completed_request);
 
-            world.emit_event(@MigrationCompleted {
-                guest_address,
-                controller_address: migration_request.controller_address,
-                balance_transferred: balance_to_transfer,
-                games_transferred: games_to_transfer
-            });
+            world
+                .emit_event(
+                    @MigrationCompleted {
+                        guest_address,
+                        controller_address: migration_request.controller_address,
+                        balance_transferred: balance_to_transfer,
+                        games_transferred: games_to_transfer,
+                    },
+                );
         }
 
         fn cancel_migration(ref self: ContractState) {
@@ -222,11 +236,14 @@ pub mod account_migration {
             world.write_model(@migration_request);
             world.write_model(@guest_player);
 
-            world.emit_event(@MigrationCancelled {
-                guest_address: caller,
-                controller_address: migration_request.controller_address,
-                cancelled_at: get_block_timestamp()
-            });
+            world
+                .emit_event(
+                    @MigrationCancelled {
+                        guest_address: caller,
+                        controller_address: migration_request.controller_address,
+                        cancelled_at: get_block_timestamp(),
+                    },
+                );
         }
 
         fn emergency_cancel_migration(ref self: ContractState, guest_address: ContractAddress) {
@@ -245,11 +262,14 @@ pub mod account_migration {
             world.write_model(@migration_request);
             world.write_model(@guest_player);
 
-            world.emit_event(@EmergencyMigrationCancelled {
-                guest_address,
-                admin_address: admin,
-                reason: "Emergency cancellation by admin"
-            });
+            world
+                .emit_event(
+                    @EmergencyMigrationCancelled {
+                        guest_address,
+                        admin_address: admin,
+                        reason: "Emergency cancellation by admin",
+                    },
+                );
         }
     }
 

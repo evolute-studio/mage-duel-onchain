@@ -2,50 +2,51 @@
 version = 1
 
 [[package]]
-name = "achievement"
-version = "0.0.0"
-source = "git+https://github.com/evolute-studio/arcade#118e54701b457879073162a3ef1a7eefb79e27a4"
-dependencies = [
- "dojo",
-]
+name = "alexandria_data_structures"
+version = "0.5.2"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.5.2#2fa8b3e12e31f58216b7d890c3d9094da9e6fcff"
 
 [[package]]
-name = "alexandria_data_structures"
-version = "0.4.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.4.0#ae3d960589a2f0c9af5fbd9236f6f3eb39fea8ed"
+name = "alexandria_math"
+version = "0.5.2"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.5.2#2fa8b3e12e31f58216b7d890c3d9094da9e6fcff"
 
 [[package]]
 name = "dojo"
-version = "1.6.0-alpha.0"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.6.0-alpha.1#054623bbf939a3bf90786355bd9b081a2b1b3c3a"
+version = "1.6.0-alpha.1"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.7.0-alpha.1#67aeb9f49c6b8c30b1850badd065c9192617c3b2"
 dependencies = [
- "dojo_plugin",
+ "dojo_macros",
 ]
 
 [[package]]
 name = "dojo_cairo_test"
-version = "1.6.0-alpha.0"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.6.0-alpha.1#054623bbf939a3bf90786355bd9b081a2b1b3c3a"
+version = "1.6.0-alpha.1"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.7.0-alpha.1#67aeb9f49c6b8c30b1850badd065c9192617c3b2"
 dependencies = [
  "dojo",
 ]
 
 [[package]]
-name = "dojo_plugin"
-version = "2.10.1"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.6.0-alpha.1#054623bbf939a3bf90786355bd9b081a2b1b3c3a"
+name = "dojo_macros"
+version = "1.6.0-alpha.1"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.7.0-alpha.1#67aeb9f49c6b8c30b1850badd065c9192617c3b2"
 
 [[package]]
 name = "evolute_duel"
-version = "1.6.0"
+version = "1.7.0"
 dependencies = [
- "achievement",
  "alexandria_data_structures",
+ "alexandria_math",
  "dojo",
  "dojo_cairo_test",
+ "dojo_macros",
  "openzeppelin_access",
+ "openzeppelin_introspection",
  "openzeppelin_token",
  "origami_random",
+ "origami_rating",
+ "tournaments",
 ]
 
 [[package]]
@@ -90,4 +91,20 @@ source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v1.0.0#755
 [[package]]
 name = "origami_random"
 version = "1.1.2"
-source = "git+https://github.com/dojoengine/origami#5cb443313333ead3a71a4d15e398aff7c0834bbb"
+source = "git+https://github.com/dojoengine/origami#81e49e9db43e8528cbb5d914e4da3479a9f02fb8"
+
+[[package]]
+name = "origami_rating"
+version = "1.1.2"
+source = "git+https://github.com/dojoengine/origami#81e49e9db43e8528cbb5d914e4da3479a9f02fb8"
+
+[[package]]
+name = "tournaments"
+version = "0.0.1"
+source = "git+https://github.com/evolute-studio/budokan-tournaments#71bccd49f8bbf552d7b331dac268ab76c69e4088"
+dependencies = [
+ "dojo",
+ "dojo_macros",
+ "openzeppelin_introspection",
+ "openzeppelin_token",
+]

@@ -1,16 +1,14 @@
-use starknet::ContractAddress;
-
 /// Interface defining core game actions and player interactions.
 #[starknet::interface]
 pub trait IGame<T> {
-    /// Creates a new game session.
-    fn create_game(ref self: T);
+    // /// Creates a new game session.
+    // fn create_game(ref self: T);
 
-    /// Cancels an ongoing or pending game session.
-    fn cancel_game(ref self: T);
+    // /// Cancels an ongoing or pending game session.
+    // fn cancel_game(ref self: T);
 
-    /// Allows a player to join an existing game hosted by another player.
-    fn join_game(ref self: T, host_player: ContractAddress);
+    // /// Allows a player to join an existing game hosted by another player.
+    // fn join_game(ref self: T, host_player: ContractAddress);
 
     /// Commits tiles to the game state.
     /// - `commitments`: A span of tile commitments to be added to the game state.
@@ -45,356 +43,424 @@ pub mod game {
     use core::num::traits::Zero;
     use evolute_duel::{
         models::{
-            game::{Board, Rules, Move, Game, TileCommitments, AvailableTiles},
+            game::{Board, Move, Game, TileCommitments, AvailableTiles},
             scoring::{PotentialContests},
         },
-        events::{
-            GameCreated, GameCreateFailed, GameStarted, GameCanceled,
-            PlayerNotInGame,
-            Skiped, ErrorEvent
-        },
-        systems::helpers::{
-            board::{BoardTrait},
-        },
+        events::{GameCreateFailed, GameCanceled, PlayerNotInGame, Skiped, ErrorEvent},
+        systems::helpers::{board::{BoardTrait}},
         types::{
             packing::{GameStatus, GameState, PlayerSide, GameMode},
-            trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait},
+            // trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait},
         },
-        constants::{CREATING_TIME, REVEAL_TIME, MOVE_TIME},
+        constants::constants::{CREATING_TIME, REVEAL_TIME, MOVE_TIME},
         libs::{ // store::{Store, StoreTrait},
-            asserts::{AssertsTrait},
-            timing::{TimingTrait}, scoring::{ScoringTrait},
+            asserts::{AssertsTrait}, timing::{TimingTrait}, scoring::{ScoringTrait},
             move_execution::{MoveExecutionTrait, MoveData},
             tile_reveal::{TileRevealTrait, TileRevealData},
             game_finalization::{GameFinalizationTrait, GameFinalizationData},
             phase_management::{PhaseManagementTrait},
         },
-        utils::hash::{
-            hash_values, hash_sha256_to_felt252,
-        },
+        utils::hash::{hash_values, hash_sha256_to_felt252},
     };
-    use dojo::{
-        event::EventStorage,
-        model::{ModelStorage, Model},
-    };
+    use dojo::{event::EventStorage, model::{ModelStorage, Model}};
 
-    use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use origami_random::dice::DiceTrait;
 
-    use achievement::components::achievable::AchievableComponent;
-    component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
-    impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
+    // use achievement::components::achievable::AchievableComponent;
+    // component!(path: AchievableComponent, storage: achievable, event: AchievableEvent);
+    // impl AchievableInternalImpl = AchievableComponent::InternalImpl<ContractState>;
 
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        #[flat]
-        AchievableEvent: AchievableComponent::Event,
-    }
+    // #[event]
+    // #[derive(Drop, starknet::Event)]
+    // enum Event {
+    //     #[flat]
+    //     AchievableEvent: AchievableComponent::Event,
+    // }
 
     #[storage]
     struct Storage {
         board_id_generator: felt252,
         move_id_generator: felt252,
         snapshot_id_generator: felt252,
-        #[substorage(v0)]
-        achievable: AchievableComponent::Storage,
+        // #[substorage(v0)]
+        // achievable: AchievableComponent::Storage,
     }
 
-    
 
     fn dojo_init(self: @ContractState) {
-        let mut world = self.world_default();
-        let id = 0;
-        let deck: Span<u8> = array![
-            2, // CCCC
-            0, // FFFF
-            0, // RRRR - not in the deck
-            4, // CCCF
-            3, // CCCR
-            6, // CCRR
-            4, // CFFF
-            0, // FFFR - not in the deck
-            0, // CRRR - not in the deck
-            4, // FRRR
-            7, // CCFF 
-            6, // CFCF
-            0, // CRCR - not in the deck
-            9, // FFRR
-            8, // FRFR
-            0, // CCFR - not in the deck
-            0, // CCRF - not in the deck
-            0, // CFCR - not in the deck
-            0, // CFFR - not in the deck
-            0, // CFRF - not in the deck
-            0, // CRFF - not in the deck
-            3, // CRRF
-            4, // CRFR
-            4 // CFRR
-        ]
-            .span();
-        let edges = (1, 1);
-        let joker_number = 3;
-        let joker_price = 5;
+        let mut _world = self.world_default();
+        // let id = 0;
+        // let deck: Span<u8> = array![
+        //     2, // CCCC
+        //     0, // FFFF
+        //     0, // RRRR - not in the deck
+        //     4, // CCCF
+        //     3, // CCCR
+        //     6, // CCRR
+        //     4, // CFFF
+        //     0, // FFFR - not in the deck
+        //     0, // CRRR - not in the deck
+        //     4, // FRRR
+        //     7, // CCFF
+        //     6, // CFCF
+        //     0, // CRCR - not in the deck
+        //     9, // FFRR
+        //     8, // FRFR
+        //     0, // CCFR - not in the deck
+        //     0, // CCRF - not in the deck
+        //     0, // CFCR - not in the deck
+        //     0, // CFFR - not in the deck
+        //     0, // CFRF - not in the deck
+        //     0, // CRFF - not in the deck
+        //     3, // CRRF
+        //     4, // CRFR
+        //     4 // CFRR
+        // ]
+        //     .span();
+        // let edges = (1, 1);
+        // let joker_number = 3;
+        // let joker_price = 5;
 
-        let rules = Rules { id, deck, edges, joker_number, joker_price };
+        // let rules = Rules { id, deck, edges, joker_number, joker_price };
 
-        world.write_model(@rules);
+        // world.write_model(@rules);
 
-        let mut trophy_id: u8 = TROPHY_COUNT;
-        while trophy_id > 0 {
-            let trophy: Trophy = trophy_id.into();
-            self
-                .achievable
-                .create(
-                    world,
-                    id: trophy.identifier(),
-                    hidden: trophy.hidden(),
-                    index: trophy.index(),
-                    points: trophy.points(),
-                    start: 0,
-                    end: 0,
-                    group: trophy.group(),
-                    icon: trophy.icon(),
-                    title: trophy.title(),
-                    description: trophy.description(),
-                    tasks: trophy.tasks(),
-                    data: trophy.data(),
-                );
+        // let mut trophy_id: u8 = TROPHY_COUNT;
+        // while trophy_id > 0 {
+        //     let trophy: Trophy = trophy_id.into();
+        //     self
+        //         .achievable
+        //         .create(
+        //             world,
+        //             id: trophy.identifier(),
+        //             hidden: trophy.hidden(),
+        //             index: trophy.index(),
+        //             points: trophy.points(),
+        //             start: 0,
+        //             end: 0,
+        //             group: trophy.group(),
+        //             icon: trophy.icon(),
+        //             title: trophy.title(),
+        //             description: trophy.description(),
+        //             tasks: trophy.tasks(),
+        //             data: trophy.data(),
+        //         );
 
-            trophy_id -= 1;
-        };
+        //     trophy_id -= 1;
+        // };
     }
 
     #[abi(embed_v0)]
     impl GameImpl of IGame<ContractState> {
-        fn create_game(ref self: ContractState) {
-            let mut world = self.world_default();
+        // fn create_game(ref self: ContractState) {
+        //     let mut world = self.world_default();
 
-            let host_player = get_caller_address();
+        //     let host_player = get_caller_address();
 
-            let mut game: Game = world.read_model(host_player);
+        //     let mut game: Game = world.read_model(host_player);
 
-            if !AssertsTrait::assert_ready_to_create_game(@game, world) {
-                return;
-            }
+        //     if !AssertsTrait::assert_ready_to_create_game(@game, world) {
+        //         return;
+        //     }
 
-            game.status = GameStatus::Created;
-            game.board_id = Option::None;
-            game.game_mode = GameMode::Casual; // Default to Casual mode for direct game creation
+        //     game.status = GameStatus::Created;
+        //     game.board_id = Option::None;
+        //     game.game_mode = GameMode::Casual; // Default to Casual mode for direct game creation
 
-            world.write_model(@game);
+        //     world.write_model(@game);
 
-            world.emit_event(@GameCreated { host_player, status: game.status });
-        }
+        //     world.emit_event(@GameCreated { host_player, status: game.status });
+        // }
 
-        fn cancel_game(ref self: ContractState) {
-            let mut world = self.world_default();
+        // fn cancel_game(ref self: ContractState) {
+        //     let mut world = self.world_default();
 
-            let host_player = get_caller_address();
+        //     let host_player = get_caller_address();
 
-            let mut game: Game = world.read_model(host_player);
-            
-            // Validate GameMode access for cancel_game (only Ranked/Casual games)
-            if !AssertsTrait::assert_regular_game_access(@game, host_player, 'cancel_game', world) {
-                return;
-            }
-            
-            let status = game.status;
+        //     let mut game: Game = world.read_model(host_player);
 
-            if status == GameStatus::InProgress && game.board_id.is_some() {
-                let mut board: Board = world.read_model(game.board_id.unwrap());
-                let board_id = board.id.clone();
-                let (player1_address, _, _) = board.player1;
-                let (player2_address, _, _) = board.player2;
+        //     // Validate GameMode access for cancel_game (only Ranked/Casual games)
+        //     if !AssertsTrait::assert_regular_game_access(@game, host_player, 'cancel_game',
+        //     world) {
+        //         return;
+        //     }
 
-                let another_player = if player1_address == host_player {
-                    player2_address
-                } else {
-                    player1_address
-                };
+        //     let status = game.status;
 
-                let mut game: Game = world.read_model(another_player);
-                let new_status = GameStatus::Canceled;
-                game.status = new_status;
-                game.board_id = Option::None;
+        //     if status == GameStatus::InProgress && game.board_id.is_some() {
+        //         let mut board: Board = world.read_model(game.board_id.unwrap());
+        //         let board_id = board.id.clone();
+        //         let (player1_address, _, _) = board.player1;
+        //         let (player2_address, _, _) = board.player2;
 
-                world.write_model(@game);
-                world.emit_event(@GameCanceled { host_player: another_player, status: new_status });
+        //         let another_player = if player1_address == host_player {
+        //             player2_address
+        //         } else {
+        //             player1_address
+        //         };
 
-                world
-                    .write_member(
-                        Model::<Board>::ptr_from_keys(board_id),
-                        selector!("game_state"),
-                        GameState::Finished,
-                    );
-            }
+        //         let mut game: Game = world.read_model(another_player);
+        //         let new_status = GameStatus::Canceled;
+        //         game.status = new_status;
+        //         game.board_id = Option::None;
 
-            let new_status = GameStatus::Canceled;
-            game.status = new_status;
-            game.board_id = Option::None;
+        //         world.write_model(@game);
+        //         world.emit_event(@GameCanceled { host_player: another_player, status: new_status
+        //         });
 
-            world.write_model(@game);
-            world.emit_event(@GameCanceled { host_player, status: new_status });
-        }
+        //         world
+        //             .write_member(
+        //                 Model::<Board>::ptr_from_keys(board_id),
+        //                 selector!("game_state"),
+        //                 GameState::Finished,
+        //             );
+        //     }
 
-        fn join_game(ref self: ContractState, host_player: ContractAddress) {
-            let mut world = self.world_default();
-            let guest_player = get_caller_address();
+        //     let new_status = GameStatus::Canceled;
+        //     game.status = new_status;
+        //     game.board_id = Option::None;
 
-            let mut host_game: Game = world.read_model(host_player);
-            let mut guest_game: Game = world.read_model(guest_player);
+        //     world.write_model(@game);
+        //     world.emit_event(@GameCanceled { host_player, status: new_status });
+        // }
 
-            if !AssertsTrait::assert_ready_to_join_game(@guest_game, @host_game, world) {
-                return;
-            }
+        // fn join_game(ref self: ContractState, host_player: ContractAddress) {
+        //     let mut world = self.world_default();
+        //     let guest_player = get_caller_address();
 
-            if !AssertsTrait::assert_regular_game_access(@host_game, host_player, 'join_game', world) {
-                return;
-            }
+        //     let mut host_game: Game = world.read_model(host_player);
+        //     let mut guest_game: Game = world.read_model(guest_player);
 
-            let board_id: felt252 = {
-                let board = BoardTrait::create_board(
-                    world, host_player, guest_player, self.board_id_generator,
-                );
-                board.id
-            };
+        //     if !AssertsTrait::assert_ready_to_join_game(@guest_game, @host_game, world) {
+        //         return;
+        //     }
 
-            println!("Board created with ID: {:?}", board_id);
+        //     if !AssertsTrait::assert_regular_game_access(@host_game, host_player, 'join_game',
+        //     world) {
+        //         return;
+        //     }
 
-            host_game.board_id = Option::Some(board_id);
-            host_game.status = GameStatus::InProgress;
-            host_game.status = GameStatus::InProgress;
-            guest_game.board_id = Option::Some(board_id);
-            guest_game.status = GameStatus::InProgress;
-            guest_game.status = GameStatus::InProgress;
-            guest_game.game_mode = host_game.game_mode; // Match game mode
+        //     let board_id: felt252 = {
+        //         let board = BoardTrait::create_board(
+        //             world, host_player, guest_player, self.board_id_generator,
+        //         );
+        //         board.id
+        //     };
 
-            world.write_model(@host_game);
-            world.write_model(@guest_game);
-            world.emit_event(@GameStarted { host_player, guest_player, board_id });
+        //     println!("Board created with ID: {:?}", board_id);
 
-            let mut board: Board = world.read_model(board_id);
+        //     host_game.board_id = Option::Some(board_id);
+        //     host_game.status = GameStatus::InProgress;
+        //     host_game.status = GameStatus::InProgress;
+        //     guest_game.board_id = Option::Some(board_id);
+        //     guest_game.status = GameStatus::InProgress;
+        //     guest_game.status = GameStatus::InProgress;
+        //     guest_game.game_mode = host_game.game_mode; // Match game mode
 
-            PhaseManagementTrait::transition_to_creating_phase(
-                board_id,
-                board.top_tile,
-                board.commited_tile,
-                world,
-            );
-        }
+        //     world.write_model(@host_game);
+        //     world.write_model(@guest_game);
+        //     world.emit_event(@GameStarted { host_player, guest_player, board_id });
+
+        //     let mut board: Board = world.read_model(board_id);
+
+        //     PhaseManagementTrait::transition_to_creating_phase(
+        //         board_id,
+        //         board.top_tile,
+        //         board.commited_tile,
+        //         world,
+        //     );
+        // }
 
         fn commit_tiles(ref self: ContractState, commitments: Span<u32>) {
+            println!("[commit_tiles] ============= STARTING COMMIT TILES =============");
+            println!("[commit_tiles] Starting commit_tiles function");
+            
             let mut world = self.world_default();
+            println!("[commit_tiles] World storage obtained successfully");
+            
             let player = get_caller_address();
+            println!("[commit_tiles] Player address: 0x{:x}", player);
+            println!("[commit_tiles] Commitments length: {}", commitments.len());
 
             let mut game: Game = world.read_model(player);
+            println!("[commit_tiles] Player game loaded - status: {:?}", game.status);
+            println!("[commit_tiles] Player board_id: {:?}", game.board_id);
 
             if game.board_id.is_none() {
+                println!("[commit_tiles] ERROR: Player 0x{:x} is not in any game", player);
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id: 0 });
                 return;
             }
+            println!("[commit_tiles] PASS: Player is in a game");
 
+            println!("[commit_tiles] Checking regular game access");
             if !AssertsTrait::assert_regular_game_access(@game, player, 'commit_tiles', world) {
+                println!("[commit_tiles] ERROR: Regular game access denied");
                 return;
             }
+            println!("[commit_tiles] PASS: Regular game access granted");
 
             let board_id = game.board_id.unwrap();
+            println!("[commit_tiles] Board ID: {}", board_id);
+            
             let mut board: Board = world.read_model(board_id);
+            println!("[commit_tiles] Board loaded - game_state: {:?}", board.game_state);
+            println!("[commit_tiles] Board phase_started_at: {}", board.phase_started_at);
+            println!("[commit_tiles] Board commited_tile: {:?}", board.commited_tile);
 
             if game.status != GameStatus::InProgress {
-                world.emit_event(@ErrorEvent {
-                    player_address: player,
-                    name: 'Commit Error',
-                    message: "You can only commit tiles when the game is in progress",
-                });
-                println!("[Commit Error] Game status is not InProgress: {:?}", game.status);
+                println!("[commit_tiles] ERROR: Game status is not InProgress: {:?}", game.status);
+                world
+                    .emit_event(
+                        @ErrorEvent {
+                            player_address: player,
+                            name: 'Commit Error',
+                            message: "You can only commit tiles when the game is in progress",
+                        },
+                    );
+                println!("[commit_tiles] ERROR Event emitted for invalid game status");
                 return;
             }
+            println!("[commit_tiles] PASS: Game status is InProgress");
 
             if board.game_state != GameState::Creating {
-                world.emit_event(@ErrorEvent {
-                    player_address: player,
-                    name: 'Commit Error',
-                    message: format!("Game state is not Creating: {:?}", board.game_state),
-                });
-                println!("[Commit Error] Game state is {:?}", board.game_state);
+                println!("[commit_tiles] ERROR: Board game_state is not Creating: {:?}", board.game_state);
+                world
+                    .emit_event(
+                        @ErrorEvent {
+                            player_address: player,
+                            name: 'Commit Error',
+                            message: format!("Game state is not Creating: {:?}", board.game_state),
+                        },
+                    );
+                println!("[commit_tiles] ERROR Event emitted for invalid board game state");
                 return;
             }
+            println!("[commit_tiles] PASS: Board game_state is Creating");
 
             let timestamp = get_block_timestamp();
+            println!("[commit_tiles] Current timestamp: {}", timestamp);
+            println!("[commit_tiles] Phase started at: {}", board.phase_started_at);
+            println!("[commit_tiles] CREATING_TIME: {}", CREATING_TIME);
+            println!("[commit_tiles] Deadline: {} (phase_started_at + CREATING_TIME)", board.phase_started_at + CREATING_TIME);
 
             if timestamp > board.phase_started_at + CREATING_TIME {
+                println!("[commit_tiles] ERROR: Commit timeout - current: {} > deadline: {}", timestamp, board.phase_started_at + CREATING_TIME);
                 world.emit_event(@GameCreateFailed { host_player: player, status: game.status });
-                println!(
-                    "[ERROR] Commit timeout: {:?} > {:?} + {:?}",
-                    timestamp, board.phase_started_at, CREATING_TIME
-                );
+                println!("[commit_tiles] GameCreateFailed event emitted");
                 return;
             }
+            println!("[commit_tiles] PASS: Commit is within time limit");
 
+            println!("[commit_tiles] Starting commitment processing");
             let mut tile_commitments = array![];
-            // println!("comitments length: {:?}", commitments.len());
+            println!("[commit_tiles] Commitments length: {}", commitments.len());
+            
             if commitments.len() % 8 != 0 {
-                world.emit_event(@ErrorEvent {
-                    player_address: player,
-                    name: 'Commit Error',
-                    message: "Commitments length is not a multiple of 8",
-                });
-                println!("[ERROR] Commitments length is not a multiple of 8");
+                println!("[commit_tiles] ERROR: Commitments length {} is not a multiple of 8", commitments.len());
+                world
+                    .emit_event(
+                        @ErrorEvent {
+                            player_address: player,
+                            name: 'Commit Error',
+                            message: "Commitments length is not a multiple of 8",
+                        },
+                    );
+                println!("[commit_tiles] ERROR Event emitted for invalid commitments length");
                 return;
             }
-            for i in 0..(commitments.len() / 8) {
+            println!("[commit_tiles] PASS: Commitments length is valid multiple of 8");
+            let tiles_count = commitments.len() / 8;
+            println!("[commit_tiles] Processing {} tile commitments", tiles_count);
+            
+            for i in 0..tiles_count {
                 let commitment: Span<u32> = commitments.slice(i * 8, 8);
-                // println!("sha256 commitments[{}]: {:?}", i, commitment);
+                println!("[commit_tiles] Processing commitment[{}]: {:?}", i, commitment);
                 let tile_commitment = hash_sha256_to_felt252(commitment);
+                println!("[commit_tiles] Hash result for commitment[{}]: 0x{:x}", i, tile_commitment);
                 tile_commitments.append(tile_commitment);
             };
             let tile_commitments = tile_commitments.span();
+            println!("[commit_tiles] Final tile_commitments length: {}", tile_commitments.len());
 
+            println!("[commit_tiles] Writing TileCommitments to world storage");
             world.write_model(@TileCommitments { board_id, player, tile_commitments });
+            println!("[commit_tiles] TileCommitments written successfully");
 
+            println!("[commit_tiles] Extracting player information from board");
             let (player1_address, _player1_side, _joker_number1) = board.player1;
             let (player2_address, _player2_side, _joker_number2) = board.player2;
+            println!("[commit_tiles] Player1: 0x{:x}, Player2: 0x{:x}", player1_address, player2_address);
 
             let another_player = if player == player1_address {
+                println!("[commit_tiles] Current player is Player1, opponent is Player2: 0x{:x}", player2_address);
                 player2_address
             } else if player == player2_address {
+                println!("[commit_tiles] Current player is Player2, opponent is Player1: 0x{:x}", player1_address);
                 player1_address
             } else {
+                println!("[commit_tiles] ERROR: Player 0x{:x} is not in this game", player);
                 world.emit_event(@PlayerNotInGame { player_id: player, board_id });
                 return;
             };
+            println!("[commit_tiles] Opponent player identified: 0x{:x}", another_player);
 
-            let another_player_commitments: TileCommitments = world.read_model((board_id, another_player));
+            println!("[commit_tiles] Reading opponent's tile commitments");
+            let another_player_commitments: TileCommitments = world
+                .read_model((board_id, another_player));
+            println!("[commit_tiles] Opponent commitments length: {}", another_player_commitments.tile_commitments.len());
 
             if another_player_commitments.tile_commitments.len() == tile_commitments.len() {
+                println!("[commit_tiles] BOTH PLAYERS COMMITTED! Current: {}, Opponent: {}", tile_commitments.len(), another_player_commitments.tile_commitments.len());
+                println!("[commit_tiles] Transitioning both players to InProgress status");
+                
                 game.status = GameStatus::InProgress;
                 let mut another_player_game: Game = world.read_model(another_player);
                 another_player_game.status = GameStatus::InProgress;
+                
+                println!("[commit_tiles] Writing updated game models to world");
                 world.write_model(@another_player_game);
                 world.write_model(@game);
+                println!("[commit_tiles] Game models updated successfully");
 
-                let mut dice = DiceTrait::new(tile_commitments.len().try_into().unwrap(), 'SEED' + get_block_timestamp().into() + board_id.into());
+                println!("[commit_tiles] Generating random committed tile");
+                let dice_max = tile_commitments.len().try_into().unwrap();
+                let dice_seed = 'SEED' + get_block_timestamp().into() + board_id.into();
+                println!("[commit_tiles] Dice parameters - max: {}, seed: 0x{:x}", dice_max, dice_seed);
+                
+                let mut dice = DiceTrait::new(dice_max, dice_seed);
+                println!("[commit_tiles] Dice created successfully");
 
-                let commited_tile = Option::Some(dice.roll() - 1);
+                let roll_result = dice.roll();
+                println!("[commit_tiles] Dice roll result: {}", roll_result);
+                let commited_tile = Option::Some(roll_result - 1);
+                println!("[commit_tiles] Committed tile index: {:?}", commited_tile);
 
+                println!("[commit_tiles] Updating board committed tile");
                 board.commited_tile = commited_tile;
-                world.write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("commited_tile"),
-                    board.commited_tile,
-                );
+                println!("[commit_tiles] Writing committed tile to board model");
+                world
+                    .write_member(
+                        Model::<Board>::ptr_from_keys(board_id),
+                        selector!("commited_tile"),
+                        board.commited_tile,
+                    );
+                println!("[commit_tiles] Board committed tile updated successfully");
 
+                println!("[commit_tiles] Transitioning to reveal phase");
+                println!("[commit_tiles] Phase transition params - board_id: {}, top_tile: {:?}, commited_tile: {:?}", board_id, board.top_tile, board.commited_tile);
                 PhaseManagementTrait::transition_to_reveal_phase(
-                    board_id,
-                    board.top_tile,
-                    board.commited_tile,
-                    world,
+                    board_id, board.top_tile, board.commited_tile, world,
                 );
+                println!("[commit_tiles] Successfully transitioned to reveal phase");
+            } else {
+                println!("[commit_tiles] WAITING FOR OPPONENT: Current player committed {}, opponent has {} commitments", tile_commitments.len(), another_player_commitments.tile_commitments.len());
             }
+            
+            println!("[commit_tiles] ============= COMMIT TILES COMPLETED =============");
         }
-           
+
 
         fn reveal_tile(ref self: ContractState, tile_index: u8, nonce: felt252, c: u8) {
             let mut world = self.world_default();
@@ -414,32 +480,24 @@ pub mod game {
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
-            let reveal_data = TileRevealData {
-                board_id,
-                player,
-                tile_index,
-                nonce,
-                c,
-            };
+            let reveal_data = TileRevealData { board_id, player, tile_index, nonce, c };
 
-            if !TileRevealTrait::perform_tile_reveal_validation(reveal_data, @board, REVEAL_TIME, world) {
+            if !TileRevealTrait::perform_tile_reveal_validation(
+                reveal_data, @board, REVEAL_TIME, world,
+            ) {
                 return;
             }
-
 
             TileRevealTrait::reveal_tile_and_update_board(board_id, tile_index, world);
 
             PhaseManagementTrait::transition_to_request_phase(
-                board_id,
-                Option::Some(tile_index),
-                Option::None,
-                world,
+                board_id, Option::Some(tile_index), Option::None, world,
             );
 
             TileRevealTrait::update_available_tiles(board_id, player, c, world);
         }
 
-        fn request_next_tile(ref self: ContractState, tile_index: u8, nonce: felt252, c: u8){
+        fn request_next_tile(ref self: ContractState, tile_index: u8, nonce: felt252, c: u8) {
             let mut world = self.world_default();
             let player = get_caller_address();
 
@@ -450,7 +508,9 @@ pub mod game {
                 return;
             }
 
-            if !AssertsTrait::assert_regular_game_access(@game, player, 'request_next_tile', world) {
+            if !AssertsTrait::assert_regular_game_access(
+                @game, player, 'request_next_tile', world,
+            ) {
                 return;
             }
 
@@ -461,13 +521,13 @@ pub mod game {
 
             assert!(
                 board.commited_tile.is_none(),
-                "[REQUEST ERROR] Tile still committed, can't request next tile"
+                "[REQUEST ERROR] Tile still committed, can't request next tile",
             );
 
             assert!(
                 board.game_state == GameState::Request,
                 "[REQUEST ERROR] Game state is not Request: {:?}",
-                board.game_state
+                board.game_state,
             );
 
             if get_block_timestamp() > board.phase_started_at + REVEAL_TIME {
@@ -475,7 +535,7 @@ pub mod game {
                     "[REQUEST ERROR] Reveal timeout: {:?} > {:?} + {:?}",
                     get_block_timestamp(),
                     board.phase_started_at,
-                    REVEAL_TIME
+                    REVEAL_TIME,
                 );
                 return;
             }
@@ -484,7 +544,7 @@ pub mod game {
                 board.top_tile.unwrap() == tile_index,
                 "[REQUEST ERROR] Tile mismatch: expected {}, got {}",
                 board.top_tile.unwrap(),
-                tile_index
+                tile_index,
             );
 
             // Check committed tile
@@ -499,9 +559,9 @@ pub mod game {
             assert!(
                 saved_tile_commitment == tile_commitment,
                 "[ERROR] Tile commitment mismatch: expected {}, got {}",
-                saved_tile_commitment, tile_commitment
+                saved_tile_commitment,
+                tile_commitment,
             );
-
 
             let player_available_tiles_entry: AvailableTiles = world.read_model((board_id, player));
 
@@ -514,17 +574,17 @@ pub mod game {
                 }
             };
             // println!("new_available_tiles: {:?}", new_available_tiles);
-            world.write_model(@AvailableTiles {
-                board_id,
-                player,
-                available_tiles: new_available_tiles.span(),
-            });
-
+            world
+                .write_model(
+                    @AvailableTiles {
+                        board_id, player, available_tiles: new_available_tiles.span(),
+                    },
+                );
 
             if new_available_tiles.len() > 0 {
                 // Redraw the tile from the deck
-                let mut dice = DiceTrait::new(new_available_tiles.len().try_into().unwrap(), 
-                    'SEED',
+                let mut dice = DiceTrait::new(
+                    new_available_tiles.len().try_into().unwrap(), 'SEED',
                     // nonce
                 );
 
@@ -533,18 +593,16 @@ pub mod game {
                 let commited_tile = *new_available_tiles.at(new_tile_index.into());
                 // Update the board with the new tile
                 board.commited_tile = Option::Some(commited_tile);
-                world.write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("commited_tile"),
-                    board.commited_tile,
-                );
+                world
+                    .write_member(
+                        Model::<Board>::ptr_from_keys(board_id),
+                        selector!("commited_tile"),
+                        board.commited_tile,
+                    );
             }
 
             PhaseManagementTrait::transition_to_move_phase(
-                board_id,
-                board.top_tile,
-                board.commited_tile,
-                world,
+                board_id, board.top_tile, board.commited_tile, world,
             );
         }
 
@@ -558,12 +616,12 @@ pub mod game {
             if !AssertsTrait::assert_player_in_game(@game, Option::None, world) {
                 return;
             }
-            
+
             // Validate GameMode access for make_move
             if !AssertsTrait::assert_regular_game_access(@game, player, 'make_move', world) {
                 return;
             }
-            
+
             let board_id = game.board_id.unwrap();
             let mut board: Board = world.read_model(board_id);
 
@@ -574,7 +632,7 @@ pub mod game {
             assert!(
                 board.game_state == GameState::Move,
                 "[ERROR] Game state is not Move: {:?}",
-                board.game_state
+                board.game_state,
             );
 
             if get_block_timestamp() > board.phase_started_at + MOVE_TIME {
@@ -582,7 +640,7 @@ pub mod game {
                     "[ERROR] Move timeout: {:?} > {:?} + {:?}",
                     get_block_timestamp(),
                     board.phase_started_at,
-                    MOVE_TIME
+                    MOVE_TIME,
                 );
                 return;
             }
@@ -592,12 +650,14 @@ pub mod game {
 
             let (player_side, joker_number) = match board.get_player_data(player, world) {
                 Option::Some((side, joker_number)) => (side, joker_number),
-                Option::None => {return;}
+                Option::None => { return; },
             };
 
             let is_joker = joker_tile.is_some();
 
-            if !MoveExecutionTrait::validate_joker_usage(joker_tile, joker_number, player, board_id, world) {
+            if !MoveExecutionTrait::validate_joker_usage(
+                joker_tile, joker_number, player, board_id, world,
+            ) {
                 return;
             }
 
@@ -605,26 +665,31 @@ pub mod game {
                 return;
             }
 
-            let tile = match MoveExecutionTrait::get_tile_for_move(joker_tile, @board, world, player) {
+            let tile =
+                match MoveExecutionTrait::get_tile_for_move(joker_tile, @board, world, player) {
                 Option::Some(tile) => tile,
-                Option::None => {
-                    return;
-                }
+                Option::None => { return; },
             };
 
-            if !MoveExecutionTrait::validate_move(board_id, tile.into(), rotation, col, row, 10, world) {
+            if !MoveExecutionTrait::validate_move(
+                board_id, tile.into(), rotation, col, row, 10, world,
+            ) {
                 let move_id = self.move_id_generator.read();
-                let move_data = MoveData { tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile };
-                let move_record = MoveExecutionTrait::create_move_record(move_id, move_data, board.last_move_id, board_id);
+                let move_data = MoveData {
+                    tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile,
+                };
+                let move_record = MoveExecutionTrait::create_move_record(
+                    move_id, move_data, board.last_move_id, board_id,
+                );
                 MoveExecutionTrait::emit_invalid_move_event(move_record, board_id, player, world);
                 println!("[Invalid move] \nBoard: {:?}, Move: {:?}", board, move_record);
                 return;
             }
-            
+
             println!("Validation passed, proceeding with move execution");
 
             let scoring_result = ScoringTrait::calculate_move_scoring(
-                tile, rotation, col.into(), row.into(), player_side, player, board_id, 10, world
+                tile, rotation, col.into(), row.into(), player_side, player, board_id, 10, world,
             );
 
             println!("Scoring result: {:?}", scoring_result);
@@ -633,16 +698,22 @@ pub mod game {
 
             println!("Scoring applied, updating board");
 
-            let move_data = MoveData { tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile };
-            let top_tile = MoveExecutionTrait::update_board_after_move(move_data, ref board, is_joker, is_tutorial: false, world: world);
+            let move_data = MoveData {
+                tile, rotation, col, row, is_joker, player_side, top_tile: board.top_tile,
+            };
+            let top_tile = MoveExecutionTrait::update_board_after_move(
+                move_data, ref board, is_joker, is_tutorial: false, world: world,
+            );
 
             println!("Board updated, creating move record");
 
             let move_id = self.move_id_generator.read();
-            let move_record = MoveExecutionTrait::create_move_record(move_id, move_data, board.last_move_id, board_id);
+            let move_record = MoveExecutionTrait::create_move_record(
+                move_id, move_data, board.last_move_id, board_id,
+            );
 
             println!("Move record created: {:?}", move_record);
-            
+
             board.last_move_id = Option::Some(move_id);
             self.move_id_generator.write(move_id + 1);
 
@@ -652,51 +723,49 @@ pub mod game {
             MoveExecutionTrait::emit_move_events(move_record, @board, player, world);
             println!("Move events emitted");
 
-            let available_tiles_player1: AvailableTiles =
-                world.read_model((board_id, player1_address));
-            let available_tiles_player2: AvailableTiles =
-                world.read_model((board_id, player2_address));
+            let available_tiles_player1: AvailableTiles = world
+                .read_model((board_id, player1_address));
+            let available_tiles_player2: AvailableTiles = world
+                .read_model((board_id, player2_address));
 
             let (updated_joker1, updated_joker2) = board.get_joker_numbers();
-            
+
             // Check if board is full (all playable positions are occupied)
             if MoveExecutionTrait::is_board_full(board.moves_done, 10) {
                 let potential_contests_model: PotentialContests = world.read_model(board_id);
-                self._finish_game(
-                    ref board,
-                    potential_contests_model.potential_contests.span(),
-                    0, // 0 - both players get points
-                );
+                self
+                    ._finish_game(
+                        ref board,
+                        potential_contests_model.potential_contests.span(),
+                        0 // 0 - both players get points
+                    );
                 return;
             }
-            
+
             // Check traditional end conditions (no tiles and no jokers)
             if MoveExecutionTrait::should_finish_game(
-                updated_joker1, 
-                updated_joker2, 
-                available_tiles_player1.available_tiles.len(), 
-                available_tiles_player2.available_tiles.len()
+                updated_joker1,
+                updated_joker2,
+                available_tiles_player1.available_tiles.len(),
+                available_tiles_player2.available_tiles.len(),
             ) {
                 let potential_contests_model: PotentialContests = world.read_model(board_id);
-                self._finish_game(
-                    ref board,
-                    potential_contests_model.potential_contests.span(),
-                    0, // 0 - both players get points
-                );
+                self
+                    ._finish_game(
+                        ref board,
+                        potential_contests_model.potential_contests.span(),
+                        0 // 0 - both players get points
+                    );
                 return;
             }
 
             PhaseManagementTrait::transition_after_move(
-                board_id,
-                board.top_tile,
-                board.commited_tile,
-                world,
+                board_id, board.top_tile, board.commited_tile, world,
             );
-
             // println!(
-            //     "Move made: {:?} \nBoard: {:?} \nUnion find: {:?}",
-            //     move, board, union_find,
-            // );
+        //     "Move made: {:?} \nBoard: {:?} \nUnion find: {:?}",
+        //     move, board, union_find,
+        // );
         }
 
         fn skip_move(ref self: ContractState) {
@@ -708,7 +777,7 @@ pub mod game {
             if !AssertsTrait::assert_player_in_game(@game, Option::None, world) {
                 return;
             }
-            
+
             // Validate GameMode access for skip_move
             if !AssertsTrait::assert_regular_game_access(@game, player, 'skip_move', world) {
                 return;
@@ -724,7 +793,7 @@ pub mod game {
             assert!(
                 board.game_state == GameState::Move,
                 "[ERROR] Game state is not Move: {:?}",
-                board.game_state
+                board.game_state,
             );
 
             // Check phase timing
@@ -736,7 +805,7 @@ pub mod game {
             // Get player data and validate turn
             let (player_side, _) = match board.get_player_data(player, world) {
                 Option::Some((side, joker_number)) => (side, joker_number),
-                Option::None => {return;}
+                Option::None => { return; },
             };
 
             // Validate it's current player's turn
@@ -749,38 +818,32 @@ pub mod game {
 
             // Execute skip move
             self._skip_move(player, player_side, ref board, self.move_id_generator, true);
-            
+
             board.top_tile = Option::None;
             world
                 .write_member(
-                    Model::<Board>::ptr_from_keys(board_id),
-                    selector!("top_tile"),
-                    board.top_tile,
+                    Model::<Board>::ptr_from_keys(board_id), selector!("top_tile"), board.top_tile,
                 );
-            
+
             // If two consecutive skips, finish the game
             if should_finish_game {
                 println!("Two consecutive skips detected, finishing the game");
                 let potential_contests_model: PotentialContests = world.read_model(board_id);
-                
-                self._finish_game(
-                    ref board,
-                    potential_contests_model.potential_contests.span(),
-                    0, // 0 - both players get points
-                );
-                
+
+                self
+                    ._finish_game(
+                        ref board,
+                        potential_contests_model.potential_contests.span(),
+                        0 // 0 - both players get points
+                    );
+
                 return;
             }
-            
-            MoveExecutionTrait::emit_board_updated_event(
-                @board, world,
-            );
+
+            MoveExecutionTrait::emit_board_updated_event(@board, world);
 
             PhaseManagementTrait::transition_after_move(
-                board_id,
-                board.top_tile,
-                board.commited_tile,
-                world,
+                board_id, board.top_tile, board.commited_tile, world,
             );
         }
 
@@ -794,8 +857,10 @@ pub mod game {
             }
 
             let mut board: Board = world.read_model(board_id);
-            let phase_timeout = TimingTrait::validate_phase_timeout(@board, CREATING_TIME, REVEAL_TIME, MOVE_TIME);
-            
+            let phase_timeout = TimingTrait::validate_phase_timeout(
+                @board, CREATING_TIME, REVEAL_TIME, MOVE_TIME,
+            );
+
             if !phase_timeout {
                 println!("Cannot finish game: no phase timeout");
                 return;
@@ -805,9 +870,7 @@ pub mod game {
                 GameState::Creating => {
                     self._handle_creating_phase_timeout(player, board_id, @board, world);
                 },
-                _ => {
-                    self._handle_game_phase_timeout(ref board, world);
-                }
+                _ => { self._handle_game_phase_timeout(ref board, world); },
             }
         }
     }
@@ -824,8 +887,8 @@ pub mod game {
             player: ContractAddress,
             player_side: PlayerSide,
             ref board: Board,
-            move_id_generator: core::starknet::storage::StorageBase::<
-                core::starknet::storage::Mutable<core::felt252>,
+            move_id_generator: starknet::storage::StorageBase::<
+                starknet::storage::Mutable<core::felt252>,
             >,
             emit_event: bool,
         ) {
@@ -847,7 +910,9 @@ pub mod game {
                 first_board_id: board_id,
                 timestamp,
                 top_tile: match board.top_tile {
-                    Option::Some(tile_index) => Option::Some(*board.available_tiles_in_deck.at(tile_index.into())),
+                    Option::Some(tile_index) => Option::Some(
+                        *board.available_tiles_in_deck.at(tile_index.into()),
+                    ),
                     Option::None => Option::None,
                 },
             };
@@ -885,7 +950,7 @@ pub mod game {
             if !AssertsTrait::assert_player_in_game(game, Option::Some(board_id), world) {
                 return false;
             }
-            
+
             if !AssertsTrait::assert_regular_game_access(game, player, 'finish_game', world) {
                 return false;
             }
@@ -904,7 +969,7 @@ pub mod game {
             board: @Board,
             mut world: dojo::world::WorldStorage,
         ) {
-            let (player1_address, player2_address) = self._get_player_addresses(board, player, board_id, world);
+            let (_, player2_address) = self._get_player_addresses(board, player, board_id, world);
             if player2_address.is_zero() {
                 return;
             }
@@ -912,27 +977,26 @@ pub mod game {
             self._cleanup_game_statuses(player, player2_address, world);
             self._finalize_board_state(board_id, world);
             self._emit_cancellation_events(player, player2_address, world);
-            
-            println!("[finish_game] Game in Creating phase finished due to timeout, statuses cleaned up");
+
+            println!(
+                "[finish_game] Game in Creating phase finished due to timeout, statuses cleaned up",
+            );
         }
 
         fn _handle_game_phase_timeout(
-            self: @ContractState,
-            ref board: Board,
-            mut world: dojo::world::WorldStorage,
+            self: @ContractState, ref board: Board, mut world: dojo::world::WorldStorage,
         ) {
             let add_points_to = self._determine_timeout_winner(@board, world);
-            
+
             if add_points_to == 255 { // Special value indicating cleanup needed
                 return;
             }
-            
+
             let potential_contests_model: PotentialContests = world.read_model(board.id);
-            self._finish_game(
-                ref board,
-                potential_contests_model.potential_contests.span(),
-                add_points_to,
-            );
+            self
+                ._finish_game(
+                    ref board, potential_contests_model.potential_contests.span(), add_points_to,
+                );
         }
 
         fn _get_player_addresses(
@@ -968,7 +1032,7 @@ pub mod game {
             game1.board_id = Option::None;
             game1.game_mode = GameMode::None;
             world.write_model(@game1);
-            
+
             let mut game2: Game = world.read_model(player2);
             game2.status = GameStatus::Canceled;
             game2.board_id = Option::None;
@@ -977,15 +1041,14 @@ pub mod game {
         }
 
         fn _finalize_board_state(
-            self: @ContractState,
-            board_id: felt252,
-            mut world: dojo::world::WorldStorage,
+            self: @ContractState, board_id: felt252, mut world: dojo::world::WorldStorage,
         ) {
-            world.write_member(
-                Model::<Board>::ptr_from_keys(board_id),
-                selector!("game_state"),
-                GameState::Finished,
-            );
+            world
+                .write_member(
+                    Model::<Board>::ptr_from_keys(board_id),
+                    selector!("game_state"),
+                    GameState::Finished,
+                );
         }
 
         fn _emit_cancellation_events(
@@ -996,15 +1059,13 @@ pub mod game {
         ) {
             let game1: Game = world.read_model(player1);
             let game2: Game = world.read_model(player2);
-            
+
             world.emit_event(@GameCanceled { host_player: player1, status: game1.status });
             world.emit_event(@GameCanceled { host_player: player2, status: game2.status });
         }
 
         fn _determine_timeout_winner(
-            self: @ContractState,
-            board: @Board,
-            mut world: dojo::world::WorldStorage,
+            self: @ContractState, board: @Board, mut world: dojo::world::WorldStorage,
         ) -> u8 {
             match board.last_move_id {
                 Option::Some(move_id) => {
@@ -1019,14 +1080,17 @@ pub mod game {
                     // No moves made, cleanup needed
                     let (player1_address, _, _) = *board.player1;
                     let (player2_address, _, _) = *board.player2;
-                    
+
                     self._cleanup_game_statuses(player1_address, player2_address, world);
                     self._finalize_board_state(*board.id, world);
                     self._emit_cancellation_events(player1_address, player2_address, world);
-                    
-                    println!("[finish_game] Game in {:?} finished due to timeout, statuses cleaned up", board.game_state);
+
+                    println!(
+                        "[finish_game] Game in {:?} finished due to timeout, statuses cleaned up",
+                        board.game_state,
+                    );
                     255 // Special return value to indicate cleanup was done
-                }
+                },
             }
         }
 
@@ -1034,7 +1098,7 @@ pub mod game {
             self: @ContractState,
             ref board: Board,
             potential_contests: Span<u32>,
-            add_points_to: u8, // 0 - both, 1 - blue, 2 - red
+            add_points_to: u8 // 0 - both, 1 - blue, 2 - red
         ) {
             let mut world = self.world_default();
             let (player1_address, player1_side, joker_number1) = board.player1;
@@ -1050,11 +1114,7 @@ pub mod game {
             };
 
             GameFinalizationTrait::finalize_game(
-                finalization_data,
-                ref board,
-                potential_contests,
-                add_points_to,
-                world,
+                finalization_data, ref board, potential_contests, add_points_to, world,
             );
         }
     }

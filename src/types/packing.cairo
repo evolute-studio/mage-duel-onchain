@@ -1,5 +1,6 @@
-#[derive(Serde, Drop, Introspect, PartialEq, Debug, Destruct, Copy)]
+#[derive(Serde, Drop, Introspect, PartialEq, Debug, Copy, DojoStore, Default)]
 pub enum TEdge {
+    #[default]
     None,
     C,
     R,
@@ -29,7 +30,7 @@ impl U8IntoTEdge of Into<u8, TEdge> {
     }
 }
 
-#[derive(Serde, Copy, Drop, IntrospectPacked, PartialEq, Debug)]
+#[derive(Serde, Copy, Drop, Introspect, PartialEq, Debug, DojoStore, Default)]
 pub enum Tile {
     CCCC,
     FFFF,
@@ -55,6 +56,7 @@ pub enum Tile {
     CRRF,
     CRFR,
     CFRR,
+    #[default]
     Empty,
 }
 
@@ -124,8 +126,9 @@ impl TileToU8 of Into<Tile, u8> {
     }
 }
 
-#[derive(Copy, Drop, Serde, Debug, Introspect, PartialEq)]
+#[derive(Copy, Drop, Serde, Debug, Introspect, PartialEq, DojoStore, Default)]
 pub enum GameState {
+    #[default]
     Creating,
     Reveal,
     Request,
@@ -133,16 +136,18 @@ pub enum GameState {
     Finished,
 }
 
-#[derive(Drop, Serde, Copy, Introspect, PartialEq, Debug)]
+#[derive(Drop, Serde, Copy, Introspect, PartialEq, Debug, DojoStore, Default)]
 pub enum GameStatus {
+    #[default]
     Finished,
     Created,
     Canceled,
     InProgress,
 }
 
-#[derive(Drop, Serde, Copy, Introspect, PartialEq, Debug)]
+#[derive(Drop, Serde, Copy, Introspect, PartialEq, Debug, DojoStore, Default)]
 pub enum PlayerSide {
+    #[default]
     None,
     Blue,
     Red,
@@ -169,12 +174,14 @@ impl U8ToPlayerSide of Into<u8, PlayerSide> {
     }
 }
 
-#[derive(Drop, Serde, Copy, Introspect, PartialEq, Debug)]
+#[derive(Drop, Serde, Copy, Introspect, PartialEq, Debug, DojoStore, Default)]
 pub enum GameMode {
+    #[default]
     None,
     Tutorial,
     Ranked,
     Casual,
+    Tournament,
 }
 
 impl GameModeToU8 of Into<GameMode, u8> {
@@ -184,6 +191,7 @@ impl GameModeToU8 of Into<GameMode, u8> {
             GameMode::Tutorial => 1,
             GameMode::Ranked => 2,
             GameMode::Casual => 3,
+            GameMode::Tournament => 4,
         }
     }
 }
@@ -195,6 +203,7 @@ impl U8ToGameMode of Into<u8, GameMode> {
             1 => GameMode::Tutorial,
             2 => GameMode::Ranked,
             3 => GameMode::Casual,
+            4 => GameMode::Tournament,
             _ => panic!("Unsupported GameMode"),
         }
     }

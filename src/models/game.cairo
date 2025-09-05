@@ -1,5 +1,6 @@
 use starknet::{ContractAddress};
 use evolute_duel::types::packing::{GameState, GameStatus, PlayerSide, GameMode};
+use core::num::traits::Zero;
 
 /// Represents the game board, including tile states, players, scores, and game progression.
 ///
@@ -34,6 +35,25 @@ pub struct Board {
     pub moves_done: u8,
     pub commited_tile: Option<u8>,
     pub phase_started_at: u64,
+}
+
+impl BoardDefault of Default<Board> {
+    fn default() -> Board {
+        Board {
+            id: 0,
+            available_tiles_in_deck: array![].span(),
+            top_tile: None,
+            player1: (Zero::zero(), Default::default(), 0),
+            player2: (Zero::zero(), Default::default(), 0),
+            blue_score: (0, 0),
+            red_score: (0, 0),
+            last_move_id: None,
+            game_state: Default::default(),
+            moves_done: 0,
+            commited_tile: None,
+            phase_started_at: 0,
+        }
+    }
 }
 
 /// Represents a player's move, tracking tile placement and game progression.
@@ -101,6 +121,17 @@ pub struct Game {
     pub game_mode: GameMode,
 }
 
+impl GameDefault of Default<Game> {
+    fn default() -> Game {
+        Game {
+            player: Zero::zero(),
+            status: Default::default(),
+            board_id: None,
+            game_mode: Default::default(),
+        }
+    }
+}
+
 #[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::model]
 pub struct TileCommitments {
@@ -130,15 +161,54 @@ pub struct AvailableTiles {
 /// - `initial_jokers`: Number of joker tiles each player starts with.
 /// - `time_per_phase`: Time limit for each phase in seconds (0 = no limit).
 /// - `auto_match`: Whether to enable automatic matchmaking for this mode.
+/// - `deck`: Defines the number of each tile type in the deck.
+/// - `edges`: Initial setup of city and road elements on the board edges.
+/// - `joker_price`: Cost of using a joker tile.
 #[derive(Drop, Serde, Introspect, Debug)]
 #[dojo::model]
-pub struct GameConfig {
+pub struct GameModeConfig {
     #[key]
-    pub game_mode: GameMode,
+    pub game_mode: u8, // GameMode to u8
     pub board_size: u8,
     pub deck_type: u8,
     pub initial_jokers: u8,
     pub time_per_phase: u64,
     pub auto_match: bool,
+    pub deck: Span<u8>,
+    pub edges: (u8, u8),
+    pub joker_price: u16,
+}
+
+/// Represents the state of matchmaking queue for a specific game mode and tournament
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct MatchmakingState {
+    #[key]
+    pub game_mode: u8, // GameMode to u8
+    #[key]
+    pub tournament_id: u64, // 0 for non-tournament modes
+    pub waiting_players: Array<ContractAddress>,
+    pub queue_counter: u32, // for round-robin or other algorithms
+}
+
+/// Tracks individual player's matchmaking status
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct PlayerMatchmaking {
+    #[key]
+    pub player: ContractAddress,
+    pub game_mode: GameMode,
+    pub tournament_id: u64,
+    pub timestamp: u64,
+    // rating moved to TournamentPass model
+}
+
+/// Global counter for generating unique board IDs
+#[derive(Drop, Serde, Introspect, Debug)]
+#[dojo::model]
+pub struct BoardCounter {
+    #[key]
+    pub key: felt252, // constant key for singleton instance
+    pub current_count: felt252, // current board count
 }
 

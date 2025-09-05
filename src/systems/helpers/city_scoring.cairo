@@ -8,14 +8,13 @@ use evolute_duel::{
             create_extended_tile, convert_board_position_to_node_position, tile_city_number,
         },
     },
-    types::packing::{TEdge, PlayerSide},
-    models::scoring::{UnionNode},
+    types::packing::{TEdge, PlayerSide}, models::scoring::{UnionNode},
 };
 use dojo::world::{WorldStorage};
 use core::dict::Felt252Dict;
 use alexandria_data_structures::vec::{VecTrait, NullableVec};
 
-use evolute_duel::libs::{achievements::{AchievementsTrait}};
+// use evolute_duel::libs::{achievements::{AchievementsTrait}};
 use starknet::ContractAddress;
 
 pub fn connect_city_edges_in_tile(
@@ -57,7 +56,7 @@ pub fn connect_city_edges_in_tile(
                 red_points,
                 open_edges,
                 contested: false,
-                node_type: TEdge::C,// 0: City, 1: Road, 2: None
+                node_type: TEdge::C, // 0: City, 1: Road, 2: None
                 player_side: side.into(),
             };
             world.write_model(@city_node);
@@ -231,9 +230,9 @@ pub fn connect_adjacent_city_edges(
         if city_root.open_edges == 0 {
             contest_result = handle_contest(ref world, ref city_nodes, city_root_pos, board_id);
             //[Achivement] CityBuilder
-            AchievementsTrait::build_city(
-                world, player_address, ((city_root.red_points + city_root.blue_points) / 2).into(),
-            );
+            // AchievementsTrait::build_city(
+            //     world, player_address, ((city_root.red_points + city_root.blue_points) / 2).into(),
+            // );
         }
     }
 

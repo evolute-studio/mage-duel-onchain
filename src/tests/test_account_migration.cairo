@@ -15,18 +15,17 @@ mod tests {
         models::{
             player::{Player, m_Player, PlayerTrait},
             migration::{MigrationRequest, m_MigrationRequest, MigrationRequestTrait},
-            game::{Game, m_Game, Board, m_Board},
-            skins::{Shop, m_Shop},
+            game::{Game, m_Game, Board, m_Board}, skins::{Shop, m_Shop},
         },
         events::{
-            MigrationInitiated, e_MigrationInitiated,
-            MigrationConfirmed, e_MigrationConfirmed,
-            MigrationCompleted, e_MigrationCompleted,
-            MigrationCancelled, e_MigrationCancelled,
+            MigrationInitiated, e_MigrationInitiated, MigrationConfirmed, e_MigrationConfirmed,
+            MigrationCompleted, e_MigrationCompleted, MigrationCancelled, e_MigrationCancelled,
             TutorialCompleted, e_TutorialCompleted,
         },
         systems::{
-            account_migration::{account_migration, IAccountMigrationDispatcher, IAccountMigrationDispatcherTrait},
+            account_migration::{
+                account_migration, IAccountMigrationDispatcher, IAccountMigrationDispatcherTrait,
+            },
             tutorial::{tutorial, ITutorialDispatcher, ITutorialDispatcherTrait},
         },
         types::packing::{GameStatus, GameState},
@@ -43,34 +42,32 @@ mod tests {
         let ndef = NamespaceDef {
             namespace: "evolute_duel",
             resources: [
-                TestResource::Model(m_Player::TEST_CLASS_HASH),
-                TestResource::Model(m_MigrationRequest::TEST_CLASS_HASH),
-                TestResource::Model(m_Game::TEST_CLASS_HASH),
-                TestResource::Model(m_Board::TEST_CLASS_HASH),
-                TestResource::Model(m_Shop::TEST_CLASS_HASH),
-                TestResource::Event(e_MigrationInitiated::TEST_CLASS_HASH),
-                TestResource::Event(e_MigrationConfirmed::TEST_CLASS_HASH),
-                TestResource::Event(e_MigrationCompleted::TEST_CLASS_HASH),
-                TestResource::Event(e_MigrationCancelled::TEST_CLASS_HASH),
-                TestResource::Event(e_TutorialCompleted::TEST_CLASS_HASH),
-                TestResource::Contract(account_migration::TEST_CLASS_HASH),
-                TestResource::Contract(tutorial::TEST_CLASS_HASH),
+                TestResource::Model(m_Player::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_MigrationRequest::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_Game::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_Board::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_Shop::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_MigrationInitiated::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_MigrationConfirmed::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_MigrationCompleted::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_MigrationCancelled::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_TutorialCompleted::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Contract(account_migration::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Contract(tutorial::TEST_CLASS_HASH.try_into().unwrap()),
             ]
-                .span()
+                .span(),
         };
 
         ndef
     }
-    
+
     fn contract_defs() -> Span<ContractDef> {
         [
             ContractDefTrait::new(@"evolute_duel", @"tutorial")
                 .with_writer_of([dojo::utils::bytearray_hash(@"evolute_duel")].span()),
             ContractDefTrait::new(@"evolute_duel", @"account_migration")
                 .with_writer_of([dojo::utils::bytearray_hash(@"evolute_duel")].span())
-                .with_init_calldata(
-                    [ADMIN_ADDRESS].span()
-                ),
+                .with_init_calldata([ADMIN_ADDRESS].span()),
         ]
             .span()
     }
@@ -81,15 +78,21 @@ mod tests {
         world.sync_perms_and_inits(contract_defs());
 
         let (tutorial_contract_address, _) = world.dns(@"tutorial").unwrap();
-        let tutorial_dispatcher = ITutorialDispatcher { contract_address: tutorial_contract_address };
+        let tutorial_dispatcher = ITutorialDispatcher {
+            contract_address: tutorial_contract_address,
+        };
 
         let (migration_contract_address, _) = world.dns(@"account_migration").unwrap();
-        let migration_dispatcher = IAccountMigrationDispatcher { contract_address: migration_contract_address };
+        let migration_dispatcher = IAccountMigrationDispatcher {
+            contract_address: migration_contract_address,
+        };
 
         (world, migration_dispatcher, tutorial_dispatcher)
     }
 
-    fn create_guest_player(mut world: WorldStorage, address: ContractAddress, tutorial_completed: bool) -> Player {
+    fn create_guest_player(
+        mut world: WorldStorage, address: ContractAddress, tutorial_completed: bool,
+    ) -> Player {
         let player = Player {
             player_id: address,
             username: 'guest_user',
@@ -106,12 +109,22 @@ mod tests {
         player
     }
 
-    fn create_controller_player(mut world: WorldStorage, address: ContractAddress, has_progress: bool) -> Player {
+    fn create_controller_player(
+        mut world: WorldStorage, address: ContractAddress, has_progress: bool,
+    ) -> Player {
         let player = Player {
             player_id: address,
             username: 'controller_user',
-            balance: if has_progress { 50 } else { 0 },
-            games_played: if has_progress { 2 } else { 0 },
+            balance: if has_progress {
+                50
+            } else {
+                0
+            },
+            games_played: if has_progress {
+                2
+            } else {
+                0
+            },
             active_skin: 0,
             role: 1, // Controller
             tutorial_completed: has_progress,
@@ -140,9 +153,15 @@ mod tests {
         player
     }
 
-    fn setup_basic_scenario() -> (WorldStorage, IAccountMigrationDispatcher, ITutorialDispatcher, ContractAddress, ContractAddress) {
+    fn setup_basic_scenario() -> (
+        WorldStorage,
+        IAccountMigrationDispatcher,
+        ITutorialDispatcher,
+        ContractAddress,
+        ContractAddress,
+    ) {
         let (mut world, migration_dispatcher, tutorial_dispatcher) = setup_world();
-        
+
         let guest_address: ContractAddress = GUEST_ADDRESS.try_into().unwrap();
         let controller_address: ContractAddress = CONTROLLER_ADDRESS.try_into().unwrap();
 
@@ -158,7 +177,8 @@ mod tests {
 
     #[test]
     fn test_initiate_migration_success() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
         println!("There");
 
         // Set caller to guest
@@ -183,7 +203,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]    
+    #[should_panic]
     fn test_initiate_migration_fails_non_guest() {
         let (mut world, migration_dispatcher, _, _, controller_address) = setup_basic_scenario();
 
@@ -194,9 +214,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_initiate_migration_fails_tutorial_not_completed() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Update guest to not have completed tutorial
         let mut guest_player: Player = world.read_model(guest_address);
@@ -210,7 +230,8 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_initiate_migration_fails_already_used() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Mark guest as having used migration
         let mut guest_player: Player = world.read_model(guest_address);
@@ -225,7 +246,7 @@ mod tests {
     #[should_panic]
     fn test_initiate_migration_fails_target_not_controller() {
         let (mut world, migration_dispatcher, _, guest_address, _) = setup_basic_scenario();
-        
+
         let bot_address: ContractAddress = BOT_ADDRESS.try_into().unwrap();
         create_bot_player(world, bot_address);
 
@@ -234,9 +255,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_initiate_migration_fails_controller_has_progress() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Give controller tutorial completion (has progress)
         let mut controller_player: Player = world.read_model(controller_address);
@@ -250,7 +271,8 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_initiate_migration_fails_pending_request() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         testing::set_contract_address(guest_address);
         testing::set_block_timestamp(1000);
@@ -268,7 +290,8 @@ mod tests {
 
     #[test]
     fn test_confirm_migration_success() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Initiate migration
         testing::set_contract_address(guest_address);
@@ -288,7 +311,8 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_confirm_migration_fails_wrong_caller() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Initiate migration
         testing::set_contract_address(guest_address);
@@ -303,7 +327,8 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_confirm_migration_fails_expired() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Initiate migration
         testing::set_contract_address(guest_address);
@@ -322,7 +347,8 @@ mod tests {
 
     #[test]
     fn test_execute_migration_success() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Setup: initiate and confirm migration
         testing::set_contract_address(guest_address);
@@ -362,7 +388,8 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_execute_migration_fails_not_approved() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Initiate but don't confirm
         testing::set_contract_address(guest_address);
@@ -377,7 +404,8 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_execute_migration_fails_expired() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Setup: initiate and confirm
         testing::set_contract_address(guest_address);
@@ -399,7 +427,8 @@ mod tests {
 
     #[test]
     fn test_cancel_migration_success() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Initiate migration
         testing::set_contract_address(guest_address);
@@ -423,7 +452,8 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_cancel_migration_fails_already_approved() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Setup: initiate and confirm
         testing::set_contract_address(guest_address);
@@ -445,7 +475,8 @@ mod tests {
 
     #[test]
     fn test_full_migration_flow() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         let initial_guest_balance = 100;
         let initial_guest_games = 5;
@@ -476,7 +507,8 @@ mod tests {
 
     #[test]
     fn test_retry_after_cancellation() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // First attempt: initiate and cancel
         testing::set_contract_address(guest_address);
@@ -494,7 +526,8 @@ mod tests {
 
     #[test]
     fn test_retry_after_expiration() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // First attempt: let it expire
         testing::set_contract_address(guest_address);
@@ -512,7 +545,8 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_no_retry_after_successful_migration() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Complete full migration
         testing::set_contract_address(guest_address);
@@ -544,14 +578,15 @@ mod tests {
 
     #[test]
     fn test_skin_transfer_logic() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Setup: guest has better skin
         let mut guest_player: Player = world.read_model(guest_address);
         guest_player.active_skin = 5;
         world.write_model_test(@guest_player);
 
-        let mut controller_player: Player = world.read_model(controller_address);  
+        let mut controller_player: Player = world.read_model(controller_address);
         controller_player.active_skin = 2;
         world.write_model_test(@controller_player);
 
@@ -574,7 +609,8 @@ mod tests {
 
     #[test]
     fn test_skin_not_downgraded() {
-        let (mut world, migration_dispatcher, _, guest_address, controller_address) = setup_basic_scenario();
+        let (mut world, migration_dispatcher, _, guest_address, controller_address) =
+            setup_basic_scenario();
 
         // Setup: controller has better skin
         let mut guest_player: Player = world.read_model(guest_address);
@@ -610,7 +646,7 @@ mod tests {
         // Create two guest accounts
         let guest1: ContractAddress = 0x111.try_into().unwrap();
         let guest2: ContractAddress = 0x222.try_into().unwrap();
-        
+
         create_guest_player(world, guest1, true);
         create_guest_player(world, guest2, true);
 
