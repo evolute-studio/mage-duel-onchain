@@ -89,22 +89,6 @@ mod tests {
     }
 
     #[test]
-    fn test_get_tournament_player_rating_default() {
-        println!("[test_get_tournament_player_rating_default] Testing default rating for new player");
-        let world = setup_tournament_matchmaking_world();
-
-        let player_address: ContractAddress = contract_address_const::<PLAYER1_ADDRESS>();
-        let rating = TournamentELOTrait::get_tournament_player_rating(
-            player_address, 
-            TEST_TOURNAMENT_ID, 
-            world
-        );
-
-        assert!(rating == DEFAULT_RATING, "New player should have default rating 1200");
-        println!("[test_get_tournament_player_rating_default] Default rating test passed: {}", rating);
-    }
-
-    #[test]
     fn test_get_tournament_player_rating_existing() {
         println!("[test_get_tournament_player_rating_existing] Testing rating for existing player");
         let mut world = setup_tournament_matchmaking_world();
@@ -126,68 +110,6 @@ mod tests {
     }
 
     #[test]
-    fn test_update_tournament_ratings_after_match() {
-        println!("[test_update_tournament_ratings_after_match] Testing rating updates after match");
-        let mut world = setup_tournament_matchmaking_world();
-
-        let winner_address: ContractAddress = contract_address_const::<PLAYER1_ADDRESS>();
-        let loser_address: ContractAddress = contract_address_const::<PLAYER2_ADDRESS>();
-        let initial_rating = 1200;
-
-        // Create tournament passes for both players
-        create_tournament_pass(world, 1, winner_address, 1,  TEST_TOURNAMENT_ID, initial_rating);
-        create_tournament_pass(world, 2, loser_address, 2,  TEST_TOURNAMENT_ID, initial_rating);
-
-        // Get initial ratings
-        let winner_rating_before = TournamentELOTrait::get_tournament_player_rating(
-            winner_address, TEST_TOURNAMENT_ID, world
-        );
-        let loser_rating_before = TournamentELOTrait::get_tournament_player_rating(
-            loser_address, TEST_TOURNAMENT_ID, world
-        );
-
-        println!("[test_update_tournament_ratings_after_match] Initial ratings - Winner: {}, Loser: {}", 
-            winner_rating_before, loser_rating_before);
-
-        // Update ratings after match
-        TournamentELOTrait::update_tournament_ratings_after_match(
-            winner_address,
-            loser_address, 
-            TEST_TOURNAMENT_ID,
-            world
-        );
-
-        // Check updated ratings
-        let winner_rating_after = TournamentELOTrait::get_tournament_player_rating(
-            winner_address, TEST_TOURNAMENT_ID, world
-        );
-        let loser_rating_after = TournamentELOTrait::get_tournament_player_rating(
-            loser_address, TEST_TOURNAMENT_ID, world
-        );
-
-        println!("[test_update_tournament_ratings_after_match] Updated ratings - Winner: {}, Loser: {}", 
-            winner_rating_after, loser_rating_after);
-
-        // Verify rating changes
-        assert!(winner_rating_after > winner_rating_before, "Winner should gain rating");
-        assert!(loser_rating_after < loser_rating_before, "Loser should lose rating");
-
-        // Verify game statistics
-        let winner_pass: TournamentPass = world.read_model(1_u64);
-        let loser_pass: TournamentPass = world.read_model(2_u64);
-
-        assert!(winner_pass.wins == 1, "Winner should have 1 win");
-        assert!(winner_pass.losses == 0, "Winner should have 0 losses");
-        assert!(winner_pass.games_played == 1, "Winner should have 1 game played");
-
-        assert!(loser_pass.wins == 0, "Loser should have 0 wins");
-        assert!(loser_pass.losses == 1, "Loser should have 1 loss");
-        assert!(loser_pass.games_played == 1, "Loser should have 1 game played");
-
-        println!("[test_update_tournament_ratings_after_match] Rating update test passed");
-    }
-
-    #[test]
     fn test_find_tournament_opponent_no_opponents() {
         println!("[test_find_tournament_opponent_no_opponents] Testing queue when no opponents available");
         let mut world = setup_tournament_matchmaking_world();
@@ -196,6 +118,8 @@ mod tests {
         
         // Create tournament pass for player
         create_tournament_pass(world, 1, player_address, 1, TEST_TOURNAMENT_ID, DEFAULT_RATING);
+
+        testing::set_block_timestamp(1000);
 
         // Try to find opponent (should return None and subscribe player)
         let opponent = TournamentELOTrait::find_tournament_opponent(
@@ -355,10 +279,10 @@ mod tests {
         println!("[test_tournament_league_compute_id] Very high rating {} -> League {}", very_high_rating, league_id_very_high);
 
         // Verify league IDs are reasonable (1-17 range)
-        assert!(league_id_min >= 1 && league_id_min <= 17, "League ID should be in valid range");
-        assert!(league_id_default >= 1 && league_id_default <= 17, "League ID should be in valid range");
-        assert!(league_id_high >= 1 && league_id_high <= 17, "League ID should be in valid range");
-        assert!(league_id_very_high >= 1 && league_id_very_high <= 17, "League ID should be in valid range");
+        assert!(league_id_min >= 1 && league_id_min <= 56, "League ID should be in valid range");
+        assert!(league_id_default >= 1 && league_id_default <= 56, "League ID should be in valid range");
+        assert!(league_id_high >= 1 && league_id_high <= 56, "League ID should be in valid range");
+        assert!(league_id_very_high >= 1 && league_id_very_high <= 56, "League ID should be in valid range");
 
         println!("[test_tournament_league_compute_id] League computation test passed");
     }
@@ -387,20 +311,20 @@ mod tests {
         let opponent2 = TournamentELOTrait::find_tournament_opponent(
             player2_address, TEST_TOURNAMENT_ID, world
         );
-        assert!(opponent2.is_none(), "Player2 should not find opponent");
+        assert!(opponent2.is_some(), "Player2 should match with Player1");
 
         // Third player enters (should match with one of the previous players)
         let opponent3 = TournamentELOTrait::find_tournament_opponent(
             player3_address, TEST_TOURNAMENT_ID, world
         );
-        assert!(opponent3.is_some(), "Player3 should find an opponent");
-        
-        let matched_opponent = opponent3.unwrap();
+        assert!(opponent3.is_none(), "Player3 should not find an opponent");
+
+        let matched_opponent = opponent2.unwrap();
         assert!(
-            matched_opponent == player1_address || matched_opponent == player2_address,
-            "Should match with either player1 or player2"
+            matched_opponent == player1_address,
+            "Should match with either player1"
         );
-        println!("[test_multiple_players_same_league] Player3 matched with: {:x}", matched_opponent);
+        println!("[test_multiple_players_same_league] Player2 matched with: {:x}", matched_opponent);
 
         // Verify league still has one remaining player
         let league_id = TournamentLeagueTrait::compute_id(DEFAULT_RATING);

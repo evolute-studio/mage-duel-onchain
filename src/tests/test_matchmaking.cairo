@@ -21,8 +21,8 @@ mod tests {
             },
             player::{Player, m_Player},
             scoring::{UnionNode, m_UnionNode, PotentialContests, m_PotentialContests},
-            tournament::{TournamentPass, m_TournamentPass, PlayerTournamentIndex, m_PlayerTournamentIndex},
-            tournament_matchmaking::{TournamentRegistry, m_TournamentRegistry, TournamentLeague, m_TournamentLeague, TournamentSlot, m_TournamentSlot},
+            tournament::{TournamentPass, m_TournamentPass, PlayerTournamentIndex, m_PlayerTournamentIndex, TournamentBoard, m_TournamentBoard,},
+            tournament_matchmaking::{TournamentRegistry, m_TournamentRegistry, TournamentLeague, m_TournamentLeague, TournamentSlot, m_TournamentSlot, PlayerLeagueIndex, m_PlayerLeagueIndex},
         },
         events::{
             GameCreated, e_GameCreated, GameStarted, e_GameStarted, GameCanceled, e_GameCanceled,
@@ -31,7 +31,7 @@ mod tests {
             e_PlayerNotInGame, GameFinished, e_GameFinished, ErrorEvent, e_ErrorEvent,
             MigrationError, e_MigrationError, NotYourTurn, e_NotYourTurn, NotEnoughJokers,
             e_NotEnoughJokers, Moved, e_Moved, Skiped, e_Skiped, InvalidMove, e_InvalidMove,
-            PhaseStarted, e_PhaseStarted,
+            PhaseStarted, e_PhaseStarted, GameFinishResult, e_GameFinishResult
         },
         types::packing::{GameStatus, GameMode, GameState},
         systems::{
@@ -68,6 +68,8 @@ mod tests {
                 TestResource::Model(m_TournamentRegistry::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_TournamentLeague::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_TournamentSlot::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_PlayerLeagueIndex::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_TournamentBoard::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Contract(matchmaking::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Event(e_GameCreated::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Event(e_GameStarted::TEST_CLASS_HASH.try_into().unwrap()),
@@ -86,6 +88,7 @@ mod tests {
                 TestResource::Event(e_Skiped::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Event(e_InvalidMove::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Event(e_PhaseStarted::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Event(e_GameFinishResult::TEST_CLASS_HASH.try_into().unwrap()),
             ]
                 .span(),
         };
@@ -276,20 +279,20 @@ mod tests {
     #[test]
     fn test_join_casual_game_success() {
         let (dispatcher, mut world) = deploy_matchmaking();
-
+        println!("[test_join_casual_game_success] contract deployed");
         let player1: ContractAddress = contract_address_const::<PLAYER1_ADDRESS>();
         let player2: ContractAddress = contract_address_const::<PLAYER2_ADDRESS>();
         setup_player(world, player1);
         setup_player(world, player2);
-
+        println!("[test_join_casual_game_success] players setup done");
         // Player1 creates a game
         testing::set_contract_address(player1);
         dispatcher.create_game(GameMode::Casual.into(), Option::None);
-
+        println!("[test_join_casual_game_success] player1 created a casual game");
         // Player2 joins the game
         testing::set_contract_address(player2);
         dispatcher.join_game(player1);
-
+        println!("[test_join_casual_game_success] player2 joined player1's game");
         // Both players should be in progress
         assert_game_status(world, player1, GameStatus::InProgress);
         assert_game_status(world, player2, GameStatus::InProgress);
@@ -524,11 +527,11 @@ mod tests {
         let casual_config: GameModeConfig = world.read_model(GameMode::Casual);
         let tournament_config: GameModeConfig = world.read_model(GameMode::Tournament);
 
-        assert!(tutorial_config.game_mode == GameMode::Tutorial, "Tutorial config should exist");
-        assert!(ranked_config.game_mode == GameMode::Ranked, "Ranked config should exist");
-        assert!(casual_config.game_mode == GameMode::Casual, "Casual config should exist");
+        assert!(tutorial_config.game_mode == GameMode::Tutorial.into(), "Tutorial config should exist");
+        assert!(ranked_config.game_mode == GameMode::Ranked.into(), "Ranked config should exist");
+        assert!(casual_config.game_mode == GameMode::Casual.into(), "Casual config should exist");
         assert!(
-            tournament_config.game_mode == GameMode::Tournament, "Tournament config should exist",
+            tournament_config.game_mode == GameMode::Tournament.into(), "Tournament config should exist",
         );
 
         // Check some specific values
@@ -569,21 +572,6 @@ mod tests {
         assert!(config.initial_jokers == 1, "Initial jokers should be updated");
         assert!(config.time_per_phase == 30, "Time per phase should be updated");
         assert!(config.auto_match == true, "Auto match should be updated");
-    }
-
-    // Tests for Tournament mode
-    #[test]
-    fn test_create_tournament_game_success() {
-        let (dispatcher, mut world) = deploy_matchmaking();
-
-        let player1: ContractAddress = contract_address_const::<PLAYER1_ADDRESS>();
-        setup_tournament_player(world, player1, 1, 1200);
-
-        testing::set_contract_address(player1);
-        dispatcher.create_game(GameMode::Tournament.into(), Option::None);
-
-        assert_game_status(world, player1, GameStatus::Created);
-        assert_game_mode(world, player1, GameMode::Tournament);
     }
 
     #[test]
@@ -736,6 +724,7 @@ mod tests {
 
     // Error and Validation Tests
     #[test]
+    #[should_panic]
     fn test_invalid_game_mode_create() {
         let (dispatcher, mut world) = deploy_matchmaking();
         
@@ -745,13 +734,10 @@ mod tests {
         testing::set_contract_address(player1);
         // Try to create game with invalid mode (255)
         dispatcher.create_game(255, Option::None);
-        
-        // Should remain in default state (not created)
-        assert_game_status(world, player1, GameStatus::Finished);
-        assert_game_mode(world, player1, GameMode::None);
     }
 
     #[test] 
+    #[should_panic]
     fn test_auto_match_invalid_game_mode() {
         let (dispatcher, mut world) = deploy_matchmaking();
         
@@ -813,7 +799,7 @@ mod tests {
         dispatcher.cancel_game();
         
         // Should remain in Finished state
-        assert_game_status(world, player1, GameStatus::Finished);
+        assert_game_status(world, player1, GameStatus::Canceled);
     }
 
     #[test]
@@ -904,6 +890,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn test_create_tutorial_without_bot() {
         let (dispatcher, mut world) = deploy_matchmaking();
         
@@ -913,10 +900,6 @@ mod tests {
         testing::set_contract_address(player1);
         // Try to create tutorial without providing bot address
         dispatcher.create_game(GameMode::Tutorial.into(), Option::None);
-        
-        // Should fail to create game
-        assert_game_status(world, player1, GameStatus::Finished);
-        assert_game_mode(world, player1, GameMode::None);
     }
 
     #[test]

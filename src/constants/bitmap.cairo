@@ -7,7 +7,30 @@ pub const DEFAULT_RATING: u32 = 1000;
 pub const LEAGUE_SIZE: u32 = 50; // Rating points between leagues
 pub const LEAGUE_COUNT: u8 = 56;  // Total number of leagues (Silver I to Global Elite)
 pub const LEAGUE_MIN_THRESHOLD: u32 = 100;
-pub const LEAGUE_SEARCH_RADIUS: u8 = 5; // Maximum league difference for matchmaking
+pub const LEAGUE_SEARCH_RADIUS: u8 = 5; // Maximum league difference for matchmaking (legacy)
+
+// Dynamic search window constants
+// Time thresholds for search window expansion (in seconds)
+pub const SEARCH_TIER_1_TIME: u64 = 15;  // Time to expand to tier 1
+pub const SEARCH_TIER_2_TIME: u64 = 30;  // Time to expand to tier 2  
+pub const SEARCH_TIER_3_TIME: u64 = 60;  // Time to expand to tier 3
+// After 60s - maximum search radius
+
+// Search radius for each tier
+pub const SEARCH_RADIUS_TIER_0: u8 = 0;   // Own league only (0-15s)
+pub const SEARCH_RADIUS_TIER_1: u8 = 1;   // ±1 league (15-30s)
+pub const SEARCH_RADIUS_TIER_2: u8 = 2;   // ±2 leagues (30-60s)  
+pub const SEARCH_RADIUS_TIER_3: u8 = 16; // Maximum radius (60s+)
+
+// Fairness check
+pub const MAX_ELO_DIFFERENCE: u32 = 800;   // Max rating difference for fair matches
+
+// Dynamic K-factor constants for hyperbolic decay function
+pub const K_FACTOR_MAX: u32 = 100;           // Максимальный K-фактор для новых игроков
+pub const K_FACTOR_MIN: u32 = 20;            // Минимальный K-фактор для опытных игроков
+pub const K_FACTOR_ADAPTATION_GAMES: u32 = 5; // Количество игр для адаптации
+pub const K_FACTOR_TRANSITION_GAMES: u32 = 50; // Переход к минимальному K-фактору
+pub const K_FACTOR_DECAY_RATE: u32 = 9;     // Скорость убывания
 
 // Bitmap powers of 2 for efficient bit operations
 pub const TWO_POW_0: u256 = 0x1;

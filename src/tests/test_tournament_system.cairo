@@ -15,7 +15,7 @@ mod tests {
     use evolute_duel::models::{
         tournament::{
             TournamentPass, m_TournamentPass, TournamentStateModel, m_TournamentStateModel, PlayerTournamentIndex,
-            m_PlayerTournamentIndex, TournamentState,
+            m_PlayerTournamentIndex, TournamentBoard, m_TournamentBoard
         },
         tournament_matchmaking::{TournamentRegistry, m_TournamentRegistry, TournamentLeague, m_TournamentLeague,
             TournamentSlot, m_TournamentSlot, PlayerLeagueIndex, m_PlayerLeagueIndex
@@ -132,6 +132,7 @@ mod tests {
                 TestResource::Model(m_TournamentLeague::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_TournamentSlot::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_PlayerLeagueIndex::TEST_CLASS_HASH.try_into().unwrap()),
+                TestResource::Model(m_TournamentBoard::TEST_CLASS_HASH.try_into().unwrap()),
                 //Game models
                 TestResource::Model(m_GameModeConfig::TEST_CLASS_HASH.try_into().unwrap()),
                 TestResource::Model(m_Game::TEST_CLASS_HASH.try_into().unwrap()),
@@ -265,7 +266,7 @@ mod tests {
         
         // Tournament configuration
         let tournament_config = GameModeConfig {
-            game_mode: GameMode::Tournament,
+            game_mode: GameMode::Tournament.into(),
             board_size: 10,
             deck_type: 1, // Full randomized deck
             initial_jokers: 2,
