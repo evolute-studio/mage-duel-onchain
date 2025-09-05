@@ -25,6 +25,13 @@ pub const SEARCH_RADIUS_TIER_3: u8 = 255; // Maximum radius (60s+)
 // Fairness check
 pub const MAX_ELO_DIFFERENCE: u32 = 800;   // Max rating difference for fair matches
 
+// Dynamic K-factor constants for hyperbolic decay function
+pub const K_FACTOR_MAX: u32 = 100;           // Максимальный K-фактор для новых игроков
+pub const K_FACTOR_MIN: u32 = 20;            // Минимальный K-фактор для опытных игроков
+pub const K_FACTOR_ADAPTATION_GAMES: u32 = 5; // Количество игр для адаптации
+pub const K_FACTOR_TRANSITION_GAMES: u32 = 50; // Переход к минимальному K-фактору
+pub const K_FACTOR_DECAY_RATE: u32 = 9;     // Скорость убывания
+
 // Bitmap powers of 2 for efficient bit operations
 pub const TWO_POW_0: u256 = 0x1;
 pub const TWO_POW_1: u256 = 0x2;

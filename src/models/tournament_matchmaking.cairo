@@ -9,7 +9,8 @@ use evolute_duel::{
         LEAGUE_SIZE, DEFAULT_RATING, LEAGUE_COUNT, LEAGUE_MIN_THRESHOLD, DEFAULT_K_FACTOR,
         SEARCH_TIER_1_TIME, SEARCH_TIER_2_TIME, SEARCH_TIER_3_TIME,
         SEARCH_RADIUS_TIER_0, SEARCH_RADIUS_TIER_1, SEARCH_RADIUS_TIER_2, SEARCH_RADIUS_TIER_3,
-        MAX_ELO_DIFFERENCE
+        MAX_ELO_DIFFERENCE,
+        K_FACTOR_MAX, K_FACTOR_MIN, K_FACTOR_ADAPTATION_GAMES, K_FACTOR_TRANSITION_GAMES, K_FACTOR_DECAY_RATE
     },
     systems::helpers::bitmap::{Bitmap},
     models::tournament::{TournamentPass, PlayerTournamentIndex},
@@ -515,6 +516,33 @@ pub(crate) fn validate_match_fairness(
     is_fair
 }
 
+// Calculate dynamic K-factor based on games played using piecewise + hyperbolic function
+pub(crate) fn compute_k_from_games(games_played: u32) -> u32 {
+    println!("[K_FACTOR] Computing K-factor for games_played: {}", games_played);
+    
+    let k_factor = if games_played < K_FACTOR_ADAPTATION_GAMES {
+        // Новые игроки: максимальный K-фактор
+        println!("[K_FACTOR] New player - using max K-factor: {}", K_FACTOR_MAX);
+        K_FACTOR_MAX
+    } else if games_played < K_FACTOR_TRANSITION_GAMES {
+        // Гиперболическое убывание: K = floor(K_MAX / (1 + decay_rate * (games - adaptation_games) / 100))
+        // Используем целочисленную арифметику: умножаем числитель и знаменатель на 100
+        let numerator = K_FACTOR_MAX * 100; // K_MAX * 100
+        let denom = 100 + K_FACTOR_DECAY_RATE * (games_played - K_FACTOR_ADAPTATION_GAMES); // 100 + decay_rate*(n-adaptation)
+        let k = numerator / denom; // целочисленное деление -> floor
+        let result = if k < K_FACTOR_MIN { K_FACTOR_MIN } else { k };
+        println!("[K_FACTOR] Intermediate player - calculated K-factor: {} (from {}/{})", result, numerator, denom);
+        result
+    } else {
+        // Опытные игроки: минимальный K-фактор
+        println!("[K_FACTOR] Experienced player - using min K-factor: {}", K_FACTOR_MIN);
+        K_FACTOR_MIN
+    };
+    
+    println!("[K_FACTOR] Final K-factor: {}", k_factor);
+    k_factor
+}
+
 //------------------------------------
 // ELO system for tournaments
 //
@@ -541,83 +569,6 @@ pub impl TournamentELOImpl of TournamentELOTrait {
         let tournament_pass: TournamentPass = world.read_model(index.pass_id);
         println!("[TournamentELOTrait::get_tournament_player_rating] Found tournament pass - rating: {}", tournament_pass.rating);
         tournament_pass.rating
-    }
-    
-    // Update ratings after tournament match
-    fn update_tournament_ratings_after_match(
-        winner_address: ContractAddress,
-        loser_address: ContractAddress,
-        tournament_id: u64,
-        mut world: WorldStorage
-    ) {
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] Updating tournament ratings");
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] winner_address: {:x}", winner_address);
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] loser_address: {:x}", loser_address);
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] tournament_id: {}", tournament_id);
-        
-        // Get tournament passes
-        let winner_index: PlayerTournamentIndex = world.read_model((winner_address, tournament_id));
-        let loser_index: PlayerTournamentIndex = world.read_model((loser_address, tournament_id));
-        
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] winner_pass_id: {}, loser_pass_id: {}", winner_index.pass_id, loser_index.pass_id);
-        
-        if winner_index.pass_id == 0 || loser_index.pass_id == 0 {
-            println!("[TournamentELOTrait::update_tournament_ratings_after_match] One of players not in tournament - aborting");
-            return; // One of players not in tournament
-        }
-        
-        let mut winner_pass: TournamentPass = world.read_model(winner_index.pass_id);
-        let mut loser_pass: TournamentPass = world.read_model(loser_index.pass_id);
-        
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] winner rating before: {}, loser rating before: {}", winner_pass.rating, loser_pass.rating);
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] winner stats: wins={}, losses={}, games_played={}", winner_pass.wins, winner_pass.losses, winner_pass.games_played);
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] loser stats: wins={}, losses={}, games_played={}", loser_pass.wins, loser_pass.losses, loser_pass.games_played);
-        
-        // Calculate ELO changes using Origami library
-        let (winner_change, winner_negative) = EloTrait::rating_change(
-            winner_pass.rating, 
-            loser_pass.rating, 
-            100_u32, // Winner gets 100 points
-            DEFAULT_K_FACTOR
-        );
-        
-        let (loser_change, loser_negative) = EloTrait::rating_change(
-            loser_pass.rating, 
-            winner_pass.rating, 
-            0_u32, // Loser gets 0 points
-            DEFAULT_K_FACTOR
-        );
-        
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] ELO calculations:");
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] winner_change: {}, winner_negative: {}", winner_change, winner_negative);
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] loser_change: {}, loser_negative: {}", loser_change, loser_negative);
-        
-        // Update winner
-        if winner_negative {
-            winner_pass.rating -= winner_change;
-        } else {
-            winner_pass.rating += winner_change;
-        }
-        winner_pass.wins += 1;
-        winner_pass.games_played += 1;
-        
-        // Update loser
-        if loser_negative {
-            loser_pass.rating -= loser_change;
-        } else {
-            loser_pass.rating += loser_change;
-        }
-        loser_pass.losses += 1;
-        loser_pass.games_played += 1;
-        
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] winner rating after: {}, loser rating after: {}", winner_pass.rating, loser_pass.rating);
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] winner stats after: wins={}, losses={}, games_played={}", winner_pass.wins, winner_pass.losses, winner_pass.games_played);
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] loser stats after: wins={}, losses={}, games_played={}", loser_pass.wins, loser_pass.losses, loser_pass.games_played);
-        
-        // Save updated passes
-        world.write_model(@winner_pass);
-        world.write_model(@loser_pass);
-        println!("[TournamentELOTrait::update_tournament_ratings_after_match] Tournament passes updated successfully");
     }
     
     // Find tournament opponent by ELO with radius check

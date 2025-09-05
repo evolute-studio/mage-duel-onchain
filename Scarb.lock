@@ -116,7 +116,7 @@ source = "git+https://github.com/dojoengine/origami#81e49e9db43e8528cbb5d914e4da
 [[package]]
 name = "tournaments"
 version = "0.0.1"
-source = "git+https://github.com/evolute-studio/budokan-tournaments?rev=4fff1b509d9adee655417191a6e6ba208a7887ff#4fff1b509d9adee655417191a6e6ba208a7887ff"
+source = "git+https://github.com/evolute-studio/budokan-tournaments?branch=1.6.0-alpha.2#574aff0ff8ee0af8d678992e267c5911259dc342"
 dependencies = [
  "dojo",
  "openzeppelin_introspection",

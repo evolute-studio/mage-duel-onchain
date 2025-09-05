@@ -110,68 +110,6 @@ mod tests {
     }
 
     #[test]
-    fn test_update_tournament_ratings_after_match() {
-        println!("[test_update_tournament_ratings_after_match] Testing rating updates after match");
-        let mut world = setup_tournament_matchmaking_world();
-
-        let winner_address: ContractAddress = contract_address_const::<PLAYER1_ADDRESS>();
-        let loser_address: ContractAddress = contract_address_const::<PLAYER2_ADDRESS>();
-        let initial_rating = 1200;
-
-        // Create tournament passes for both players
-        create_tournament_pass(world, 1, winner_address, 1,  TEST_TOURNAMENT_ID, initial_rating);
-        create_tournament_pass(world, 2, loser_address, 2,  TEST_TOURNAMENT_ID, initial_rating);
-
-        // Get initial ratings
-        let winner_rating_before = TournamentELOTrait::get_tournament_player_rating(
-            winner_address, TEST_TOURNAMENT_ID, world
-        );
-        let loser_rating_before = TournamentELOTrait::get_tournament_player_rating(
-            loser_address, TEST_TOURNAMENT_ID, world
-        );
-
-        println!("[test_update_tournament_ratings_after_match] Initial ratings - Winner: {}, Loser: {}", 
-            winner_rating_before, loser_rating_before);
-
-        // Update ratings after match
-        TournamentELOTrait::update_tournament_ratings_after_match(
-            winner_address,
-            loser_address, 
-            TEST_TOURNAMENT_ID,
-            world
-        );
-
-        // Check updated ratings
-        let winner_rating_after = TournamentELOTrait::get_tournament_player_rating(
-            winner_address, TEST_TOURNAMENT_ID, world
-        );
-        let loser_rating_after = TournamentELOTrait::get_tournament_player_rating(
-            loser_address, TEST_TOURNAMENT_ID, world
-        );
-
-        println!("[test_update_tournament_ratings_after_match] Updated ratings - Winner: {}, Loser: {}", 
-            winner_rating_after, loser_rating_after);
-
-        // Verify rating changes
-        assert!(winner_rating_after > winner_rating_before, "Winner should gain rating");
-        assert!(loser_rating_after < loser_rating_before, "Loser should lose rating");
-
-        // Verify game statistics
-        let winner_pass: TournamentPass = world.read_model(1_u64);
-        let loser_pass: TournamentPass = world.read_model(2_u64);
-
-        assert!(winner_pass.wins == 1, "Winner should have 1 win");
-        assert!(winner_pass.losses == 0, "Winner should have 0 losses");
-        assert!(winner_pass.games_played == 1, "Winner should have 1 game played");
-
-        assert!(loser_pass.wins == 0, "Loser should have 0 wins");
-        assert!(loser_pass.losses == 1, "Loser should have 1 loss");
-        assert!(loser_pass.games_played == 1, "Loser should have 1 game played");
-
-        println!("[test_update_tournament_ratings_after_match] Rating update test passed");
-    }
-
-    #[test]
     fn test_find_tournament_opponent_no_opponents() {
         println!("[test_find_tournament_opponent_no_opponents] Testing queue when no opponents available");
         let mut world = setup_tournament_matchmaking_world();

@@ -3,6 +3,9 @@ use dojo::model::ModelStorage;
 use origami_rating::elo::EloTrait;
 use evolute_duel::models::tournament::{TournamentPass, PlayerTournamentIndex};
 use evolute_duel::libs::store::{Store, StoreTrait};
+use evolute_duel::constants::bitmap::{
+    K_FACTOR_MAX, K_FACTOR_MIN, K_FACTOR_ADAPTATION_GAMES, K_FACTOR_TRANSITION_GAMES, K_FACTOR_DECAY_RATE
+};
 use core::num::traits::Zero;
 
 /// Default values for ELO rating system
@@ -11,15 +14,15 @@ pub const K_FACTOR: u8 = 32;
 
 #[generate_trait]
 pub impl RatingSystemImpl of RatingSystemTrait {
-    /// Calculate new ratings after a game using origami_rating ELO system
+    /// Calculate new ratings after a game using origami_rating ELO system with individual K-factors
     /// Returns (new_winner_rating, new_loser_rating)
-    fn calculate_rating_change(winner_rating: u32, loser_rating: u32, k_factor: u8) -> (u32, u32) {
+    fn calculate_rating_change(winner_rating: u32, loser_rating: u32, winner_k_factor: u16, loser_k_factor: u16) -> (u32, u32) {
         // Calculate rating change for winner (outcome = 100 for win)
         let (winner_change, winner_is_negative): (u64, bool) = EloTrait::rating_change(
             winner_rating, // Winner's current rating
             loser_rating, // Loser's current rating  
             100_u16, // Outcome: 100 = win
-            k_factor // K-factor
+            winner_k_factor // Individual K-factor for winner
         );
 
         // Calculate rating change for loser (outcome = 0 for loss)
@@ -27,7 +30,7 @@ pub impl RatingSystemImpl of RatingSystemTrait {
             loser_rating, // Loser's current rating
             winner_rating, // Winner's current rating
             0_u16, // Outcome: 0 = loss  
-            k_factor // K-factor
+            loser_k_factor // Individual K-factor for loser
         );
 
         // Apply rating changes
@@ -80,19 +83,29 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                     player2_pass.rating,
                 );
 
+                // Calculate individual K-factors based on games played
+                let player1_k_factor = Self::compute_k_from_games(player1_pass.games_played);
+                let player2_k_factor = Self::compute_k_from_games(player2_pass.games_played);
+                
+                println!("[RATING] Draw Dynamic K-factors: Player1 K={} (games: {}), Player2 K={} (games: {})", 
+                    player1_k_factor, player1_pass.games_played, player2_k_factor, player2_pass.games_played);
+
                 // Calculate rating changes for draw (outcome = 50 for both players)
+                let player1_k_u8: u8 = player1_k_factor.try_into().unwrap();
+                let player2_k_u8: u8 = player2_k_factor.try_into().unwrap();
+                
                 let (player1_change, player1_is_negative): (u64, bool) = EloTrait::rating_change(
                     player1_pass.rating, // Player1's current rating
                     player2_pass.rating, // Player2's current rating  
                     50_u16, // Outcome: 50 = draw
-                    K_FACTOR // K-factor
+                    player1_k_u8 // Individual K-factor for player1
                 );
 
                 let (player2_change, player2_is_negative): (u64, bool) = EloTrait::rating_change(
                     player2_pass.rating, // Player2's current rating
                     player1_pass.rating, // Player1's current rating
                     50_u16, // Outcome: 50 = draw  
-                    K_FACTOR // K-factor
+                    player2_k_u8 // Individual K-factor for player2
                 );
 
                 // Apply rating changes for player1
@@ -177,9 +190,20 @@ pub impl RatingSystemImpl of RatingSystemTrait {
                     loser_pass.rating,
                 );
 
-                // Calculate new ratings using origami_rating
+                // Calculate individual K-factors based on games played
+                let winner_k_factor = Self::compute_k_from_games(winner_pass.games_played);
+                let loser_k_factor = Self::compute_k_from_games(loser_pass.games_played);
+                
+                println!("[RATING] Dynamic K-factors: Winner K={} (games: {}), Loser K={} (games: {})", 
+                    winner_k_factor, winner_pass.games_played, loser_k_factor, loser_pass.games_played);
+
+                // Convert K-factors to u8 for compatibility
+                let winner_k_u16: u16 = winner_k_factor.try_into().unwrap();
+                let loser_k_u16: u16 = loser_k_factor.try_into().unwrap();
+                
+                // Calculate new ratings using origami_rating with individual K-factors
                 let (new_winner_rating, new_loser_rating) = Self::calculate_rating_change(
-                    winner_pass.rating, loser_pass.rating, K_FACTOR,
+                    winner_pass.rating, loser_pass.rating, winner_k_u16, loser_k_u16,
                 );
 
                 let winner_rating_change: i32 = new_winner_rating.try_into().unwrap() - winner_pass.rating.try_into().unwrap();
@@ -247,5 +271,32 @@ pub impl RatingSystemImpl of RatingSystemTrait {
         tournament_pass.games_played = 0;
         tournament_pass.wins = 0;
         tournament_pass.losses = 0;
+    }
+
+    /// Calculate dynamic K-factor based on games played using piecewise + hyperbolic function
+    fn compute_k_from_games(games_played: u32) -> u32 {
+        println!("[K_FACTOR] Computing K-factor for games_played: {}", games_played);
+        
+        let k_factor = if games_played < K_FACTOR_ADAPTATION_GAMES {
+            // Новые игроки: максимальный K-фактор
+            println!("[K_FACTOR] New player - using max K-factor: {}", K_FACTOR_MAX);
+            K_FACTOR_MAX
+        } else if games_played < K_FACTOR_TRANSITION_GAMES {
+            // Гиперболическое убывание: K = floor(K_MAX / (1 + decay_rate * (games - adaptation_games)))
+            // Используем целочисленную арифметику: умножаем числитель и знаменатель на 100
+            let numerator = K_FACTOR_MAX * 100; // K_MAX * 100
+            let denom = 100 + K_FACTOR_DECAY_RATE * (games_played - K_FACTOR_ADAPTATION_GAMES); // 100 + decay_rate*(n-adaptation)
+            let k = numerator / denom; // целочисленное деление -> floor
+            let result = if k < K_FACTOR_MIN { K_FACTOR_MIN } else { k };
+            println!("[K_FACTOR] Intermediate player - calculated K-factor: {} (from {}/{})", result, numerator, denom);
+            result
+        } else {
+            // Опытные игроки: минимальный K-фактор
+            println!("[K_FACTOR] Experienced player - using min K-factor: {}", K_FACTOR_MIN);
+            K_FACTOR_MIN
+        };
+        
+        println!("[K_FACTOR] Final K-factor: {}", k_factor);
+        k_factor
     }
 }
